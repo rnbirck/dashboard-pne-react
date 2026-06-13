@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 
 const CHART_WIDTH = 760
-const CHART_HEIGHT = 260
-const PADDING = { bottom: 42, left: 54, right: 28, top: 24 }
+const CHART_HEIGHT = 282
+const PADDING = { bottom: 46, left: 58, right: 44, top: 38 }
 
 export function IndicatorHistoryChart({
   display,
@@ -67,7 +67,7 @@ export function IndicatorHistoryChart({
                 y1={chart.metaLine.y}
                 y2={chart.metaLine.y}
               />
-              <text x={CHART_WIDTH - PADDING.right} y={chart.metaLine.y - 7}>
+              <text x={CHART_WIDTH - PADDING.right} y={chart.metaLine.labelY}>
                 Meta {chart.formatValue(chart.metaLine.value)}
               </text>
             </g>
@@ -121,8 +121,12 @@ export function IndicatorHistoryChart({
           <div
             className="history-chart__tooltip"
             style={{
-              left: `${(activePoint.x / CHART_WIDTH) * 100}%`,
+              left: `${Math.min(94, Math.max(8, (activePoint.x / CHART_WIDTH) * 100))}%`,
               top: `${(activePoint.y / CHART_HEIGHT) * 100}%`,
+              transform:
+                activePoint.y < PADDING.top + 36
+                  ? 'translate(-50%, 12px)'
+                  : 'translate(-50%, calc(-100% - 12px))',
             }}
           >
             <strong>{activePoint.year}</strong>
@@ -149,8 +153,8 @@ function buildChartModel({ display, endYear, meta, series, startYear }) {
   const minRaw = Math.min(...values)
   const maxRaw = Math.max(...values)
   const span = maxRaw - minRaw || Math.abs(maxRaw) || 1
-  const minValue = unit === '%' ? Math.max(0, minRaw - span * 0.12) : minRaw - span * 0.12
-  const maxValue = unit === '%' ? Math.min(100, maxRaw + span * 0.12) : maxRaw + span * 0.12
+  const minValue = unit === '%' ? Math.max(0, minRaw - span * 0.18) : minRaw - span * 0.18
+  const maxValue = unit === '%' ? Math.min(100, maxRaw + span * 0.18) : maxRaw + span * 0.18
   const safeMax = maxValue === minValue ? maxValue + 1 : maxValue
   const years = points.map((point) => point.year)
   const minYear = Math.min(...years)
@@ -181,7 +185,14 @@ function buildChartModel({ display, endYear, meta, series, startYear }) {
     areaPath,
     formatValue: (value) => formatChartValue(value, unit),
     linePath,
-    metaLine: metaValue === null ? null : { value: metaValue, y: yScale(metaValue) },
+    metaLine:
+      metaValue === null
+        ? null
+        : {
+            labelY: Math.max(PADDING.top + 14, yScale(metaValue) - 8),
+            value: metaValue,
+            y: yScale(metaValue),
+          },
     points: scaledPoints,
     xTicks: pickYearTicks(scaledPoints),
     yTicks: buildYTicks(minValue, safeMax).map((value) => ({ value, y: yScale(value) })),
