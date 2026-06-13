@@ -1,0 +1,109 @@
+:root {
+  --accent: #2f713c;
+  --accent-strong: #1f5d2e;
+  --accent-soft: #3f7f49;
+  --background: #eef4ea;
+  --background-2: #f7faf3;
+  --background-3: #e8f0e2;
+
+  --border: rgba(61, 95, 54, 0.16);
+  --border-strong: rgba(47, 113, 60, 0.32);
+  --border-soft: rgba(61, 95, 54, 0.1);
+  --divider: rgba(61, 95, 54, 0.14);
+
+  --danger: #d84b21;
+  --warning: #f05a24;
+  --success: #2f713c;
+
+  --text: #26322b;
+  --text-muted: #5d6b61;
+  --text-soft: #788578;
+  --text-strong: #0e1712;
+
+  --surface: rgba(255, 255, 255, 0.92);
+  --surface-strong: #ffffff;
+  --surface-soft: #f5f8f0;
+
+  --shadow-card: 0 10px 28px rgba(46, 72, 43, 0.08);
+  --shadow-pop: 0 18px 44px rgba(46, 72, 43, 0.14);
+  --shadow-soft: 0 6px 16px rgba(46, 72, 43, 0.07);
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+
+  --shell-max: 1360px;
+
+  --grad-page:
+    radial-gradient(900px 420px at 2% 8%, rgba(116, 157, 105, 0.2), transparent 60%),
+    radial-gradient(760px 440px at 94% 30%, rgba(197, 219, 185, 0.3), transparent 64%),
+    linear-gradient(180deg, #eef4ea 0%, #f8faf4 52%, #edf4e9 100%);
+  --grad-card: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(250, 252, 246, 0.9));
+  --grad-card-hover: linear-gradient(145deg, #ffffff, #f4f8ef);
+  --grad-hero: linear-gradient(140deg, #f4f8ef 0%, #ffffff 64%, #f8f3ec 100%);
+  --grad-pill-active: linear-gradient(145deg, #2f713c, #1f5d2e);
+
+  font-family:
+    "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "tnum";
+  color: var(--text);
+  background: var(--background);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--background);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--grad-page);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.55;
+  letter-spacing: 0;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  letter-spacing: 0;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+a {
+  color: var(--accent);
+}
+
+::selection {
+  background: rgba(47, 113, 60, 0.18);
+  color: var(--text-strong);
+}
