@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 
 const CHART_WIDTH = 760
-const CHART_HEIGHT = 282
-const PADDING = { bottom: 46, left: 58, right: 44, top: 38 }
+const CHART_HEIGHT = 300
+const PADDING = { bottom: 46, left: 62, right: 44, top: 52 }
 
 export function IndicatorHistoryChart({
   display,
@@ -153,9 +153,30 @@ function buildChartModel({ display, endYear, meta, series, startYear }) {
   const minRaw = Math.min(...values)
   const maxRaw = Math.max(...values)
   const span = maxRaw - minRaw || Math.abs(maxRaw) || 1
-  const minValue = unit === '%' ? Math.max(0, minRaw - span * 0.18) : minRaw - span * 0.18
-  const maxValue = unit === '%' ? Math.min(100, maxRaw + span * 0.18) : maxRaw + span * 0.18
-  const safeMax = maxValue === minValue ? maxValue + 1 : maxValue
+
+  const isPercent = unit === '%'
+  const allValuesWithinPercent = isPercent && values.every((v) => v >= 0 && v <= 100)
+
+  let minValue, maxValue
+  if (isPercent && allValuesWithinPercent) {
+    minValue = Math.max(0, minRaw - span * 0.12)
+    maxValue = Math.min(100, maxRaw + span * 0.12)
+  } else {
+    minValue = minRaw - span * 0.12
+    maxValue = maxRaw + span * 0.12
+  }
+
+  // Domínio mínimo para evitar gráfico achatado
+  if (Math.abs(maxValue - minValue) < 0.01) {
+    const minDomain = Math.abs(minValue) < 0.01 ? 1 : minValue * 0.1
+    minValue = minValue - minDomain
+    maxValue = maxValue + minDomain
+  }
+
+  // Margem extra no topo para labels de meta não saírem do SVG
+  const safeMax = maxValue + span * 0.08
+  const safeMin = minValue - span * 0.02
+
   const years = points.map((point) => point.year)
   const minYear = Math.min(...years)
   const maxYear = Math.max(...years)
@@ -167,7 +188,7 @@ function buildChartModel({ display, endYear, meta, series, startYear }) {
     return PADDING.left + ((year - minYear) / (maxYear - minYear)) * plotWidth
   }
   const yScale = (value) =>
-    PADDING.top + ((safeMax - value) / (safeMax - minValue)) * plotHeight
+    PADDING.top + ((safeMax - value) / (safeMax - safeMin)) * plotHeight
 
   const scaledPoints = points.map((point) => ({
     ...point,
@@ -181,6 +202,13 @@ function buildChartModel({ display, endYear, meta, series, startYear }) {
   const first = scaledPoints[0]
   const areaPath = `${linePath} L${last.x.toFixed(1)} ${(CHART_HEIGHT - PADDING.bottom).toFixed(1)} L${first.x.toFixed(1)} ${(CHART_HEIGHT - PADDING.bottom).toFixed(1)} Z`
 
+  // Calcula posição segura da label da meta
+  let metaLabelY = PADDING.top + 16
+  if (metaValue !== null) {
+    const rawY = yScale(metaValue)
+    metaLabelY = Math.max(PADDING.top + 16, Math.min(rawY - 10, CHART_HEIGHT - PADDING.bottom - 16))
+  }
+
   return {
     areaPath,
     formatValue: (value) => formatChartValue(value, unit),
@@ -189,13 +217,13 @@ function buildChartModel({ display, endYear, meta, series, startYear }) {
       metaValue === null
         ? null
         : {
-            labelY: Math.max(PADDING.top + 14, yScale(metaValue) - 8),
+            labelY: metaLabelY,
             value: metaValue,
-            y: yScale(metaValue),
+            y: Math.max(PADDING.top, Math.min(yScale(metaValue), CHART_HEIGHT - PADDING.bottom)),
           },
     points: scaledPoints,
     xTicks: pickYearTicks(scaledPoints),
-    yTicks: buildYTicks(minValue, safeMax).map((value) => ({ value, y: yScale(value) })),
+    yTicks: buildYTicks(safeMin, safeMax).map((value) => ({ value, y: yScale(value) })),
     yearMarkers: [startYear, endYear]
       .map((year) => Number(year))
       .filter((year, index, arr) => Number.isFinite(year) && year >= minYear && year <= maxYear && arr.indexOf(year) === index)

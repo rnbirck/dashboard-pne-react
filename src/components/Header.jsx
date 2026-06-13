@@ -19,32 +19,30 @@ export function Header({ activePage, municipios, onNavigate, onMunicipioChange, 
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
-        <nav className="top-nav" aria-label="Navegação principal">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon
-            return (
-              <button
-                className={item.key === activePage ? 'nav-item is-active' : 'nav-item'}
-                key={item.key}
-                type="button"
-                onClick={() => onNavigate(item.key)}
-              >
-                <Icon />
-                <span>{item.label}</span>
-              </button>
-            )
-          })}
-        </nav>
+      <nav className="top-nav" aria-label="Navegação principal">
+        {NAV_ITEMS.map((item) => {
+          const Icon = item.icon
+          return (
+            <button
+              className={item.key === activePage ? 'nav-item is-active' : 'nav-item'}
+              key={item.key}
+              type="button"
+              onClick={() => onNavigate(item.key)}
+            >
+              <Icon />
+              <span>{item.label}</span>
+            </button>
+          )
+        })}
+      </nav>
 
-        <div style={{ flexShrink: 0, minWidth: '220px', maxWidth: '320px' }}>
-          <MunicipalitySelector
-            municipios={municipios}
-            selectedMunicipio={selectedMunicipio}
-            onChange={onMunicipioChange}
-            placeholder="Município..."
-          />
-        </div>
+      <div className="header-selector">
+        <MunicipalitySelector
+          municipios={municipios}
+          selectedMunicipio={selectedMunicipio}
+          onChange={onMunicipioChange}
+          placeholder="Município..."
+        />
       </div>
     </header>
   )

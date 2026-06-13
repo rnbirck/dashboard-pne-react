@@ -17,6 +17,7 @@ export function IndicatorList({ items, selectedIndicator, onSelectIndicator, res
             key={item.key}
             type="button"
             onClick={() => onSelectIndicator(item.key)}
+            title={item.label}
           >
             <span>{item.label}</span>
             <StatusBadge status={statusLabel} tone={tone} />
