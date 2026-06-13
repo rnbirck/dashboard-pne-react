@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
+import { MunicipalityProvider, useMunicipality } from './context/MunicipalityContext'
 import { ErrorState } from './components/ErrorState'
 import { Layout } from './components/Layout'
 import { LoadingState } from './components/LoadingState'
@@ -17,7 +18,6 @@ import { useAsyncData } from './utils/useAsyncData'
 
 function App() {
   const [activePage, setActivePage] = useState('home')
-  const [selectedMunicipio, setSelectedMunicipio] = useState(null)
   const [initialData, setInitialData] = useState({
     error: null,
     indicadores: null,
@@ -65,9 +65,49 @@ function App() {
     }
   }, [])
 
+  const ready = Boolean(initialData.indicadores)
+
+  return (
+    <MunicipalityProvider municipios={initialData.municipios}>
+      <Layout
+        activePage={activePage}
+        municipios={initialData.municipios}
+        onNavigate={setActivePage}
+      >
+        {initialData.loading ? (
+          <LoadingState message="Carregando base do dashboard..." />
+        ) : initialData.error ? (
+          <ErrorState title="Erro ao carregar dados iniciais" message={initialData.error} />
+        ) : !ready ? (
+          <LoadingState message="Preparando município..." />
+        ) : (
+          <PageContent
+            activePage={activePage}
+            indicadores={initialData.indicadores}
+            municipioCount={initialData.municipios.length}
+            municipios={initialData.municipios}
+            municipiosIndex={initialData.municipiosIndex}
+            onNavigate={setActivePage}
+          />
+        )}
+      </Layout>
+    </MunicipalityProvider>
+  )
+}
+
+function PageContent({
+  activePage,
+  indicadores,
+  municipioCount,
+  municipios,
+  municipiosIndex,
+  onNavigate,
+}) {
+  const { selectedMunicipio, setSelectedMunicipio } = useMunicipality()
+
   const selectedMunicipioEntry = useMemo(
-    () => initialData.municipiosIndex.find((item) => item.nome === selectedMunicipio) ?? null,
-    [initialData.municipiosIndex, selectedMunicipio],
+    () => municipiosIndex.find((item) => item.nome === selectedMunicipio) ?? null,
+    [municipiosIndex, selectedMunicipio],
   )
 
   const municipioState = useAsyncData(
@@ -83,50 +123,6 @@ function App() {
     [selectedMunicipioEntry?.slug],
   )
 
-  const ready = Boolean(initialData.indicadores)
-
-  return (
-    <Layout
-      activePage={activePage}
-      indicadores={initialData.indicadores}
-      municipioCount={initialData.municipios.length}
-      municipios={initialData.municipios}
-      selectedMunicipio={selectedMunicipio}
-      onMunicipioChange={setSelectedMunicipio}
-      onNavigate={setActivePage}
-    >
-      {initialData.loading ? (
-        <LoadingState message="Carregando base do dashboard..." />
-      ) : initialData.error ? (
-        <ErrorState title="Erro ao carregar dados iniciais" message={initialData.error} />
-      ) : !ready ? (
-        <LoadingState message="Preparando município..." />
-      ) : (
-        <PageContent
-          activePage={activePage}
-          indicadores={initialData.indicadores}
-          municipioCount={initialData.municipios.length}
-          municipios={initialData.municipios}
-          municipioState={municipioState}
-          onMunicipioChange={setSelectedMunicipio}
-          onNavigate={setActivePage}
-          selectedMunicipio={selectedMunicipio}
-        />
-      )}
-    </Layout>
-  )
-}
-
-function PageContent({
-  activePage,
-  indicadores,
-  municipioCount,
-  municipios,
-  municipioState,
-  onMunicipioChange,
-  onNavigate,
-  selectedMunicipio,
-}) {
   const { data: municipioData, error: municipioError, loading: municipioLoading } = municipioState
 
   if (activePage === 'home') {
@@ -136,7 +132,7 @@ function PageContent({
         municipioData={municipioData}
         municipioCount={municipioCount}
         municipios={municipios}
-        onMunicipioChange={onMunicipioChange}
+        onMunicipioChange={setSelectedMunicipio}
         onNavigate={onNavigate}
         selectedMunicipio={selectedMunicipio}
       />
@@ -144,7 +140,13 @@ function PageContent({
   }
 
   if (!selectedMunicipio) {
-    return <EmptyMunicipioState onNavigate={onNavigate} />
+    return (
+      <EmptyMunicipioState
+        onNavigate={onNavigate}
+        onMunicipioChange={setSelectedMunicipio}
+        municipios={municipios}
+      />
+    )
   }
 
   if (municipioLoading) {
@@ -196,23 +198,47 @@ function PageContent({
   return null
 }
 
-function EmptyMunicipioState({ onNavigate }) {
+function EmptyMunicipioState({ onNavigate, onMunicipioChange, municipios }) {
   return (
-    <section className="empty-selection">
-      <div className="empty-selection__icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
+    <section className="empty-state">
+      <div className="empty-state__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 21s7-6.3 7-12a7 7 0 1 0-14 0c0 5.7 7 12 7 12Z" />
           <circle cx="12" cy="9" r="2.4" />
         </svg>
       </div>
-      <span className="eyebrow">Seleção obrigatória</span>
-      <h1>Selecione um município para visualizar os indicadores deste ciclo.</h1>
+      <h1>Selecione um município para continuar</h1>
       <p>
         Os indicadores, rankings e o diagnóstico municipal só são carregados depois da
-        seleção. Volte ao início e escolha o município que deseja analisar.
+        seleção. Escolha o município que deseja analisar.
       </p>
+      <div style={{ minWidth: 'min(320px, 100%)', marginTop: '4px' }}>
+        <label className="municipio-selector municipio-selector--hero">
+          <div className="municipio-selector__field">
+            <svg className="municipio-selector__pin" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 21s7-6.3 7-12a7 7 0 1 0-14 0c0 5.7 7 12 7 12Z" />
+              <circle cx="12" cy="9" r="2.4" />
+            </svg>
+            <select
+              value=""
+              onChange={(event) => onMunicipioChange(event.target.value || null)}
+              aria-label="Selecionar município"
+            >
+              <option value="">Escolha um município</option>
+              {municipios.map((municipio) => (
+                <option key={municipio} value={municipio}>
+                  {municipio}
+                </option>
+              ))}
+            </select>
+            <svg className="municipio-selector__chevron" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </div>
+        </label>
+      </div>
       <button type="button" className="primary-button" onClick={() => onNavigate?.('home')}>
-        Selecionar município
+        Voltar ao início
       </button>
     </section>
   )

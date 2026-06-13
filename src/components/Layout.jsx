@@ -1,22 +1,23 @@
+import { useMunicipality } from '../context/MunicipalityContext'
 import { Header } from './Header'
 
 export function Layout({
   activePage,
   children,
   municipios,
-  onMunicipioChange,
   onNavigate,
-  selectedMunicipio,
 }) {
+  const { selectedMunicipio, setSelectedMunicipio } = useMunicipality()
+
   return (
     <div className="dashboard-shell">
       <div className="dashboard-frame">
         <Header
           activePage={activePage}
           municipios={municipios}
-          onMunicipioChange={onMunicipioChange}
-          onNavigate={onNavigate}
           selectedMunicipio={selectedMunicipio}
+          onMunicipioChange={setSelectedMunicipio}
+          onNavigate={onNavigate}
         />
 
         <main className="content-area">{children}</main>

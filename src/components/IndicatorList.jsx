@@ -1,12 +1,14 @@
+import { StatusBadge } from './StatusBadge'
+
 export function IndicatorList({ items, selectedIndicator, onSelectIndicator, results }) {
   return (
     <div className="indicator-list">
       {items.map((item) => {
         const result = results?.[item.key]
-        const statusClass = result?.atingida ? 'ok' : result?.available ? 'attention' : 'muted'
         const statusLabel = result?.available
           ? result?.display?.status ?? (result?.atingida ? 'Meta atingida' : 'Meta não atingida')
           : 'Indisponível'
+        const tone = result?.atingida ? 'success' : result?.available ? 'warning' : 'muted'
         return (
           <button
             className={
@@ -17,9 +19,7 @@ export function IndicatorList({ items, selectedIndicator, onSelectIndicator, res
             onClick={() => onSelectIndicator(item.key)}
           >
             <span>{item.label}</span>
-            <small className={`inline-status inline-status--${statusClass}`}>
-              {statusLabel}
-            </small>
+            <StatusBadge status={statusLabel} tone={tone} />
           </button>
         )
       })}

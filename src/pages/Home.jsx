@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { MunicipioSelect } from '../components/MunicipioSelect'
+import { MunicipalitySelector } from '../components/MunicipalitySelector'
 import { RioGrandeDoSulMap } from '../components/RioGrandeDoSulMap'
 
 export function Home({
@@ -26,13 +26,11 @@ export function Home({
           </div>
 
           <div className="hero-copy">
-            <span className="hero-eyebrow">Entenda o Dashboard PNE</span>
-            <h1>Uma visão guiada dos indicadores municipais de educação</h1>
+            <span className="hero-eyebrow">Dashboard PNE</span>
+            <h1>Indicadores municipais de educação</h1>
             <p>
-              Este painel reúne indicadores oficiais do Plano Nacional de Educação para
-              apoiar a análise das metas, tendências, rankings e do diagnóstico de cada
-              município. Use os dados para conhecer sua realidade, comparar resultados e
-              orientar decisões que fortaleçam a educação.
+              Painel com dados oficiais do Plano Nacional de Educação para análise de metas,
+              tendências e diagnóstico de cada município.
             </p>
           </div>
         </article>
@@ -47,17 +45,16 @@ export function Home({
 
           <h2>{hasMunicipio ? `${selectedMunicipio} selecionado` : 'Selecione um município para começar'}</h2>
 
-          <MunicipioSelect
+          <MunicipalitySelector
             ref={selectRef}
-            className="municipio-select--hero"
+            variant="hero"
             municipios={municipios}
             selectedMunicipio={selectedMunicipio}
             onChange={onMunicipioChange}
           />
 
           <p>
-            A seleção do município é necessária para carregar os indicadores, rankings e o
-            diagnóstico territorial detalhado.
+            A seleção do município é necessária para carregar os indicadores, rankings e o diagnóstico territorial.
           </p>
 
           <div className={hasMunicipio ? 'selection-alert is-selected' : 'selection-alert'}>
@@ -77,17 +74,17 @@ export function Home({
           <FeatureCard
             icon={<BarsIcon />}
             title="Indicadores por ciclo"
-            text="Acompanhe indicadores essenciais organizados por ciclos do PNE, com dados atualizados para análise da evolução da educação no município."
+            text="Indicadores essenciais organizados por ciclos do PNE, com dados atualizados para análise da evolução da educação."
           />
           <FeatureCard
             icon={<AwardIcon />}
             title="Rankings e metas"
-            text="Compare o desempenho do município com outros e acompanhe o progresso em relação às metas do Plano Nacional de Educação."
+            text="Compare o desempenho do município com outros e acompanhe o progresso em relação às metas do PNE."
           />
           <FeatureCard
             icon={<InstitutionIcon />}
             title="Diagnóstico municipal"
-            text="Tenha uma visão integrada dos principais desafios e avanços do território para apoiar decisões e políticas educacionais."
+            text="Visão integrada dos principais desafios e avanços do território para apoiar decisões e políticas educacionais."
           />
         </div>
       </section>
@@ -99,7 +96,7 @@ export function Home({
             number="1"
             icon={<PinIcon />}
             title="Selecione um município"
-            text="Escolha o município no topo da página. Somente após a seleção os dados serão carregados."
+            text="Escolha o município no topo da página. Os dados são carregados automaticamente."
           />
           <StepCard
             number="2"
@@ -110,7 +107,7 @@ export function Home({
           <StepCard
             number="3"
             icon={<TrendIcon />}
-            title="Interprete rankings e diagnóstico"
+            title="Interprete e planeje"
             text="Analise os rankings, metas e o diagnóstico para entender a realidade local e planejar ações."
           />
         </div>
@@ -122,19 +119,19 @@ export function Home({
           <ModuleCard
             icon={<CalendarIcon />}
             title="PNE 2014-2024"
-            text="Veja os indicadores e metas do ciclo anterior, acompanhe a evolução dos resultados e compare com outros municípios."
+            text="Indicadores e metas do ciclo anterior, com evolução dos resultados e comparações."
             onClick={() => onNavigate?.('pne2014')}
           />
           <ModuleCard
             icon={<CalendarIcon />}
             title="PNE 2026-2036"
-            text="Explore os indicadores e metas do novo ciclo, acompanhe o progresso e as projeções para os próximos anos."
+            text="Indicadores e metas do novo ciclo, com progresso e projeções para os próximos anos."
             onClick={() => onNavigate?.('pne2026')}
           />
           <ModuleCard
             icon={<DocumentIcon />}
             title="Diagnóstico"
-            text="Acesse o diagnóstico territorial com análises e destaques para apoiar a compreensão da realidade do município."
+            text="Diagnóstico territorial com análises e destaques para apoiar a compreensão da realidade do município."
             onClick={() => onNavigate?.('diagnostico')}
           />
         </div>
@@ -145,8 +142,7 @@ export function Home({
         <div>
           <h2>Comece agora: selecione um município para liberar todo o potencial do Dashboard PNE.</h2>
           <p>
-            Assim que você escolher seu município, os indicadores, rankings e o diagnóstico
-            serão exibidos.
+            Assim que você escolher seu município, os indicadores, rankings e o diagnóstico serão exibidos.
           </p>
         </div>
         <button type="button" className="primary-button" onClick={focusMunicipioSelect}>
@@ -176,7 +172,7 @@ function StepCard({ icon, number, title, text }) {
       <span className="step-number">{number}</span>
       <div className="icon-bubble">{icon}</div>
       <div>
-        <h3>{number}. {title}</h3>
+        <h3>{title}</h3>
         <p>{text}</p>
       </div>
     </article>

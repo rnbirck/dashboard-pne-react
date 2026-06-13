@@ -1,3 +1,5 @@
+import { MetricCard } from './MetricCard'
+
 export function DiagnosticPanel({ data, municipio }) {
   if (!data) {
     return (
@@ -17,16 +19,16 @@ export function DiagnosticPanel({ data, municipio }) {
           <span className="eyebrow">Diagnóstico municipal</span>
           <h2>Diagnóstico de {municipio}</h2>
           <p>
-            Categoria ativa padrão:{' '}
+            Categoria ativa:{' '}
             <strong style={{ color: 'var(--text-strong)' }}>{data.active_category ?? '-'}</strong>
             {' · '}
             leitura territorial orientada por evidências do ciclo vigente.
           </p>
         </div>
         <div className="diagnostic-summary">
-          <Summary label="Indicadores analisados" value={summary.indicadores_analisados} tone="default" />
-          <Summary label="Metas atingidas" value={summary.metas_atingidas} tone="success" />
-          <Summary label="Pontos de atenção" value={summary.pontos_de_atencao} tone="warning" />
+          <MetricCard label="Indicadores analisados" value={summary.indicadores_analisados} />
+          <MetricCard label="Metas atingidas" value={summary.metas_atingidas} tone="success" />
+          <MetricCard label="Pontos de atenção" value={summary.pontos_de_atencao} tone="warning" />
         </div>
       </section>
 
@@ -67,15 +69,6 @@ export function DiagnosticPanel({ data, municipio }) {
           ))}
         </div>
       </section>
-    </div>
-  )
-}
-
-function Summary({ label, tone = 'default', value }) {
-  return (
-    <div className={`metric-card metric-card--${tone}`}>
-      <span className="metric-label">{label}</span>
-      <strong>{value ?? '-'}</strong>
     </div>
   )
 }

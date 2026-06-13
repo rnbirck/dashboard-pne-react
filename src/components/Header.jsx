@@ -1,3 +1,5 @@
+import { MunicipalitySelector } from './MunicipalitySelector'
+
 const NAV_ITEMS = [
   { key: 'home', label: 'Início', icon: HomeIcon },
   { key: 'pne2014', label: 'PNE 2014-2024', icon: CalendarIcon },
@@ -5,7 +7,7 @@ const NAV_ITEMS = [
   { key: 'diagnostico', label: 'Diagnóstico', icon: DocumentIcon },
 ]
 
-export function Header({ activePage, onNavigate }) {
+export function Header({ activePage, municipios, onNavigate, onMunicipioChange, selectedMunicipio }) {
   return (
     <header className="app-header">
       <div className="brand-block">
@@ -17,22 +19,33 @@ export function Header({ activePage, onNavigate }) {
         </div>
       </div>
 
-      <nav className="top-nav" aria-label="Navegação principal">
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon
-          return (
-            <button
-              className={item.key === activePage ? 'nav-item is-active' : 'nav-item'}
-              key={item.key}
-              type="button"
-              onClick={() => onNavigate(item.key)}
-            >
-              <Icon />
-              <span>{item.label}</span>
-            </button>
-          )
-        })}
-      </nav>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
+        <nav className="top-nav" aria-label="Navegação principal">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon
+            return (
+              <button
+                className={item.key === activePage ? 'nav-item is-active' : 'nav-item'}
+                key={item.key}
+                type="button"
+                onClick={() => onNavigate(item.key)}
+              >
+                <Icon />
+                <span>{item.label}</span>
+              </button>
+            )
+          })}
+        </nav>
+
+        <div style={{ flexShrink: 0, minWidth: '220px', maxWidth: '320px' }}>
+          <MunicipalitySelector
+            municipios={municipios}
+            selectedMunicipio={selectedMunicipio}
+            onChange={onMunicipioChange}
+            placeholder="Município..."
+          />
+        </div>
+      </div>
     </header>
   )
 }
