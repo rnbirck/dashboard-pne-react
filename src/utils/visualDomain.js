@@ -29,6 +29,15 @@ export function getStableVisualDomain({ values, meta, isPercent = false, isIndex
     if (dataMin >= 0 && dataMax <= 100) {
       return { min: 0, max: 100, isPercent: true }
     }
+    if (dataMin < 0) {
+      const minPad = computeHeadroom(Math.abs(dataMin), Math.abs(dataMax))
+      const maxPad = computeHeadroom(Math.abs(dataMax), Math.abs(dataMin))
+      return {
+        min: roundDownToNiceFloor(dataMin - minPad),
+        max: roundUpToNiceCeiling(Math.max(dataMax, 0) + maxPad),
+        isPercent: true,
+      }
+    }
     const ceiling = roundUpToNiceCeiling(Math.max(dataMax, 0))
     return { min: 0, max: ceiling, isPercent: true }
   }
@@ -64,6 +73,16 @@ export function clampMarkerPosition(percent) {
 
 export function stablePercentTicks(domain) {
   if (!domain?.isPercent) return null
+  if (domain.min < 0) {
+    const step = pickMixedPercentStep(domain.max - domain.min)
+    const ticks = []
+    const start = Math.floor(domain.min / step) * step
+    for (let value = start; value <= domain.max + 0.0001; value += step) {
+      if (value >= domain.min - 0.0001) ticks.push(Number(value.toFixed(2)))
+    }
+    if (!ticks.includes(0) && domain.min < 0 && domain.max > 0) ticks.push(0)
+    return ticks.sort((a, b) => a - b)
+  }
   if (domain.max <= 100) {
     return [0, 25, 50, 75, 100]
   }
@@ -108,6 +127,14 @@ function pickPercentStep(max) {
   if (max <= 200) return 25
   if (max <= 300) return 50
   if (max <= 500) return 50
+  return 100
+}
+
+function pickMixedPercentStep(span) {
+  if (span <= 80) return 20
+  if (span <= 160) return 20
+  if (span <= 250) return 25
+  if (span <= 400) return 50
   return 100
 }
 

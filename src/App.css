@@ -1564,16 +1564,20 @@
 
 .history-chart__canvas {
   position: relative;
-  min-height: 212px;
+  min-height: 280px;
   padding-top: 2px;
   overflow: visible;
+}
+
+.history-chart--with-negatives .history-chart__canvas {
+  min-height: 330px;
 }
 
 .history-chart svg {
   display: block;
   width: 100%;
   height: auto;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .chart-grid line {
@@ -1600,6 +1604,11 @@
 .chart-axis line {
   stroke: rgba(61, 95, 54, 0.18);
   stroke-width: 1;
+}
+
+.chart-zero-line line {
+  stroke: rgba(61, 95, 54, 0.26);
+  stroke-width: 1.2;
 }
 
 .chart-year-markers line {
@@ -2711,9 +2720,13 @@
   }
 
   .history-chart__canvas {
-    min-height: 190px;
+    min-height: 240px;
     overflow-x: auto;
     overflow-y: visible;
+  }
+
+  .history-chart--with-negatives .history-chart__canvas {
+    min-height: 300px;
   }
 
   .history-chart svg {
