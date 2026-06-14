@@ -14,6 +14,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   const [selectedIndicatorKey, setSelectedIndicatorKey] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const cycleLayoutRef = useRef(null)
+  const detailPanelRef = useRef(null)
 
   const selectedCategory = useMemo(() => {
     if (!categories.length) return null
@@ -62,13 +63,13 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
 
   useLayoutEffect(() => {
     const layout = cycleLayoutRef.current
-    const detailPanel = layout?.querySelector('.detail-panel')
+    const detailPanel = detailPanelRef.current
     if (!layout || !detailPanel) return undefined
 
     const updatePanelHeight = () => {
       const height = Math.ceil(detailPanel.getBoundingClientRect().height)
       if (height > 0) {
-        layout.style.setProperty('--cycle-panel-height', `${height}px`)
+        layout.style.setProperty('--cycle-detail-height', `${height}px`)
       }
     }
 
@@ -175,7 +176,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
             )}
           </aside>
 
-          <IndicatorDetail item={activeItem} result={activeResult} />
+          <IndicatorDetail item={activeItem} ref={detailPanelRef} result={activeResult} />
         </div>
       </section>
 

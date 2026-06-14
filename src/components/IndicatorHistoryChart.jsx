@@ -9,6 +9,7 @@ import {
 import { formatIndicatorValue, resolveIndicatorUnit } from '../utils/format'
 
 const CHART_WIDTH = 980
+const CHART_HEIGHT_INFORMATIVE = 260
 const CHART_HEIGHT_NORMAL = 280
 const CHART_HEIGHT_NEGATIVE = 330
 const PADDING = { bottom: 40, left: 68, right: 54, top: 32 }
@@ -49,7 +50,7 @@ export function IndicatorHistoryChart({
   }
 
   return (
-    <section className={`history-chart${chart.hasNegativeValues ? ' history-chart--with-negatives' : ''}`}>
+    <section className={`history-chart${chart.hasNegativeValues ? ' history-chart--with-negatives' : ''}${chart.isInformative ? ' history-chart--informative' : ''}`}>
       <div className="history-chart__heading">
         <div>
           <span className="eyebrow">Evolução do indicador</span>
@@ -230,14 +231,19 @@ function buildChartModel({
     return {
       formatValue: (value) => formatIndicatorValue(value, resolvedUnit),
       hasNegativeValues: false,
-      height: CHART_HEIGHT_NORMAL,
+      height: showMetaLine ? CHART_HEIGHT_NORMAL : CHART_HEIGHT_INFORMATIVE,
+      isInformative: !showMetaLine,
       points,
     }
   }
 
   const values = points.map((point) => point.value)
   const hasNegativeValues = values.some((value) => value < 0)
-  const chartHeight = hasNegativeValues ? CHART_HEIGHT_NEGATIVE : CHART_HEIGHT_NORMAL
+  const chartHeight = hasNegativeValues
+    ? CHART_HEIGHT_NEGATIVE
+    : showMetaLine
+      ? CHART_HEIGHT_NORMAL
+      : CHART_HEIGHT_INFORMATIVE
   const isPercent = resolvedUnit === 'percent'
   const isIndex = resolvedUnit === 'index'
   const isYears = resolvedUnit === 'years'
@@ -329,6 +335,7 @@ function buildChartModel({
     formatValue,
     hasNegativeValues,
     height: chartHeight,
+    isInformative: !showMetaLine,
     linePath,
     metaLine,
     points: scaledPoints,

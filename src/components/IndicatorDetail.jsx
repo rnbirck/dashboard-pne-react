@@ -1,3 +1,4 @@
+import { forwardRef } from 'react'
 import {
   cleanInterpretationText,
   formatIndicatorValue,
@@ -17,10 +18,10 @@ import { IndicatorHistoryChart } from './IndicatorHistoryChart'
 import { MetricCard } from './MetricCard'
 import { StatusBadge } from './StatusBadge'
 
-export function IndicatorDetail({ item, result }) {
+export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, result }, ref) {
   if (!item || !result) {
     return (
-      <section className="detail-panel empty-panel">
+      <section className="detail-panel empty-panel" ref={ref}>
         <p>Selecione um indicador para ver os detalhes.</p>
       </section>
     )
@@ -57,7 +58,7 @@ export function IndicatorDetail({ item, result }) {
   const showGoalProgress = isComparable && Number.isFinite(Number(result?.meta)) && Number.isFinite(Number(result?.end_value))
 
   return (
-    <section className="detail-panel">
+    <section className="detail-panel" ref={ref}>
       <div className="detail-heading">
         <div>
           <span className="eyebrow">Indicador selecionado</span>
@@ -161,17 +162,18 @@ export function IndicatorDetail({ item, result }) {
       )}
     </section>
   )
-}
+})
 
 function GoalProgress({ distanceTone, result, unit }) {
   const endValue = formatIndicatorValue(result.end_value, unit)
   const metaMarkerLabel = formatMetaValue(result, unit)
   const distance = getDisplayValue(result.display, 'distance')
   const progress = calculateGoalProgress(result, unit)
+  const markersAreClose = Math.abs(progress.current - progress.meta) < 7
 
   return (
     <section
-      className="goal-progress"
+      className={`goal-progress${markersAreClose ? ' goal-progress--markers-close' : ''}`}
       aria-label="Acompanhamento da meta"
     >
       <div className="goal-progress__heading">
