@@ -27,13 +27,15 @@ export function IndicatorHistoryChart({
   const chart = useMemo(
     () => buildChartModel({
       display,
+      endYear,
       meta,
       resolvedUnit,
       result,
       series,
       showMetaLine,
+      startYear,
     }),
-    [display, meta, resolvedUnit, result, series, showMetaLine],
+    [display, endYear, meta, resolvedUnit, result, series, showMetaLine, startYear],
   )
 
   if (chart.points.length < 2) {
@@ -159,7 +161,16 @@ export function IndicatorHistoryChart({
   )
 }
 
-function buildChartModel({ display, meta, resolvedUnit, result, series, showMetaLine }) {
+function buildChartModel({
+  display,
+  endYear,
+  meta,
+  resolvedUnit,
+  result,
+  series,
+  showMetaLine,
+  startYear,
+}) {
   const points = normalizeSeries(series)
   const rawMetaValue = meta === null || meta === undefined || meta === '' ? Number.NaN : Number(meta)
   const metaValue = Number.isFinite(rawMetaValue) ? rawMetaValue : null
@@ -222,6 +233,21 @@ function buildChartModel({ display, meta, resolvedUnit, result, series, showMeta
     }
   }
 
+  const candidateMarkerYears = [startYear, endYear]
+    .map((year) => Number(year))
+    .filter(Number.isFinite)
+
+  const fallbackMarkerYears = [minYear, maxYear]
+
+  const finalMarkerYears = candidateMarkerYears.length
+    ? candidateMarkerYears
+    : fallbackMarkerYears
+
+  const yearMarkers = finalMarkerYears
+    .filter((year) => year >= minYear && year <= maxYear)
+    .filter((year, index, arr) => arr.indexOf(year) === index)
+    .map((year) => ({ year, x: xScale(year) }))
+
   return {
     areaPath,
     formatValue: (value) => formatIndicatorValue(value, resolvedUnit),
@@ -230,10 +256,7 @@ function buildChartModel({ display, meta, resolvedUnit, result, series, showMeta
     points: scaledPoints,
     xTicks: pickYearTicks(scaledPoints),
     yTicks,
-    yearMarkers: [startYear, endYear]
-      .map((year) => Number(year))
-      .filter((year, index, arr) => Number.isFinite(year) && year >= minYear && year <= maxYear && arr.indexOf(year) === index)
-      .map((year) => ({ year, x: xScale(year) })),
+    yearMarkers,
   }
 }
 
