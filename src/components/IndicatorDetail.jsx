@@ -170,10 +170,13 @@ function GoalProgress({ distanceTone, result, unit }) {
   const distance = getDisplayValue(result.display, 'distance')
   const progress = calculateGoalProgress(result, unit)
   const markersAreClose = Math.abs(progress.current - progress.meta) < 7
+  const metaLabelOffset = markersAreClose
+    ? Math.max(progress.meta + 12, Math.min(progress.meta + 18, 96))
+    : progress.meta
 
   return (
     <section
-      className={`goal-progress${markersAreClose ? ' goal-progress--markers-close' : ''}`}
+      className="goal-progress"
       aria-label="Acompanhamento da meta"
     >
       <div className="goal-progress__heading">
@@ -194,11 +197,15 @@ function GoalProgress({ distanceTone, result, unit }) {
           <em>{endValue}</em>
         </span>
         <span
-          className="goal-progress__marker goal-progress__marker--meta"
+          className="goal-progress__meta-tick"
           style={{ left: `${progress.meta}%` }}
+        />
+        <small
+          className="goal-progress__meta-label"
+          style={{ left: `${metaLabelOffset}%` }}
         >
-          <small className="goal-progress__meta-label">Meta {metaMarkerLabel}</small>
-        </span>
+          Meta {metaMarkerLabel}
+        </small>
       </div>
     </section>
   )

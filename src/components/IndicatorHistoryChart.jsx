@@ -9,10 +9,10 @@ import {
 import { formatIndicatorValue, resolveIndicatorUnit } from '../utils/format'
 
 const CHART_WIDTH = 980
-const CHART_HEIGHT_INFORMATIVE = 260
-const CHART_HEIGHT_NORMAL = 280
+const CHART_HEIGHT_INFORMATIVE = 280
+const CHART_HEIGHT_NORMAL = 300
 const CHART_HEIGHT_NEGATIVE = 330
-const PADDING = { bottom: 40, left: 72, right: 60, top: 36 }
+const PADDING = { bottom: 40, left: 64, right: 68, top: 38 }
 
 export function IndicatorHistoryChart({
   display,
@@ -149,7 +149,7 @@ export function IndicatorHistoryChart({
                   cx={point.x}
                   cy={point.y}
                   key={point.year}
-                  r={activePoint?.year === point.year ? 5.5 : 4.2}
+                  r={activePoint?.year === point.year ? 5 : 4}
                   onBlur={() => setActivePoint(null)}
                   onFocus={() => setActivePoint(point)}
                   onMouseEnter={() => setActivePoint(point)}
@@ -373,31 +373,30 @@ function computeDataLabels(points, metaLine, formatValue, chartHeight) {
   const plotBottom = chartHeight - PADDING.bottom
 
   const LABEL_OFFSET_Y = 14
-  const MIN_DISTANCE_Y = 18
-  const MIN_DISTANCE_X = 30
+  const MIN_DISTANCE_Y = 20
+  const MIN_DISTANCE_X = 36
 
   const lastPoint = points[points.length - 1]
   const firstPoint = points[0]
 
-  // Calcula candidatos conforme regra
   const candidates = []
 
-  // 1. Último ponto (prioridade 1)
+  // 1. Último ponto (prioridade 1 - mais alta)
+  const lastAtRightEdge = lastPoint.x > plotRight - 30
   candidates.push({
-    anchor: 'start',
+    anchor: lastAtRightEdge ? 'end' : 'start',
     isLast: true,
     isMeta: false,
     priority: 1,
     type: 'last',
     value: lastPoint.value,
-    x: lastPoint.x + 8,
+    x: lastAtRightEdge ? lastPoint.x - 8 : lastPoint.x + 8,
     y: pickLabelY(lastPoint.y, plotTop, plotBottom, LABEL_OFFSET_Y),
     year: lastPoint.year,
   })
 
-  // 2. Demais pontos conforme regra de tamanho
+  // 2. Demais pontos
   if (points.length <= 6) {
-    // Até 6 pontos: mostrar todos
     for (let i = 0; i < points.length - 1; i++) {
       const p = points[i]
       candidates.push({
@@ -413,7 +412,6 @@ function computeDataLabels(points, metaLine, formatValue, chartHeight) {
       })
     }
   } else {
-    // Mais de 6 pontos: mostrar primeiro, maior, menor, cruzamentos
     const maxPoint = points.reduce((max, p) => (p.value > max.value ? p : max), points[0])
     const minPoint = points.reduce((min, p) => (p.value < min.value ? p : min), points[0])
 
@@ -434,7 +432,7 @@ function computeDataLabels(points, metaLine, formatValue, chartHeight) {
       })
     }
 
-    // Cruzamentos primeiro (maior prioridade)
+    // Cruzamentos (prioridade 3)
     if (metaLine && Number.isFinite(metaLine.value)) {
       const metaVal = metaLine.value
       for (let i = 1; i < points.length; i++) {
@@ -453,72 +451,85 @@ function computeDataLabels(points, metaLine, formatValue, chartHeight) {
     addCandidate(firstPoint, 6, 'first')
   }
 
-  // 3. Meta label (prioridade 0, mais alta)
+  // 3. Meta label (prioridade 8 - mais baixa que todos os pontos)
   if (metaLine) {
+    const metaY = metaLine.y
+    let metaLabelY
+    if (metaY < plotTop + 30) {
+      metaLabelY = metaY + 18
+    } else if (metaY > plotBottom - 20) {
+      metaLabelY = metaY - 10
+    } else {
+      metaLabelY = metaY - 8
+    }
+    metaLabelY = clampNumber(metaLabelY, plotTop + 14, plotBottom - 10)
+
+    // Verificar se meta label ficará perto do último ponto
+    const dyFromLast = Math.abs(metaLabelY - lastPoint.y)
+    const dxFromLast = Math.abs(plotRight - 2 - lastPoint.x)
+    if (dyFromLast < MIN_DISTANCE_Y && dxFromLast < 80) {
+      // Último ponto está perto: deslocar meta label para o lado oposto
+      if (lastPoint.y > plotTop + plotBottom / 2) {
+        metaLabelY = plotTop + 18
+      } else {
+        metaLabelY = plotBottom - 12
+      }
+    }
+
     candidates.push({
       anchor: 'end',
       isLast: false,
       isMeta: true,
-      priority: 0,
+      priority: 8,
       type: 'meta',
       value: metaLine.value,
       x: plotRight - 2,
-      y: clampNumber(metaLine.y < plotTop + 22 ? metaLine.y + 16 : metaLine.y - 8, plotTop + 14, plotBottom - 10),
+      y: metaLabelY,
       year: 'meta',
     })
   }
 
   // 4. Ajustar posições dos labels de pontos
   for (const label of candidates) {
-    label.y = clampNumber(label.y, plotTop + 12, plotBottom - 8)
     if (label.isMeta) continue
-    // Não permitir x menor que plotLeft + 18
-    if (label.x < plotLeft + 18) {
-      label.x = plotLeft + 18
+    label.y = clampNumber(label.y, plotTop + 14, plotBottom - 10)
+
+    if (label.x < plotLeft + 14) {
+      label.x = plotLeft + 14
     }
-    // Não permitir x maior que plotRight - 18
-    if (label.x > plotRight - 18) {
-      label.x = plotRight - 18
+    if (label.x > plotRight - 14) {
+      label.x = plotRight - 14
     }
-    // Se for o último ponto, forçar anchor end para não estourar à direita
+
+    // Último ponto: refinamento de posição
     if (label.isLast) {
-      label.anchor = 'end'
-      label.x = lastPoint.x + 4
-      if (label.x > plotRight - 6) {
-        label.x = plotRight - 6
+      if (lastAtRightEdge(lastPoint.x, plotRight)) {
+        label.anchor = 'end'
+        label.x = lastPoint.x - 8
+        if (label.x < plotLeft + 14) {
+          label.x = plotLeft + 20
+          label.anchor = 'start'
+        }
+      } else {
+        label.anchor = 'start'
+        label.x = lastPoint.x + 8
+        if (label.x > plotRight - 6) {
+          label.x = plotRight - 6
+          label.anchor = 'end'
+        }
       }
     }
-    // Se for o primeiro ponto e estiver muito próximo do eixo Y, ocultar
-    if (label.type === 'first' && firstPoint.x < plotLeft + 14) {
+
+    if (label.type === 'first' && firstPoint.x < plotLeft + 16) {
       label.hidden = true
     }
   }
 
-  // 5. Se label do ponto estiver muito perto da linha de meta (em y),
-  //    ajustar para evitar colisão
-  if (metaLine) {
-    for (const label of candidates) {
-      if (label.isMeta || label.hidden) continue
-      const dyFromMeta = Math.abs(label.y - metaLine.y)
-      // Se está próximo verticalmente, ajustar y
-      if (dyFromMeta < MIN_DISTANCE_Y) {
-        if (label.isLast) {
-          // Último ponto: mover para baixo
-          label.y = label.y + LABEL_OFFSET_Y + 4
-        } else {
-          // Outros pontos: ocultar se colidir com meta
-          label.hidden = true
-        }
-      }
-    }
-  }
-
-  // 6. Filtrar labels ocultos
-  const visible = candidates.filter((l) => !l.hidden)
-
-  // 7. Ordenar por prioridade (menor = mais alta) e aplicar colisão
+  // 5. Filtrar ocultos e ordenar por prioridade
+  let visible = candidates.filter((l) => !l.hidden)
   visible.sort((a, b) => a.priority - b.priority)
 
+  // 6. Colisão final
   const filtered = []
   for (const label of visible) {
     const tooClose = filtered.some((existing) => {
@@ -529,12 +540,34 @@ function computeDataLabels(points, metaLine, formatValue, chartHeight) {
     if (!tooClose) filtered.push(label)
   }
 
+  // 7. Garantir que a meta não foi removida; se foi, tentar reinserir com posição alternativa
+  const hasMeta = filtered.some((l) => l.isMeta)
+  if (metaLine && !hasMeta) {
+    const metaCandidate = visible.find((l) => l.isMeta)
+    if (metaCandidate) {
+      const altY = metaCandidate.y < plotTop + 40 ? plotBottom - 12 : plotTop + 18
+      metaCandidate.y = altY
+      const stillTooClose = filtered.some((existing) => {
+        const dy = Math.abs(existing.y - metaCandidate.y)
+        const dx = Math.abs(existing.x - metaCandidate.x)
+        return dy < MIN_DISTANCE_Y && dx < MIN_DISTANCE_X
+      })
+      if (!stillTooClose) {
+        filtered.push(metaCandidate)
+      }
+    }
+  }
+
   return filtered
 }
 
+function lastAtRightEdge(x, plotRight) {
+  return x > plotRight - 30
+}
+
 function pickLabelY(pointY, plotTop, plotBottom, offset) {
-  if (pointY < plotTop + 24) return pointY + offset + 4
-  if (pointY > plotBottom - 18) return pointY - offset
+  if (pointY < plotTop + 26) return pointY + offset + 6
+  if (pointY > plotBottom - 20) return pointY - offset - 2
   return pointY - offset
 }
 
