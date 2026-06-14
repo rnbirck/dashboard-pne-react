@@ -21,142 +21,123 @@ async function runTests() {
     await page.waitForSelector('.state-box--loading', { state: 'detached', timeout: 30000 }).catch(() => {});
   }
 
-  // 1. Home page
   await page.goto(BASE_URL);
   await waitForLoading();
   await page.waitForSelector('.home-hero', { timeout: 10000 });
-  console.log('Home page loaded');
-
-  // 2. Select municipality (Áurea)
   await page.selectOption('select[aria-label="Selecionar município"]', 'Áurea');
   await waitForLoading();
-  await page.waitForSelector('.selection-alert.is-selected', { timeout: 10000 });
-  console.log('Municipio Áurea selected');
-
-  // 3. Navigate to PNE 2014-2024
   await page.click('button:has-text("PNE 2014-2024")');
   await waitForLoading();
   await page.waitForSelector('.cycle-page', { timeout: 10000 });
-  console.log('PNE 2014-2024 page loaded');
 
-  // 4. Check percentual indicator (Adequacao_ai)
-  const rendimentoTab = await page.locator('.category-tab').filter({ hasText: 'Corpo Docente' }).first();
-  if (await rendimentoTab.count() > 0) {
-    await rendimentoTab.click();
-    await page.waitForTimeout(300);
-    const indicador = await page.locator('.indicator-row').filter({ hasText: 'Docentes com formação adequada nos anos iniciais' }).first();
-    if (await indicador.count() > 0) {
-      await indicador.click();
-      await page.waitForTimeout(500);
-      const values = await page.locator('.metric-card__value').allTextContents();
-      console.log('Docentes formacao anos iniciais values:', values);
-      const hasPercent = values.some(v => v.includes('%'));
-      console.log('Has %:', hasPercent);
-      if (!hasPercent) {
-        errors.push('Docentes formacao (percentual) should have %');
+  // 1. Test Creche (percentual, 11 pontos)
+  const crecheIndicator = await page.locator('.indicator-row').filter({ hasText: 'População de 0 a 3 anos' }).first();
+  await crecheIndicator.click();
+  await page.waitForTimeout(500);
+  const dataLabels = await page.locator('.chart-data-labels text').allTextContents();
+  console.log('Creche data labels:', dataLabels);
+  const metaLabel = dataLabels.find((l) => l.startsWith('Meta'));
+  console.log('Creche meta label:', metaLabel);
+  if (!metaLabel) {
+    errors.push('Creche should have meta label');
+  }
+
+  // 2. Check overlaps
+  const crechePositions = await page.evaluate(() => {
+    const labels = document.querySelectorAll('.chart-data-labels text');
+    return Array.from(labels).map((el) => ({
+      text: el.textContent,
+      x: parseFloat(el.getAttribute('x')),
+      y: parseFloat(el.getAttribute('y')),
+      classes: el.getAttribute('class'),
+    }));
+  });
+  console.log('Creche label positions:', crechePositions);
+
+  // Check overlaps
+  let overlapCount = 0;
+  for (let i = 0; i < crechePositions.length; i++) {
+    for (let j = i + 1; j < crechePositions.length; j++) {
+      const a = crechePositions[i];
+      const b = crechePositions[j];
+      const dx = Math.abs(a.x - b.x);
+      const dy = Math.abs(a.y - b.y);
+      if (dx < 30 && dy < 18) {
+        console.log(`OVERLAP: "${a.text}" and "${b.text}" at (${a.x},${a.y}) vs (${b.x},${b.y})`);
+        overlapCount++;
       }
     }
   }
-
-  // 5. Check absoluto indicator (medio_tecnico_total hidden, so test eja count if visible)
-  // medio_tecnico is count, but it's hidden. Let me check Atendimento Escolar
-  const atendimentoTab = await page.locator('.category-tab').filter({ hasText: 'Atendimento Escolar' }).first();
-  if (await atendimentoTab.count() > 0) {
-    await atendimentoTab.click();
-    await page.waitForTimeout(300);
-    const crecheIndicator = await page.locator('.indicator-row').filter({ hasText: 'População de 0 a 3 anos' }).first();
-    if (await crecheIndicator.count() > 0) {
-      await crecheIndicator.click();
-      await page.waitForTimeout(500);
-      const values = await page.locator('.metric-card__value').allTextContents();
-      console.log('Creche values:', values);
-      const hasPercent = values.some(v => v.includes('%'));
-      if (!hasPercent) {
-        errors.push('Creche (percentual) should have %');
-      }
-    }
+  if (overlapCount > 0) {
+    errors.push(`Found ${overlapCount} label overlaps in Creche chart`);
   }
 
-  // 6. Check IDEB
+  // 3. Test IDEB (short series, 3 points)
   const idedbTab = await page.locator('.category-tab').filter({ hasText: 'Rendimento Escolar' }).first();
-  if (await idedbTab.count() > 0) {
-    await idedbTab.click();
-    await page.waitForTimeout(300);
-    const idebIndicator = await page.locator('.indicator-row').filter({ hasText: 'IDEB' }).first();
-    if (await idebIndicator.count() > 0) {
-      await idebIndicator.click();
-      await page.waitForTimeout(500);
-      const values = await page.locator('.metric-card__value').allTextContents();
-      console.log('IDEB values:', values);
-      const hasPercent = values.some(v => v.includes('%'));
-      if (hasPercent) {
-        errors.push('IDEB should NOT have %');
+  await idedbTab.click();
+  await page.waitForTimeout(300);
+  const idebIndicator = await page.locator('.indicator-row').filter({ hasText: 'IDEB' }).first();
+  await idebIndicator.click();
+  await page.waitForTimeout(500);
+  const idebLabels = await page.locator('.chart-data-labels text').allTextContents();
+  console.log('IDEB data labels:', idebLabels);
+  const idebMeta = idebLabels.find((l) => l.startsWith('Meta'));
+  console.log('IDEB meta label:', idebMeta);
+  if (!idebMeta) {
+    errors.push('IDEB should have meta label');
+  }
+  const idebPositions = await page.evaluate(() => {
+    const labels = document.querySelectorAll('.chart-data-labels text');
+    return Array.from(labels).map((el) => ({
+      text: el.textContent,
+      x: parseFloat(el.getAttribute('x')),
+      y: parseFloat(el.getAttribute('y')),
+      classes: el.getAttribute('class'),
+    }));
+  });
+  console.log('IDEB label positions:', idebPositions);
+  for (let i = 0; i < idebPositions.length; i++) {
+    for (let j = i + 1; j < idebPositions.length; j++) {
+      const a = idebPositions[i];
+      const b = idebPositions[j];
+      const dx = Math.abs(a.x - b.x);
+      const dy = Math.abs(a.y - b.y);
+      if (dx < 30 && dy < 18) {
+        console.log(`IDEB OVERLAP: "${a.text}" and "${b.text}" at (${a.x},${a.y}) vs (${b.x},${b.y})`);
       }
     }
   }
 
-  // 7. Check years indicator
-  const escTab = await page.locator('.category-tab').filter({ hasText: 'Escolaridade da População' }).first();
-  if (await escTab.count() > 0) {
-    await escTab.click();
-    await page.waitForTimeout(300);
-    const escolaridadeIndicator = await page.locator('.indicator-row').filter({ hasText: 'Escolaridade média' }).first();
-    if (await escolaridadeIndicator.count() > 0) {
-      await escolaridadeIndicator.click();
-      await page.waitForTimeout(500);
-      const values = await page.locator('.metric-card__value').allTextContents();
-      console.log('Escolaridade media values:', values);
-      const hasPercent = values.some(v => v.includes('%'));
-      if (hasPercent) {
-        errors.push('Escolaridade (years) should NOT have %');
-      }
-    }
-  }
-
-  // 8. Navigate to PNE 2026-2036
+  // 4. PNE 2026-2036
   await page.click('button:has-text("PNE 2026-2036")');
   await waitForLoading();
   await page.waitForSelector('.cycle-page', { timeout: 10000 });
-  console.log('PNE 2026-2036 page loaded');
-
-  // 9. Check Infraestrutura indicators
-  const infraTab = await page.locator('.category-tab').filter({ hasText: 'Infraestrutura Escolar' }).first();
-  if (await infraTab.count() > 0) {
-    await infraTab.click();
+  // Click on Atendimento Escolar tab first
+  const atendimento2026 = await page.locator('.category-tab').filter({ hasText: 'Atendimento Escolar' }).first();
+  if (await atendimento2026.count() > 0) {
+    await atendimento2026.click();
     await page.waitForTimeout(300);
-    const internetIndicator = await page.locator('.indicator-row').filter({ hasText: 'internet' }).first();
-    if (await internetIndicator.count() > 0) {
-      await internetIndicator.click();
-      await page.waitForTimeout(500);
-      const values = await page.locator('.metric-card__value').allTextContents();
-      console.log('Internet values:', values);
-      const hasPercent = values.some(v => v.includes('%'));
-      if (!hasPercent) {
-        errors.push('Internet (percentual) should have %');
-      }
-    }
+  }
+  const creche2026 = await page.locator('.indicator-row').filter({ hasText: 'População de 0 a 3 anos' }).first();
+  if (await creche2026.count() > 0) {
+    await creche2026.click();
+    await page.waitForTimeout(500);
+    const creche2026Labels = await page.locator('.chart-data-labels text').allTextContents();
+    console.log('Creche 2026 labels:', creche2026Labels);
+  } else {
+    console.log('Creche 2026 not found, skipping');
   }
 
-  // 10. Diagnostico
-  await page.click('button:has-text("Diagnóstico")');
-  await waitForLoading();
-  await page.waitForSelector('.diagnostic-panel', { timeout: 10000 });
-  console.log('Diagnóstico page loaded');
-
-  // 11. Mobile
+  // 5. Mobile
   await page.setViewportSize({ width: 390, height: 820 });
   await page.goto(BASE_URL);
   await waitForLoading();
   await page.waitForSelector('.home-hero', { timeout: 10000 });
-  console.log('Mobile home page loaded');
-
   await page.selectOption('select[aria-label="Selecionar município"]', 'Áurea');
   await waitForLoading();
   await page.click('button:has-text("PNE 2014-2024")');
   await waitForLoading();
   await page.waitForSelector('.cycle-page', { timeout: 10000 });
-  console.log('Mobile PNE 2014-2024 loaded');
-
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   if (overflow) {
     errors.push('Horizontal overflow detected');

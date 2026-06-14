@@ -1604,17 +1604,6 @@
   stroke-dasharray: 5 4;
 }
 
-.chart-meta-line__label {
-  fill: #d8632a;
-  text-anchor: end;
-  font-size: 10px;
-  font-weight: 800;
-  paint-order: stroke;
-  stroke: rgba(255, 255, 255, 0.9);
-  stroke-width: 3;
-  stroke-linejoin: round;
-}
-
 .chart-meta-line text {
   fill: #d8632a;
   text-anchor: end;
@@ -1641,25 +1630,32 @@
 }
 
 .chart-data-labels text {
-  font-size: 10px;
-  font-weight: 700;
-  fill: #2a4a2a;
+  pointer-events: none;
 }
 
-.chart-label {
+.chart-point-label {
+  font-size: 10px;
+  font-weight: 600;
+  fill: #2a4a2a;
   paint-order: stroke;
   stroke: rgba(255, 255, 255, 0.92);
   stroke-width: 3;
   stroke-linejoin: round;
 }
 
-.chart-label--last {
+.chart-point-label.is-last {
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   fill: var(--accent-strong);
+}
+
+.chart-meta-label {
+  font-size: 11px;
+  font-weight: 700;
+  fill: #d8632a;
   paint-order: stroke;
-  stroke: rgba(255, 255, 255, 0.9);
-  stroke-width: 3.5;
+  stroke: rgba(255, 255, 255, 0.92);
+  stroke-width: 3;
   stroke-linejoin: round;
 }
 

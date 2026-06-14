@@ -10,7 +10,7 @@ import { formatIndicatorValue, resolveIndicatorUnit } from '../utils/format'
 
 const CHART_WIDTH = 820
 const CHART_HEIGHT = 260
-const PADDING = { bottom: 36, left: 56, right: 72, top: 28 }
+const PADDING = { bottom: 36, left: 64, right: 88, top: 28 }
 
 export function IndicatorHistoryChart({
   display,
@@ -84,13 +84,6 @@ export function IndicatorHistoryChart({
                 y1={chart.metaLine.y}
                 y2={chart.metaLine.y}
               />
-              <text
-                className="chart-meta-line__label"
-                x={CHART_WIDTH - PADDING.right - 2}
-                y={Math.max(PADDING.top + 12, chart.metaLine.y - 8)}
-              >
-                {`Meta ${chart.formatValue(chart.metaLine.value)}`}
-              </text>
             </g>
           )}
 
@@ -149,9 +142,15 @@ export function IndicatorHistoryChart({
                 x={label.x}
                 y={label.y}
                 textAnchor={label.anchor}
-                className={label.isLast ? 'chart-label--last' : 'chart-label'}
+                className={
+                  label.isMeta
+                    ? 'chart-meta-label'
+                    : label.isLast
+                      ? 'chart-point-label is-last'
+                      : 'chart-point-label'
+                }
               >
-                {chart.formatValue(label.value)}
+                {label.isMeta ? `Meta ${chart.formatValue(label.value)}` : chart.formatValue(label.value)}
               </text>
             ))}
           </g>
@@ -319,33 +318,46 @@ function pickYearTicks(points) {
 function computeDataLabels(points, metaLine, formatValue) {
   if (points.length === 0) return []
 
-  const labels = []
+  const plotLeft = PADDING.left
+  const plotRight = CHART_WIDTH - PADDING.right
+  const plotTop = PADDING.top
+  const plotBottom = CHART_HEIGHT - PADDING.bottom
+
   const LABEL_OFFSET_Y = 14
   const MIN_DISTANCE_Y = 18
-  const MIN_DISTANCE_X = 28
+  const MIN_DISTANCE_X = 30
+  const LABEL_HALF_WIDTH = 22
 
   const lastPoint = points[points.length - 1]
   const firstPoint = points[0]
 
-  // Sempre mostrar último ponto
-  labels.push({
+  // Calcula candidatos conforme regra
+  const candidates = []
+
+  // 1. Último ponto (prioridade 1)
+  candidates.push({
     anchor: 'start',
     isLast: true,
+    isMeta: false,
     priority: 1,
+    type: 'last',
     value: lastPoint.value,
     x: lastPoint.x + 8,
     y: lastPoint.y - LABEL_OFFSET_Y,
     year: lastPoint.year,
   })
 
-  // Se até 8 pontos, mostrar todos
-  if (points.length <= 8) {
+  // 2. Demais pontos conforme regra de tamanho
+  if (points.length <= 6) {
+    // Até 6 pontos: mostrar todos
     for (let i = 0; i < points.length - 1; i++) {
       const p = points[i]
-      labels.push({
+      candidates.push({
         anchor: 'middle',
         isLast: false,
-        priority: 5,
+        isMeta: false,
+        priority: 7,
+        type: 'point',
         value: p.value,
         x: p.x,
         y: p.y - LABEL_OFFSET_Y,
@@ -353,18 +365,20 @@ function computeDataLabels(points, metaLine, formatValue) {
       })
     }
   } else {
-    // Mais de 8 pontos: mostrar primeiro, maior, menor, cruzamentos
+    // Mais de 6 pontos: mostrar primeiro, maior, menor, cruzamentos
     const maxPoint = points.reduce((max, p) => (p.value > max.value ? p : max), points[0])
     const minPoint = points.reduce((min, p) => (p.value < min.value ? p : min), points[0])
 
-    const seen = new Set([firstPoint.year])
-    const addPoint = (p, priority) => {
+    const seen = new Set([lastPoint.year])
+    const addCandidate = (p, priority, type) => {
       if (!p || seen.has(p.year)) return
       seen.add(p.year)
-      labels.push({
+      candidates.push({
         anchor: 'middle',
         isLast: false,
+        isMeta: false,
         priority,
+        type,
         value: p.value,
         x: p.x,
         y: p.y - LABEL_OFFSET_Y,
@@ -372,11 +386,7 @@ function computeDataLabels(points, metaLine, formatValue) {
       })
     }
 
-    addPoint(firstPoint, 4)
-    addPoint(maxPoint, 3)
-    addPoint(minPoint, 3)
-
-    // Pontos que cruzam a meta
+    // Cruzamentos primeiro (maior prioridade)
     if (metaLine && Number.isFinite(metaLine.value)) {
       const metaVal = metaLine.value
       for (let i = 1; i < points.length; i++) {
@@ -385,30 +395,83 @@ function computeDataLabels(points, metaLine, formatValue) {
         const crossedUp = prev.value < metaVal && curr.value >= metaVal
         const crossedDown = prev.value > metaVal && curr.value <= metaVal
         if (crossedUp || crossedDown) {
-          addPoint(curr, 2)
+          addCandidate(curr, 3, 'cross')
+        }
+      }
+    }
+
+    addCandidate(maxPoint, 5, 'max')
+    addCandidate(minPoint, 5, 'min')
+    addCandidate(firstPoint, 6, 'first')
+  }
+
+  // 3. Meta label (prioridade 0, mais alta)
+  if (metaLine) {
+    candidates.push({
+      anchor: 'end',
+      isLast: false,
+      isMeta: true,
+      priority: 0,
+      type: 'meta',
+      value: metaLine.value,
+      x: plotRight - 2,
+      y: Math.max(plotTop + 12, metaLine.y - 8),
+      year: 'meta',
+    })
+  }
+
+  // 4. Ajustar posições dos labels de pontos
+  for (const label of candidates) {
+    if (label.isMeta) continue
+    // Não permitir x menor que plotLeft + 18
+    if (label.x < plotLeft + 18) {
+      label.x = plotLeft + 18
+    }
+    // Não permitir x maior que plotRight - 18
+    if (label.x > plotRight - 18) {
+      label.x = plotRight - 18
+    }
+    // Se for o último ponto, forçar anchor end para não estourar à direita
+    if (label.isLast) {
+      label.anchor = 'end'
+      label.x = lastPoint.x + 4
+      if (label.x > plotRight - 6) {
+        label.x = plotRight - 6
+      }
+    }
+    // Se for o primeiro ponto e estiver muito próximo do eixo Y, ocultar
+    if (label.type === 'first' && firstPoint.x < plotLeft + 14) {
+      label.hidden = true
+    }
+  }
+
+  // 5. Se label do ponto estiver muito perto da linha de meta (em y),
+  //    ajustar para evitar colisão
+  if (metaLine) {
+    for (const label of candidates) {
+      if (label.isMeta || label.hidden) continue
+      const dyFromMeta = Math.abs(label.y - metaLine.y)
+      // Se está próximo verticalmente, ajustar y
+      if (dyFromMeta < MIN_DISTANCE_Y) {
+        if (label.isLast) {
+          // Último ponto: mover para baixo
+          label.y = label.y + LABEL_OFFSET_Y + 4
+        } else {
+          // Outros pontos: ocultar se colidir com meta
+          label.hidden = true
         }
       }
     }
   }
 
-  // Meta label
-  if (metaLine) {
-    labels.push({
-      anchor: 'end',
-      isLast: false,
-      priority: 0,
-      value: metaLine.value,
-      x: CHART_WIDTH - PADDING.right - 2,
-      y: Math.max(PADDING.top + 12, metaLine.y - 8),
-      year: 'meta',
-    })
-  }
+  // 6. Filtrar labels ocultos
+  const visible = candidates.filter((l) => !l.hidden)
 
-  // Remover labels muito próximos, priorizando por priority (menor número = maior prioridade)
-  labels.sort((a, b) => a.priority - b.priority)
+  // 7. Ordenar por prioridade (menor = mais alta) e aplicar colisão
+  visible.sort((a, b) => a.priority - b.priority)
 
   const filtered = []
-  for (const label of labels) {
+  for (const label of visible) {
     const tooClose = filtered.some((existing) => {
       const dy = Math.abs(existing.y - label.y)
       const dx = Math.abs(existing.x - label.x)
