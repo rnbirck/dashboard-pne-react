@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 
-const CHART_WIDTH = 760
-const CHART_HEIGHT = 300
-const PADDING = { bottom: 46, left: 62, right: 44, top: 52 }
+const CHART_WIDTH = 820
+const CHART_HEIGHT = 320
+const PADDING = { bottom: 48, left: 72, right: 72, top: 58 }
 
 export function IndicatorHistoryChart({
   display,
@@ -20,7 +20,7 @@ export function IndicatorHistoryChart({
 
   if (chart.points.length < 2) {
     return (
-      <section className="history-chart">
+      <section className="history-chart history-chart--empty-state">
         <div className="history-chart__heading">
           <div>
             <span className="eyebrow">Série histórica</span>
@@ -54,7 +54,7 @@ export function IndicatorHistoryChart({
             {chart.yTicks.map((tick) => (
               <g key={tick.value}>
                 <line x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={tick.y} y2={tick.y} />
-                <text x={PADDING.left - 10} y={tick.y + 4}>{chart.formatValue(tick.value)}</text>
+                <text x={PADDING.left - 12} y={tick.y + 4}>{chart.formatValue(tick.value)}</text>
               </g>
             ))}
           </g>
@@ -67,7 +67,7 @@ export function IndicatorHistoryChart({
                 y1={chart.metaLine.y}
                 y2={chart.metaLine.y}
               />
-              <text x={CHART_WIDTH - PADDING.right} y={chart.metaLine.labelY}>
+              <text x={CHART_WIDTH - PADDING.right - 2} y={chart.metaLine.labelY}>
                 Meta {chart.formatValue(chart.metaLine.value)}
               </text>
             </g>
@@ -121,10 +121,10 @@ export function IndicatorHistoryChart({
           <div
             className="history-chart__tooltip"
             style={{
-              left: `${Math.min(94, Math.max(8, (activePoint.x / CHART_WIDTH) * 100))}%`,
+              left: `${Math.min(92, Math.max(10, (activePoint.x / CHART_WIDTH) * 100))}%`,
               top: `${(activePoint.y / CHART_HEIGHT) * 100}%`,
               transform:
-                activePoint.y < PADDING.top + 36
+                activePoint.y < PADDING.top + 38
                   ? 'translate(-50%, 12px)'
                   : 'translate(-50%, calc(-100% - 12px))',
             }}
@@ -150,33 +150,8 @@ function buildChartModel({ display, endYear, meta, series, startYear }) {
   const values = points.map((point) => point.value)
   if (metaValue !== null) values.push(metaValue)
 
-  const minRaw = Math.min(...values)
-  const maxRaw = Math.max(...values)
-  const span = maxRaw - minRaw || Math.abs(maxRaw) || 1
-
   const isPercent = unit === '%'
-  const allValuesWithinPercent = isPercent && values.every((v) => v >= 0 && v <= 100)
-
-  let minValue, maxValue
-  if (isPercent && allValuesWithinPercent) {
-    minValue = Math.max(0, minRaw - span * 0.12)
-    maxValue = Math.min(100, maxRaw + span * 0.12)
-  } else {
-    minValue = minRaw - span * 0.12
-    maxValue = maxRaw + span * 0.12
-  }
-
-  // Domínio mínimo para evitar gráfico achatado
-  if (Math.abs(maxValue - minValue) < 0.01) {
-    const minDomain = Math.abs(minValue) < 0.01 ? 1 : minValue * 0.1
-    minValue = minValue - minDomain
-    maxValue = maxValue + minDomain
-  }
-
-  // Margem extra no topo para labels de meta não saírem do SVG
-  const safeMax = maxValue + span * 0.08
-  const safeMin = minValue - span * 0.02
-
+  const domain = buildDomain(values, isPercent)
   const years = points.map((point) => point.year)
   const minYear = Math.min(...years)
   const maxYear = Math.max(...years)
@@ -188,7 +163,7 @@ function buildChartModel({ display, endYear, meta, series, startYear }) {
     return PADDING.left + ((year - minYear) / (maxYear - minYear)) * plotWidth
   }
   const yScale = (value) =>
-    PADDING.top + ((safeMax - value) / (safeMax - safeMin)) * plotHeight
+    PADDING.top + ((domain.max - value) / (domain.max - domain.min)) * plotHeight
 
   const scaledPoints = points.map((point) => ({
     ...point,
@@ -202,11 +177,10 @@ function buildChartModel({ display, endYear, meta, series, startYear }) {
   const first = scaledPoints[0]
   const areaPath = `${linePath} L${last.x.toFixed(1)} ${(CHART_HEIGHT - PADDING.bottom).toFixed(1)} L${first.x.toFixed(1)} ${(CHART_HEIGHT - PADDING.bottom).toFixed(1)} Z`
 
-  // Calcula posição segura da label da meta
   let metaLabelY = PADDING.top + 16
   if (metaValue !== null) {
     const rawY = yScale(metaValue)
-    metaLabelY = Math.max(PADDING.top + 16, Math.min(rawY - 10, CHART_HEIGHT - PADDING.bottom - 16))
+    metaLabelY = Math.max(PADDING.top + 14, Math.min(rawY - 10, CHART_HEIGHT - PADDING.bottom - 18))
   }
 
   return {
@@ -223,7 +197,7 @@ function buildChartModel({ display, endYear, meta, series, startYear }) {
           },
     points: scaledPoints,
     xTicks: pickYearTicks(scaledPoints),
-    yTicks: buildYTicks(safeMin, safeMax).map((value) => ({ value, y: yScale(value) })),
+    yTicks: buildYTicks(domain.min, domain.max, isPercent).map((value) => ({ value, y: yScale(value) })),
     yearMarkers: [startYear, endYear]
       .map((year) => Number(year))
       .filter((year, index, arr) => Number.isFinite(year) && year >= minYear && year <= maxYear && arr.indexOf(year) === index)
@@ -251,18 +225,66 @@ function inferUnit(display, points, meta) {
 
 function formatChartValue(value, unit) {
   const formatted = Number(value).toLocaleString('pt-BR', {
-    maximumFractionDigits: Math.abs(value) < 10 ? 1 : 0,
+    maximumFractionDigits: Number.isInteger(value) || Math.abs(value) >= 10 ? 0 : 1,
   })
   return unit ? `${formatted}${unit}` : formatted
 }
 
-function buildYTicks(min, max) {
+function buildDomain(values, isPercent) {
+  let min = Math.min(...values)
+  let max = Math.max(...values)
+  let span = max - min
+
+  if (span < 0.01) {
+    const base = Math.max(Math.abs(max), 1)
+    min -= base * 0.16
+    max += base * 0.16
+    span = max - min
+  }
+
+  const padding = span * 0.16
+  min -= padding
+  max += padding
+
+  if (isPercent && min > 0) {
+    min = Math.max(0, min)
+  }
+
+  return {
+    max: niceCeil(max),
+    min: niceFloor(min),
+  }
+}
+
+function buildYTicks(min, max, isPercent) {
   const ticks = []
   const steps = 4
   for (let index = 0; index <= steps; index += 1) {
-    ticks.push(min + ((max - min) / steps) * index)
+    const value = min + ((max - min) / steps) * index
+    ticks.push(isPercent ? Math.round(value) : niceTickValue(value))
   }
   return ticks
+}
+
+function niceFloor(value) {
+  if (value === 0) return 0
+  const step = niceStep(value)
+  return Math.floor(value / step) * step
+}
+
+function niceCeil(value) {
+  if (value === 0) return 1
+  const step = niceStep(value)
+  return Math.ceil(value / step) * step
+}
+
+function niceStep(value) {
+  const magnitude = 10 ** Math.floor(Math.log10(Math.max(Math.abs(value), 1)))
+  return magnitude >= 10 ? magnitude / 2 : 1
+}
+
+function niceTickValue(value) {
+  return Math.abs(value) >= 10 ? Math.round(value) : Number(value.toFixed(1))
 }
 
 function pickYearTicks(points) {

@@ -70,43 +70,57 @@ function GoalProgress({ result }) {
   const metaLabel = result.meta_label ?? 'Meta'
   const distance = getDisplayValue(result.display, 'distance')
   const progress = calculateGoalProgress(result)
+  const status = String(result?.display?.status ?? '').toLocaleLowerCase('pt-BR')
+  const isInformative = status.includes('visualiza')
+  const message = isInformative
+    ? 'Indicador informativo, sem comparação direta com meta.'
+    : 'Sem dados suficientes para acompanhar a meta deste indicador.'
 
   return (
-    <section className="goal-progress" aria-label="Acompanhamento da meta">
+    <section
+      className={progress.available ? 'goal-progress' : 'goal-progress goal-progress--empty'}
+      aria-label="Acompanhamento da meta"
+    >
       <div className="goal-progress__heading">
         <span>Acompanhamento da meta</span>
-        <strong>{distance}</strong>
+        {progress.available && <strong>{distance}</strong>}
       </div>
-      <div className="goal-progress__rail">
-        <span
-          className="goal-progress__fill"
-          style={{ width: `${progress.fill}%` }}
-        />
-        <span
-          className="goal-progress__marker goal-progress__marker--current"
-          style={{ left: `${progress.current}%` }}
-        >
-          <em>{endValue}</em>
-        </span>
-        <span
-          className="goal-progress__marker goal-progress__marker--meta"
-          style={{ left: `${progress.meta}%` }}
-        />
-      </div>
-      <div className="goal-progress__labels">
-        <span>
-          <strong>{startValue}</strong>
-          <small>Valor inicial ({result.start_year ?? '-'})</small>
-        </span>
-        <span>
-          <strong>{endValue}</strong>
-          <small>Valor atual ({result.end_year ?? '-'})</small>
-        </span>
-        <span>
-          <strong>{metaValue}</strong>
-          <small>{metaLabel}</small>
-        </span>
-      </div>
+      {progress.available ? (
+        <>
+          <div className="goal-progress__rail">
+            <span
+              className="goal-progress__fill"
+              style={{ width: `${progress.fill}%` }}
+            />
+            <span
+              className="goal-progress__marker goal-progress__marker--current"
+              style={{ left: `${progress.current}%` }}
+            >
+              <em>{endValue}</em>
+            </span>
+            <span
+              className="goal-progress__marker goal-progress__marker--meta"
+              style={{ left: `${progress.meta}%` }}
+            />
+          </div>
+          <div className="goal-progress__labels">
+            <span>
+              <strong>{startValue}</strong>
+              <small>Valor inicial ({result.start_year ?? '-'})</small>
+            </span>
+            <span>
+              <strong>{endValue}</strong>
+              <small>Valor atual ({result.end_year ?? '-'})</small>
+            </span>
+            <span>
+              <strong>{metaValue}</strong>
+              <small>{metaLabel}</small>
+            </span>
+          </div>
+        </>
+      ) : (
+        <p>{message}</p>
+      )}
     </section>
   )
 }
@@ -115,20 +129,40 @@ function calculateGoalProgress(result) {
   const start = Number(result?.start_value)
   const current = Number(result?.end_value)
   const meta = Number(result?.meta)
+  const status = String(result?.display?.status ?? '').toLocaleLowerCase('pt-BR')
+  const hasNoComparison =
+    result?.available === false ||
+    status.includes('visualiza') ||
+    status.includes('indispon') ||
+    status.includes('sem dados') ||
+    status.includes('sem variação') ||
+    status.includes('sem variacao')
 
-  if (!Number.isFinite(current) || !Number.isFinite(meta) || meta === 0) {
-    return { current: 50, fill: 50, meta: 100 }
+  if (hasNoComparison || !Number.isFinite(current) || !Number.isFinite(meta)) {
+    return { available: false }
   }
 
-  const values = [0, current, meta]
+  const values = [current, meta]
   if (Number.isFinite(start)) values.push(start)
-  const min = Math.min(...values)
-  const max = Math.max(...values)
-  const span = max - min || Math.abs(max) || 1
-  const toPercent = (value) => Math.max(0, Math.min(100, ((value - min) / span) * 100))
+  let min = Math.min(...values)
+  let max = Math.max(...values)
+  let span = max - min
+  if (span < 0.01) {
+    const base = Math.max(Math.abs(max), 1)
+    min -= base * 0.12
+    max += base * 0.12
+    span = max - min
+  } else {
+    const pad = span * 0.14
+    min -= pad
+    max += pad
+    span = max - min
+  }
+  const toPercent = (value) => Math.max(4, Math.min(96, ((value - min) / span) * 100))
   const currentPosition = toPercent(current)
 
   return {
+    available: true,
     current: currentPosition,
     fill: currentPosition,
     meta: toPercent(meta),

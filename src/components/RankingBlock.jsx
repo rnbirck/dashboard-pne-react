@@ -10,7 +10,7 @@ export function RankingBlock({ title, items }) {
           {items.map((item, index) => (
             <li key={item.indicator_key}>
               <span className="ranking-index">{index + 1}</span>
-              <div>
+              <div className="ranking-item__text">
                 <strong>{item.label}</strong>
                 {item.sub && <span>{item.sub}</span>}
               </div>
