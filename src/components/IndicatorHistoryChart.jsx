@@ -12,7 +12,7 @@ const CHART_WIDTH = 980
 const CHART_HEIGHT_INFORMATIVE = 260
 const CHART_HEIGHT_NORMAL = 280
 const CHART_HEIGHT_NEGATIVE = 330
-const PADDING = { bottom: 40, left: 68, right: 54, top: 32 }
+const PADDING = { bottom: 40, left: 72, right: 60, top: 36 }
 
 export function IndicatorHistoryChart({
   display,
