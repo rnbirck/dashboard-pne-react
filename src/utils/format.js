@@ -18,3 +18,11 @@ export function findFirstAvailableCategory(categories) {
 export function getIndicatorTitle(item, result) {
   return item?.label || result?.label || 'Indicador'
 }
+
+export function cleanInterpretationText(text) {
+  if (typeof text !== 'string' || !text.length) return text
+  let cleaned = text.replace(/\bp\.p\.\.+/g, 'p.p.')
+  cleaned = cleaned.replace(/\.+\s*$/, '.')
+  cleaned = cleaned.replace(/(\b\w)\.([a-zÀ-ÿ])/g, '$1. $2')
+  return cleaned.trimEnd()
+}

@@ -1,4 +1,5 @@
-import { getDisplayValue, getIndicatorTitle } from '../utils/format'
+import { cleanInterpretationText, getDisplayValue, getIndicatorTitle } from '../utils/format'
+import { clampMarkerPosition, getStableVisualDomain, projectValueToPercent } from '../utils/visualDomain'
 import { IndicatorHistoryChart } from './IndicatorHistoryChart'
 import { MetricCard } from './MetricCard'
 import { StatusBadge } from './StatusBadge'
@@ -64,7 +65,7 @@ export function IndicatorDetail({ item, result }) {
       {result.display?.interpretation && (
         <div className="interpretation-box">
           <span>Interpretação</span>
-          <p>{result.display.interpretation}</p>
+          <p>{cleanInterpretationText(result.display.interpretation)}</p>
         </div>
       )}
 
@@ -75,6 +76,7 @@ export function IndicatorDetail({ item, result }) {
         series={result.series}
         startYear={result.start_year}
         title={getIndicatorTitle(item, result)}
+        showMetaLine={isComparable}
       />
     </section>
   )
@@ -154,31 +156,40 @@ function calculateGoalProgress(result, isComparable) {
     return { available: false }
   }
 
-  const values = [current, meta]
-  if (Number.isFinite(start)) values.push(start)
-  let min = Math.min(...values)
-  let max = Math.max(...values)
-  let span = max - min
-  if (span < 0.01) {
-    const base = Math.max(Math.abs(max), 1)
-    min -= base * 0.12
-    max += base * 0.12
-    span = max - min
-  } else {
-    const pad = span * 0.14
-    min -= pad
-    max += pad
-    span = max - min
-  }
-  const toPercent = (value) => Math.max(4, Math.min(96, ((value - min) / span) * 100))
-  const currentPosition = toPercent(current)
+  const seriesValues = (result?.series ?? [])
+    .map((point) => Number(point?.valor))
+    .filter(Number.isFinite)
+  const allValues = [...seriesValues, current, start].filter(Number.isFinite)
+  const isPercent = detectPercentUnit(result)
+
+  const domain = getStableVisualDomain({
+    values: allValues,
+    meta,
+    isPercent,
+  })
+
+  const fill = clampMarkerPosition(projectValueToPercent(current, domain))
+  const metaPosition = clampMarkerPosition(projectValueToPercent(meta, domain))
 
   return {
     available: true,
-    current: currentPosition,
-    fill: currentPosition,
-    meta: toPercent(meta),
+    current: fill,
+    fill,
+    meta: metaPosition,
   }
+}
+
+function detectPercentUnit(result) {
+  const displayText = Object.values(result?.display ?? {}).join(' ')
+  if (displayText.includes('%')) return true
+  const allValues = [
+    Number(result?.start_value),
+    Number(result?.end_value),
+    Number(result?.meta),
+    ...((result?.series ?? []).map((point) => Number(point?.valor))),
+  ].filter(Number.isFinite)
+  if (allValues.length && allValues.every((value) => value >= 0 && value <= 100)) return true
+  return false
 }
 
 function formatMetaMarker(result) {
