@@ -141,6 +141,20 @@ export function IndicatorHistoryChart({
             ))}
           </g>
 
+          <g className="chart-data-labels">
+            {chart.dataLabels.map((label) => (
+              <text
+                key={label.year}
+                x={label.x}
+                y={label.y}
+                textAnchor={label.anchor}
+                className={label.isLast ? 'chart-label--last' : 'chart-label'}
+              >
+                {chart.formatValue(label.value)}
+              </text>
+            ))}
+          </g>
+
           <g className="chart-x-labels">
             {chart.xTicks.map((tick) => (
               <text key={tick.year} x={tick.x} y={CHART_HEIGHT - 14}>
@@ -263,9 +277,13 @@ function buildChartModel({
     .filter((year, index, arr) => arr.indexOf(year) === index)
     .map((year) => ({ year, x: xScale(year) }))
 
+  const formatValue = (value) => formatIndicatorValue(value, resolvedUnit)
+  const dataLabels = computeDataLabels(scaledPoints, metaLine, formatValue)
+
   return {
     areaPath,
-    formatValue: (value) => formatIndicatorValue(value, resolvedUnit),
+    dataLabels,
+    formatValue,
     linePath,
     metaLine,
     points: scaledPoints,
@@ -291,4 +309,93 @@ function pickYearTicks(points) {
   const last = points[points.length - 1]
   const middle = points[Math.floor(points.length / 2)]
   return [first, middle, last]
+}
+
+function computeDataLabels(points, metaLine, formatValue) {
+  if (points.length === 0) return []
+
+  const labels = []
+  const LABEL_OFFSET_Y = 14
+  const MIN_DISTANCE_Y = 18
+  const MIN_DISTANCE_X = 28
+
+  const lastPoint = points[points.length - 1]
+  const firstPoint = points[0]
+
+  // Sempre mostrar último ponto
+  labels.push({
+    anchor: 'start',
+    isLast: true,
+    value: lastPoint.value,
+    x: lastPoint.x + 8,
+    y: lastPoint.y - LABEL_OFFSET_Y,
+    year: lastPoint.year,
+  })
+
+  // Se até 8 pontos, mostrar todos
+  if (points.length <= 8) {
+    for (let i = 0; i < points.length - 1; i++) {
+      const p = points[i]
+      labels.push({
+        anchor: 'middle',
+        isLast: false,
+        value: p.value,
+        x: p.x,
+        y: p.y - LABEL_OFFSET_Y,
+        year: p.year,
+      })
+    }
+  } else {
+    // Mais de 8 pontos: mostrar primeiro, maior, menor
+    const maxPoint = points.reduce((max, p) => (p.value > max.value ? p : max), points[0])
+    const minPoint = points.reduce((min, p) => (p.value < min.value ? p : min), points[0])
+
+    const specialPoints = [firstPoint]
+    if (maxPoint.year !== firstPoint.year && maxPoint.year !== lastPoint.year) {
+      specialPoints.push(maxPoint)
+    }
+    if (minPoint.year !== firstPoint.year && minPoint.year !== lastPoint.year && minPoint.year !== maxPoint.year) {
+      specialPoints.push(minPoint)
+    }
+
+    for (const p of specialPoints) {
+      labels.push({
+        anchor: 'middle',
+        isLast: false,
+        value: p.value,
+        x: p.x,
+        y: p.y - LABEL_OFFSET_Y,
+        year: p.year,
+      })
+    }
+  }
+
+  // Meta label
+  if (metaLine) {
+    labels.push({
+      anchor: 'end',
+      isLast: false,
+      value: metaLine.value,
+      x: CHART_WIDTH - PADDING.right - 2,
+      y: Math.max(PADDING.top + 12, metaLine.y - 8),
+      year: 'meta',
+    })
+  }
+
+  // Remover labels muito próximos (priorizar último ponto)
+  const filtered = []
+  const lastLabel = labels.find((l) => l.isLast)
+  if (lastLabel) filtered.push(lastLabel)
+
+  for (const label of labels) {
+    if (label.isLast) continue
+    const tooClose = filtered.some((existing) => {
+      const dy = Math.abs(existing.y - label.y)
+      const dx = Math.abs(existing.x - label.x)
+      return dy < MIN_DISTANCE_Y && dx < MIN_DISTANCE_X
+    })
+    if (!tooClose) filtered.push(label)
+  }
+
+  return filtered
 }

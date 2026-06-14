@@ -68,82 +68,54 @@ export function Home({
         </aside>
       </section>
 
-      <section className="home-section">
+      <section className="home-section home-section--compact">
         <h2>O que você encontra aqui</h2>
         <div className="feature-grid">
           <FeatureCard
             icon={<BarsIcon />}
             title="Indicadores por ciclo"
-            text="Indicadores essenciais organizados por ciclos do PNE, com dados atualizados para análise da evolução da educação."
+            text="Indicadores organizados por ciclos do PNE, com evolução dos resultados do município."
           />
           <FeatureCard
             icon={<AwardIcon />}
-            title="Rankings e metas"
-            text="Compare o desempenho do município com outros e acompanhe o progresso em relação às metas do PNE."
+            title="Metas e situação"
+            text="Acompanhe o avanço do município em relação às metas do Plano Nacional de Educação."
           />
           <FeatureCard
             icon={<InstitutionIcon />}
             title="Diagnóstico municipal"
-            text="Visão integrada dos principais desafios e avanços do território para apoiar decisões e políticas educacionais."
+            text="Visão integrada dos principais desafios e avanços do território para apoiar decisões."
           />
         </div>
       </section>
 
-      <section className="home-section">
-        <h2>Como usar</h2>
-        <div className="steps-strip">
-          <StepCard
-            number="1"
-            icon={<PinIcon />}
-            title="Selecione um município"
-            text="Escolha o município no topo da página. Os dados são carregados automaticamente."
-          />
-          <StepCard
-            number="2"
-            icon={<PieIcon />}
-            title="Explore os ciclos"
-            text="Navegue pelos módulos do PNE para visualizar indicadores por ciclo e temas de educação."
-          />
-          <StepCard
-            number="3"
-            icon={<TrendIcon />}
-            title="Interprete e planeje"
-            text="Analise os rankings, metas e o diagnóstico para entender a realidade local e planejar ações."
-          />
-        </div>
-      </section>
-
-      <section className="home-section">
+      <section className="home-section home-section--compact">
         <h2>Módulos do painel</h2>
         <div className="module-grid">
           <ModuleCard
             icon={<CalendarIcon />}
             title="PNE 2014-2024"
-            text="Indicadores e metas do ciclo anterior, com evolução dos resultados e comparações."
+            text="Veja os indicadores e metas do ciclo anterior, com evolução dos resultados do município."
             onClick={() => onNavigate?.('pne2014')}
           />
           <ModuleCard
             icon={<CalendarIcon />}
             title="PNE 2026-2036"
-            text="Indicadores e metas do novo ciclo, com progresso e projeções para os próximos anos."
+            text="Acompanhe os indicadores do novo ciclo e identifique prioridades para os próximos anos."
             onClick={() => onNavigate?.('pne2026')}
           />
           <ModuleCard
             icon={<DocumentIcon />}
             title="Diagnóstico"
-            text="Diagnóstico territorial com análises e destaques para apoiar a compreensão da realidade do município."
+            text="Diagnóstico territorial com análises e destaques da realidade do município."
             onClick={() => onNavigate?.('diagnostico')}
           />
         </div>
       </section>
 
-      <section className="home-cta">
-        <TargetIcon />
+      <section className="home-cta home-cta--compact">
         <div>
-          <h2>Comece agora: selecione um município para liberar todo o potencial do Dashboard PNE.</h2>
-          <p>
-            Assim que você escolher seu município, os indicadores, rankings e o diagnóstico serão exibidos.
-          </p>
+          <h2>Selecione um município para acessar os indicadores, metas e diagnóstico.</h2>
         </div>
         <button type="button" className="primary-button" onClick={focusMunicipioSelect}>
           <PinIcon />
