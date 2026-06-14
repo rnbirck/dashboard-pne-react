@@ -45,9 +45,9 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   )
   const activeResult = activeItem ? municipioResults?.[activeItem.key] : null
   const activeRanking = municipioRankings?.[selectedCategory?.key]
-  const totalIndicators = useMemo(
-    () => categories.reduce((total, category) => total + (category.items?.length ?? 0), 0),
-    [categories],
+  const cycleManagementStats = useMemo(
+    () => buildCycleManagementStats(categories, municipioResults),
+    [categories, municipioResults],
   )
 
   function handleCategorySelect(categoryKey) {
@@ -68,9 +68,28 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
           </p>
         </div>
         <div className="cycle-hero-meta-group">
-          <SummaryMetric label="categorias" value={categories.length} />
-          <SummaryMetric label="indicadores" value={totalIndicators} />
-          <SummaryMetric label="na categoria" value={categoryItems.length} />
+          <ManagementMetricCard
+            detail={cycleManagementStats.monitorableTotal
+              ? `${cycleManagementStats.achievedPercent}% dos indicadores com meta`
+              : 'sem indicadores comparáveis'}
+            label="Metas atingidas"
+            tone="success"
+            value={cycleManagementStats.monitorableTotal
+              ? `${cycleManagementStats.achieved}/${cycleManagementStats.monitorableTotal}`
+              : '-'}
+          />
+          <ManagementMetricCard
+            detail="abaixo da referência"
+            label="Exigem atenção"
+            tone="attention"
+            value={cycleManagementStats.attention}
+          />
+          <ManagementMetricCard
+            detail="informativos ou sem dado"
+            label="Sem comparação"
+            tone="neutral"
+            value={cycleManagementStats.noComparison}
+          />
         </div>
       </section>
 
@@ -123,11 +142,55 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   )
 }
 
-function SummaryMetric({ label, value }) {
+function ManagementMetricCard({ detail, label, tone, value }) {
   return (
-    <div className="cycle-hero-meta">
-      <span>{value}</span>
+    <div className={`cycle-hero-meta cycle-hero-meta--${tone}`}>
       <small>{label}</small>
+      <span>{value}</span>
+      <em>{detail}</em>
     </div>
   )
+}
+
+function buildCycleManagementStats(categories, municipioResults) {
+  const stats = {
+    achieved: 0,
+    achievedPercent: 0,
+    attention: 0,
+    monitorableTotal: 0,
+    noComparison: 0,
+  }
+
+  const allCycleItems = categories.flatMap((category) => category.items ?? [])
+
+  allCycleItems.forEach((item) => {
+    const result = municipioResults?.[item.key]
+    const statusText = String(result?.display?.status ?? '').toLocaleLowerCase('pt-BR')
+    const isNoComparison =
+      !result ||
+      result.available === false ||
+      statusText.includes('visualiza') ||
+      statusText.includes('indispon') ||
+      statusText.includes('sem dados') ||
+      statusText.includes('sem variação') ||
+      statusText.includes('sem variacao')
+
+    if (isNoComparison) {
+      stats.noComparison += 1
+      return
+    }
+
+    stats.monitorableTotal += 1
+    if (result.atingida === true) {
+      stats.achieved += 1
+    } else {
+      stats.attention += 1
+    }
+  })
+
+  stats.achievedPercent = stats.monitorableTotal
+    ? Math.round((stats.achieved / stats.monitorableTotal) * 100)
+    : 0
+
+  return stats
 }

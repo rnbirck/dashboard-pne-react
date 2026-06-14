@@ -792,7 +792,17 @@
   background: linear-gradient(145deg, #ffffff, var(--accent-ghost-2));
   box-shadow: 0 1px 2px rgba(18, 45, 18, 0.04);
   display: grid;
-  gap: 4px;
+  gap: 5px;
+}
+
+.cycle-hero-meta--attention {
+  border-color: rgba(216, 75, 33, 0.16);
+  background: linear-gradient(145deg, #ffffff, #fff2ec);
+}
+
+.cycle-hero-meta--neutral {
+  border-color: rgba(100, 112, 104, 0.16);
+  background: linear-gradient(145deg, #ffffff, #f4f6f3);
 }
 
 .cycle-hero-meta > span {
@@ -800,6 +810,22 @@
   font-size: 1.62rem;
   font-weight: 800;
   letter-spacing: -0.03em;
+}
+
+.cycle-hero-meta--attention > span {
+  color: #b84a1e;
+}
+
+.cycle-hero-meta--neutral > span {
+  color: #4f5d52;
+}
+
+.cycle-hero-meta em {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-style: normal;
+  font-weight: 650;
+  line-height: 1.25;
 }
 
 .cycle-hero-meta small,
@@ -1253,6 +1279,115 @@
   color: var(--text);
   line-height: 1.6;
   box-shadow: var(--shadow-sm);
+}
+
+.goal-progress {
+  padding: 16px 18px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(18, 45, 18, 0.04);
+  display: grid;
+  gap: 14px;
+}
+
+.goal-progress__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.goal-progress__heading span {
+  color: var(--accent-strong);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.goal-progress__heading strong {
+  color: var(--text-strong);
+  font-size: 0.92rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.goal-progress__rail {
+  position: relative;
+  height: 10px;
+  margin: 16px 8px 10px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, #d8e3d7, #eef3ec);
+}
+
+.goal-progress__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  min-width: 8px;
+  max-width: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #8cbd92, var(--accent));
+}
+
+.goal-progress__marker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  border: 3px solid #ffffff;
+  border-radius: 999px;
+  box-shadow: 0 1px 4px rgba(18, 45, 18, 0.22);
+}
+
+.goal-progress__marker--current {
+  background: var(--accent);
+}
+
+.goal-progress__marker--current em {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--accent-strong);
+  color: var(--text-inverted);
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(26, 92, 42, 0.20);
+}
+
+.goal-progress__marker--meta {
+  background: #a8adb0;
+}
+
+.goal-progress__labels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.goal-progress__labels span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.goal-progress__labels strong {
+  color: var(--text-strong);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.goal-progress__labels small {
+  color: var(--text-soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.25;
 }
 
 .interpretation-box p {
@@ -2032,6 +2167,16 @@
 
   .indicator-row .status-badge {
     justify-self: start;
+  }
+
+  .goal-progress__labels {
+    grid-template-columns: 1fr;
+  }
+
+  .goal-progress__heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
   }
 
   .history-chart__heading {
