@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react'
 import { resolveIndicatorUnit } from '../utils/format'
 
 const AREA_ICON_PATHS = {
@@ -46,6 +47,20 @@ const AREA_ICON_PATHS = {
 
 export function DiagnosticPanel({ categories = [], data, municipio, results = {} }) {
   const analysis = buildDiagnosticAnalysis(categories, results)
+  const [selectedFilter, setSelectedFilter] = useState('all')
+  const filterOptions = useMemo(
+    () => [{ key: 'all', label: 'Todas' }, ...analysis.areas.map(({ key, label }) => ({ key, label }))],
+    [analysis.areas],
+  )
+  const filteredIndicators = useMemo(
+    () => selectedFilter === 'all'
+      ? analysis.indicators
+      : analysis.indicators.filter((indicator) => indicator.categoryKey === selectedFilter),
+    [analysis.indicators, selectedFilter],
+  )
+  const filteredBestPosition = useMemo(() => buildBestPosition(filteredIndicators), [filteredIndicators])
+  const filteredLargestGaps = useMemo(() => buildLargestGaps(filteredIndicators), [filteredIndicators])
+  const showCategoryChip = selectedFilter === 'all'
 
   if (!data && analysis.summary.total === 0) {
     return (
@@ -90,16 +105,36 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
         </div>
       </section>
 
+      <section className="diagnostic-filter-bar" aria-label="Filtrar destaques por categoria">
+        <span>Filtrar destaques</span>
+        <div className="diagnostic-filter-chips">
+          {filterOptions.map((option) => (
+            <button
+              className={`diagnostic-filter-chip${selectedFilter === option.key ? ' is-active' : ''}`}
+              key={option.key}
+              onClick={() => setSelectedFilter(option.key)}
+              type="button"
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </section>
+
       <section className="diagnostic-insight-grid">
         <InsightCard
           icon="trendUp"
-          items={analysis.bestPosition}
+          emptyMessage="Nenhum indicador comparável com meta nesta categoria."
+          items={filteredBestPosition}
+          showCategoryChip={showCategoryChip}
           title="Melhor posicionamento"
           tone="success"
         />
         <InsightCard
           icon="trendDown"
-          items={analysis.largestGaps}
+          emptyMessage="Nenhum indicador abaixo da meta nesta categoria."
+          items={filteredLargestGaps}
+          showCategoryChip={showCategoryChip}
           title="Maiores distâncias da meta"
           tone="danger"
         />
@@ -117,7 +152,7 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
       <section className="page-card diagnostic-reading">
         <div className="diagnostic-reading__heading">
           <IconBubble icon="book" tone="success" />
-          <h3>Leitura do posicionamento</h3>
+          <h3>Síntese analítica</h3>
         </div>
         <div className="diagnostic-reading__grid">
           {analysis.readings.map((reading) => (
@@ -144,7 +179,7 @@ function SummaryCard({ icon, label, tone, value }) {
   )
 }
 
-function InsightCard({ icon, items, title, tone }) {
+function InsightCard({ emptyMessage = 'Nenhum indicador disponível para esta leitura.', icon, items, showCategoryChip = true, title, tone }) {
   return (
     <section className={`page-card diagnostic-insight diagnostic-insight--${tone}`}>
       <div className="diagnostic-insight__heading">
@@ -158,13 +193,13 @@ function InsightCard({ icon, items, title, tone }) {
               <span aria-hidden="true" />
               <div>
                 <p>{item.label} — {item.note}</p>
-                <small>{item.categoryLabel}</small>
+                {showCategoryChip ? <small>{item.categoryLabel}</small> : null}
               </div>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="diagnostic-empty-text">Nenhum indicador disponível para esta leitura.</p>
+        <p className="diagnostic-empty-text">{emptyMessage}</p>
       )}
     </section>
   )
@@ -320,15 +355,12 @@ function buildDiagnosticAnalysis(categories, results) {
   )
 
   const bestPosition = buildBestPosition(indicators)
-  const largestGaps = indicators
-    .filter((indicator) => indicator.status === 'below')
-    .sort((a, b) => a.distance - b.distance)
-    .slice(0, 4)
-    .map((indicator) => ({ ...indicator, note: formatDistance(indicator, true) }))
+  const largestGaps = buildLargestGaps(indicators)
 
   return {
     areas,
     bestPosition,
+    indicators,
     largestGaps,
     readings: buildReadings(summary, areas),
     summary,
@@ -344,7 +376,8 @@ function buildAreaAnalysis(category, results) {
   const below = indicators.filter((indicator) => indicator.status === 'below').length
   const noComparison = indicators.filter((indicator) => indicator.status === 'noComparison').length
   const total = indicators.length
-  const diagnosis = buildAreaDiagnosis({ achieved, below, noComparison, total })
+  const comparableTotal = achieved + below
+  const diagnosis = buildAreaDiagnosis({ achieved, below, comparableTotal })
   const bestIndicator = buildBestAreaIndicator(indicators)
   const worstIndicator = buildWorstAreaIndicator(indicators)
 
@@ -352,6 +385,7 @@ function buildAreaAnalysis(category, results) {
     achieved,
     bestIndicator,
     below,
+    comparableTotal,
     indicators,
     key: category.key,
     label: category.label,
@@ -381,6 +415,7 @@ function normalizeDiagnosticIndicator(item, category, result) {
     key: `${category.key}-${item.key}`,
     label: item.label,
     rawKey: item.key,
+    isComparable: comparable,
     status: comparable ? (result?.atingida === true ? 'achieved' : 'below') : 'noComparison',
     unit,
     variation,
@@ -388,34 +423,51 @@ function normalizeDiagnosticIndicator(item, category, result) {
 }
 
 function buildBestPosition(indicators) {
+  const selectedKeys = new Set()
   const achieved = indicators
-    .filter((indicator) => indicator.status === 'achieved')
+    .filter((indicator) => indicator.status === 'achieved' && indicator.isComparable)
     .sort((a, b) => getSortValue(b.distance) - getSortValue(a.distance))
     .map((indicator) => ({
       ...indicator,
       note: `meta atingida${Number.isFinite(indicator.distance) ? ` (${formatDistance(indicator)})` : ''}`,
     }))
 
-  const achievedKeys = new Set(achieved.map((indicator) => indicator.key))
-  const favorable = indicators
-    .filter((indicator) => !achievedKeys.has(indicator.key) && getSortValue(indicator.variation) > 0)
+  achieved.forEach((indicator) => selectedKeys.add(indicator.key))
+
+  const closestBelow = indicators
+    .filter((indicator) => indicator.status === 'below' && indicator.isComparable && Number.isFinite(indicator.distance) && !selectedKeys.has(indicator.key))
+    .sort((a, b) => b.distance - a.distance)
+    .map((indicator) => ({
+      ...indicator,
+      note: `mais próximo da meta (${formatDistance(indicator, true)})`,
+    }))
+
+  closestBelow.forEach((indicator) => selectedKeys.add(indicator.key))
+
+  const progress = indicators
+    .filter((indicator) => indicator.isComparable && Number.isFinite(indicator.variation) && !selectedKeys.has(indicator.key))
     .sort((a, b) => getSortValue(b.variation) - getSortValue(a.variation))
     .map((indicator) => ({
       ...indicator,
-      note: indicator.status === 'below'
-        ? `avanço observado${formatVariationSuffix(indicator)}`
-        : `desempenho favorável${formatVariationSuffix(indicator)}`,
+      note: `maior avanço observado${formatVariationSuffix(indicator)}`,
     }))
 
-  return [...achieved, ...favorable].slice(0, 3)
+  return [...achieved, ...closestBelow, ...progress].slice(0, 3)
+}
+
+function buildLargestGaps(indicators) {
+  return indicators
+    .filter((indicator) => indicator.status === 'below' && indicator.isComparable && Number.isFinite(indicator.distance))
+    .sort((a, b) => a.distance - b.distance)
+    .slice(0, 4)
+    .map((indicator) => ({ ...indicator, note: formatDistance(indicator, true) }))
 }
 
 function buildReadings(summary, areas) {
   const comparableTotal = summary.achieved + summary.below
   const achievedShare = comparableTotal ? summary.achieved / comparableTotal : 0
-  const belowArea = pickAreaByCount(areas, 'below')
-  const noComparisonArea = pickAreaByCount(areas, 'noComparison')
-  const bestArea = pickAreaByRatio(areas, 'achieved')
+  const belowArea = pickAreaByBelowPressure(areas)
+  const bestArea = pickAreaByComparableRatio(areas, 'achieved')
   const achievedPercent = Math.round(achievedShare * 100)
   const belowPercent = comparableTotal ? Math.round((summary.below / comparableTotal) * 100) : 0
 
@@ -428,31 +480,37 @@ function buildReadings(summary, areas) {
 
   const overview = `Dos ${summary.total} indicadores analisados, ${summary.achieved} aparecem com meta atingida (${achievedPercent}% dos comparáveis) e ${summary.below} estão abaixo da referência (${belowPercent}%). O conjunto indica ${overviewTone} no ciclo vigente.`
 
-  const bestAreaText = bestArea?.achieved > 0
-    ? `${bestArea.label} apresenta o melhor posicionamento relativo, com ${bestArea.achieved} metas atingidas entre ${bestArea.total} indicadores analisados.`
-    : 'Nenhuma área apresenta meta atingida entre os indicadores comparáveis analisados.'
+  const bestAreaText = bestArea?.comparableTotal > 0
+    ? `${bestArea.label} apresenta o melhor posicionamento relativo, com ${bestArea.achieved} metas atingidas entre ${bestArea.comparableTotal} indicadores comparáveis.`
+    : 'Não há indicadores comparáveis suficientes para esta leitura.'
 
   const belowAreaText = belowArea?.below > 0
-    ? `${belowArea.label} concentra ${belowArea.below} indicadores abaixo da meta entre ${belowArea.total} analisados.`
-    : 'Não há concentração de indicadores abaixo da meta nas áreas analisadas.'
+    ? `${belowArea.label} concentra as maiores distâncias em relação às metas, com ${belowArea.below} indicadores abaixo da referência.`
+    : 'Não há indicadores comparáveis suficientes para esta leitura.'
 
-  const comparisonText = noComparisonArea?.noComparison > 0
-    ? `${noComparisonArea.label} reúne ${noComparisonArea.noComparison} indicadores sem comparação, o que limita parte da leitura direta por meta.`
-    : 'Os indicadores analisados têm comparação direta com meta no ciclo vigente.'
+  const distributionText = bestArea?.comparableTotal > 0 && belowArea?.below > 0
+    ? `O desempenho municipal é mais favorável em ${bestArea.label} e mais pressionado em ${belowArea.label}, considerando apenas indicadores comparáveis com meta.`
+    : 'Não há indicadores comparáveis suficientes para esta leitura.'
 
   return [
     { key: 'overview', title: 'Quadro geral', text: overview },
     { key: 'best-area', title: 'Área mais favorável', text: bestAreaText },
     { key: 'gap-area', title: 'Área com maior distância', text: belowAreaText },
-    { key: 'comparison', title: 'Sem comparação', text: comparisonText },
+    { key: 'distribution', title: 'Distribuição do desempenho', text: distributionText },
   ]
 }
 
-function buildAreaDiagnosis({ achieved, below, noComparison, total }) {
-  const comparableTotal = achieved + below
+function buildAreaDiagnosis({ achieved, below, comparableTotal }) {
   const achievedShare = comparableTotal ? achieved / comparableTotal : 0
   const belowShare = comparableTotal ? below / comparableTotal : 0
-  const noComparisonShare = total ? noComparison / total : 0
+
+  if (!comparableTotal) {
+    return {
+      reading: 'Não há indicadores comparáveis suficientes para esta leitura.',
+      statusLabel: 'Leitura limitada',
+      statusTone: 'neutral',
+    }
+  }
 
   if (achievedShare >= 0.5) {
     return {
@@ -470,26 +528,18 @@ function buildAreaDiagnosis({ achieved, below, noComparison, total }) {
     }
   }
 
-  if (noComparisonShare >= 0.4) {
-    return {
-      reading: 'Parte relevante da área não possui comparação direta por meta.',
-      statusLabel: 'Muitos sem comparação',
-      statusTone: 'neutral',
-    }
-  }
-
   if (achieved > 0 && below > 0) {
     return {
-      reading: 'Área com resultados favoráveis e indicadores ainda abaixo da meta.',
+      reading: 'Resultado misto entre metas atingidas e indicadores abaixo da meta.',
       statusLabel: 'Resultado misto',
       statusTone: 'mixed',
     }
   }
 
   return {
-    reading: 'Área com poucos indicadores comparáveis disponíveis.',
-    statusLabel: 'Leitura limitada',
-    statusTone: 'neutral',
+    reading: 'Predomínio de indicadores abaixo da meta.',
+    statusLabel: 'Abaixo da meta',
+    statusTone: 'danger',
   }
 }
 
@@ -626,12 +676,18 @@ function getSortValue(value) {
   return Number.isFinite(value) ? value : -Infinity
 }
 
-function pickAreaByCount(areas, key) {
-  return [...areas].sort((a, b) => b[key] - a[key])[0] ?? null
+function pickAreaByComparableRatio(areas, key) {
+  return [...areas]
+    .filter((area) => area.comparableTotal > 0)
+    .sort((a, b) => (b[key] / b.comparableTotal) - (a[key] / a.comparableTotal))[0] ?? null
 }
 
-function pickAreaByRatio(areas, key) {
+function pickAreaByBelowPressure(areas) {
   return [...areas]
-    .filter((area) => area.total > 0)
-    .sort((a, b) => (b[key] / b.total) - (a[key] / a.total))[0] ?? null
+    .filter((area) => area.comparableTotal > 0)
+    .sort((a, b) => {
+      const countDiff = b.below - a.below
+      if (countDiff !== 0) return countDiff
+      return (b.below / b.comparableTotal) - (a.below / a.comparableTotal)
+    })[0] ?? null
 }

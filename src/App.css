@@ -257,6 +257,10 @@
   gap: var(--section-gap);
 }
 
+.diagnostic-panel {
+  gap: 10px;
+}
+
 .page-stack.cycle-page {
   gap: 12px;
 }
@@ -768,9 +772,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 12px 16px;
-  min-height: 72px;
+  gap: 14px;
+  padding: 10px 14px;
+  min-height: 64px;
   background: #ffffff;
   box-shadow: 0 4px 14px rgba(18, 45, 18, 0.05);
 }
@@ -801,7 +805,7 @@
 
 .cycle-hero-meta {
   min-width: 110px;
-  padding: 8px 10px;
+  padding: 6px 9px;
   border: 1px solid rgba(38, 80, 38, 0.13);
   border-radius: 8px;
   background: linear-gradient(145deg, #ffffff, var(--accent-ghost-2));
@@ -822,7 +826,7 @@
 
 .cycle-hero-meta > span {
   color: var(--accent-strong);
-  font-size: 1.2rem;
+  font-size: 1.08rem;
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.1;
@@ -838,7 +842,7 @@
 
 .cycle-hero-meta em {
   color: var(--text-muted);
-  font-size: 0.68rem;
+  font-size: 0.64rem;
   font-style: normal;
   font-weight: 600;
   line-height: 1.25;
@@ -870,14 +874,14 @@
 }
 
 .category-tab {
-  min-height: 30px;
-  padding: 0 14px;
+  min-height: 28px;
+  padding: 0 12px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-pill);
   background: var(--surface-strong);
   color: var(--text);
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.76rem;
   font-weight: 700;
   white-space: nowrap;
   box-shadow: 0 1px 2px rgba(18, 45, 18, 0.04);
@@ -905,16 +909,16 @@
 
 .cycle-layout {
   display: grid;
-  grid-template-columns: minmax(280px, 0.32fr) minmax(0, 0.68fr);
-  gap: var(--card-gap);
-  align-items: start;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
   margin-top: 0;
   min-width: 0;
 }
 
 .cycle-workspace {
   display: grid;
-  gap: 8px;
+  gap: 7px;
 }
 
 .cycle-category-bar {
@@ -922,11 +926,11 @@
   border-radius: var(--radius-md);
   background: #ffffff;
   box-shadow: 0 4px 14px rgba(18, 45, 18, 0.05);
-  padding: 8px 12px;
+  padding: 7px 10px;
   display: grid;
   grid-template-columns: minmax(120px, auto) minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .indicator-sidebar {
@@ -934,14 +938,14 @@
   border-radius: var(--radius-md);
   background: #ffffff;
   box-shadow: 0 4px 14px rgba(18, 45, 18, 0.05);
-  padding: 12px;
+  padding: 10px;
   min-width: 0;
-  align-self: start;
-  height: auto;
+  align-self: stretch;
+  height: 100%;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
 }
 
 .indicator-sidebar__heading {
@@ -1024,7 +1028,8 @@
   flex: 1 1 auto;
   min-height: 0;
   max-height: none;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -1138,7 +1143,8 @@
   flex-direction: column;
   gap: 6px;
   min-width: 0;
-  height: auto;
+  height: 100%;
+  align-self: stretch;
   padding: 10px 12px;
   overflow: visible;
   box-sizing: border-box;
@@ -1348,7 +1354,7 @@
 }
 
 .goal-progress {
-  padding: 6px 10px 8px;
+  padding: 5px 9px 7px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: #ffffff;
@@ -1407,8 +1413,8 @@
 
 .goal-progress__rail {
   position: relative;
-  height: 6px;
-  margin: 18px 12px 18px;
+  height: 5px;
+  margin: 14px 10px 14px;
   border-radius: var(--radius-pill);
   background: linear-gradient(90deg, #d8e3d7, #eef3ec);
 }
@@ -1426,8 +1432,8 @@
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   border: 2.5px solid #ffffff;
   border-radius: 999px;
   box-shadow: 0 1px 3px rgba(18, 45, 18, 0.2);
@@ -1461,7 +1467,7 @@
   background: #ffffff;
   border: 2px dashed rgba(108, 116, 112, 0.85);
   width: 5px;
-  height: 18px;
+  height: 16px;
   border-radius: 3px;
   box-shadow: none;
   z-index: 1;
@@ -1516,7 +1522,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: linear-gradient(145deg, var(--surface-strong), var(--surface-soft));
-  padding: 10px 12px 10px;
+  padding: 8px 10px 8px;
   position: relative;
   box-shadow: var(--shadow-sm);
   min-width: 0;
@@ -1555,7 +1561,7 @@
 
 .history-chart__canvas {
   position: relative;
-  min-height: 250px;
+  min-height: 238px;
   padding-top: 2px;
   overflow: visible;
 }
@@ -1762,7 +1768,7 @@
 .ranking-block {
   min-width: 0;
   overflow: hidden;
-  padding: 6px 10px;
+  padding: 5px 8px;
   box-sizing: border-box;
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border);
@@ -1799,7 +1805,7 @@
   grid-template-columns: 22px minmax(0, 1fr) minmax(72px, auto);
   gap: 8px;
   align-items: center;
-  padding: 6px 0;
+  padding: 5px 0;
   border-top: 1px solid var(--border-soft);
   min-width: 0;
 }
@@ -1864,7 +1870,7 @@
 .diagnostic-summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(140px, 1fr));
-  min-width: min(820px, 58%);
+  min-width: min(760px, 56%);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-sm);
@@ -1873,24 +1879,24 @@
 }
 
 .diagnostic-grid {
-  margin-top: 10px;
+  margin-top: 8px;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: var(--card-gap);
+  gap: 10px;
 }
 
 .diagnostic-insight-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--card-gap);
+  gap: 10px;
 }
 
 .diagnostic-section,
 .diagnostic-reading,
 .diagnostic-insight {
-  padding: 12px;
+  padding: 10px;
   background: #ffffff;
-  box-shadow: 0 4px 14px rgba(18, 45, 18, 0.05);
+  box-shadow: 0 2px 10px rgba(18, 45, 18, 0.04);
 }
 
 .diagnostic-section h3,
@@ -1905,8 +1911,8 @@
 
 .diagnostic-summary-card {
   min-width: 0;
-  min-height: 86px;
-  padding: 12px 14px;
+  min-height: 72px;
+  padding: 10px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1929,7 +1935,7 @@
   display: block;
   margin-top: 6px;
   color: var(--accent-strong);
-  font-size: clamp(1.9rem, 2.7vw, 2.4rem);
+  font-size: clamp(1.65rem, 2.35vw, 2.1rem);
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 0.95;
@@ -1950,8 +1956,8 @@
 }
 
 .diagnostic-icon {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   flex: 0 0 auto;
   border-radius: 999px;
   display: grid;
@@ -1962,8 +1968,8 @@
 }
 
 .diagnostic-icon svg {
-  width: 23px;
-  height: 23px;
+  width: 21px;
+  height: 21px;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.8;
@@ -1986,14 +1992,70 @@
 .diagnostic-insight {
   display: grid;
   align-content: start;
-  gap: 10px;
+  gap: 8px;
 }
 
 .diagnostic-insight__heading,
 .diagnostic-reading__heading {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+}
+
+.diagnostic-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(18, 45, 18, 0.04);
+}
+
+.diagnostic-filter-bar > span {
+  flex: 0 0 auto;
+  color: var(--text-soft);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.diagnostic-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.diagnostic-filter-chip {
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: #ffffff;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.12s ease;
+}
+
+.diagnostic-filter-chip:hover {
+  border-color: rgba(47, 113, 60, 0.28);
+  color: var(--accent-strong);
+}
+
+.diagnostic-filter-chip.is-active {
+  border-color: transparent;
+  background: var(--grad-pill-active);
+  color: var(--text-inverted);
+}
+
+.diagnostic-filter-chip:active {
+  transform: translateY(1px);
 }
 
 .diagnostic-insight-list {
@@ -2009,9 +2071,9 @@
 .diagnostic-insight-list li {
   display: grid;
   grid-template-columns: 10px minmax(0, 1fr);
-  gap: 12px;
+  gap: 10px;
   align-items: baseline;
-  padding: 10px 12px;
+  padding: 8px 10px;
 }
 
 .diagnostic-insight-list li + li {
@@ -2033,8 +2095,8 @@
 .diagnostic-empty-text {
   margin: 0;
   color: var(--text);
-  font-size: 0.86rem;
-  line-height: 1.45;
+  font-size: 0.82rem;
+  line-height: 1.38;
 }
 
 .diagnostic-insight-list small {
@@ -2056,10 +2118,10 @@
 }
 
 .diagnostic-area {
-  padding: 10px;
+  padding: 9px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
   border-radius: var(--radius-sm);
   background: #ffffff;
   box-shadow: 0 2px 8px rgba(18, 45, 18, 0.04);
@@ -2081,13 +2143,13 @@
 }
 
 .diagnostic-area .diagnostic-icon {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
 }
 
 .diagnostic-area .diagnostic-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .diagnostic-area h4 {
@@ -2101,13 +2163,13 @@
 
 .area-status {
   flex: 0 0 auto;
-  max-width: 104px;
-  padding: 3px 7px;
+  max-width: 96px;
+  padding: 2px 6px;
   border: 1px solid var(--border);
   border-radius: 999px;
   color: var(--text-muted);
   background: var(--surface-soft);
-  font-size: 0.58rem;
+  font-size: 0.54rem;
   font-weight: 800;
   line-height: 1.1;
   text-align: center;
@@ -2149,7 +2211,7 @@
 
 .diagnostic-area dl > div {
   min-width: 0;
-  padding: 8px 6px;
+  padding: 6px 5px;
   background: var(--surface-strong);
 }
 
@@ -2160,16 +2222,16 @@
 .diagnostic-area dd {
   margin: 0;
   color: var(--text-strong);
-  font-size: 0.98rem;
+  font-size: 0.9rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
 
 .diagnostic-area dt {
-  margin-bottom: 5px;
+  margin-bottom: 4px;
   color: var(--text-soft);
-  font-size: 0.58rem;
+  font-size: 0.54rem;
   font-weight: 800;
   letter-spacing: 0;
   line-height: 1.1;
@@ -2179,12 +2241,12 @@
 .diagnostic-area p {
   margin: 0;
   color: var(--text);
-  font-size: 0.82rem;
-  line-height: 1.45;
+  font-size: 0.78rem;
+  line-height: 1.36;
 }
 
 .stacked-bar {
-  height: 14px;
+  height: 11px;
   display: flex;
   overflow: hidden;
   border-radius: 4px;
@@ -2210,8 +2272,8 @@
 
 .area-position-lines {
   display: grid;
-  gap: 4px;
-  padding: 7px 8px;
+  gap: 3px;
+  padding: 6px 7px;
   border: 1px solid var(--border);
   border-radius: 7px;
   background: var(--surface-soft);
@@ -2221,8 +2283,8 @@
   display: flex;
   gap: 4px;
   color: var(--text-muted);
-  font-size: 0.73rem;
-  line-height: 1.25;
+  font-size: 0.7rem;
+  line-height: 1.22;
 }
 
 .area-position-line strong {
@@ -2241,21 +2303,21 @@
 
 .diagnostic-reading {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .diagnostic-reading__grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--card-gap);
+  gap: 10px;
 }
 
 .reading-card {
-  min-height: 112px;
+  min-height: 96px;
   display: grid;
   align-content: start;
-  gap: 7px;
-  padding: 12px;
+  gap: 6px;
+  padding: 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: #ffffff;
@@ -2272,8 +2334,8 @@
 .reading-card p {
   margin: 0;
   color: var(--text);
-  font-size: 0.78rem;
-  line-height: 1.38;
+  font-size: 0.75rem;
+  line-height: 1.34;
 }
 
 .simple-list {
@@ -2474,11 +2536,11 @@
 
   .indicator-sidebar {
     height: auto;
-    min-height: 320px;
+    min-height: 0;
   }
 
   .indicator-list {
-    max-height: 320px;
+    max-height: min(420px, 60vh);
   }
 
   .metric-grid {
@@ -2645,7 +2707,7 @@
   }
 
   .history-chart__canvas {
-    min-height: 200px;
+    min-height: 190px;
   }
 
   .section-card__header {
@@ -2739,7 +2801,7 @@
   }
 
   .indicator-list {
-    max-height: 330px;
+    max-height: min(440px, 64vh);
   }
 
   .indicator-row {
