@@ -1,4 +1,10 @@
-import { cleanInterpretationText, getDisplayValue, getIndicatorTitle } from '../utils/format'
+import {
+  cleanInterpretationText,
+  detectIndicatorUnit,
+  formatIndicatorValue,
+  getDisplayValue,
+  getIndicatorTitle,
+} from '../utils/format'
 import { clampMarkerPosition, getStableVisualDomain, projectValueToPercent } from '../utils/visualDomain'
 import { IndicatorHistoryChart } from './IndicatorHistoryChart'
 import { MetricCard } from './MetricCard'
@@ -15,18 +21,23 @@ export function IndicatorDetail({ item, result }) {
 
   const status = getDisplayValue(result.display, 'status')
   const normalizedStatus = String(status).toLocaleLowerCase('pt-BR')
-  const tone = normalizedStatus.includes('visualiza')
-    ? 'info'
+  const isInformative =
+    normalizedStatus.includes('visualiza') || normalizedStatus.includes('informativo')
+  const tone = isInformative
+    ? 'muted'
     : result.atingida
       ? 'success'
       : result.available
         ? 'warning'
         : 'muted'
   const isComparable = isComparableIndicator(result)
-  const comparisonType = getComparisonType(result)
   const startYear = getBoundaryYear(result, 'start')
   const endYear = getBoundaryYear(result, 'end')
   const distanceTone = getDistanceTone(result, isComparable)
+  const unit = detectIndicatorUnit(item, result)
+  const formattedStart = formatIndicatorValue(result.start_value, unit)
+  const formattedEnd = formatIndicatorValue(result.end_value, unit)
+  const variation = getDisplayValue(result.display, 'variation')
 
   return (
     <section className="detail-panel">
@@ -40,27 +51,37 @@ export function IndicatorDetail({ item, result }) {
         <StatusBadge status={status} tone={tone} />
       </div>
 
-      <div className="metric-grid">
-        <MetricCard label={`Valor em ${startYear}`} value={getDisplayValue(result.display, 'start_value')} />
-        <MetricCard label={`Valor em ${endYear}`} value={getDisplayValue(result.display, 'end_value')} />
-        <MetricCard label="Variação" value={getDisplayValue(result.display, 'variation')} />
-        <MetricCard
-          label={isComparable ? (result.meta_label ?? 'Meta') : 'Meta'}
-          value={isComparable ? formatMetaValue(result) : comparisonType}
-          tone={isComparable ? 'default' : 'muted'}
-        />
-        <MetricCard
-          label={isComparable ? 'Distância da meta' : 'Comparação'}
-          value={isComparable ? getDisplayValue(result.display, 'distance') : '-'}
-          tone={distanceTone}
-        />
-      </div>
+      {isComparable ? (
+        <div className="metric-grid">
+          <MetricCard label={`Valor em ${startYear}`} value={formattedStart} />
+          <MetricCard label={`Valor em ${endYear}`} value={formattedEnd} />
+          <MetricCard label="Variação" value={variation} />
+          <MetricCard
+            label={result.meta_label ?? 'Meta'}
+            value={formatMetaValue(result, unit)}
+          />
+          <MetricCard
+            label="Distância da meta"
+            value={getDisplayValue(result.display, 'distance')}
+            tone={distanceTone}
+          />
+        </div>
+      ) : (
+        <div className="metric-grid metric-grid--four">
+          <MetricCard label={`Valor em ${startYear}`} value={formattedStart} />
+          <MetricCard label={`Valor em ${endYear}`} value={formattedEnd} />
+          <MetricCard label="Variação" value={variation} />
+          <MetricCard label="Tipo" value="Informativo" tone="muted" />
+        </div>
+      )}
 
-      <GoalProgress
-        distanceTone={distanceTone}
-        result={result}
-        isComparable={isComparable}
-      />
+      {isComparable && (
+        <GoalProgress
+          distanceTone={distanceTone}
+          result={result}
+          unit={unit}
+        />
+      )}
 
       {result.display?.interpretation && (
         <div className="interpretation-box">
@@ -72,58 +93,54 @@ export function IndicatorDetail({ item, result }) {
       <IndicatorHistoryChart
         display={result.display}
         endYear={result.end_year}
+        item={item}
         meta={isComparable ? result.meta : null}
+        result={result}
         series={result.series}
         startYear={result.start_year}
         title={getIndicatorTitle(item, result)}
         showMetaLine={isComparable}
+        unit={unit}
       />
     </section>
   )
 }
 
-function GoalProgress({ distanceTone, result, isComparable }) {
-  const endValue = getDisplayValue(result.display, 'end_value')
-  const metaMarkerLabel = formatMetaMarker(result)
+function GoalProgress({ distanceTone, result, unit }) {
+  const endValue = formatIndicatorValue(result.end_value, unit)
+  const metaMarkerLabel = formatMetaValue(result, unit)
   const distance = getDisplayValue(result.display, 'distance')
-  const progress = calculateGoalProgress(result, isComparable)
-  const message = 'Indicador informativo, sem comparação direta com meta.'
+  const progress = calculateGoalProgress(result, unit)
 
   return (
     <section
-      className={progress.available ? 'goal-progress' : 'goal-progress goal-progress--empty'}
+      className="goal-progress"
       aria-label="Acompanhamento da meta"
     >
       <div className="goal-progress__heading">
         <span>Acompanhamento da meta</span>
-        {progress.available && (
-          <strong className={`goal-progress__distance goal-progress__distance--${distanceTone}`}>
-            {distance}
-          </strong>
-        )}
+        <strong className={`goal-progress__distance goal-progress__distance--${distanceTone}`}>
+          {distance}
+        </strong>
       </div>
-      {progress.available ? (
-        <div className="goal-progress__rail">
-          <span
-            className="goal-progress__fill"
-            style={{ width: `${progress.fill}%` }}
-          />
-          <span
-            className="goal-progress__marker goal-progress__marker--current"
-            style={{ left: `${progress.current}%` }}
-          >
-            <em>{endValue}</em>
-          </span>
-          <span
-            className="goal-progress__marker goal-progress__marker--meta"
-            style={{ left: `${progress.meta}%` }}
-          >
-            <small className="goal-progress__meta-label">Meta {metaMarkerLabel}</small>
-          </span>
-        </div>
-      ) : (
-        <p>{message}</p>
-      )}
+      <div className="goal-progress__rail">
+        <span
+          className="goal-progress__fill"
+          style={{ width: `${progress.fill}%` }}
+        />
+        <span
+          className="goal-progress__marker goal-progress__marker--current"
+          style={{ left: `${progress.current}%` }}
+        >
+          <em>{endValue}</em>
+        </span>
+        <span
+          className="goal-progress__marker goal-progress__marker--meta"
+          style={{ left: `${progress.meta}%` }}
+        >
+          <small className="goal-progress__meta-label">Meta {metaMarkerLabel}</small>
+        </span>
+      </div>
     </section>
   )
 }
@@ -142,25 +159,20 @@ export function isComparableIndicator(result) {
     !status.includes('sem variacao')
 }
 
-function getComparisonType(result) {
-  const status = String(result?.display?.status ?? '').toLocaleLowerCase('pt-BR')
-  return status.includes('visualiza') || status.includes('informativo') ? 'Informativo' : 'Não se aplica'
-}
-
-function calculateGoalProgress(result, isComparable) {
+function calculateGoalProgress(result, unit) {
   const start = Number(result?.start_value)
   const current = Number(result?.end_value)
   const meta = Number(result?.meta)
 
-  if (!isComparable || !Number.isFinite(current) || !Number.isFinite(meta)) {
-    return { available: false }
+  if (!Number.isFinite(current) || !Number.isFinite(meta)) {
+    return { fill: 0, current: 0, meta: 0 }
   }
 
   const seriesValues = (result?.series ?? [])
     .map((point) => Number(point?.valor))
     .filter(Number.isFinite)
   const allValues = [...seriesValues, current, start].filter(Number.isFinite)
-  const isPercent = detectPercentUnit(result)
+  const isPercent = unit === 'percent'
 
   const domain = getStableVisualDomain({
     values: allValues,
@@ -172,35 +184,17 @@ function calculateGoalProgress(result, isComparable) {
   const metaPosition = clampMarkerPosition(projectValueToPercent(meta, domain))
 
   return {
-    available: true,
     current: fill,
     fill,
     meta: metaPosition,
   }
 }
 
-function detectPercentUnit(result) {
-  const displayText = Object.values(result?.display ?? {}).join(' ')
-  if (displayText.includes('%')) return true
-  const allValues = [
-    Number(result?.start_value),
-    Number(result?.end_value),
-    Number(result?.meta),
-    ...((result?.series ?? []).map((point) => Number(point?.valor))),
-  ].filter(Number.isFinite)
-  if (allValues.length && allValues.every((value) => value >= 0 && value <= 100)) return true
-  return false
-}
-
-function formatMetaMarker(result) {
-  return formatMetaValue(result)
-}
-
-function formatMetaValue(result) {
+function formatMetaValue(result, unit) {
   const raw = formatRaw(result?.meta)
   if (raw === '-') return raw
-  const displayText = Object.values(result?.display ?? {}).join(' ')
-  return displayText.includes('%') ? `${raw}%` : raw
+  if (unit === 'percent') return `${raw}%`
+  return raw
 }
 
 function getBoundaryYear(result, boundary) {

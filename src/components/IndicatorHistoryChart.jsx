@@ -4,24 +4,36 @@ import {
   stableAbsoluteTicks,
   stablePercentTicks,
 } from '../utils/visualDomain'
+import { detectIndicatorUnit, formatIndicatorValue } from '../utils/format'
 
 const CHART_WIDTH = 820
 const CHART_HEIGHT = 320
-const PADDING = { bottom: 52, left: 78, right: 92, top: 64 }
+const PADDING = { bottom: 52, left: 78, right: 92, top: 56 }
 
 export function IndicatorHistoryChart({
   display,
   endYear,
+  item,
   meta,
+  result,
   series,
+  showMetaLine = true,
   startYear,
   title = 'Histórico do indicador',
-  showMetaLine = true,
+  unit: unitProp,
 }) {
   const [activePoint, setActivePoint] = useState(null)
+  const resolvedUnit = unitProp || detectIndicatorUnit(item, result)
   const chart = useMemo(
-    () => buildChartModel({ display, endYear, meta, series, startYear, showMetaLine }),
-    [display, endYear, meta, series, startYear, showMetaLine],
+    () => buildChartModel({
+      display,
+      meta,
+      resolvedUnit,
+      result,
+      series,
+      showMetaLine,
+    }),
+    [display, meta, resolvedUnit, result, series, showMetaLine],
   )
 
   if (chart.points.length < 2) {
@@ -29,7 +41,7 @@ export function IndicatorHistoryChart({
       <section className="history-chart history-chart--empty-state">
         <div className="history-chart__heading">
           <div>
-            <span className="eyebrow">Série histórica</span>
+            <span className="eyebrow">Evolução do indicador</span>
             <h4>{title}</h4>
           </div>
         </div>
@@ -44,10 +56,9 @@ export function IndicatorHistoryChart({
     <section className="history-chart">
       <div className="history-chart__heading">
         <div>
-          <span className="eyebrow">Série histórica</span>
+          <span className="eyebrow">Evolução do indicador</span>
           <h4>{title}</h4>
         </div>
-        <span>{chart.points.length} pontos</span>
       </div>
 
       <div className="history-chart__canvas">
@@ -73,20 +84,12 @@ export function IndicatorHistoryChart({
                 y1={chart.metaLine.y}
                 y2={chart.metaLine.y}
               />
-              <rect
-                className="chart-meta-line__label-bg"
-                x={chart.metaLine.labelX}
-                y={chart.metaLine.labelY - 14}
-                width={chart.metaLine.labelWidth}
-                height={18}
-                rx={4}
-              />
               <text
                 className="chart-meta-line__label"
-                x={chart.metaLine.labelX + chart.metaLine.labelWidth / 2}
-                y={chart.metaLine.labelY}
+                x={CHART_WIDTH - PADDING.right - 2}
+                y={Math.max(PADDING.top + 12, chart.metaLine.y - 8)}
               >
-                Meta {chart.formatValue(chart.metaLine.value)}
+                {`Meta ${chart.formatValue(chart.metaLine.value)}`}
               </text>
             </g>
           )}
@@ -156,18 +159,20 @@ export function IndicatorHistoryChart({
   )
 }
 
-function buildChartModel({ display, endYear, meta, series, startYear, showMetaLine }) {
+function buildChartModel({ display, meta, resolvedUnit, result, series, showMetaLine }) {
   const points = normalizeSeries(series)
-  const unit = inferUnit(display, points, meta)
   const rawMetaValue = meta === null || meta === undefined || meta === '' ? Number.NaN : Number(meta)
   const metaValue = Number.isFinite(rawMetaValue) ? rawMetaValue : null
 
   if (points.length < 2) {
-    return { points }
+    return {
+      formatValue: (value) => formatIndicatorValue(value, resolvedUnit),
+      points,
+    }
   }
 
   const values = points.map((point) => point.value)
-  const isPercent = unit === '%'
+  const isPercent = resolvedUnit === 'percent'
   const domain = getStableVisualDomain({
     values: metaValue !== null ? [...values, metaValue] : values,
     meta: metaValue,
@@ -210,18 +215,8 @@ function buildChartModel({ display, endYear, meta, series, startYear, showMetaLi
   const shouldShowMeta = showMetaLine && metaValue !== null && Number.isFinite(metaValue)
   let metaLine = null
   if (shouldShowMeta) {
-    const labelText = `Meta ${formatChartValue(metaValue, unit)}`
-    const labelWidth = estimateLabelWidth(labelText) + 12
     const baseY = yScale(metaValue)
-    const labelY = Math.max(
-      PADDING.top + 12,
-      Math.min(baseY - 8, CHART_HEIGHT - PADDING.bottom - 18),
-    )
     metaLine = {
-      labelText,
-      labelWidth,
-      labelX: CHART_WIDTH - PADDING.right - labelWidth,
-      labelY,
       value: metaValue,
       y: Math.max(PADDING.top, Math.min(baseY, CHART_HEIGHT - PADDING.bottom)),
     }
@@ -229,7 +224,7 @@ function buildChartModel({ display, endYear, meta, series, startYear, showMetaLi
 
   return {
     areaPath,
-    formatValue: (value) => formatChartValue(value, unit),
+    formatValue: (value) => formatIndicatorValue(value, resolvedUnit),
     linePath,
     metaLine,
     points: scaledPoints,
@@ -250,26 +245,6 @@ function normalizeSeries(series = []) {
     }))
     .filter((point) => Number.isFinite(point.year) && Number.isFinite(point.value))
     .sort((a, b) => a.year - b.year)
-}
-
-function inferUnit(display, points, meta) {
-  const displayText = Object.values(display ?? {}).join(' ')
-  if (displayText.includes('%')) return '%'
-  const metaValue = meta === null || meta === undefined || meta === '' ? Number.NaN : Number(meta)
-  const values = [...points.map((point) => point.value), metaValue].filter(Number.isFinite)
-  if (values.length && values.every((value) => value >= 0 && value <= 100)) return '%'
-  return ''
-}
-
-function formatChartValue(value, unit) {
-  const formatted = Number(value).toLocaleString('pt-BR', {
-    maximumFractionDigits: Number.isInteger(value) || Math.abs(value) >= 10 ? 0 : 1,
-  })
-  return unit ? `${formatted}${unit}` : formatted
-}
-
-function estimateLabelWidth(text) {
-  return Math.max(48, text.length * 6.5)
 }
 
 function pickYearTicks(points) {

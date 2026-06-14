@@ -144,6 +144,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
           title="Exigem atenção"
           items={normalizedRanking.topAtencao}
           emptyMessage="Nenhum indicador crítico nesta categoria."
+          valueMode="distance"
         />
       </section>
     </div>
@@ -265,11 +266,12 @@ function isCriticalRankingItem(item, result) {
   if (status.includes('meta atingida')) return false
 
   const distance = parsePpValue(result.display?.distance ?? item.display?.distance)
-  const variation = parsePpValue(result.display?.variation ?? item.display?.variation)
-
   if (Number.isFinite(distance)) return distance < 0
-  if (Number.isFinite(variation)) return variation < 0
-  return status.includes('não atingida') || status.includes('nao atingida')
+
+  if (status.includes('não atingida') || status.includes('nao atingida')) return true
+
+  const variation = parsePpValue(result.display?.variation ?? item.display?.variation)
+  return Number.isFinite(variation) && variation < 0
 }
 
 function compareCriticalRankingItems(a, b) {

@@ -891,7 +891,7 @@
   display: grid;
   grid-template-columns: minmax(300px, 0.32fr) minmax(0, 0.68fr);
   gap: var(--card-gap);
-  align-items: stretch;
+  align-items: start;
   margin-top: 0;
   min-width: 0;
 }
@@ -917,11 +917,10 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: #ffffff;
-  box-shadow: 0 8px 24px rgba(18, 45, 18, 0.06);
+  box-shadow: 0 4px 14px rgba(18, 45, 18, 0.05);
   padding: 16px;
   min-width: 0;
-  height: 100%;
-  align-self: stretch;
+  align-self: start;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -1003,9 +1002,9 @@
 }
 
 .indicator-list {
-  flex: 1 1 auto;
-  min-height: 280px;
-  max-height: min(650px, calc(100vh - 360px));
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: min(520px, calc(100vh - 420px));
   overflow: auto;
   display: flex;
   flex-direction: column;
@@ -1229,6 +1228,10 @@
   box-shadow: var(--shadow-sm);
 }
 
+.metric-grid--four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .metric-card,
 .metric-box {
   padding: 14px 16px;
@@ -1308,12 +1311,12 @@
    ========================= */
 .interpretation-box,
 .timeline-box {
-  padding: 14px 16px;
+  padding: 18px 20px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-soft);
   color: var(--text);
-  line-height: 1.6;
+  line-height: 1.7;
   box-shadow: var(--shadow-sm);
   min-height: 0;
   height: auto;
@@ -1466,8 +1469,8 @@
 .interpretation-box p {
   margin: 0;
   color: var(--text);
-  font-size: 0.92rem;
-  line-height: 1.65;
+  font-size: 0.94rem;
+  line-height: 1.7;
   overflow: visible;
   overflow-wrap: anywhere;
   white-space: normal;
@@ -1574,17 +1577,15 @@
   stroke-dasharray: 6 5;
 }
 
-.chart-meta-line__label-bg {
-  fill: #ffffff;
-  stroke: rgba(240, 90, 36, 0.55);
-  stroke-width: 1;
-}
-
 .chart-meta-line__label {
   fill: var(--danger);
-  text-anchor: middle;
+  text-anchor: end;
   font-size: 11px;
   font-weight: 800;
+  paint-order: stroke;
+  stroke: rgba(255, 255, 255, 0.85);
+  stroke-width: 3;
+  stroke-linejoin: round;
 }
 
 .chart-meta-line text {
@@ -1717,6 +1718,7 @@
   overflow: hidden;
   padding: 18px;
   box-sizing: border-box;
+  box-shadow: var(--shadow-sm);
 }
 
 .ranking-heading {

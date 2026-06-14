@@ -1,4 +1,9 @@
-export function RankingBlock({ title, items, emptyMessage = 'Nenhum item dispon√≠vel.' }) {
+export function RankingBlock({
+  title,
+  items,
+  emptyMessage = 'Nenhum item dispon√≠vel.',
+  valueMode = 'variation',
+}) {
   return (
     <section className="ranking-block">
       <div className="ranking-heading">
@@ -14,7 +19,7 @@ export function RankingBlock({ title, items, emptyMessage = 'Nenhum item dispon√
                 <strong>{item.label}</strong>
                 {item.sub && <span>{item.sub}</span>}
               </div>
-              <small>{item.display?.variation ?? item.display?.distance ?? '-'}</small>
+              <small>{pickRankingValue(item.display, valueMode)}</small>
             </li>
           ))}
         </ol>
@@ -23,4 +28,11 @@ export function RankingBlock({ title, items, emptyMessage = 'Nenhum item dispon√
       )}
     </section>
   )
+}
+
+function pickRankingValue(display, mode) {
+  if (mode === 'distance') {
+    return display?.distance ?? display?.variation ?? '-'
+  }
+  return display?.variation ?? display?.distance ?? '-'
 }
