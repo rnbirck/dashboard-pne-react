@@ -8,8 +8,8 @@ import {
 import { formatIndicatorValue, resolveIndicatorUnit } from '../utils/format'
 
 const CHART_WIDTH = 820
-const CHART_HEIGHT = 280
-const PADDING = { bottom: 44, left: 72, right: 88, top: 48 }
+const CHART_HEIGHT = 260
+const PADDING = { bottom: 36, left: 56, right: 72, top: 28 }
 
 export function IndicatorHistoryChart({
   display,
@@ -326,6 +326,7 @@ function computeDataLabels(points, metaLine, formatValue) {
   labels.push({
     anchor: 'start',
     isLast: true,
+    priority: 1,
     value: lastPoint.value,
     x: lastPoint.x + 8,
     y: lastPoint.y - LABEL_OFFSET_Y,
@@ -339,6 +340,7 @@ function computeDataLabels(points, metaLine, formatValue) {
       labels.push({
         anchor: 'middle',
         isLast: false,
+        priority: 5,
         value: p.value,
         x: p.x,
         y: p.y - LABEL_OFFSET_Y,
@@ -346,27 +348,41 @@ function computeDataLabels(points, metaLine, formatValue) {
       })
     }
   } else {
-    // Mais de 8 pontos: mostrar primeiro, maior, menor
+    // Mais de 8 pontos: mostrar primeiro, maior, menor, cruzamentos
     const maxPoint = points.reduce((max, p) => (p.value > max.value ? p : max), points[0])
     const minPoint = points.reduce((min, p) => (p.value < min.value ? p : min), points[0])
 
-    const specialPoints = [firstPoint]
-    if (maxPoint.year !== firstPoint.year && maxPoint.year !== lastPoint.year) {
-      specialPoints.push(maxPoint)
-    }
-    if (minPoint.year !== firstPoint.year && minPoint.year !== lastPoint.year && minPoint.year !== maxPoint.year) {
-      specialPoints.push(minPoint)
-    }
-
-    for (const p of specialPoints) {
+    const seen = new Set([firstPoint.year])
+    const addPoint = (p, priority) => {
+      if (!p || seen.has(p.year)) return
+      seen.add(p.year)
       labels.push({
         anchor: 'middle',
         isLast: false,
+        priority,
         value: p.value,
         x: p.x,
         y: p.y - LABEL_OFFSET_Y,
         year: p.year,
       })
+    }
+
+    addPoint(firstPoint, 4)
+    addPoint(maxPoint, 3)
+    addPoint(minPoint, 3)
+
+    // Pontos que cruzam a meta
+    if (metaLine && Number.isFinite(metaLine.value)) {
+      const metaVal = metaLine.value
+      for (let i = 1; i < points.length; i++) {
+        const prev = points[i - 1]
+        const curr = points[i]
+        const crossedUp = prev.value < metaVal && curr.value >= metaVal
+        const crossedDown = prev.value > metaVal && curr.value <= metaVal
+        if (crossedUp || crossedDown) {
+          addPoint(curr, 2)
+        }
+      }
     }
   }
 
@@ -375,6 +391,7 @@ function computeDataLabels(points, metaLine, formatValue) {
     labels.push({
       anchor: 'end',
       isLast: false,
+      priority: 0,
       value: metaLine.value,
       x: CHART_WIDTH - PADDING.right - 2,
       y: Math.max(PADDING.top + 12, metaLine.y - 8),
@@ -382,13 +399,11 @@ function computeDataLabels(points, metaLine, formatValue) {
     })
   }
 
-  // Remover labels muito próximos (priorizar último ponto)
-  const filtered = []
-  const lastLabel = labels.find((l) => l.isLast)
-  if (lastLabel) filtered.push(lastLabel)
+  // Remover labels muito próximos, priorizando por priority (menor número = maior prioridade)
+  labels.sort((a, b) => a.priority - b.priority)
 
+  const filtered = []
   for (const label of labels) {
-    if (label.isLast) continue
     const tooClose = filtered.some((existing) => {
       const dy = Math.abs(existing.y - label.y)
       const dx = Math.abs(existing.x - label.x)

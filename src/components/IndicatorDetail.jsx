@@ -48,7 +48,9 @@ export function IndicatorDetail({ item, result }) {
   const hasStartYear = typeof startYear === 'number' && startYear > 0
   const hasEndYear = typeof endYear === 'number' && endYear > 0
   const isSingleYear = isSingleYearIndicator(result)
-  const hasSeries = (result.series ?? []).length >= 2
+  const seriesValues = (result.series ?? []).map((p) => Number(p?.valor)).filter(Number.isFinite)
+  const hasRealSeriesValues = seriesValues.some((v) => v !== 0)
+  const hasSeries = (result.series ?? []).length >= 2 && hasRealSeriesValues
 
   const metaValue = formatMetaValue(result, unit)
   const distanceValue = getDisplayValue(result.display, 'distance')
@@ -201,7 +203,37 @@ function GoalProgress({ distanceTone, result, unit }) {
 }
 
 export function isAvailableIndicator(result) {
-  return Boolean(result) && result.available !== false
+  if (!result || result.available === false) return false
+  const status = String(result?.display?.status ?? '').toLocaleLowerCase('pt-BR')
+  if (
+    status.includes('indispon') ||
+    status.includes('sem dados') ||
+    status.includes('sem variação') ||
+    status.includes('sem variacao')
+  ) {
+    return false
+  }
+  const start = Number(result?.start_value)
+  const end = Number(result?.end_value)
+  const series = (result?.series ?? [])
+    .map((point) => Number(point?.valor))
+    .filter(Number.isFinite)
+  if (!Number.isFinite(start) && !Number.isFinite(end) && series.length === 0) {
+    return false
+  }
+  // Esconder indicadores informativos cuja série inteira é zero
+  const isInformative =
+    status.includes('visualiza') ||
+    status.includes('informativo') ||
+    result.tracks_goal === false ||
+    result.meta == null
+  if (isInformative && series.length > 0 && series.every((v) => v === 0)) {
+    return false
+  }
+  if (isInformative && Number.isFinite(start) && start === 0 && Number.isFinite(end) && end === 0 && series.length === 0) {
+    return false
+  }
+  return true
 }
 
 export function isComparableIndicator(result) {

@@ -7,9 +7,9 @@ export function IndicatorList({ items, selectedIndicator, onSelectIndicator, res
         const result = results?.[item.key]
         const statusLabel = result?.available
           ? result?.display?.status ?? (result?.atingida ? 'Meta atingida' : 'Meta não atingida')
-          : 'Indisponível'
+          : 'Informativo'
         const normalizedStatus = String(statusLabel).toLocaleLowerCase('pt-BR')
-        const tone = normalizedStatus.includes('visualiza')
+        const tone = normalizedStatus.includes('visualiza') || normalizedStatus.includes('informativo')
           ? 'info'
           : result?.atingida
             ? 'success'

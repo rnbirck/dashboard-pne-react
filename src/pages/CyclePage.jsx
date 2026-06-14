@@ -119,8 +119,8 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
               <span>{availableCategoryItems.length}</span>
             </div>
             {availableCategoryItems.length === 0 ? (
-              <div className="indicator-sidebar__empty" style={{ padding: '12px 16px', color: 'var(--text-muted)', fontSize: '14px' }}>
-                <p>Nenhum indicador disponível para esta categoria.</p>
+              <div className="indicator-sidebar__empty" style={{ padding: '10px 12px', color: 'var(--text-muted)', fontSize: '0.82rem', lineHeight: '1.4' }}>
+                <p>Nenhum indicador disponível para este município nesta categoria.</p>
               </div>
             ) : (
               <>

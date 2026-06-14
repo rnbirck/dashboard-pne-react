@@ -30,6 +30,13 @@ export function cleanInterpretationText(text) {
 const ABSOLUTE_HINTS = [
   'número absoluto',
   'numero absoluto',
+  'número de matrículas',
+  'numero de matriculas',
+  'matrículas em número absoluto',
+  'matriculas em numero absoluto',
+  'quantidade',
+  'total de matrículas',
+  'total de matriculas',
   'número de',
   'numero de',
   'matrículas',
@@ -37,9 +44,6 @@ const ABSOLUTE_HINTS = [
   'escolas',
   'docentes',
   'salas',
-  'oferta',
-  'alunos',
-  'estudantes',
   'turmas',
 ]
 
@@ -52,6 +56,26 @@ const PERCENT_HINTS = [
   'participacao',
   'razão percentual',
   'razao percentual',
+  '% da',
+  'percentual de',
+  'população que frequenta',
+  'populacao que frequenta',
+  'população com',
+  'populacao com',
+  'escolas públicas com',
+  'escolas publicas com',
+  'alunos do público-alvo',
+  'alunos do publico-alvo',
+  'docentes com formação adequada',
+  'percentual da população',
+  'percentual de alunos',
+  'percentual de escolas',
+  'percentual de docentes',
+  'percentual de matrículas',
+  'percentual de matriculas',
+  'jornada integral',
+  'público-alvo da eti',
+  'publico-alvo da eti',
 ]
 
 const INDEX_HINTS = ['ideb']
@@ -75,6 +99,28 @@ export function resolveIndicatorUnit(item, result) {
   if (hasAbsoluteHint) return 'absolute'
   if (hasPercentHint) return 'percent'
   return 'absolute'
+}
+
+export function hasRealData(result) {
+  if (!result) return false
+  if (result.available === false) return false
+  const status = String(result?.display?.status ?? '').toLocaleLowerCase('pt-BR')
+  if (
+    status.includes('indispon') ||
+    status.includes('sem dados') ||
+    status.includes('sem variação') ||
+    status.includes('sem variacao')
+  ) {
+    return false
+  }
+  const start = Number(result?.start_value)
+  const end = Number(result?.end_value)
+  const series = (result?.series ?? [])
+    .map((point) => Number(point?.valor))
+    .filter(Number.isFinite)
+  if (Number.isFinite(start) || Number.isFinite(end)) return true
+  if (series.length > 0) return true
+  return false
 }
 
 export function formatIndicatorValue(value, unit) {
