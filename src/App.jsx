@@ -189,6 +189,7 @@ function PageContent({
   if (activePage === 'diagnostico') {
     return (
       <Diagnostico
+        indicadores={indicadores}
         municipioData={municipioData}
         selectedMunicipio={selectedMunicipio}
       />
