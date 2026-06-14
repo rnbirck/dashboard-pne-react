@@ -1,3 +1,5 @@
+import { resolveIndicatorUnit } from '../utils/format'
+
 const AREA_ICON_PATHS = {
   atendimento: (
     <>
@@ -118,10 +120,10 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
           <h3>Leitura do posicionamento</h3>
         </div>
         <div className="diagnostic-reading__grid">
-          {analysis.readings.map((reading, index) => (
-            <article className="reading-card" key={reading}>
-              <span>{index + 1}</span>
-              <p>{reading}</p>
+          {analysis.readings.map((reading) => (
+            <article className="reading-card" key={reading.key}>
+              <strong>{reading.title}</strong>
+              <p>{reading.text}</p>
             </article>
           ))}
         </div>
@@ -154,7 +156,10 @@ function InsightCard({ icon, items, title, tone }) {
           {items.map((item) => (
             <li key={item.key}>
               <span aria-hidden="true" />
-              <p>{item.label} — {item.note}</p>
+              <div>
+                <p>{item.label} — {item.note}</p>
+                <small>{item.categoryLabel}</small>
+              </div>
             </li>
           ))}
         </ul>
@@ -173,8 +178,11 @@ function AreaCard({ area }) {
   return (
     <article className="diagnostic-area">
       <div className="diagnostic-area__title">
-        <IconBubble icon={area.key} tone="success" />
-        <h4>{area.label}</h4>
+        <div>
+          <IconBubble icon={area.key} tone="success" />
+          <h4>{area.label}</h4>
+        </div>
+        <span className={`area-status area-status--${area.statusTone}`}>{area.statusLabel}</span>
       </div>
       <dl>
         <div>
@@ -199,8 +207,26 @@ function AreaCard({ area }) {
         <span className="stacked-bar__danger" style={{ width: `${belowWidth}%` }} />
         <span className="stacked-bar__neutral" style={{ width: `${noComparisonWidth}%` }} />
       </div>
+      <div className="area-position-lines">
+        <PositionLine
+          label="Melhor"
+          value={area.bestIndicator?.summary ?? 'Sem indicador comparável com meta nesta área.'}
+        />
+        <PositionLine
+          label="Maior distância"
+          value={area.worstIndicator?.summary ?? 'Sem indicador abaixo da meta nesta área.'}
+        />
+      </div>
       <p>{area.reading}</p>
     </article>
+  )
+}
+
+function PositionLine({ label, value }) {
+  return (
+    <p className="area-position-line">
+      <strong>{label}:</strong> <span>{value}</span>
+    </p>
   )
 }
 
@@ -298,7 +324,7 @@ function buildDiagnosticAnalysis(categories, results) {
     .filter((indicator) => indicator.status === 'below')
     .sort((a, b) => a.distance - b.distance)
     .slice(0, 4)
-    .map((indicator) => ({ ...indicator, note: 'abaixo da meta' }))
+    .map((indicator) => ({ ...indicator, note: formatDistance(indicator, true) }))
 
   return {
     areas,
@@ -318,16 +344,23 @@ function buildAreaAnalysis(category, results) {
   const below = indicators.filter((indicator) => indicator.status === 'below').length
   const noComparison = indicators.filter((indicator) => indicator.status === 'noComparison').length
   const total = indicators.length
+  const diagnosis = buildAreaDiagnosis({ achieved, below, noComparison, total })
+  const bestIndicator = buildBestAreaIndicator(indicators)
+  const worstIndicator = buildWorstAreaIndicator(indicators)
 
   return {
     achieved,
+    bestIndicator,
     below,
     indicators,
     key: category.key,
     label: category.label,
     noComparison,
-    reading: buildAreaReading({ achieved, below, noComparison, total }),
+    reading: diagnosis.reading,
+    statusLabel: diagnosis.statusLabel,
+    statusTone: diagnosis.statusTone,
     total,
+    worstIndicator,
   }
 }
 
@@ -337,14 +370,19 @@ function normalizeDiagnosticIndicator(item, category, result) {
   const comparable = isDiagnosticComparable(result)
   const distance = getNumericValue(result?.distance, result?.display?.distance)
   const variation = getNumericValue(result?.progress_delta, result?.raw_delta, result?.display?.variation)
+  const unit = resolveIndicatorUnit(item, result)
 
   return {
     categoryKey: category.key,
     categoryLabel: category.label,
     distance,
+    displayDistance: result?.display?.distance,
+    displayVariation: result?.display?.variation,
     key: `${category.key}-${item.key}`,
     label: item.label,
+    rawKey: item.key,
     status: comparable ? (result?.atingida === true ? 'achieved' : 'below') : 'noComparison',
+    unit,
     variation,
   }
 }
@@ -353,7 +391,10 @@ function buildBestPosition(indicators) {
   const achieved = indicators
     .filter((indicator) => indicator.status === 'achieved')
     .sort((a, b) => getSortValue(b.distance) - getSortValue(a.distance))
-    .map((indicator) => ({ ...indicator, note: 'meta atingida' }))
+    .map((indicator) => ({
+      ...indicator,
+      note: `meta atingida${Number.isFinite(indicator.distance) ? ` (${formatDistance(indicator)})` : ''}`,
+    }))
 
   const achievedKeys = new Set(achieved.map((indicator) => indicator.key))
   const favorable = indicators
@@ -361,7 +402,9 @@ function buildBestPosition(indicators) {
     .sort((a, b) => getSortValue(b.variation) - getSortValue(a.variation))
     .map((indicator) => ({
       ...indicator,
-      note: indicator.status === 'below' ? 'avanço observado' : 'desempenho favorável',
+      note: indicator.status === 'below'
+        ? `avanço observado${formatVariationSuffix(indicator)}`
+        : `desempenho favorável${formatVariationSuffix(indicator)}`,
     }))
 
   return [...achieved, ...favorable].slice(0, 3)
@@ -373,37 +416,131 @@ function buildReadings(summary, areas) {
   const belowArea = pickAreaByCount(areas, 'below')
   const noComparisonArea = pickAreaByCount(areas, 'noComparison')
   const bestArea = pickAreaByRatio(areas, 'achieved')
+  const achievedPercent = Math.round(achievedShare * 100)
+  const belowPercent = comparableTotal ? Math.round((summary.below / comparableTotal) * 100) : 0
 
-  const first =
+  const overviewTone =
     achievedShare >= 0.55
-      ? 'O município apresenta boa proporção de metas atingidas no conjunto analisado.'
+      ? 'boa proporção de metas atingidas'
       : achievedShare >= 0.25
-        ? 'O município apresenta desempenho heterogêneo entre áreas no conjunto analisado.'
-        : 'O município apresenta baixa proporção de metas atingidas no conjunto analisado.'
+        ? 'desempenho heterogêneo entre áreas'
+        : 'baixa proporção de metas atingidas'
 
-  const second = bestArea?.achieved > 0
-    ? `O melhor desempenho relativo aparece em ${bestArea.label.toLocaleLowerCase('pt-BR')}, com concentração de resultados abaixo da meta em ${belowArea?.label.toLocaleLowerCase('pt-BR') ?? 'parte das áreas'}.`
-    : `A maior concentração de indicadores abaixo da meta aparece em ${belowArea?.label.toLocaleLowerCase('pt-BR') ?? 'parte das áreas'}.`
+  const overview = `Dos ${summary.total} indicadores analisados, ${summary.achieved} aparecem com meta atingida (${achievedPercent}% dos comparáveis) e ${summary.below} estão abaixo da referência (${belowPercent}%). O conjunto indica ${overviewTone} no ciclo vigente.`
 
-  const third = noComparisonArea?.noComparison > 0
-    ? `${noComparisonArea.label} reúne o maior volume de indicadores sem comparação ou informativos.`
+  const bestAreaText = bestArea?.achieved > 0
+    ? `${bestArea.label} apresenta o melhor posicionamento relativo, com ${bestArea.achieved} metas atingidas entre ${bestArea.total} indicadores analisados.`
+    : 'Nenhuma área apresenta meta atingida entre os indicadores comparáveis analisados.'
+
+  const belowAreaText = belowArea?.below > 0
+    ? `${belowArea.label} concentra ${belowArea.below} indicadores abaixo da meta entre ${belowArea.total} analisados.`
+    : 'Não há concentração de indicadores abaixo da meta nas áreas analisadas.'
+
+  const comparisonText = noComparisonArea?.noComparison > 0
+    ? `${noComparisonArea.label} reúne ${noComparisonArea.noComparison} indicadores sem comparação, o que limita parte da leitura direta por meta.`
     : 'Os indicadores analisados têm comparação direta com meta no ciclo vigente.'
 
-  return [first, second, third]
+  return [
+    { key: 'overview', title: 'Quadro geral', text: overview },
+    { key: 'best-area', title: 'Área mais favorável', text: bestAreaText },
+    { key: 'gap-area', title: 'Área com maior distância', text: belowAreaText },
+    { key: 'comparison', title: 'Sem comparação', text: comparisonText },
+  ]
 }
 
-function buildAreaReading({ achieved, below, noComparison, total }) {
-  if (!total) return 'Sem indicadores disponíveis para leitura nesta área.'
-  if (noComparison > achieved && noComparison >= below) {
-    return 'Maior volume de indicadores sem comparação ou informativos.'
+function buildAreaDiagnosis({ achieved, below, noComparison, total }) {
+  const comparableTotal = achieved + below
+  const achievedShare = comparableTotal ? achieved / comparableTotal : 0
+  const belowShare = comparableTotal ? below / comparableTotal : 0
+  const noComparisonShare = total ? noComparison / total : 0
+
+  if (achievedShare >= 0.5) {
+    return {
+      reading: 'Área com melhor proporção relativa de metas atingidas.',
+      statusLabel: 'Mais favorável',
+      statusTone: 'success',
+    }
   }
-  if (below === total) return 'Concentração total de indicadores abaixo da meta.'
-  if (below > achieved) return 'Predomínio de indicadores abaixo da meta.'
-  if (achieved > below && achieved > noComparison) {
-    return 'Área com melhor proporção relativa de metas atingidas.'
+
+  if (belowShare >= 0.75) {
+    return {
+      reading: 'Concentração de indicadores abaixo da meta.',
+      statusLabel: 'Predomínio abaixo da meta',
+      statusTone: 'danger',
+    }
   }
-  if (achieved > 0) return 'Mais indicadores abaixo da meta do que favoráveis.'
-  return 'Área com poucos indicadores favoráveis.'
+
+  if (noComparisonShare >= 0.4) {
+    return {
+      reading: 'Parte relevante da área não possui comparação direta por meta.',
+      statusLabel: 'Muitos sem comparação',
+      statusTone: 'neutral',
+    }
+  }
+
+  if (achieved > 0 && below > 0) {
+    return {
+      reading: 'Área com resultados favoráveis e indicadores ainda abaixo da meta.',
+      statusLabel: 'Resultado misto',
+      statusTone: 'mixed',
+    }
+  }
+
+  return {
+    reading: 'Área com poucos indicadores comparáveis disponíveis.',
+    statusLabel: 'Leitura limitada',
+    statusTone: 'neutral',
+  }
+}
+
+function buildBestAreaIndicator(indicators) {
+  const achieved = indicators
+    .filter((indicator) => indicator.status === 'achieved' && Number.isFinite(indicator.distance))
+    .sort((a, b) => b.distance - a.distance)[0]
+
+  if (achieved) {
+    return {
+      ...achieved,
+      summary: `${achieved.label} — meta atingida, ${formatDistance(achieved)}`,
+    }
+  }
+
+  const closestBelow = indicators
+    .filter((indicator) => indicator.status === 'below' && Number.isFinite(indicator.distance))
+    .sort((a, b) => b.distance - a.distance)[0]
+
+  if (closestBelow) {
+    return {
+      ...closestBelow,
+      summary: `${closestBelow.label} — mais próximo da meta, ${formatDistance(closestBelow, true)}`,
+    }
+  }
+
+  const bestVariation = indicators
+    .filter((indicator) => indicator.status !== 'noComparison' && Number.isFinite(indicator.variation))
+    .sort((a, b) => b.variation - a.variation)[0]
+
+  if (bestVariation) {
+    return {
+      ...bestVariation,
+      summary: `${bestVariation.label} — maior avanço observado${formatVariationSuffix(bestVariation)}`,
+    }
+  }
+
+  return null
+}
+
+function buildWorstAreaIndicator(indicators) {
+  const worst = indicators
+    .filter((indicator) => indicator.status === 'below' && Number.isFinite(indicator.distance))
+    .sort((a, b) => a.distance - b.distance)[0]
+
+  if (!worst) return null
+
+  return {
+    ...worst,
+    summary: `${worst.label} — ${formatDistance(worst, true)}`,
+  }
 }
 
 function hasDiagnosticRealData(result) {
@@ -432,6 +569,37 @@ function isDiagnosticComparable(result) {
     !status.includes('indispon') &&
     !status.includes('sem dados')
   )
+}
+
+function formatDistance(indicator, includeMetaSuffix = false) {
+  if (!Number.isFinite(indicator?.distance)) return 'distância não calculável'
+  const value = indicator.distance
+  const formatted = formatSignedNumber(value)
+  const unit = indicator.unit === 'percent'
+    ? ' p.p.'
+    : indicator.unit === 'years'
+      ? ' anos'
+      : ''
+  return `${formatted}${unit}${includeMetaSuffix ? ' da meta' : ''}`
+}
+
+function formatVariationSuffix(indicator) {
+  if (typeof indicator?.displayVariation === 'string' && indicator.displayVariation !== '-') {
+    return ` (${indicator.displayVariation})`
+  }
+  if (!Number.isFinite(indicator?.variation)) return ''
+  const formatted = formatSignedNumber(indicator.variation)
+  const unit = indicator.unit === 'percent'
+    ? ' p.p.'
+    : indicator.unit === 'years'
+      ? ' anos'
+      : ''
+  return ` (${formatted}${unit})`
+}
+
+function formatSignedNumber(value) {
+  const sign = value > 0 ? '+' : ''
+  return `${sign}${value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}`
 }
 
 function getNumericValue(...values) {
