@@ -5,7 +5,7 @@ export function RankingBlock({
   items,
   emptyMessage = 'Nenhum item disponível.',
   valueMode = 'variation',
-  unit = 'absolute',
+  unit = 'count',
 }) {
   return (
     <section className="ranking-block">

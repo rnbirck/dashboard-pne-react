@@ -22,7 +22,7 @@ export function getIndicatorTitle(item, result) {
 export function cleanInterpretationText(text) {
   if (typeof text !== 'string' || !text.length) return text
   let cleaned = text.replace(/\bp\.p\.\..+/g, 'p.p.')
-  cleaned = cleaned.replace(/\.\+\s*$/, '.')
+  cleaned = cleaned.replace(/\.+\s*$/, '.')
   cleaned = cleaned.replace(/(\b\w)\.([a-zÀ-ÿ])/g, '$1. $2')
   return cleaned.trimEnd()
 }
@@ -37,14 +37,6 @@ const ABSOLUTE_HINTS = [
   'quantidade',
   'total de matrículas',
   'total de matriculas',
-  'número de',
-  'numero de',
-  'matrículas',
-  'matriculas',
-  'escolas',
-  'docentes',
-  'salas',
-  'turmas',
 ]
 
 const PERCENT_HINTS = [
@@ -56,31 +48,28 @@ const PERCENT_HINTS = [
   'participacao',
   'razão percentual',
   'razao percentual',
-  '% da',
-  'percentual de',
-  'população que frequenta',
-  'populacao que frequenta',
-  'população com',
-  'populacao com',
-  'escolas públicas com',
-  'escolas publicas com',
-  'alunos do público-alvo',
-  'alunos do publico-alvo',
-  'docentes com formação adequada',
-  'percentual da população',
-  'percentual de alunos',
-  'percentual de escolas',
-  'percentual de docentes',
-  'percentual de matrículas',
-  'percentual de matriculas',
-  'jornada integral',
-  'público-alvo da eti',
-  'publico-alvo da eti',
 ]
 
 const INDEX_HINTS = ['ideb']
+const YEARS_HINTS = ['anos de estudo', 'escolaridade média']
+
+const VALUE_MODE_ALIASES = {
+  absolute: 'count',
+  ratio_percent: 'percent',
+  score: 'index',
+}
 
 export function resolveIndicatorUnit(item, result) {
+  // 1. Prioridade máxima: value_mode explícito no metadado
+  const rawVm = item?.value_mode ?? result?.value_mode
+  if (rawVm) {
+    const normalized = VALUE_MODE_ALIASES[rawVm] || rawVm
+    if (['percent', 'count', 'index', 'years'].includes(normalized)) {
+      return normalized
+    }
+  }
+
+  // 2. Fallback por heurística
   const itemText = [item?.label, item?.sub, item?.desc, result?.label]
     .filter(Boolean)
     .join(' ')
@@ -94,11 +83,90 @@ export function resolveIndicatorUnit(item, result) {
   const hasAbsoluteHint = ABSOLUTE_HINTS.some((hint) => itemText.includes(hint))
   const hasPercentHint =
     PERCENT_HINTS.some((hint) => itemText.includes(hint)) || displayText.includes('%')
+  const hasYearsHint = YEARS_HINTS.some((hint) => itemText.includes(hint))
 
   if (hasIndexHint) return 'index'
-  if (hasAbsoluteHint) return 'absolute'
+  if (hasAbsoluteHint) return 'count'
   if (hasPercentHint) return 'percent'
-  return 'absolute'
+  if (hasYearsHint) return 'years'
+  return 'count'
+}
+
+export function formatIndicatorValue(value, unit) {
+  if (value === null || value === undefined || value === '') return '-'
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return String(value)
+
+  if (unit === 'index') {
+    return numeric.toLocaleString('pt-BR', { maximumFractionDigits: 1 })
+  }
+
+  if (unit === 'years') {
+    return numeric.toLocaleString('pt-BR', { maximumFractionDigits: 1 })
+  }
+
+  if (unit === 'count') {
+    return numeric.toLocaleString('pt-BR', { maximumFractionDigits: 0 })
+  }
+
+  // percent
+  const isIntegerLike = Math.abs(numeric) >= 10 || Number.isInteger(numeric)
+  const formatted = numeric.toLocaleString('pt-BR', {
+    maximumFractionDigits: isIntegerLike ? 0 : 1,
+  })
+  return `${formatted}%`
+}
+
+export function formatMetaValue(result, unit) {
+  const raw = result?.meta
+  if (raw === null || raw === undefined || raw === '') return '-'
+  const numeric = Number(raw)
+  if (!Number.isFinite(numeric)) return String(raw)
+  if (unit === 'index') {
+    return numeric.toLocaleString('pt-BR', { maximumFractionDigits: 1 })
+  }
+  if (unit === 'years') {
+    return numeric.toLocaleString('pt-BR', { maximumFractionDigits: 1 })
+  }
+  if (unit === 'percent') {
+    return `${numeric.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`
+  }
+  // count
+  return numeric.toLocaleString('pt-BR', { maximumFractionDigits: 0 })
+}
+
+export function isSingleYearIndicator(result) {
+  const series = result?.series ?? []
+  const validYears = series
+    .map((point) => Number(point?.ano))
+    .filter(Number.isFinite)
+  const startYear = Number(result?.start_year)
+  const endYear = Number(result?.end_year)
+  if (validYears.length === 1) return true
+  if (Number.isFinite(startYear) && Number.isFinite(endYear) && startYear === endYear) return true
+  return false
+}
+
+export function formatRankingValue(display, unit, mode = 'variation') {
+  const raw =
+    mode === 'distance'
+      ? (display?.distance ?? display?.variation ?? '-')
+      : (display?.variation ?? display?.distance ?? '-')
+  if (typeof raw !== 'string') return String(raw)
+
+  if (unit === 'index') {
+    let cleaned = raw.replace(/\bp\.p\.?\b/gi, '').trim()
+    cleaned = cleaned.replace(/\s{2,}/g, ' ')
+    return cleaned.trim()
+  }
+
+  if (unit === 'years') {
+    let cleaned = raw.replace(/\bp\.p\.?\b/gi, '').trim()
+    cleaned = cleaned.replace(/\s{2,}/g, ' ')
+    return cleaned.trim()
+  }
+
+  return raw
 }
 
 export function hasRealData(result) {
@@ -123,70 +191,6 @@ export function hasRealData(result) {
   return false
 }
 
-export function formatIndicatorValue(value, unit) {
-  if (value === null || value === undefined || value === '') return '-'
-  const numeric = Number(value)
-  if (!Number.isFinite(numeric)) return String(value)
-
-  if (unit === 'index') {
-    return numeric.toLocaleString('pt-BR', { maximumFractionDigits: 1 })
-  }
-
-  const isIntegerLike = Math.abs(numeric) >= 10 || Number.isInteger(numeric)
-  const formatted = numeric.toLocaleString('pt-BR', {
-    maximumFractionDigits: isIntegerLike ? 0 : 1,
-  })
-  if (unit === 'percent') return `${formatted}%`
-  return formatted
-}
-
-export function formatMetaValue(result, unit) {
-  const raw = result?.meta
-  if (raw === null || raw === undefined || raw === '') return '-'
-  const numeric = Number(raw)
-  if (!Number.isFinite(numeric)) return String(raw)
-  if (unit === 'index') {
-    return numeric.toLocaleString('pt-BR', { maximumFractionDigits: 1 })
-  }
-  if (unit === 'percent') {
-    return `${numeric.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`
-  }
-  return numeric.toLocaleString('pt-BR', { maximumFractionDigits: 2 })
-}
-
-export function isSingleYearIndicator(result) {
-  const series = result?.series ?? []
-  const validYears = series
-    .map((point) => Number(point?.ano))
-    .filter(Number.isFinite)
-  const startYear = Number(result?.start_year)
-  const endYear = Number(result?.end_year)
-  if (validYears.length === 1) return true
-  if (Number.isFinite(startYear) && Number.isFinite(endYear) && startYear === endYear) return true
-  return false
-}
-
-export function formatRankingValue(display, unit, mode = 'variation') {
-  const raw =
-    mode === 'distance'
-      ? (display?.distance ?? display?.variation ?? '-')
-      : (display?.variation ?? display?.distance ?? '-')
-  if (typeof raw !== 'string') return String(raw)
-
-  if (unit === 'index') {
-    // Remove "p.p." e "p.p" para IDEB
-    let cleaned = raw.replace(/\bp\.p\.?\b/gi, '').trim()
-    // Remove espaços duplos
-    cleaned = cleaned.replace(/\s{2,}/g, ' ')
-    // Se ficar "Alta de  " com espaço no final, limpar
-    cleaned = cleaned.trim()
-    return cleaned
-  }
-
-  return raw
-}
-
 export function detectIndicatorUnit(item, result) {
-  // deprecated alias for compatibility
   return resolveIndicatorUnit(item, result)
 }

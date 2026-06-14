@@ -271,6 +271,7 @@ function calculateGoalProgress(result, unit) {
     meta,
     isPercent: unit === 'percent',
     isIndex: unit === 'index',
+    isYears: unit === 'years',
   })
 
   const fill = clampMarkerPosition(projectValueToPercent(current, domain))

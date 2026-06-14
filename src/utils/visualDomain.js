@@ -1,4 +1,4 @@
-export function getStableVisualDomain({ values, meta, isPercent = false, isIndex = false }) {
+export function getStableVisualDomain({ values, meta, isPercent = false, isIndex = false, isYears = false }) {
   const numericValues = (values ?? []).filter(Number.isFinite)
   const numericMeta = Number.isFinite(meta) ? [meta] : []
   const all = [...numericValues, ...numericMeta]
@@ -6,6 +6,7 @@ export function getStableVisualDomain({ values, meta, isPercent = false, isIndex
   if (!all.length) {
     if (isIndex) return { min: 0, max: 10, isIndex: true }
     if (isPercent) return { min: 0, max: 100, isPercent: true }
+    if (isYears) return { min: 0, max: 15, isYears: true }
     return { min: 0, max: 100, isPercent: false }
   }
 
@@ -16,6 +17,12 @@ export function getStableVisualDomain({ values, meta, isPercent = false, isIndex
     const maxCeiling = Math.max(Math.ceil(dataMax), 8)
     const niceMax = maxCeiling <= 8 ? 8 : 10
     return { min: 0, max: niceMax, isIndex: true }
+  }
+
+  if (isYears) {
+    const minFloor = Math.max(0, Math.floor(dataMin) - 1)
+    const maxCeiling = Math.min(20, Math.ceil(dataMax) + 1)
+    return { min: minFloor, max: maxCeiling, isYears: true }
   }
 
   if (isPercent) {
@@ -76,8 +83,17 @@ export function stableIndexTicks(domain) {
   return [0, 2, 4, 6, 8, 10]
 }
 
+export function stableYearsTicks(domain) {
+  if (!domain?.isYears) return null
+  const ticks = []
+  for (let value = domain.min; value <= domain.max + 0.0001; value += 1) {
+    ticks.push(Number(value.toFixed(1)))
+  }
+  return ticks
+}
+
 export function stableAbsoluteTicks(domain) {
-  if (!domain || domain.isPercent || domain.isIndex) return null
+  if (!domain || domain.isPercent || domain.isIndex || domain.isYears) return null
   const step = pickAbsoluteStep(domain.max - domain.min)
   const ticks = []
   for (let value = domain.min; value <= domain.max + 0.0001; value += step) {

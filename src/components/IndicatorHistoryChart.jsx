@@ -4,6 +4,7 @@ import {
   stableAbsoluteTicks,
   stableIndexTicks,
   stablePercentTicks,
+  stableYearsTicks,
 } from '../utils/visualDomain'
 import { formatIndicatorValue, resolveIndicatorUnit } from '../utils/format'
 
@@ -210,11 +211,13 @@ function buildChartModel({
   const values = points.map((point) => point.value)
   const isPercent = resolvedUnit === 'percent'
   const isIndex = resolvedUnit === 'index'
+  const isYears = resolvedUnit === 'years'
   const domain = getStableVisualDomain({
     values: metaValue !== null ? [...values, metaValue] : values,
     meta: metaValue,
     isPercent,
     isIndex,
+    isYears,
   })
   const years = points.map((point) => point.year)
   const minYear = Math.min(...years)
@@ -247,7 +250,9 @@ function buildChartModel({
     ? stablePercentTicks(domain) ?? [domain.min, domain.max]
     : isIndex
       ? stableIndexTicks(domain) ?? [domain.min, domain.max]
-      : stableAbsoluteTicks(domain) ?? [domain.min, domain.max]
+      : isYears
+        ? stableYearsTicks(domain) ?? [domain.min, domain.max]
+        : stableAbsoluteTicks(domain) ?? [domain.min, domain.max]
   const yTicks = yTicksRaw
     .filter((value) => value >= domain.min - 0.0001 && value <= domain.max + 0.0001)
     .map((value) => ({ value, y: yScale(value) }))
