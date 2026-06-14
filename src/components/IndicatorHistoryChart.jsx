@@ -8,9 +8,9 @@ import {
 } from '../utils/visualDomain'
 import { formatIndicatorValue, resolveIndicatorUnit } from '../utils/format'
 
-const CHART_WIDTH = 820
-const CHART_HEIGHT = 260
-const PADDING = { bottom: 36, left: 64, right: 88, top: 28 }
+const CHART_WIDTH = 980
+const CHART_HEIGHT = 238
+const PADDING = { bottom: 32, left: 60, right: 82, top: 24 }
 
 export function IndicatorHistoryChart({
   display,

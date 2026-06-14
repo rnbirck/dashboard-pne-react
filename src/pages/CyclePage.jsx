@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { CategoryTabs } from '../components/CategoryTabs'
 import { IndicatorDetail, isAvailableIndicator, isComparableIndicator } from '../components/IndicatorDetail'
 import { IndicatorList } from '../components/IndicatorList'
@@ -13,6 +13,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   const [selectedCategoryKey, setSelectedCategoryKey] = useState('')
   const [selectedIndicatorKey, setSelectedIndicatorKey] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
+  const cycleLayoutRef = useRef(null)
 
   const selectedCategory = useMemo(() => {
     if (!categories.length) return null
@@ -58,6 +59,33 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     () => buildCycleManagementStats(categories, municipioResults),
     [categories, municipioResults],
   )
+
+  useLayoutEffect(() => {
+    const layout = cycleLayoutRef.current
+    const detailPanel = layout?.querySelector('.detail-panel')
+    if (!layout || !detailPanel) return undefined
+
+    const updatePanelHeight = () => {
+      const height = Math.ceil(detailPanel.getBoundingClientRect().height)
+      if (height > 0) {
+        layout.style.setProperty('--cycle-panel-height', `${height}px`)
+      }
+    }
+
+    updatePanelHeight()
+
+    const observer = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(updatePanelHeight)
+      : null
+
+    observer?.observe(detailPanel)
+    window.addEventListener('resize', updatePanelHeight)
+
+    return () => {
+      observer?.disconnect()
+      window.removeEventListener('resize', updatePanelHeight)
+    }
+  }, [activeItem?.key, activeResult, selectedCategory?.key])
 
   function handleCategorySelect(categoryKey) {
     setSelectedCategoryKey(categoryKey)
@@ -112,7 +140,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
           />
         </div>
 
-        <div className="cycle-layout">
+        <div className="cycle-layout" ref={cycleLayoutRef}>
           <aside className="indicator-sidebar">
             <div className="indicator-sidebar__heading">
               <h3>Indicadores</h3>
