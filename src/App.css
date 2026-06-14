@@ -891,7 +891,7 @@
   display: grid;
   grid-template-columns: minmax(300px, 0.32fr) minmax(0, 0.68fr);
   gap: var(--card-gap);
-  align-items: start;
+  align-items: stretch;
   margin-top: 0;
   min-width: 0;
 }
@@ -920,8 +920,11 @@
   box-shadow: 0 8px 24px rgba(18, 45, 18, 0.06);
   padding: 16px;
   min-width: 0;
+  height: 100%;
   align-self: stretch;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 .indicator-sidebar__heading {
@@ -1000,6 +1003,8 @@
 }
 
 .indicator-list {
+  flex: 1 1 auto;
+  min-height: 280px;
   max-height: min(650px, calc(100vh - 360px));
   overflow: auto;
   display: flex;
@@ -1012,11 +1017,11 @@
 }
 
 .indicator-row {
+  position: relative;
   width: 100%;
   min-height: 50px;
-  padding: 10px 12px;
+  padding: 10px 12px 10px 16px;
   border: 1px solid transparent;
-  border-left: 4px solid transparent;
   border-radius: 8px;
   background: transparent;
   cursor: pointer;
@@ -1026,19 +1031,27 @@
   gap: 8px;
   align-items: center;
   transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+  overflow: hidden;
 }
 
 .indicator-row:hover {
   background: var(--surface-soft);
   border-color: var(--border);
-  border-left-color: var(--border);
 }
 
 .indicator-row.is-active {
   border-color: rgba(47, 113, 60, 0.16);
-  border-left-color: var(--accent);
   background: var(--accent-ghost-2);
   box-shadow: inset 0 0 0 1px rgba(47, 113, 60, 0.05);
+}
+
+.indicator-row.is-active::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: 8px 0 0 8px;
+  background: var(--accent);
 }
 
 .indicator-row__label {
@@ -1102,6 +1115,7 @@
   flex-direction: column;
   gap: 14px;
   min-width: 0;
+  height: 100%;
   padding: 20px 22px;
   overflow: visible;
   box-sizing: border-box;
@@ -1335,7 +1349,7 @@
 .goal-progress__rail {
   position: relative;
   height: 10px;
-  margin: 18px 16px 10px;
+  margin: 22px 24px 22px;
   border-radius: var(--radius-pill);
   background: linear-gradient(90deg, #d8e3d7, #eef3ec);
 }
@@ -1396,6 +1410,21 @@
   height: 12px;
   transform: translateX(-50%);
   background: rgba(108, 116, 112, 0.55);
+}
+
+.goal-progress__meta-label {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 8px);
+  max-width: 96px;
+  transform: translateX(-50%);
+  color: var(--text-soft);
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .goal-progress__labels {

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { CategoryTabs } from '../components/CategoryTabs'
-import { IndicatorDetail } from '../components/IndicatorDetail'
+import { IndicatorDetail, isComparableIndicator } from '../components/IndicatorDetail'
 import { IndicatorList } from '../components/IndicatorList'
 import { RankingBlock } from '../components/RankingBlock'
 
@@ -45,6 +45,10 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   )
   const activeResult = activeItem ? municipioResults?.[activeItem.key] : null
   const activeRanking = municipioRankings?.[selectedCategory?.key]
+  const normalizedRanking = useMemo(
+    () => normalizeRankings(activeRanking, categoryItems, municipioResults),
+    [activeRanking, categoryItems, municipioResults],
+  )
   const cycleManagementStats = useMemo(
     () => buildCycleManagementStats(categories, municipioResults),
     [categories, municipioResults],
@@ -135,8 +139,12 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
       </section>
 
       <section className="ranking-grid">
-        <RankingBlock title="Maiores avanços" items={activeRanking?.top_avancos} />
-        <RankingBlock title="Exigem atenção" items={activeRanking?.top_atencao} />
+        <RankingBlock title="Maiores avanços" items={normalizedRanking.topAvancos} />
+        <RankingBlock
+          title="Exigem atenção"
+          items={normalizedRanking.topAtencao}
+          emptyMessage="Nenhum indicador crítico nesta categoria."
+        />
       </section>
     </div>
   )
@@ -193,4 +201,93 @@ function buildCycleManagementStats(categories, municipioResults) {
     : 0
 
   return stats
+}
+
+function normalizeRankings(activeRanking, categoryItems, municipioResults) {
+  const itemByKey = new Map(categoryItems.map((item) => [item.key, item]))
+  const seenAdvanceKeys = new Set()
+  const topAvancos = (activeRanking?.top_avancos ?? [])
+    .map((item) => normalizeRankingItem(item, itemByKey, municipioResults))
+    .filter((item) => {
+      if (!item?.indicator_key || seenAdvanceKeys.has(item.indicator_key)) return false
+      seenAdvanceKeys.add(item.indicator_key)
+      return parsePpValue(item.display?.variation ?? item.display?.distance) > 0
+    })
+    .sort((a, b) => (
+      parsePpValue(b.display?.variation ?? b.display?.distance) -
+      parsePpValue(a.display?.variation ?? a.display?.distance)
+    ))
+    .slice(0, 3)
+
+  const advanceKeys = new Set(topAvancos.map((item) => item.indicator_key))
+  const explicitAttention = (activeRanking?.top_atencao ?? [])
+    .map((item) => normalizeRankingItem(item, itemByKey, municipioResults))
+  const categoryAttention = categoryItems.map((item) => normalizeRankingItem({
+    indicator_key: item.key,
+    label: item.label,
+    sub: item.sub,
+  }, itemByKey, municipioResults))
+
+  const seenAttentionKeys = new Set()
+  const topAtencao = [...explicitAttention, ...categoryAttention]
+    .filter((item) => {
+      if (!item?.indicator_key || seenAttentionKeys.has(item.indicator_key)) return false
+      seenAttentionKeys.add(item.indicator_key)
+      return !advanceKeys.has(item.indicator_key) && isCriticalRankingItem(item, municipioResults?.[item.indicator_key])
+    })
+    .sort(compareCriticalRankingItems)
+    .slice(0, 3)
+
+  return { topAvancos, topAtencao }
+}
+
+function normalizeRankingItem(item, itemByKey, municipioResults) {
+  if (!item) return null
+  const key = item.indicator_key ?? item.key
+  const categoryItem = itemByKey.get(key)
+  const result = municipioResults?.[key]
+  return {
+    ...item,
+    indicator_key: key,
+    label: item.label ?? categoryItem?.label ?? key,
+    sub: item.sub ?? categoryItem?.sub,
+    display: {
+      ...result?.display,
+      ...item.display,
+    },
+  }
+}
+
+function isCriticalRankingItem(item, result) {
+  if (!result || !isComparableIndicator(result) || result.atingida === true) return false
+
+  const status = String(result.display?.status ?? item.display?.status ?? '').toLocaleLowerCase('pt-BR')
+  if (status.includes('meta atingida')) return false
+
+  const distance = parsePpValue(result.display?.distance ?? item.display?.distance)
+  const variation = parsePpValue(result.display?.variation ?? item.display?.variation)
+
+  if (Number.isFinite(distance)) return distance < 0
+  if (Number.isFinite(variation)) return variation < 0
+  return status.includes('não atingida') || status.includes('nao atingida')
+}
+
+function compareCriticalRankingItems(a, b) {
+  const aDistance = parsePpValue(a.display?.distance)
+  const bDistance = parsePpValue(b.display?.distance)
+  if (Number.isFinite(aDistance) && Number.isFinite(bDistance)) return aDistance - bDistance
+  if (Number.isFinite(aDistance)) return -1
+  if (Number.isFinite(bDistance)) return 1
+  return parsePpValue(a.display?.variation) - parsePpValue(b.display?.variation)
+}
+
+function parsePpValue(value) {
+  const text = String(value ?? '').toLocaleLowerCase('pt-BR')
+  const match = text.match(/[-+]?\d+(?:[,.]\d+)?/)
+  if (!match) return Number.NaN
+  const parsed = Number(match[0].replace(',', '.'))
+  if (!Number.isFinite(parsed)) return Number.NaN
+  if (text.includes('queda')) return -Math.abs(parsed)
+  if (text.includes('alta')) return Math.abs(parsed)
+  return parsed
 }

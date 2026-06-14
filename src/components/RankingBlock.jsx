@@ -1,4 +1,4 @@
-export function RankingBlock({ title, items }) {
+export function RankingBlock({ title, items, emptyMessage = 'Nenhum item disponível.' }) {
   return (
     <section className="ranking-block">
       <div className="ranking-heading">
@@ -19,7 +19,7 @@ export function RankingBlock({ title, items }) {
           ))}
         </ol>
       ) : (
-        <p>Nenhum item disponível.</p>
+        <p>{emptyMessage}</p>
       )}
     </section>
   )

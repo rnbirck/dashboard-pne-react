@@ -21,6 +21,8 @@ export function IndicatorDetail({ item, result }) {
       : result.available
         ? 'warning'
         : 'muted'
+  const isComparable = isComparableIndicator(result)
+  const comparisonType = getComparisonType(result)
 
   return (
     <section className="detail-panel">
@@ -38,11 +40,18 @@ export function IndicatorDetail({ item, result }) {
         <MetricCard label="Valor inicial" value={getDisplayValue(result.display, 'start_value')} />
         <MetricCard label="Valor final" value={getDisplayValue(result.display, 'end_value')} />
         <MetricCard label="Variação" value={getDisplayValue(result.display, 'variation')} />
-        <MetricCard label="Meta" value={result.meta_label ?? '-'} detail={formatRaw(result.meta)} />
-        <MetricCard label="Distância da meta" value={getDisplayValue(result.display, 'distance')} />
+        <MetricCard
+          label={isComparable ? 'Meta' : 'Tipo'}
+          value={isComparable ? (result.meta_label ?? '-') : comparisonType}
+          detail={isComparable ? formatRaw(result.meta) : undefined}
+        />
+        <MetricCard
+          label={isComparable ? 'Distância da meta' : 'Comparação'}
+          value={isComparable ? getDisplayValue(result.display, 'distance') : 'Não se aplica'}
+        />
       </div>
 
-      <GoalProgress result={result} />
+      <GoalProgress result={result} isComparable={isComparable} />
 
       {result.display?.interpretation && (
         <div className="interpretation-box">
@@ -54,7 +63,7 @@ export function IndicatorDetail({ item, result }) {
       <IndicatorHistoryChart
         display={result.display}
         endYear={result.end_year}
-        meta={result.meta}
+        meta={isComparable ? result.meta : null}
         series={result.series}
         startYear={result.start_year}
         title={getIndicatorTitle(item, result)}
@@ -63,13 +72,14 @@ export function IndicatorDetail({ item, result }) {
   )
 }
 
-function GoalProgress({ result }) {
+function GoalProgress({ result, isComparable }) {
   const startValue = getDisplayValue(result.display, 'start_value')
   const endValue = getDisplayValue(result.display, 'end_value')
   const metaValue = formatRaw(result.meta)
+  const metaMarkerLabel = formatMetaMarker(result)
   const metaLabel = result.meta_label ?? 'Meta'
   const distance = getDisplayValue(result.display, 'distance')
-  const progress = calculateGoalProgress(result)
+  const progress = calculateGoalProgress(result, isComparable)
   const status = String(result?.display?.status ?? '').toLocaleLowerCase('pt-BR')
   const isInformative = status.includes('visualiza')
   const message = isInformative
@@ -101,7 +111,9 @@ function GoalProgress({ result }) {
             <span
               className="goal-progress__marker goal-progress__marker--meta"
               style={{ left: `${progress.meta}%` }}
-            />
+            >
+              <small className="goal-progress__meta-label">Meta {metaMarkerLabel}</small>
+            </span>
           </div>
           <div className="goal-progress__labels">
             <span>
@@ -125,20 +137,30 @@ function GoalProgress({ result }) {
   )
 }
 
-function calculateGoalProgress(result) {
+export function isComparableIndicator(result) {
+  const meta = Number(result?.meta)
+  const status = String(result?.display?.status ?? '').toLocaleLowerCase('pt-BR')
+  return Boolean(result) &&
+    result.available !== false &&
+    Number.isFinite(meta) &&
+    !status.includes('visualiza') &&
+    !status.includes('indispon') &&
+    !status.includes('sem dados') &&
+    !status.includes('sem variação') &&
+    !status.includes('sem variacao')
+}
+
+function getComparisonType(result) {
+  const status = String(result?.display?.status ?? '').toLocaleLowerCase('pt-BR')
+  return status.includes('visualiza') ? 'Informativo' : 'Não se aplica'
+}
+
+function calculateGoalProgress(result, isComparable) {
   const start = Number(result?.start_value)
   const current = Number(result?.end_value)
   const meta = Number(result?.meta)
-  const status = String(result?.display?.status ?? '').toLocaleLowerCase('pt-BR')
-  const hasNoComparison =
-    result?.available === false ||
-    status.includes('visualiza') ||
-    status.includes('indispon') ||
-    status.includes('sem dados') ||
-    status.includes('sem variação') ||
-    status.includes('sem variacao')
 
-  if (hasNoComparison || !Number.isFinite(current) || !Number.isFinite(meta)) {
+  if (!isComparable || !Number.isFinite(current) || !Number.isFinite(meta)) {
     return { available: false }
   }
 
@@ -167,6 +189,13 @@ function calculateGoalProgress(result) {
     fill: currentPosition,
     meta: toPercent(meta),
   }
+}
+
+function formatMetaMarker(result) {
+  const raw = formatRaw(result?.meta)
+  if (raw === '-') return raw
+  const displayText = Object.values(result?.display ?? {}).join(' ')
+  return displayText.includes('%') ? `${raw}%` : raw
 }
 
 function formatRaw(value) {
