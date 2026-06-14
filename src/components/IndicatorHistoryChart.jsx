@@ -382,15 +382,15 @@ function computeDataLabels(points, metaLine, formatValue, chartHeight) {
   const candidates = []
 
   // 1. Último ponto (prioridade 1 - mais alta)
-  const lastAtRightEdge = lastPoint.x > plotRight - 30
+  const lastNeedsEndAnchor = lastPoint.x > plotRight - 30
   candidates.push({
-    anchor: lastAtRightEdge ? 'end' : 'start',
+    anchor: lastNeedsEndAnchor ? 'end' : 'start',
     isLast: true,
     isMeta: false,
     priority: 1,
     type: 'last',
     value: lastPoint.value,
-    x: lastAtRightEdge ? lastPoint.x - 8 : lastPoint.x + 8,
+    x: lastNeedsEndAnchor ? lastPoint.x - 8 : lastPoint.x + 8,
     y: pickLabelY(lastPoint.y, plotTop, plotBottom, LABEL_OFFSET_Y),
     year: lastPoint.year,
   })
@@ -503,7 +503,7 @@ function computeDataLabels(points, metaLine, formatValue, chartHeight) {
 
     // Último ponto: refinamento de posição
     if (label.isLast) {
-      if (lastAtRightEdge(lastPoint.x, plotRight)) {
+      if (isLastAtRightEdge(lastPoint.x, plotRight)) {
         label.anchor = 'end'
         label.x = lastPoint.x - 8
         if (label.x < plotLeft + 14) {
@@ -561,7 +561,7 @@ function computeDataLabels(points, metaLine, formatValue, chartHeight) {
   return filtered
 }
 
-function lastAtRightEdge(x, plotRight) {
+function isLastAtRightEdge(x, plotRight) {
   return x > plotRight - 30
 }
 

@@ -66,11 +66,17 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     const detailPanel = detailPanelRef.current
     if (!layout || !detailPanel) return undefined
 
+    let rafId = 0
     const updatePanelHeight = () => {
-      const height = Math.ceil(detailPanel.getBoundingClientRect().height)
-      if (height > 0) {
-        layout.style.setProperty('--cycle-detail-height', `${height}px`)
-      }
+      cancelAnimationFrame(rafId)
+      rafId = requestAnimationFrame(() => {
+        const height = Math.ceil(detailPanel.getBoundingClientRect().height)
+        if (height >= 480) {
+          layout.style.setProperty('--cycle-detail-height', `${height}px`)
+        } else {
+          layout.style.removeProperty('--cycle-detail-height')
+        }
+      })
     }
 
     updatePanelHeight()
@@ -83,8 +89,10 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     window.addEventListener('resize', updatePanelHeight)
 
     return () => {
+      cancelAnimationFrame(rafId)
       observer?.disconnect()
       window.removeEventListener('resize', updatePanelHeight)
+      layout.style.removeProperty('--cycle-detail-height')
     }
   }, [activeItem?.key, activeResult, selectedCategory?.key])
 
