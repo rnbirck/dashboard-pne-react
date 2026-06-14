@@ -7,8 +7,8 @@ import {
 import { detectIndicatorUnit, formatIndicatorValue } from '../utils/format'
 
 const CHART_WIDTH = 820
-const CHART_HEIGHT = 320
-const PADDING = { bottom: 52, left: 78, right: 92, top: 56 }
+const CHART_HEIGHT = 280
+const PADDING = { bottom: 44, left: 72, right: 88, top: 48 }
 
 export function IndicatorHistoryChart({
   display,
