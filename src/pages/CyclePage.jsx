@@ -3,6 +3,7 @@ import { CategoryTabs } from '../components/CategoryTabs'
 import { IndicatorDetail, isAvailableIndicator, isComparableIndicator } from '../components/IndicatorDetail'
 import { IndicatorList } from '../components/IndicatorList'
 import { RankingBlock } from '../components/RankingBlock'
+import { resolveIndicatorUnit } from '../utils/format'
 
 export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio, title }) {
   const categories = useMemo(
@@ -151,12 +152,17 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
       </section>
 
       <section className="ranking-grid">
-        <RankingBlock title="Maiores avanços" items={normalizedRanking.topAvancos} />
+        <RankingBlock
+          title="Maiores avanços"
+          items={normalizedRanking.topAvancos}
+          unit={normalizedRanking.topAvancos?.[0]?.unit}
+        />
         <RankingBlock
           title="Exigem atenção"
           items={normalizedRanking.topAtencao}
           emptyMessage="Nenhum indicador crítico nesta categoria."
           valueMode="distance"
+          unit={normalizedRanking.topAtencao?.[0]?.unit}
         />
       </section>
     </div>
@@ -259,11 +265,13 @@ function normalizeRankingItem(item, itemByKey, municipioResults) {
   const key = item.indicator_key ?? item.key
   const categoryItem = itemByKey.get(key)
   const result = municipioResults?.[key]
+  const unit = resolveIndicatorUnit(categoryItem, result)
   return {
     ...item,
     indicator_key: key,
     label: item.label ?? categoryItem?.label ?? key,
     sub: item.sub ?? categoryItem?.sub,
+    unit,
     display: {
       ...result?.display,
       ...item.display,

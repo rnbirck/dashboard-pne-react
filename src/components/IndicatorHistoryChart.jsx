@@ -2,9 +2,10 @@ import { useMemo, useState } from 'react'
 import {
   getStableVisualDomain,
   stableAbsoluteTicks,
+  stableIndexTicks,
   stablePercentTicks,
 } from '../utils/visualDomain'
-import { detectIndicatorUnit, formatIndicatorValue } from '../utils/format'
+import { formatIndicatorValue, resolveIndicatorUnit } from '../utils/format'
 
 const CHART_WIDTH = 820
 const CHART_HEIGHT = 280
@@ -23,35 +24,24 @@ export function IndicatorHistoryChart({
   unit: unitProp,
 }) {
   const [activePoint, setActivePoint] = useState(null)
-  const resolvedUnit = unitProp || detectIndicatorUnit(item, result)
+  const resolvedUnit = unitProp || resolveIndicatorUnit(item, result)
   const chart = useMemo(
-    () => buildChartModel({
-      display,
-      endYear,
-      meta,
-      resolvedUnit,
-      result,
-      series,
-      showMetaLine,
-      startYear,
-    }),
+    () =>
+      buildChartModel({
+        display,
+        endYear,
+        meta,
+        resolvedUnit,
+        result,
+        series,
+        showMetaLine,
+        startYear,
+      }),
     [display, endYear, meta, resolvedUnit, result, series, showMetaLine, startYear],
   )
 
   if (chart.points.length < 2) {
-    return (
-      <section className="history-chart history-chart--empty-state">
-        <div className="history-chart__heading">
-          <div>
-            <span className="eyebrow">Evolução do indicador</span>
-            <h4>{title}</h4>
-          </div>
-        </div>
-        <div className="history-chart__empty">
-          Série histórica insuficiente para gráfico.
-        </div>
-      </section>
-    )
+    return null
   }
 
   return (
@@ -72,8 +62,15 @@ export function IndicatorHistoryChart({
           <g className="chart-grid">
             {chart.yTicks.map((tick, index) => (
               <g key={`${tick.value}-${index}`}>
-                <line x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={tick.y} y2={tick.y} />
-                <text x={PADDING.left - 12} y={tick.y + 4}>{chart.formatValue(tick.value)}</text>
+                <line
+                  x1={PADDING.left}
+                  x2={CHART_WIDTH - PADDING.right}
+                  y1={tick.y}
+                  y2={tick.y}
+                />
+                <text x={PADDING.left - 12} y={tick.y + 4}>
+                  {chart.formatValue(tick.value)}
+                </text>
               </g>
             ))}
           </g>
@@ -103,12 +100,23 @@ export function IndicatorHistoryChart({
               y1={CHART_HEIGHT - PADDING.bottom}
               y2={CHART_HEIGHT - PADDING.bottom}
             />
-            <line x1={PADDING.left} x2={PADDING.left} y1={PADDING.top} y2={CHART_HEIGHT - PADDING.bottom} />
+            <line
+              x1={PADDING.left}
+              x2={PADDING.left}
+              y1={PADDING.top}
+              y2={CHART_HEIGHT - PADDING.bottom}
+            />
           </g>
 
           <g className="chart-year-markers">
             {chart.yearMarkers.map((marker) => (
-              <line key={marker.year} x1={marker.x} x2={marker.x} y1={PADDING.top} y2={CHART_HEIGHT - PADDING.bottom} />
+              <line
+                key={marker.year}
+                x1={marker.x}
+                x2={marker.x}
+                y1={PADDING.top}
+                y2={CHART_HEIGHT - PADDING.bottom}
+              />
             ))}
           </g>
 
@@ -135,7 +143,9 @@ export function IndicatorHistoryChart({
 
           <g className="chart-x-labels">
             {chart.xTicks.map((tick) => (
-              <text key={tick.year} x={tick.x} y={CHART_HEIGHT - 14}>{tick.year}</text>
+              <text key={tick.year} x={tick.x} y={CHART_HEIGHT - 14}>
+                {tick.year}
+              </text>
             ))}
           </g>
         </svg>
@@ -172,7 +182,8 @@ function buildChartModel({
   startYear,
 }) {
   const points = normalizeSeries(series)
-  const rawMetaValue = meta === null || meta === undefined || meta === '' ? Number.NaN : Number(meta)
+  const rawMetaValue =
+    meta === null || meta === undefined || meta === '' ? Number.NaN : Number(meta)
   const metaValue = Number.isFinite(rawMetaValue) ? rawMetaValue : null
 
   if (points.length < 2) {
@@ -184,10 +195,12 @@ function buildChartModel({
 
   const values = points.map((point) => point.value)
   const isPercent = resolvedUnit === 'percent'
+  const isIndex = resolvedUnit === 'index'
   const domain = getStableVisualDomain({
     values: metaValue !== null ? [...values, metaValue] : values,
     meta: metaValue,
     isPercent,
+    isIndex,
   })
   const years = points.map((point) => point.year)
   const minYear = Math.min(...years)
@@ -218,7 +231,9 @@ function buildChartModel({
 
   const yTicksRaw = isPercent
     ? stablePercentTicks(domain) ?? [domain.min, domain.max]
-    : stableAbsoluteTicks(domain) ?? [domain.min, domain.max]
+    : isIndex
+      ? stableIndexTicks(domain) ?? [domain.min, domain.max]
+      : stableAbsoluteTicks(domain) ?? [domain.min, domain.max]
   const yTicks = yTicksRaw
     .filter((value) => value >= domain.min - 0.0001 && value <= domain.max + 0.0001)
     .map((value) => ({ value, y: yScale(value) }))

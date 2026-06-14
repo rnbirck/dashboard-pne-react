@@ -1,14 +1,22 @@
-export function getStableVisualDomain({ values, meta, isPercent = false }) {
+export function getStableVisualDomain({ values, meta, isPercent = false, isIndex = false }) {
   const numericValues = (values ?? []).filter(Number.isFinite)
   const numericMeta = Number.isFinite(meta) ? [meta] : []
   const all = [...numericValues, ...numericMeta]
 
   if (!all.length) {
-    return { min: 0, max: 100, isPercent: Boolean(isPercent) }
+    if (isIndex) return { min: 0, max: 10, isIndex: true }
+    if (isPercent) return { min: 0, max: 100, isPercent: true }
+    return { min: 0, max: 100, isPercent: false }
   }
 
   const dataMin = Math.min(...all)
   const dataMax = Math.max(...all)
+
+  if (isIndex) {
+    const maxCeiling = Math.max(Math.ceil(dataMax), 8)
+    const niceMax = maxCeiling <= 8 ? 8 : 10
+    return { min: 0, max: niceMax, isIndex: true }
+  }
 
   if (isPercent) {
     if (dataMin >= 0 && dataMax <= 100) {
@@ -60,8 +68,16 @@ export function stablePercentTicks(domain) {
   return ticks
 }
 
+export function stableIndexTicks(domain) {
+  if (!domain?.isIndex) return null
+  if (domain.max <= 8) {
+    return [0, 2, 4, 6, 8]
+  }
+  return [0, 2, 4, 6, 8, 10]
+}
+
 export function stableAbsoluteTicks(domain) {
-  if (!domain || domain.isPercent) return null
+  if (!domain || domain.isPercent || domain.isIndex) return null
   const step = pickAbsoluteStep(domain.max - domain.min)
   const ticks = []
   for (let value = domain.min; value <= domain.max + 0.0001; value += step) {

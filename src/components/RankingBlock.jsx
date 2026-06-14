@@ -1,8 +1,11 @@
+import { formatRankingValue } from '../utils/format'
+
 export function RankingBlock({
   title,
   items,
   emptyMessage = 'Nenhum item disponível.',
   valueMode = 'variation',
+  unit = 'absolute',
 }) {
   return (
     <section className="ranking-block">
@@ -19,7 +22,7 @@ export function RankingBlock({
                 <strong>{item.label}</strong>
                 {item.sub && <span>{item.sub}</span>}
               </div>
-              <small>{pickRankingValue(item.display, valueMode)}</small>
+              <small>{pickRankingValue(item.display, valueMode, unit)}</small>
             </li>
           ))}
         </ol>
@@ -30,9 +33,11 @@ export function RankingBlock({
   )
 }
 
-function pickRankingValue(display, mode) {
-  if (mode === 'distance') {
-    return display?.distance ?? display?.variation ?? '-'
-  }
-  return display?.variation ?? display?.distance ?? '-'
+function pickRankingValue(display, mode, unit) {
+  const raw =
+    mode === 'distance'
+      ? (display?.distance ?? display?.variation ?? '-')
+      : (display?.variation ?? display?.distance ?? '-')
+  if (typeof raw !== 'string') return String(raw)
+  return formatRankingValue(display, unit, mode)
 }

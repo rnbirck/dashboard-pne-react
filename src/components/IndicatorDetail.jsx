@@ -1,11 +1,18 @@
 import {
   cleanInterpretationText,
-  detectIndicatorUnit,
   formatIndicatorValue,
+  formatMetaValue,
+  formatRankingValue,
   getDisplayValue,
   getIndicatorTitle,
+  isSingleYearIndicator,
+  resolveIndicatorUnit,
 } from '../utils/format'
-import { clampMarkerPosition, getStableVisualDomain, projectValueToPercent } from '../utils/visualDomain'
+import {
+  clampMarkerPosition,
+  getStableVisualDomain,
+  projectValueToPercent,
+} from '../utils/visualDomain'
 import { IndicatorHistoryChart } from './IndicatorHistoryChart'
 import { MetricCard } from './MetricCard'
 import { StatusBadge } from './StatusBadge'
@@ -34,12 +41,18 @@ export function IndicatorDetail({ item, result }) {
   const startYear = getBoundaryYear(result, 'start')
   const endYear = getBoundaryYear(result, 'end')
   const distanceTone = getDistanceTone(result, isComparable)
-  const unit = detectIndicatorUnit(item, result)
+  const unit = resolveIndicatorUnit(item, result)
   const formattedStart = formatIndicatorValue(result.start_value, unit)
   const formattedEnd = formatIndicatorValue(result.end_value, unit)
   const variation = getDisplayValue(result.display, 'variation')
   const hasStartYear = typeof startYear === 'number' && startYear > 0
   const hasEndYear = typeof endYear === 'number' && endYear > 0
+  const isSingleYear = isSingleYearIndicator(result)
+  const hasSeries = (result.series ?? []).length >= 2
+
+  const metaValue = formatMetaValue(result, unit)
+  const distanceValue = getDisplayValue(result.display, 'distance')
+  const showGoalProgress = isComparable && Number.isFinite(Number(result?.meta)) && Number.isFinite(Number(result?.end_value))
 
   return (
     <section className="detail-panel">
@@ -53,31 +66,64 @@ export function IndicatorDetail({ item, result }) {
         <StatusBadge status={status} tone={tone} />
       </div>
 
-      {isComparable ? (
-        <div className="metric-grid">
-          {hasStartYear && <MetricCard label={`Valor em ${startYear}`} value={formattedStart} />}
-          {hasEndYear && <MetricCard label={`Valor em ${endYear}`} value={formattedEnd} />}
-          <MetricCard label="Variação" value={variation} />
-          <MetricCard
-            label={result.meta_label ?? 'Meta'}
-            value={formatMetaValue(result, unit)}
-          />
-          <MetricCard
-            label="Distância da meta"
-            value={getDisplayValue(result.display, 'distance')}
-            tone={distanceTone}
-          />
-        </div>
+      {isSingleYear ? (
+        isComparable ? (
+          <div className="metric-grid metric-grid--four">
+            {hasStartYear && (
+              <MetricCard label={`Valor em ${startYear}`} value={formattedStart} />
+            )}
+            <MetricCard label={result.meta_label ?? 'Meta'} value={metaValue} />
+            <MetricCard
+              label="Distância da meta"
+              value={distanceValue}
+              tone={distanceTone}
+            />
+            <MetricCard
+              label="Situação"
+              value={result.atingida ? 'Atingida' : 'Não atingida'}
+              tone={distanceTone}
+            />
+          </div>
+        ) : (
+          <div className="metric-grid metric-grid--two">
+            {hasStartYear && (
+              <MetricCard label={`Valor em ${startYear}`} value={formattedStart} />
+            )}
+            <MetricCard label="Tipo" value="Informativo" tone="muted" />
+          </div>
+        )
       ) : (
-        <div className="metric-grid metric-grid--four">
-          {hasStartYear && <MetricCard label={`Valor em ${startYear}`} value={formattedStart} />}
-          {hasEndYear && <MetricCard label={`Valor em ${endYear}`} value={formattedEnd} />}
-          <MetricCard label="Variação" value={variation} />
-          <MetricCard label="Tipo" value="Informativo" tone="muted" />
-        </div>
+        isComparable ? (
+          <div className="metric-grid">
+            {hasStartYear && (
+              <MetricCard label={`Valor em ${startYear}`} value={formattedStart} />
+            )}
+            {hasEndYear && (
+              <MetricCard label={`Valor em ${endYear}`} value={formattedEnd} />
+            )}
+            <MetricCard label="Variação" value={variation} />
+            <MetricCard label={result.meta_label ?? 'Meta'} value={metaValue} />
+            <MetricCard
+              label="Distância da meta"
+              value={distanceValue}
+              tone={distanceTone}
+            />
+          </div>
+        ) : (
+          <div className="metric-grid metric-grid--four">
+            {hasStartYear && (
+              <MetricCard label={`Valor em ${startYear}`} value={formattedStart} />
+            )}
+            {hasEndYear && (
+              <MetricCard label={`Valor em ${endYear}`} value={formattedEnd} />
+            )}
+            <MetricCard label="Variação" value={variation} />
+            <MetricCard label="Tipo" value="Informativo" tone="muted" />
+          </div>
+        )
       )}
 
-      {isComparable && (
+      {showGoalProgress && (
         <GoalProgress
           distanceTone={distanceTone}
           result={result}
@@ -89,21 +135,28 @@ export function IndicatorDetail({ item, result }) {
         <div className="interpretation-box">
           <span>Interpretação</span>
           <p>{cleanInterpretationText(result.display.interpretation)}</p>
+          {isSingleYear && (
+            <small style={{ display: 'block', marginTop: '6px', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+              Há apenas um ano disponível para este indicador.
+            </small>
+          )}
         </div>
       )}
 
-      <IndicatorHistoryChart
-        display={result.display}
-        endYear={result.end_year}
-        item={item}
-        meta={isComparable ? result.meta : null}
-        result={result}
-        series={result.series}
-        startYear={result.start_year}
-        title={getIndicatorTitle(item, result)}
-        showMetaLine={isComparable}
-        unit={unit}
-      />
+      {hasSeries && (
+        <IndicatorHistoryChart
+          display={result.display}
+          endYear={result.end_year}
+          item={item}
+          meta={isComparable ? result.meta : null}
+          result={result}
+          series={result.series}
+          showMetaLine={isComparable}
+          startYear={result.start_year}
+          title={getIndicatorTitle(item, result)}
+          unit={unit}
+        />
+      )}
     </section>
   )
 }
@@ -154,7 +207,8 @@ export function isAvailableIndicator(result) {
 export function isComparableIndicator(result) {
   const meta = Number(result?.meta)
   const status = String(result?.display?.status ?? '').toLocaleLowerCase('pt-BR')
-  return Boolean(result) &&
+  return (
+    Boolean(result) &&
     result.available !== false &&
     Number.isFinite(meta) &&
     !status.includes('visualiza') &&
@@ -163,6 +217,7 @@ export function isComparableIndicator(result) {
     !status.includes('sem dados') &&
     !status.includes('sem variação') &&
     !status.includes('sem variacao')
+  )
 }
 
 function calculateGoalProgress(result, unit) {
@@ -178,12 +233,12 @@ function calculateGoalProgress(result, unit) {
     .map((point) => Number(point?.valor))
     .filter(Number.isFinite)
   const allValues = [...seriesValues, current, start].filter(Number.isFinite)
-  const isPercent = unit === 'percent'
 
   const domain = getStableVisualDomain({
     values: allValues,
     meta,
-    isPercent,
+    isPercent: unit === 'percent',
+    isIndex: unit === 'index',
   })
 
   const fill = clampMarkerPosition(projectValueToPercent(current, domain))
@@ -194,13 +249,6 @@ function calculateGoalProgress(result, unit) {
     fill,
     meta: metaPosition,
   }
-}
-
-function formatMetaValue(result, unit) {
-  const raw = formatRaw(result?.meta)
-  if (raw === '-') return raw
-  if (unit === 'percent') return `${raw}%`
-  return raw
 }
 
 function getBoundaryYear(result, boundary) {
@@ -222,7 +270,7 @@ function getDistanceTone(result, isComparable) {
   return 'muted'
 }
 
-function formatRaw(value) {
+export function formatRaw(value) {
   if (value === null || value === undefined) {
     return '-'
   }

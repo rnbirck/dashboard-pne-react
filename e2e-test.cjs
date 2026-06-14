@@ -27,7 +27,7 @@ async function runTests() {
   await page.waitForSelector('.home-hero', { timeout: 10000 });
   console.log('Home page loaded');
 
-  // 2. Select municipality first (Áurea)
+  // 2. Select municipality (Áurea)
   await page.selectOption('select[aria-label="Selecionar município"]', 'Áurea');
   await waitForLoading();
   await page.waitForSelector('.selection-alert.is-selected', { timeout: 10000 });
@@ -43,7 +43,7 @@ async function runTests() {
   const indicatorCount = await page.textContent('.indicator-sidebar__heading span');
   console.log('Indicator count:', indicatorCount);
 
-  // Check that there are no "Indisponível" badges in the list
+  // Check unavailable badges hidden
   const unavailableBadges = await page.locator('.indicator-list .indicator-status').filter({ hasText: 'Indisponível' }).count();
   console.log('Unavailable badges in list:', unavailableBadges);
 
@@ -62,24 +62,56 @@ async function runTests() {
   const startValue = await page.locator('.metric-card__label:has-text("Valor em") + .metric-card__value').first().textContent();
   console.log('First indicator start value:', startValue);
 
-  // 8. Navigate to PNE 2026-2036
+  // 8. Check IDEB: navigate to Rendimento Escolar category and click IDEB
+  const idedbTab = await page.locator('.category-tab').filter({ hasText: 'Rendimento Escolar' }).first();
+  if (await idedbTab.count() > 0) {
+    await idedbTab.click();
+    await page.waitForTimeout(300);
+    const idebIndicator = await page.locator('.indicator-row').filter({ hasText: 'IDEB' }).first();
+    if (await idebIndicator.count() > 0) {
+      await idebIndicator.click();
+      await page.waitForTimeout(500);
+      // Check IDEB values do NOT have %
+      const idebValues = await page.locator('.metric-card__value').allTextContents();
+      const hasPercentInIdeb = idebValues.some(v => v.includes('%'));
+      console.log('IDEB values:', idebValues);
+      console.log('IDEB has %:', hasPercentInIdeb);
+      if (hasPercentInIdeb) {
+        errors.push('IDEB values should not contain %');
+      }
+      // Check chart meta label does not have %
+      const chartMetaLabel = await page.locator('.chart-meta-line__label').first().textContent().catch(() => '');
+      console.log('Chart meta label:', chartMetaLabel);
+      if (chartMetaLabel.includes('%')) {
+        errors.push('IDEB chart meta label should not contain %');
+      }
+      // Check chart domain not 0-100 (should have ticks like 0,2,4,6,8,10)
+      const chartTicks = await page.locator('.chart-grid text').allTextContents();
+      console.log('Chart ticks:', chartTicks);
+      if (chartTicks.includes('100')) {
+        errors.push('IDEB chart should not have tick 100');
+      }
+    }
+  }
+
+  // 9. Navigate to PNE 2026-2036
   await page.click('button:has-text("PNE 2026-2036")');
   await waitForLoading();
   await page.waitForSelector('.cycle-page', { timeout: 10000 });
   console.log('PNE 2026-2036 page loaded');
 
-  // 9. Navigate to Diagnóstico
+  // 10. Navigate to Diagnóstico
   await page.click('button:has-text("Diagnóstico")');
   await waitForLoading();
   await page.waitForSelector('.diagnostic-panel', { timeout: 10000 });
   console.log('Diagnóstico page loaded');
 
-  // 10. Change municipality
+  // 11. Change municipality
   await page.selectOption('select[aria-label="Selecionar município"]', 'Canela');
   await waitForLoading();
   console.log('Changed to Canela');
 
-  // 11. Mobile viewport
+  // 12. Mobile viewport
   await page.setViewportSize({ width: 390, height: 820 });
   await page.goto(BASE_URL);
   await waitForLoading();
@@ -93,7 +125,7 @@ async function runTests() {
   await page.waitForSelector('.cycle-page', { timeout: 10000 });
   console.log('Mobile PNE 2014-2024 loaded');
 
-  // Check for horizontal overflow
+  // Check horizontal overflow
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   console.log('Horizontal overflow:', overflow);
 
