@@ -1,5 +1,8 @@
-export function StatusBadge({ status, tone }) {
+export function StatusBadge({ className = '', displayStatus, status, title, tone }) {
   const classes = ['status-badge']
+  if (className) {
+    classes.push(className)
+  }
   if (tone) {
     classes.push(`status-badge--${tone}`)
   } else {
@@ -22,5 +25,9 @@ export function StatusBadge({ status, tone }) {
               : 'default'
     classes.push(`status-badge--${inferred}`)
   }
-  return <span className={classes.join(' ')}>{status}</span>
+  return (
+    <span className={classes.join(' ')} title={title ?? status}>
+      {displayStatus ?? status}
+    </span>
+  )
 }

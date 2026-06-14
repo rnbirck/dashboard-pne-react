@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 
 const CHART_WIDTH = 820
 const CHART_HEIGHT = 320
-const PADDING = { bottom: 48, left: 72, right: 72, top: 58 }
+const PADDING = { bottom: 52, left: 78, right: 92, top: 64 }
 
 export function IndicatorHistoryChart({
   display,
@@ -51,8 +51,8 @@ export function IndicatorHistoryChart({
           aria-label={`${title}: linha histórica por ano`}
         >
           <g className="chart-grid">
-            {chart.yTicks.map((tick) => (
-              <g key={tick.value}>
+            {chart.yTicks.map((tick, index) => (
+              <g key={`${tick.value}-${index}`}>
                 <line x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={tick.y} y2={tick.y} />
                 <text x={PADDING.left - 12} y={tick.y + 4}>{chart.formatValue(tick.value)}</text>
               </g>
@@ -141,7 +141,8 @@ export function IndicatorHistoryChart({
 function buildChartModel({ display, endYear, meta, series, startYear }) {
   const points = normalizeSeries(series)
   const unit = inferUnit(display, points, meta)
-  const metaValue = Number.isFinite(Number(meta)) ? Number(meta) : null
+  const rawMetaValue = meta === null || meta === undefined || meta === '' ? Number.NaN : Number(meta)
+  const metaValue = Number.isFinite(rawMetaValue) ? rawMetaValue : null
 
   if (points.length < 2) {
     return { points }
@@ -218,7 +219,8 @@ function normalizeSeries(series = []) {
 function inferUnit(display, points, meta) {
   const displayText = Object.values(display ?? {}).join(' ')
   if (displayText.includes('%')) return '%'
-  const values = [...points.map((point) => point.value), Number(meta)].filter(Number.isFinite)
+  const metaValue = meta === null || meta === undefined || meta === '' ? Number.NaN : Number(meta)
+  const values = [...points.map((point) => point.value), metaValue].filter(Number.isFinite)
   if (values.length && values.every((value) => value >= 0 && value <= 100)) return '%'
   return ''
 }

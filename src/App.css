@@ -1055,6 +1055,7 @@
 }
 
 .indicator-row__label {
+  min-width: 0;
   color: var(--text-strong);
   font-weight: 700;
   line-height: 1.35;
@@ -1067,9 +1068,9 @@
 }
 
 .indicator-row .status-badge {
-  max-width: 118px;
-  padding: 4px 9px;
-  font-size: 0.64rem;
+  max-width: 96px;
+  padding: 4px 8px;
+  font-size: 0.6rem;
   font-weight: 800;
   letter-spacing: 0.02em;
   border-radius: var(--radius-pill);
@@ -1078,6 +1079,10 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.indicator-status {
+  flex-shrink: 0;
 }
 
 .indicator-row .status-badge--success {
@@ -1286,6 +1291,18 @@
   color: var(--text-soft);
 }
 
+.metric-card--warning {
+  box-shadow: inset 3px 0 0 rgba(240, 90, 36, 0.5);
+}
+
+.metric-card--success {
+  box-shadow: inset 3px 0 0 rgba(47, 113, 60, 0.5);
+}
+
+.metric-card--muted {
+  box-shadow: inset 3px 0 0 rgba(120, 140, 126, 0.32);
+}
+
 /* =========================
    Interpretation / timeline
    ========================= */
@@ -1298,6 +1315,9 @@
   color: var(--text);
   line-height: 1.6;
   box-shadow: var(--shadow-sm);
+  min-height: 0;
+  height: auto;
+  overflow: visible;
 }
 
 .goal-progress {
@@ -1346,10 +1366,22 @@
   white-space: nowrap;
 }
 
+.goal-progress__distance--success {
+  color: var(--success);
+}
+
+.goal-progress__distance--warning {
+  color: var(--danger);
+}
+
+.goal-progress__distance--muted {
+  color: var(--text-soft);
+}
+
 .goal-progress__rail {
   position: relative;
   height: 10px;
-  margin: 22px 24px 22px;
+  margin: 24px 24px 18px;
   border-radius: var(--radius-pill);
   background: linear-gradient(90deg, #d8e3d7, #eef3ec);
 }
@@ -1428,35 +1460,17 @@
 }
 
 .goal-progress__labels {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.goal-progress__labels span {
-  min-width: 0;
-  display: grid;
-  gap: 2px;
-}
-
-.goal-progress__labels strong {
-  color: var(--text-strong);
-  font-size: 0.86rem;
-  font-weight: 800;
-}
-
-.goal-progress__labels small {
-  color: var(--text-soft);
-  font-size: 0.72rem;
-  font-weight: 700;
-  line-height: 1.25;
+  display: none;
 }
 
 .interpretation-box p {
   margin: 0;
   color: var(--text);
   font-size: 0.92rem;
-  line-height: 1.6;
+  line-height: 1.65;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .interpretation-box > span {

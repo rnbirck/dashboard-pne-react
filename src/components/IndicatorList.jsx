@@ -16,6 +16,7 @@ export function IndicatorList({ items, selectedIndicator, onSelectIndicator, res
             : result?.available
               ? 'warning'
               : 'muted'
+        const compactStatus = getCompactStatusLabel(statusLabel)
         return (
           <button
             className={
@@ -27,10 +28,30 @@ export function IndicatorList({ items, selectedIndicator, onSelectIndicator, res
             title={item.label}
           >
             <span className="indicator-row__label">{item.label}</span>
-            <StatusBadge status={statusLabel} tone={tone} />
+            <StatusBadge
+              className="indicator-status"
+              displayStatus={compactStatus}
+              status={statusLabel}
+              title={statusLabel}
+              tone={tone}
+            />
           </button>
         )
       })}
     </div>
   )
+}
+
+function getCompactStatusLabel(statusLabel) {
+  const normalizedStatus = String(statusLabel).toLocaleLowerCase('pt-BR')
+  if (normalizedStatus.includes('visualiza') || normalizedStatus.includes('informativo')) {
+    return 'Informativo'
+  }
+  if (normalizedStatus.includes('não atingida') || normalizedStatus.includes('nao atingida')) {
+    return 'Não atingida'
+  }
+  if (normalizedStatus.includes('meta atingida')) {
+    return 'Atingida'
+  }
+  return statusLabel
 }
