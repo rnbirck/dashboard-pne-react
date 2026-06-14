@@ -38,6 +38,8 @@ export function IndicatorDetail({ item, result }) {
   const formattedStart = formatIndicatorValue(result.start_value, unit)
   const formattedEnd = formatIndicatorValue(result.end_value, unit)
   const variation = getDisplayValue(result.display, 'variation')
+  const hasStartYear = typeof startYear === 'number' && startYear > 0
+  const hasEndYear = typeof endYear === 'number' && endYear > 0
 
   return (
     <section className="detail-panel">
@@ -53,8 +55,8 @@ export function IndicatorDetail({ item, result }) {
 
       {isComparable ? (
         <div className="metric-grid">
-          <MetricCard label={`Valor em ${startYear}`} value={formattedStart} />
-          <MetricCard label={`Valor em ${endYear}`} value={formattedEnd} />
+          {hasStartYear && <MetricCard label={`Valor em ${startYear}`} value={formattedStart} />}
+          {hasEndYear && <MetricCard label={`Valor em ${endYear}`} value={formattedEnd} />}
           <MetricCard label="Variação" value={variation} />
           <MetricCard
             label={result.meta_label ?? 'Meta'}
@@ -68,8 +70,8 @@ export function IndicatorDetail({ item, result }) {
         </div>
       ) : (
         <div className="metric-grid metric-grid--four">
-          <MetricCard label={`Valor em ${startYear}`} value={formattedStart} />
-          <MetricCard label={`Valor em ${endYear}`} value={formattedEnd} />
+          {hasStartYear && <MetricCard label={`Valor em ${startYear}`} value={formattedStart} />}
+          {hasEndYear && <MetricCard label={`Valor em ${endYear}`} value={formattedEnd} />}
           <MetricCard label="Variação" value={variation} />
           <MetricCard label="Tipo" value="Informativo" tone="muted" />
         </div>
@@ -145,6 +147,10 @@ function GoalProgress({ distanceTone, result, unit }) {
   )
 }
 
+export function isAvailableIndicator(result) {
+  return Boolean(result) && result.available !== false
+}
+
 export function isComparableIndicator(result) {
   const meta = Number(result?.meta)
   const status = String(result?.display?.status ?? '').toLocaleLowerCase('pt-BR')
@@ -198,8 +204,9 @@ function formatMetaValue(result, unit) {
 }
 
 function getBoundaryYear(result, boundary) {
-  const directYear = Number(boundary === 'start' ? result?.start_year : result?.end_year)
-  if (Number.isFinite(directYear)) return directYear
+  const rawYear = boundary === 'start' ? result?.start_year : result?.end_year
+  const directYear = Number(rawYear)
+  if (Number.isFinite(directYear) && directYear > 0) return directYear
   const years = (result?.series ?? [])
     .map((point) => Number(point?.ano))
     .filter(Number.isFinite)

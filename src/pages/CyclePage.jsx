@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { CategoryTabs } from '../components/CategoryTabs'
-import { IndicatorDetail, isComparableIndicator } from '../components/IndicatorDetail'
+import { IndicatorDetail, isAvailableIndicator, isComparableIndicator } from '../components/IndicatorDetail'
 import { IndicatorList } from '../components/IndicatorList'
 import { RankingBlock } from '../components/RankingBlock'
 
@@ -21,33 +21,37 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     )
   }, [categories, selectedCategoryKey])
 
-  const categoryItems = useMemo(
+  const allCategoryItems = useMemo(
     () => selectedCategory?.items ?? [],
     [selectedCategory],
   )
-  const filteredCategoryItems = useMemo(() => {
-    const query = searchQuery.trim().toLocaleLowerCase('pt-BR')
-    if (!query) return categoryItems
-    return categoryItems.filter((item) => item.label.toLocaleLowerCase('pt-BR').includes(query))
-  }, [categoryItems, searchQuery])
   const municipioResults = municipioData?.[cycle]?.indicadores ?? null
   const municipioRankings = municipioData?.[cycle]?.rankings ?? null
+  const availableCategoryItems = useMemo(
+    () => allCategoryItems.filter((item) => isAvailableIndicator(municipioResults?.[item.key])),
+    [allCategoryItems, municipioResults],
+  )
+  const filteredCategoryItems = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase('pt-BR')
+    if (!query) return availableCategoryItems
+    return availableCategoryItems.filter((item) => item.label.toLocaleLowerCase('pt-BR').includes(query))
+  }, [availableCategoryItems, searchQuery])
   const activeIndicatorKey = useMemo(() => {
-    if (!categoryItems.length) return ''
-    if (categoryItems.some((item) => item.key === selectedIndicatorKey)) {
+    if (!availableCategoryItems.length) return ''
+    if (availableCategoryItems.some((item) => item.key === selectedIndicatorKey)) {
       return selectedIndicatorKey
     }
-    return categoryItems[0].key
-  }, [categoryItems, selectedIndicatorKey])
+    return availableCategoryItems[0].key
+  }, [availableCategoryItems, selectedIndicatorKey])
   const activeItem = useMemo(
-    () => categoryItems.find((item) => item.key === activeIndicatorKey) ?? categoryItems[0],
-    [activeIndicatorKey, categoryItems],
+    () => availableCategoryItems.find((item) => item.key === activeIndicatorKey) ?? availableCategoryItems[0],
+    [activeIndicatorKey, availableCategoryItems],
   )
   const activeResult = activeItem ? municipioResults?.[activeItem.key] : null
   const activeRanking = municipioRankings?.[selectedCategory?.key]
   const normalizedRanking = useMemo(
-    () => normalizeRankings(activeRanking, categoryItems, municipioResults),
-    [activeRanking, categoryItems, municipioResults],
+    () => normalizeRankings(activeRanking, allCategoryItems, municipioResults),
+    [activeRanking, allCategoryItems, municipioResults],
   )
   const cycleManagementStats = useMemo(
     () => buildCycleManagementStats(categories, municipioResults),
@@ -111,27 +115,35 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
           <aside className="indicator-sidebar">
             <div className="indicator-sidebar__heading">
               <h3>Indicadores</h3>
-              <span>{categoryItems.length}</span>
+              <span>{availableCategoryItems.length}</span>
             </div>
-            <label className="indicator-search">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="11" cy="11" r="6.5" />
-                <path d="m16 16 4 4" />
-              </svg>
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Buscar indicador..."
-                aria-label="Buscar indicador"
-              />
-            </label>
-            <IndicatorList
-              items={filteredCategoryItems}
-              results={municipioResults}
-              selectedIndicator={activeItem?.key}
-              onSelectIndicator={setSelectedIndicatorKey}
-            />
+            {availableCategoryItems.length === 0 ? (
+              <div className="indicator-sidebar__empty" style={{ padding: '12px 16px', color: 'var(--text-muted)', fontSize: '14px' }}>
+                <p>Nenhum indicador disponível para esta categoria.</p>
+              </div>
+            ) : (
+              <>
+                <label className="indicator-search">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="11" cy="11" r="6.5" />
+                    <path d="m16 16 4 4" />
+                  </svg>
+                  <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Buscar indicador..."
+                    aria-label="Buscar indicador"
+                  />
+                </label>
+                <IndicatorList
+                  items={filteredCategoryItems}
+                  results={municipioResults}
+                  selectedIndicator={activeItem?.key}
+                  onSelectIndicator={setSelectedIndicatorKey}
+                />
+              </>
+            )}
           </aside>
 
           <IndicatorDetail item={activeItem} result={activeResult} />

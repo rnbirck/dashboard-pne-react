@@ -235,7 +235,7 @@ function buildChartModel({
 
   const candidateMarkerYears = [startYear, endYear]
     .map((year) => Number(year))
-    .filter(Number.isFinite)
+    .filter((year) => Number.isFinite(year) && year > 0)
 
   const fallbackMarkerYears = [minYear, maxYear]
 
