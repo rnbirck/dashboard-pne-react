@@ -3,14 +3,23 @@ export function StatusBadge({ status, tone }) {
   if (tone) {
     classes.push(`status-badge--${tone}`)
   } else {
+    const normalizedStatus = String(status).toLocaleLowerCase('pt-BR')
     const inferred =
-      status === 'Meta atingida' || status === 'Atingida' || status === 'Concluído' || status === 'ok'
+      normalizedStatus.includes('atingida') && !normalizedStatus.includes('não') && !normalizedStatus.includes('nao')
         ? 'success'
-        : status === 'Meta não atingida' || status === 'Atenção' || status === 'warning' || status === 'attention'
-          ? 'warning'
-          : status === 'Indisponível' || status === 'muted'
-            ? 'muted'
-            : 'default'
+        : normalizedStatus.includes('visualiza')
+          ? 'info'
+          : normalizedStatus.includes('não') ||
+              normalizedStatus.includes('nao') ||
+              normalizedStatus.includes('aten') ||
+              normalizedStatus.includes('warning') ||
+              normalizedStatus.includes('attention')
+            ? 'warning'
+            : normalizedStatus.includes('indispon') ||
+                normalizedStatus.includes('sem dados') ||
+                normalizedStatus.includes('muted')
+              ? 'muted'
+              : 'default'
     classes.push(`status-badge--${inferred}`)
   }
   return <span className={classes.join(' ')}>{status}</span>

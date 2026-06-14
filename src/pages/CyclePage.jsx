@@ -11,6 +11,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   )
   const [selectedCategoryKey, setSelectedCategoryKey] = useState('')
   const [selectedIndicatorKey, setSelectedIndicatorKey] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
 
   const selectedCategory = useMemo(() => {
     if (!categories.length) return null
@@ -24,6 +25,11 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     () => selectedCategory?.items ?? [],
     [selectedCategory],
   )
+  const filteredCategoryItems = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase('pt-BR')
+    if (!query) return categoryItems
+    return categoryItems.filter((item) => item.label.toLocaleLowerCase('pt-BR').includes(query))
+  }, [categoryItems, searchQuery])
   const municipioResults = municipioData?.[cycle]?.indicadores ?? null
   const municipioRankings = municipioData?.[cycle]?.rankings ?? null
   const activeIndicatorKey = useMemo(() => {
@@ -47,6 +53,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   function handleCategorySelect(categoryKey) {
     setSelectedCategoryKey(categoryKey)
     setSelectedIndicatorKey('')
+    setSearchQuery('')
   }
 
   return (
@@ -69,10 +76,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
 
       <section className="cycle-workspace">
         <div className="cycle-category-bar">
-          <div>
-            <span className="eyebrow">Categorias</span>
-            <h2>Indicadores do ciclo</h2>
-          </div>
+          <span className="eyebrow">Categorias</span>
           <CategoryTabs
             categories={categories}
             selectedCategory={selectedCategory?.key}
@@ -86,8 +90,21 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
               <h3>Indicadores</h3>
               <span>{categoryItems.length}</span>
             </div>
+            <label className="indicator-search">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="6.5" />
+                <path d="m16 16 4 4" />
+              </svg>
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Buscar indicador..."
+                aria-label="Buscar indicador"
+              />
+            </label>
             <IndicatorList
-              items={categoryItems}
+              items={filteredCategoryItems}
               results={municipioResults}
               selectedIndicator={activeItem?.key}
               onSelectIndicator={setSelectedIndicatorKey}

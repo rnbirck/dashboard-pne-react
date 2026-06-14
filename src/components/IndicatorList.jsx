@@ -8,7 +8,14 @@ export function IndicatorList({ items, selectedIndicator, onSelectIndicator, res
         const statusLabel = result?.available
           ? result?.display?.status ?? (result?.atingida ? 'Meta atingida' : 'Meta não atingida')
           : 'Indisponível'
-        const tone = result?.atingida ? 'success' : result?.available ? 'warning' : 'muted'
+        const normalizedStatus = String(statusLabel).toLocaleLowerCase('pt-BR')
+        const tone = normalizedStatus.includes('visualiza')
+          ? 'info'
+          : result?.atingida
+            ? 'success'
+            : result?.available
+              ? 'warning'
+              : 'muted'
         return (
           <button
             className={
@@ -19,7 +26,7 @@ export function IndicatorList({ items, selectedIndicator, onSelectIndicator, res
             onClick={() => onSelectIndicator(item.key)}
             title={item.label}
           >
-            <span>{item.label}</span>
+            <span className="indicator-row__label">{item.label}</span>
             <StatusBadge status={statusLabel} tone={tone} />
           </button>
         )
