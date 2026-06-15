@@ -13,6 +13,7 @@ import {
 } from './data/staticData'
 import { CyclePage } from './pages/CyclePage'
 import { Diagnostico } from './pages/Diagnostico'
+import { MunicipalitySelector } from './components/MunicipalitySelector'
 import { Home } from './pages/Home'
 import { useAsyncData } from './utils/useAsyncData'
 
@@ -214,29 +215,12 @@ function EmptyMunicipioState({ onNavigate, onMunicipioChange, municipios }) {
         seleção. Escolha o município que deseja analisar.
       </p>
       <div style={{ minWidth: 'min(320px, 100%)', marginTop: '4px' }}>
-        <label className="municipio-selector municipio-selector--hero">
-          <div className="municipio-selector__field">
-            <svg className="municipio-selector__pin" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 21s7-6.3 7-12a7 7 0 1 0-14 0c0 5.7 7 12 7 12Z" />
-              <circle cx="12" cy="9" r="2.4" />
-            </svg>
-            <select
-              value=""
-              onChange={(event) => onMunicipioChange(event.target.value || null)}
-              aria-label="Selecionar município"
-            >
-              <option value="">Escolha um município</option>
-              {municipios.map((municipio) => (
-                <option key={municipio} value={municipio}>
-                  {municipio}
-                </option>
-              ))}
-            </select>
-            <svg className="municipio-selector__chevron" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </div>
-        </label>
+        <MunicipalitySelector
+          variant="hero"
+          municipios={municipios}
+          selectedMunicipio=""
+          onChange={onMunicipioChange}
+        />
       </div>
       <button type="button" className="primary-button" onClick={() => onNavigate?.('home')}>
         Voltar ao início
