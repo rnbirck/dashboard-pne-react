@@ -19,11 +19,22 @@ export function getIndicatorTitle(item, result) {
   return item?.label || result?.label || 'Indicador'
 }
 
-export function cleanInterpretationText(text) {
+export function cleanInterpretationText(text, { keepOneDecimal = false } = {}) {
   if (typeof text !== 'string' || !text.length) return text
   let cleaned = text.replace(/\bp\.p\.\..+/g, 'p.p.')
   cleaned = cleaned.replace(/\.+\s*$/, '.')
   cleaned = cleaned.replace(/(\b\w)\.([a-zÀ-ÿ])/g, '$1. $2')
+  cleaned = cleaned.replace(/(-?\d+),(\d+)/g, (_match, intPart, decPart) => {
+    const num = Number(`${intPart}.${decPart}`)
+    if (!Number.isFinite(num)) return _match
+    if (keepOneDecimal) {
+      return num.toLocaleString('pt-BR', {
+        maximumFractionDigits: 1,
+        minimumFractionDigits: 1,
+      })
+    }
+    return String(Math.round(num))
+  })
   return cleaned.trimEnd()
 }
 
@@ -131,13 +142,27 @@ export function formatMetaValue(result, unit) {
   return numeric.toLocaleString('pt-BR', { maximumFractionDigits: 0 })
 }
 
-export function roundPpString(value) {
+export function roundPpString(value, { keepOneDecimal = false } = {}) {
   if (typeof value !== 'string') return value
   return value.replace(/(-?\d+),(\d+)/g, (_match, intPart, decPart) => {
     const num = Number(`${intPart}.${decPart}`)
     if (!Number.isFinite(num)) return _match
+    if (keepOneDecimal) {
+      return num.toLocaleString('pt-BR', {
+        maximumFractionDigits: 1,
+        minimumFractionDigits: 1,
+      })
+    }
     return String(Math.round(num))
   })
+}
+
+export function isIdebIndicator(item, result) {
+  const text = [item?.label, item?.sub, item?.desc, result?.label]
+    .filter(Boolean)
+    .join(' ')
+    .toLocaleLowerCase('pt-BR')
+  return text.includes('ideb')
 }
 
 export function isSingleYearIndicator(result) {

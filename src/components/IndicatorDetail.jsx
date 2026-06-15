@@ -6,6 +6,7 @@ import {
   formatRankingValue,
   getDisplayValue,
   getIndicatorTitle,
+  isIdebIndicator,
   isSingleYearIndicator,
   resolveIndicatorUnit,
   roundPpString,
@@ -44,9 +45,11 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
   const endYear = getBoundaryYear(result, 'end')
   const distanceTone = getDistanceTone(result, isComparable)
   const unit = resolveIndicatorUnit(item, result)
+  const isIdeb = isIdebIndicator(item, result)
+  const ppOptions = { keepOneDecimal: isIdeb }
   const formattedStart = formatIndicatorValue(result.start_value, unit)
   const formattedEnd = formatIndicatorValue(result.end_value, unit)
-  const variation = roundPpString(getDisplayValue(result.display, 'variation'))
+  const variation = roundPpString(getDisplayValue(result.display, 'variation'), ppOptions)
   const hasStartYear = typeof startYear === 'number' && startYear > 0
   const hasEndYear = typeof endYear === 'number' && endYear > 0
   const isSingleYear = isSingleYearIndicator(result)
@@ -55,7 +58,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
   const hasSeries = (result.series ?? []).length >= 2 && hasRealSeriesValues
 
   const metaValue = formatMetaValue(result, unit)
-  const distanceValue = roundPpString(getDisplayValue(result.display, 'distance'))
+  const distanceValue = roundPpString(getDisplayValue(result.display, 'distance'), ppOptions)
   const showGoalProgress = isComparable && Number.isFinite(Number(result?.meta)) && Number.isFinite(Number(result?.end_value))
 
   return (
@@ -138,7 +141,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
       {result.display?.interpretation && (
         <div className="interpretation-box">
           <span>Interpretação</span>
-          <p>{cleanInterpretationText(result.display.interpretation)}</p>
+          <p>{cleanInterpretationText(result.display.interpretation, ppOptions)}</p>
           {isSingleYear && (
             <small style={{ display: 'block', marginTop: '6px', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
               Há apenas um ano disponível para este indicador.
