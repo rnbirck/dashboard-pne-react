@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { CategoryTabs } from '../components/CategoryTabs'
 import { IndicatorDetail, isAvailableIndicator, isComparableIndicator } from '../components/IndicatorDetail'
 import { IndicatorList } from '../components/IndicatorList'
@@ -13,7 +13,6 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   const [selectedCategoryKey, setSelectedCategoryKey] = useState('')
   const [selectedIndicatorKey, setSelectedIndicatorKey] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const cycleLayoutRef = useRef(null)
   const detailPanelRef = useRef(null)
 
   const selectedCategory = useMemo(() => {
@@ -60,41 +59,6 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     () => buildCycleManagementStats(categories, municipioResults),
     [categories, municipioResults],
   )
-
-  useLayoutEffect(() => {
-    const layout = cycleLayoutRef.current
-    const detailPanel = detailPanelRef.current
-    if (!layout || !detailPanel) return undefined
-
-    let rafId = 0
-    const updatePanelHeight = () => {
-      cancelAnimationFrame(rafId)
-      rafId = requestAnimationFrame(() => {
-        const height = Math.ceil(detailPanel.getBoundingClientRect().height)
-        if (height >= 480) {
-          layout.style.setProperty('--cycle-detail-height', `${height}px`)
-        } else {
-          layout.style.removeProperty('--cycle-detail-height')
-        }
-      })
-    }
-
-    updatePanelHeight()
-
-    const observer = typeof ResizeObserver !== 'undefined'
-      ? new ResizeObserver(updatePanelHeight)
-      : null
-
-    observer?.observe(detailPanel)
-    window.addEventListener('resize', updatePanelHeight)
-
-    return () => {
-      cancelAnimationFrame(rafId)
-      observer?.disconnect()
-      window.removeEventListener('resize', updatePanelHeight)
-      layout.style.removeProperty('--cycle-detail-height')
-    }
-  }, [activeItem?.key, activeResult, selectedCategory?.key])
 
   function handleCategorySelect(categoryKey) {
     setSelectedCategoryKey(categoryKey)
@@ -149,7 +113,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
           />
         </div>
 
-        <div className="cycle-layout" ref={cycleLayoutRef}>
+        <div className="cycle-layout">
           <aside className="indicator-sidebar">
             <div className="indicator-sidebar__heading">
               <h3>Indicadores</h3>

@@ -165,6 +165,20 @@ export function isIdebIndicator(item, result) {
   return text.includes('ideb')
 }
 
+export function isAccumulativeExpansionIndicator(item, result) {
+  const text = [item?.label, item?.sub, item?.desc, result?.label]
+    .filter(Boolean)
+    .join(' ')
+    .toLocaleLowerCase('pt-BR')
+  return text.includes('expansão acumulada')
+}
+
+export function floorValueForGoal(value, item, result) {
+  if (!Number.isFinite(value)) return value
+  if (!isAccumulativeExpansionIndicator(item, result)) return value
+  return Math.max(0, value)
+}
+
 export function isSingleYearIndicator(result) {
   const series = result?.series ?? []
   const validYears = series

@@ -25,6 +25,7 @@ export function IndicatorHistoryChart({
   startYear,
   title = 'Histórico do indicador',
   unit: unitProp,
+  floorNegativeValues = false,
 }) {
   const [activePoint, setActivePoint] = useState(null)
   const rawClipId = useId()
@@ -235,7 +236,7 @@ function buildChartModel({
   showMetaLine,
   startYear,
 }) {
-  const points = normalizeSeries(series)
+  const points = normalizeSeries(series, floorNegativeValues)
   const rawMetaValue =
     meta === null || meta === undefined || meta === '' ? Number.NaN : Number(meta)
   const metaValue = Number.isFinite(rawMetaValue) ? rawMetaValue : null
@@ -359,12 +360,15 @@ function buildChartModel({
   }
 }
 
-function normalizeSeries(series = []) {
+function normalizeSeries(series = [], floorNegativeValues = false) {
   return series
-    .map((point) => ({
-      value: Number(point?.valor),
-      year: Number(point?.ano),
-    }))
+    .map((point) => {
+      const rawValue = Number(point?.valor)
+      return {
+        value: floorNegativeValues && rawValue < 0 ? 0 : rawValue,
+        year: Number(point?.ano),
+      }
+    })
     .filter((point) => Number.isFinite(point.year) && Number.isFinite(point.value))
     .sort((a, b) => a.year - b.year)
 }

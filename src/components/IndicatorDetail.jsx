@@ -1,11 +1,13 @@
 import { forwardRef } from 'react'
 import {
   cleanInterpretationText,
+  floorValueForGoal,
   formatIndicatorValue,
   formatMetaValue,
   formatRankingValue,
   getDisplayValue,
   getIndicatorTitle,
+  isAccumulativeExpansionIndicator,
   isIdebIndicator,
   isSingleYearIndicator,
   resolveIndicatorUnit,
@@ -46,9 +48,27 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
   const distanceTone = getDistanceTone(result, isComparable)
   const unit = resolveIndicatorUnit(item, result)
   const isIdeb = isIdebIndicator(item, result)
+  const isAccExpansion = isAccumulativeExpansionIndicator(item, result)
   const ppOptions = { keepOneDecimal: isIdeb }
-  const formattedStart = formatIndicatorValue(result.start_value, unit)
-  const formattedEnd = formatIndicatorValue(result.end_value, unit)
+  const endValueForGoal = floorValueForGoal(Number(result.end_value), item, result)
+  const startValueForGoal = floorValueForGoal(Number(result.start_value), item, result)
+  const metaValueForGoal = floorValueForGoal(Number(result.meta), item, result)
+  const flooredResult = isAccExpansion
+    ? {
+        ...result,
+        end_value: endValueForGoal,
+        start_value: startValueForGoal,
+        meta: metaValueForGoal,
+        distance: Number.isFinite(endValueForGoal) && Number.isFinite(metaValueForGoal)
+          ? endValueForGoal - metaValueForGoal
+          : result.distance,
+      }
+    : result
+  const flooredDisplayDistance = isAccExpansion && Number.isFinite(flooredResult.distance)
+    ? `${flooredResult.distance > 0 ? '+' : ''}${Math.round(flooredResult.distance).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} p.p.`
+    : getDisplayValue(result.display, 'distance')
+  const formattedStart = formatIndicatorValue(flooredResult.start_value, unit)
+  const formattedEnd = formatIndicatorValue(flooredResult.end_value, unit)
   const variation = roundPpString(getDisplayValue(result.display, 'variation'), ppOptions)
   const hasStartYear = typeof startYear === 'number' && startYear > 0
   const hasEndYear = typeof endYear === 'number' && endYear > 0
@@ -57,9 +77,9 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
   const hasRealSeriesValues = seriesValues.some((v) => v !== 0)
   const hasSeries = (result.series ?? []).length >= 2 && hasRealSeriesValues
 
-  const metaValue = formatMetaValue(result, unit)
-  const distanceValue = roundPpString(getDisplayValue(result.display, 'distance'), ppOptions)
-  const showGoalProgress = isComparable && Number.isFinite(Number(result?.meta)) && Number.isFinite(Number(result?.end_value))
+  const metaValue = formatMetaValue(flooredResult, unit)
+  const distanceValue = roundPpString(flooredDisplayDistance, ppOptions)
+  const showGoalProgress = isComparable && Number.isFinite(Number(flooredResult?.meta)) && Number.isFinite(Number(flooredResult?.end_value))
 
   return (
     <section className="detail-panel" ref={ref}>
@@ -133,7 +153,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
       {showGoalProgress && (
         <GoalProgress
           distanceTone={distanceTone}
-          result={result}
+          result={flooredResult}
           unit={unit}
         />
       )}
@@ -142,6 +162,11 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
         <div className="interpretation-box">
           <span>Interpretação</span>
           <p>{cleanInterpretationText(result.display.interpretation, ppOptions)}</p>
+          {isAccExpansion && (
+            <small style={{ display: 'block', marginTop: '6px', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+              O indicador não registrou expansão acumulada no período; para acompanhamento da meta, o valor considerado é 0%.
+            </small>
+          )}
           {isSingleYear && (
             <small style={{ display: 'block', marginTop: '6px', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
               Há apenas um ano disponível para este indicador.
@@ -155,14 +180,27 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
           display={result.display}
           endYear={result.end_year}
           item={item}
-          meta={isComparable ? result.meta : null}
-          result={result}
+          meta={isComparable ? flooredResult.meta : null}
+          result={isAccExpansion ? flooredResult : result}
           series={result.series}
           showMetaLine={isComparable}
           startYear={result.start_year}
           title={getIndicatorTitle(item, result)}
           unit={unit}
+          floorNegativeValues={isAccExpansion}
         />
+      )}
+
+      {!hasSeries && !isInformative && (
+        <div className="detail-empty-state">
+          <p>Este indicador não possui série histórica disponível para este município no ciclo vigente.</p>
+        </div>
+      )}
+
+      {isInformative && !hasSeries && (
+        <div className="detail-empty-state">
+          <p>Este indicador é informativo e não possui acompanhamento de meta neste ciclo.</p>
+        </div>
       )}
     </section>
   )

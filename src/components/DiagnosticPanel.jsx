@@ -1,5 +1,9 @@
 import { useMemo, useState } from 'react'
-import { resolveIndicatorUnit } from '../utils/format'
+import {
+  floorValueForGoal,
+  isAccumulativeExpansionIndicator,
+  resolveIndicatorUnit,
+} from '../utils/format'
 
 const AREA_ICON_PATHS = {
   atendimento: (
@@ -512,11 +516,17 @@ function normalizeDiagnosticIndicator(item, category, result) {
   if (!hasDiagnosticRealData(result)) return null
 
   const comparable = isDiagnosticComparable(result)
-  const distance = getNumericValue(result?.distance, result?.display?.distance)
+  const isAccExpansion = isAccumulativeExpansionIndicator(item, result)
+  const rawDistance = getNumericValue(result?.distance, result?.display?.distance)
   const variation = getNumericValue(result?.progress_delta, result?.raw_delta, result?.display?.variation)
   const unit = resolveIndicatorUnit(item, result)
-  const currentValue = Number(result?.end_value)
-  const meta = Number(result?.meta)
+  const rawCurrentValue = Number(result?.end_value)
+  const rawMeta = Number(result?.meta)
+  const currentValue = floorValueForGoal(rawCurrentValue, item, result)
+  const meta = floorValueForGoal(rawMeta, item, result)
+  const distance = isAccExpansion && Number.isFinite(currentValue) && Number.isFinite(meta)
+    ? currentValue - meta
+    : rawDistance
 
   return {
     categoryKey: category.key,
@@ -525,6 +535,7 @@ function normalizeDiagnosticIndicator(item, category, result) {
     distance,
     displayDistance: result?.display?.distance,
     displayVariation: result?.display?.variation,
+    isAccExpansion,
     isComparable: comparable,
     key: `${category.key}-${item.key}`,
     label: item.label,
