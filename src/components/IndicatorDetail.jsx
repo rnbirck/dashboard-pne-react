@@ -8,6 +8,7 @@ import {
   getIndicatorTitle,
   isSingleYearIndicator,
   resolveIndicatorUnit,
+  roundPpString,
 } from '../utils/format'
 import {
   clampMarkerPosition,
@@ -45,7 +46,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
   const unit = resolveIndicatorUnit(item, result)
   const formattedStart = formatIndicatorValue(result.start_value, unit)
   const formattedEnd = formatIndicatorValue(result.end_value, unit)
-  const variation = getDisplayValue(result.display, 'variation')
+  const variation = roundPpString(getDisplayValue(result.display, 'variation'))
   const hasStartYear = typeof startYear === 'number' && startYear > 0
   const hasEndYear = typeof endYear === 'number' && endYear > 0
   const isSingleYear = isSingleYearIndicator(result)
@@ -54,7 +55,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
   const hasSeries = (result.series ?? []).length >= 2 && hasRealSeriesValues
 
   const metaValue = formatMetaValue(result, unit)
-  const distanceValue = getDisplayValue(result.display, 'distance')
+  const distanceValue = roundPpString(getDisplayValue(result.display, 'distance'))
   const showGoalProgress = isComparable && Number.isFinite(Number(result?.meta)) && Number.isFinite(Number(result?.end_value))
 
   return (

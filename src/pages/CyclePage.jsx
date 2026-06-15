@@ -190,16 +190,18 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
 
       <section className="ranking-grid">
         <RankingBlock
-          title="Maiores avanços"
+          title="Avanços no período"
           items={normalizedRanking.topAvancos}
           unit={normalizedRanking.topAvancos?.[0]?.unit}
+          tone="success"
         />
         <RankingBlock
-          title="Exigem atenção"
+          title="Pontos de atenção"
           items={normalizedRanking.topAtencao}
           emptyMessage="Nenhum indicador crítico nesta categoria."
           valueMode="distance"
           unit={normalizedRanking.topAtencao?.[0]?.unit}
+          tone="warning"
         />
       </section>
     </div>

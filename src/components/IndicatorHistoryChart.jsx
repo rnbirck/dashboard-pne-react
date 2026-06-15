@@ -142,24 +142,24 @@ export function IndicatorHistoryChart({
           <g clipPath={`url(#${clipId})`}>
             {chart.areaPath ? <path className="chart-area" d={chart.areaPath} /> : null}
             <path className="chart-line" d={chart.linePath} />
+          </g>
 
-            <g className="chart-points">
-              {chart.points.map((point) => (
-                <circle
-                  cx={point.x}
-                  cy={point.y}
-                  key={point.year}
-                  r={activePoint?.year === point.year ? 5 : 4}
-                  onBlur={() => setActivePoint(null)}
-                  onFocus={() => setActivePoint(point)}
-                  onMouseEnter={() => setActivePoint(point)}
-                  onMouseLeave={() => setActivePoint(null)}
-                  tabIndex="0"
-                >
-                  <title>{`${point.year}: ${chart.formatValue(point.value)}`}</title>
-                </circle>
-              ))}
-            </g>
+          <g className="chart-points">
+            {chart.points.map((point) => (
+              <circle
+                cx={point.x}
+                cy={point.y}
+                key={point.year}
+                r={activePoint?.year === point.year ? 5 : 4}
+                onBlur={() => setActivePoint(null)}
+                onFocus={() => setActivePoint(point)}
+                onMouseEnter={() => setActivePoint(point)}
+                onMouseLeave={() => setActivePoint(null)}
+                tabIndex="0"
+              >
+                <title>{`${point.year}: ${chart.formatValue(point.value)}`}</title>
+              </circle>
+            ))}
           </g>
 
           <g className="chart-data-labels">

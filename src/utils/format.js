@@ -109,12 +109,8 @@ export function formatIndicatorValue(value, unit) {
     return numeric.toLocaleString('pt-BR', { maximumFractionDigits: 0 })
   }
 
-  // percent
-  const isIntegerLike = Math.abs(numeric) >= 10 || Number.isInteger(numeric)
-  const formatted = numeric.toLocaleString('pt-BR', {
-    maximumFractionDigits: isIntegerLike ? 0 : 1,
-  })
-  return `${formatted}%`
+  // percent — sempre inteiro
+  return `${Math.round(numeric).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}%`
 }
 
 export function formatMetaValue(result, unit) {
@@ -129,10 +125,19 @@ export function formatMetaValue(result, unit) {
     return numeric.toLocaleString('pt-BR', { maximumFractionDigits: 1 })
   }
   if (unit === 'percent') {
-    return `${numeric.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`
+    return `${Math.round(numeric).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}%`
   }
   // count
   return numeric.toLocaleString('pt-BR', { maximumFractionDigits: 0 })
+}
+
+export function roundPpString(value) {
+  if (typeof value !== 'string') return value
+  return value.replace(/(-?\d+),(\d+)/g, (_match, intPart, decPart) => {
+    const num = Number(`${intPart}.${decPart}`)
+    if (!Number.isFinite(num)) return _match
+    return String(Math.round(num))
+  })
 }
 
 export function isSingleYearIndicator(result) {

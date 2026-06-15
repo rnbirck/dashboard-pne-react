@@ -1,4 +1,4 @@
-import { formatRankingValue } from '../utils/format'
+import { formatRankingValue, roundPpString } from '../utils/format'
 
 export function RankingBlock({
   title,
@@ -6,11 +6,12 @@ export function RankingBlock({
   emptyMessage = 'Nenhum item disponível.',
   valueMode = 'variation',
   unit = 'count',
+  tone = 'success',
 }) {
   return (
-    <section className="ranking-block">
+    <section className={`ranking-block ranking-block--${tone}`}>
       <div className="ranking-heading">
-        <span>Ranking</span>
+        <span>Destaques do ciclo</span>
         <h3>{title}</h3>
       </div>
       {items?.length ? (
@@ -22,7 +23,7 @@ export function RankingBlock({
                 <strong>{item.label}</strong>
                 {item.sub && <span>{item.sub}</span>}
               </div>
-              <small>{pickRankingValue(item.display, valueMode, unit)}</small>
+              <small>{roundPpString(pickRankingValue(item.display, valueMode, unit))}</small>
             </li>
           ))}
         </ol>
