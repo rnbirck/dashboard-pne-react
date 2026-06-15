@@ -7,6 +7,7 @@ import {
   formatRankingValue,
   getDisplayValue,
   getIndicatorTitle,
+  improveZeroValueInterpretation,
   isAccumulativeExpansionIndicator,
   isIdebIndicator,
   isSingleYearIndicator,
@@ -161,7 +162,12 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
       {result.display?.interpretation && (
         <div className="interpretation-box">
           <span>Interpretação</span>
-          <p>{cleanInterpretationText(result.display.interpretation, ppOptions)}</p>
+          <p>
+            {improveZeroValueInterpretation(
+              cleanInterpretationText(result.display.interpretation, ppOptions),
+              { isAccumulativeExpansion: isAccExpansion },
+            )}
+          </p>
           {isAccExpansion && (
             <small style={{ display: 'block', marginTop: '6px', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
               O indicador não registrou expansão acumulada no período; para acompanhamento da meta, o valor considerado é 0%.

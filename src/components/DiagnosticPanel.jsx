@@ -5,6 +5,14 @@ import {
   resolveIndicatorUnit,
 } from '../utils/format'
 
+function isAccumulativeExpansionLabel(label) {
+  return String(label ?? '').toLocaleLowerCase('pt-BR').includes('expansão acumulada')
+}
+
+function isNegativeHighlightEligible(indicator) {
+  return !isAccumulativeExpansionLabel(indicator?.label)
+}
+
 const AREA_ICON_PATHS = {
   atendimento: (
     <>
@@ -582,7 +590,12 @@ function buildBestPosition(indicators) {
 
 function buildLargestGaps(indicators) {
   return indicators
-    .filter((indicator) => indicator.status === 'below' && indicator.isComparable && Number.isFinite(indicator.distance))
+    .filter((indicator) =>
+      indicator.status === 'below'
+      && indicator.isComparable
+      && Number.isFinite(indicator.distance)
+      && isNegativeHighlightEligible(indicator),
+    )
     .sort((a, b) => a.distance - b.distance)
     .slice(0, 4)
     .map((indicator) => ({ ...indicator, note: formatDistance(indicator, true) }))
@@ -590,7 +603,12 @@ function buildLargestGaps(indicators) {
 
 function buildPriorities(indicators) {
   return indicators
-    .filter((indicator) => indicator.status === 'below' && indicator.isComparable && Number.isFinite(indicator.distance))
+    .filter((indicator) =>
+      indicator.status === 'below'
+      && indicator.isComparable
+      && Number.isFinite(indicator.distance)
+      && isNegativeHighlightEligible(indicator),
+    )
     .sort((a, b) => a.distance - b.distance)
     .slice(0, 5)
     .map((indicator) => ({
@@ -755,7 +773,11 @@ function buildBestAreaIndicator(indicators) {
 
 function buildWorstAreaIndicator(indicators) {
   const worst = indicators
-    .filter((indicator) => indicator.status === 'below' && Number.isFinite(indicator.distance))
+    .filter((indicator) =>
+      indicator.status === 'below'
+      && Number.isFinite(indicator.distance)
+      && isNegativeHighlightEligible(indicator),
+    )
     .sort((a, b) => a.distance - b.distance)[0]
 
   if (!worst) return null

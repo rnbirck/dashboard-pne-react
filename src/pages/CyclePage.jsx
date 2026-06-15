@@ -3,7 +3,7 @@ import { CategoryTabs } from '../components/CategoryTabs'
 import { IndicatorDetail, isAvailableIndicator, isComparableIndicator } from '../components/IndicatorDetail'
 import { IndicatorList } from '../components/IndicatorList'
 import { RankingBlock } from '../components/RankingBlock'
-import { resolveIndicatorUnit } from '../utils/format'
+import { isAccumulativeExpansionIndicator, resolveIndicatorUnit } from '../utils/format'
 
 export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio, title }) {
   const categories = useMemo(
@@ -284,6 +284,8 @@ function normalizeRankingItem(item, itemByKey, municipioResults) {
 
 function isCriticalRankingItem(item, result) {
   if (!result || !isComparableIndicator(result) || result.atingida === true) return false
+
+  if (isAccumulativeExpansionIndicator({ label: item.label }, result)) return false
 
   const status = String(result.display?.status ?? item.display?.status ?? '').toLocaleLowerCase('pt-BR')
   if (status.includes('meta atingida')) return false
