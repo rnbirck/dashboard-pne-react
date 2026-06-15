@@ -41,17 +41,13 @@ export function cleanInterpretationText(text, { keepOneDecimal = false } = {}) {
 export function improveZeroValueInterpretation(text, { isAccumulativeExpansion = false } = {}) {
   if (typeof text !== 'string' || !text.length) return text
   let improved = text
-  if (isAccumulativeExpansion) {
-    improved = improved.replace(
-      /(chegou|alcançou|atingiu|chegando|alcançando|atingindo)\s+(a\s+)?0%/gi,
-      'não registrou expansão acumulada no indicador; para acompanhamento da meta, o valor considerado é 0%',
-    )
-  } else {
-    improved = improved.replace(
-      /(chegou|alcançou|atingiu|chegando|alcançando|atingindo)\s+(a\s+)?0%/gi,
-      'não registrou resultado no indicador e permaneceu em 0%',
-    )
-  }
+  const verbPattern = /(chegou|alcançou|atingiu|chegando|alcançando|atingindo)/
+  const valuePattern = /(\s+a\s+)?[+-]?\d+(?:[,.]\d+)?%?/
+  const fullPattern = new RegExp(`${verbPattern.source}\\s+${valuePattern.source}`, 'gi')
+  const replacement = isAccumulativeExpansion
+    ? 'não registrou expansão acumulada no indicador; para acompanhamento da meta, o valor considerado é 0%'
+    : 'não registrou resultado no indicador e permaneceu em 0%'
+  improved = improved.replace(fullPattern, replacement)
   return improved
 }
 

@@ -215,7 +215,10 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
 function GoalProgress({ distanceTone, result, unit }) {
   const endValue = formatIndicatorValue(result.end_value, unit)
   const metaMarkerLabel = formatMetaValue(result, unit)
-  const distance = getDisplayValue(result.display, 'distance')
+  const isAccExpansion = isAccumulativeExpansionIndicator({ label: result?.display?.label }, result)
+  const distance = isAccExpansion && Number.isFinite(result.distance)
+    ? `${result.distance > 0 ? '+' : ''}${Math.round(result.distance).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} p.p.`
+    : getDisplayValue(result.display, 'distance')
   const progress = calculateGoalProgress(result, unit)
   const end = Number(result.end_value)
   const meta = Number(result.meta)
