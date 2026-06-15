@@ -205,31 +205,30 @@ function PrioritiesSection({ items }) {
       <p className="diagnostic-priorities__caption">
         Indicadores comparáveis com maior distância negativa em relação à meta, em ordem de prioridade.
       </p>
-      <div className="diagnostic-priorities__table" role="table" aria-label="Prioridades do município">
-        <div className="diagnostic-priorities__row diagnostic-priorities__row--head" role="row">
-          <span role="columnheader">Indicador</span>
-          <span role="columnheader">Área</span>
-          <span role="columnheader">Valor atual</span>
-          <span role="columnheader">Meta</span>
-          <span role="columnheader">Distância</span>
-          <span role="columnheader">Situação</span>
-        </div>
+      <ol className="diagnostic-priorities__list" aria-label="Prioridades do município">
         {items.map((item, index) => (
-          <div className="diagnostic-priorities__row" role="row" key={item.key}>
-            <span role="cell" className="diagnostic-priorities__indicator">
-              <span className="diagnostic-priorities__rank" aria-hidden="true">{index + 1}</span>
-              <strong title={item.label}>{truncateText(item.label, 60)}</strong>
-            </span>
-            <span role="cell" className="diagnostic-priorities__area">{item.categoryLabel}</span>
-            <span role="cell">{item.currentLabel}</span>
-            <span role="cell">{item.metaLabel}</span>
-            <span role="cell" className="diagnostic-priorities__distance is-negative">{item.distanceLabel}</span>
-            <span role="cell">
-              <span className="diagnostic-priorities__status">Abaixo da meta</span>
-            </span>
-          </div>
+          <li className="diagnostic-priorities__item" key={item.key}>
+            <span className="diagnostic-priorities__rank" aria-hidden="true">{index + 1}</span>
+            <div className="diagnostic-priorities__body">
+              <strong className="diagnostic-priorities__indicator" title={item.label}>
+                {item.label}
+              </strong>
+              <div className="diagnostic-priorities__meta">
+                <span className="diagnostic-priorities__chip">{item.categoryLabel}</span>
+                <span className="diagnostic-priorities__chip">
+                  Atual: <strong>{item.currentLabel}</strong>
+                </span>
+                <span className="diagnostic-priorities__chip">
+                  Meta: <strong>{item.metaLabel}</strong>
+                </span>
+                <span className="diagnostic-priorities__chip diagnostic-priorities__chip--negative">
+                  Distância: <strong>{item.distanceLabel}</strong>
+                </span>
+              </div>
+            </div>
+          </li>
         ))}
-      </div>
+      </ol>
     </section>
   )
 }
@@ -298,13 +297,13 @@ function AreaCard({ area }) {
         <span className="stacked-bar__neutral" style={{ width: `${noComparisonWidth}%` }} />
       </div>
       <HighlightBlock
-        title="Melhor indicador"
+        title="Melhor"
         tone="success"
         emptyText="Sem indicador comparável com meta nesta área."
         indicator={area.bestIndicator}
       />
       <HighlightBlock
-        title="Principal lacuna"
+        title="Lacuna"
         tone="danger"
         emptyText="Sem indicador abaixo da meta nesta área."
         indicator={area.worstIndicator}
