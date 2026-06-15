@@ -298,13 +298,13 @@ function AreaCard({ area }) {
         <span className="stacked-bar__neutral" style={{ width: `${noComparisonWidth}%` }} />
       </div>
       <HighlightBlock
-        title="Melhor resultado"
+        title="Melhor indicador"
         tone="success"
         emptyText="Sem indicador comparável com meta nesta área."
         indicator={area.bestIndicator}
       />
       <HighlightBlock
-        title="Maior lacuna"
+        title="Principal lacuna"
         tone="danger"
         emptyText="Sem indicador abaixo da meta nesta área."
         indicator={area.worstIndicator}
@@ -567,24 +567,22 @@ function buildPriorities(indicators) {
 }
 
 function formatIndicatorValueForPriority(indicator) {
-  const formatted = formatNumberByUnit(
-    indicator.currentValue,
-    indicator.unit,
-  )
-  return formatted
+  return formatNumberByUnit(indicator.currentValue, indicator.unit, isIdebLabel(indicator.label))
 }
 
 function formatMetaValueForPriority(indicator) {
-  const formatted = formatNumberByUnit(
-    Number(indicator.meta),
-    indicator.unit,
-  )
-  return formatted
+  return formatNumberByUnit(Number(indicator.meta), indicator.unit, isIdebLabel(indicator.label))
 }
 
-function formatNumberByUnit(value, unit) {
+function formatNumberByUnit(value, unit, keepOneDecimal = false) {
   if (!Number.isFinite(value)) return '-'
   if (unit === 'percent') {
+    if (keepOneDecimal) {
+      return `${value.toLocaleString('pt-BR', {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      })}%`
+    }
     return `${Math.round(value).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}%`
   }
   if (unit === 'index' || unit === 'years') {
@@ -691,7 +689,7 @@ function buildBestAreaIndicator(indicators) {
   if (achieved) {
     return {
       ...achieved,
-      summary: `${achieved.label} — meta atingida, ${formatDistance(achieved)}`,
+      summary: `Meta atingida, ${formatDistance(achieved)}`,
     }
   }
 
@@ -702,7 +700,7 @@ function buildBestAreaIndicator(indicators) {
   if (closestBelow) {
     return {
       ...closestBelow,
-      summary: `${closestBelow.label} — mais próximo da meta, ${formatDistance(closestBelow, true)}`,
+      summary: `Mais próximo da meta, ${formatDistance(closestBelow, true)}`,
     }
   }
 
@@ -713,7 +711,7 @@ function buildBestAreaIndicator(indicators) {
   if (bestVariation) {
     return {
       ...bestVariation,
-      summary: `${bestVariation.label} — maior avanço observado${formatVariationSuffix(bestVariation)}`,
+      summary: `Maior avanço observado${formatVariationSuffix(bestVariation)}`,
     }
   }
 
@@ -729,7 +727,7 @@ function buildWorstAreaIndicator(indicators) {
 
   return {
     ...worst,
-    summary: `${worst.label} — ${formatDistance(worst, true)}`,
+    summary: formatDistance(worst, true),
   }
 }
 
@@ -764,7 +762,8 @@ function isDiagnosticComparable(result) {
 function formatDistance(indicator, includeMetaSuffix = false) {
   if (!Number.isFinite(indicator?.distance)) return 'distância não calculável'
   const value = indicator.distance
-  const formatted = formatSignedNumber(value)
+  const keepOneDecimal = isIdebLabel(indicator.label)
+  const formatted = formatSignedNumber(value, keepOneDecimal)
   const unit = indicator.unit === 'percent'
     ? ' p.p.'
     : indicator.unit === 'years'
@@ -778,7 +777,8 @@ function formatVariationSuffix(indicator) {
     return ` (${indicator.displayVariation})`
   }
   if (!Number.isFinite(indicator?.variation)) return ''
-  const formatted = formatSignedNumber(indicator.variation)
+  const keepOneDecimal = isIdebLabel(indicator.label)
+  const formatted = formatSignedNumber(indicator.variation, keepOneDecimal)
   const unit = indicator.unit === 'percent'
     ? ' p.p.'
     : indicator.unit === 'years'
@@ -787,9 +787,16 @@ function formatVariationSuffix(indicator) {
   return ` (${formatted}${unit})`
 }
 
-function formatSignedNumber(value) {
+function formatSignedNumber(value, keepOneDecimal = false) {
   const sign = value > 0 ? '+' : ''
-  return `${sign}${value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}`
+  return `${sign}${value.toLocaleString('pt-BR', {
+    minimumFractionDigits: keepOneDecimal ? 1 : 0,
+    maximumFractionDigits: keepOneDecimal ? 1 : 0,
+  })}`
+}
+
+function isIdebLabel(label) {
+  return String(label ?? '').toLocaleLowerCase('pt-BR').includes('ideb')
 }
 
 function getNumericValue(...values) {

@@ -2285,10 +2285,10 @@
 }
 
 .diagnostic-area {
-  padding: 9px;
+  padding: 12px 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 10px;
   border-radius: var(--radius-sm);
   background: #ffffff;
   box-shadow: 0 2px 8px rgba(18, 45, 18, 0.04);
@@ -2443,8 +2443,8 @@
 
 .area-highlight {
   display: grid;
-  gap: 3px;
-  padding: 8px 10px;
+  gap: 4px;
+  padding: 9px 11px 10px;
   border-radius: 7px;
   border: 1px solid var(--border);
   text-align: left;
@@ -2549,10 +2549,10 @@
 
 .diagnostic-priorities__row {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) auto auto auto auto;
+  grid-template-columns: minmax(0, 2.4fr) minmax(0, 1fr) minmax(72px, auto) minmax(64px, auto) minmax(82px, auto) minmax(112px, auto);
   align-items: center;
   gap: 10px;
-  padding: 8px 12px;
+  padding: 9px 14px;
   font-size: 0.82rem;
   color: var(--text);
   border-top: 1px solid var(--divider);
@@ -2615,9 +2615,19 @@
   white-space: nowrap;
 }
 
+.diagnostic-priorities__row > [role="cell"]:not(.diagnostic-priorities__indicator):not(.diagnostic-priorities__area):not(.diagnostic-priorities__distance) {
+  text-align: right;
+  color: var(--text-strong);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .diagnostic-priorities__distance {
   color: var(--text-strong);
   font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
   white-space: nowrap;
 }
 
