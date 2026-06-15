@@ -182,38 +182,46 @@ function SummaryCard({ icon, label, tone, value }) {
 }
 
 function PrioritiesSection({ items }) {
+  const list = items ?? []
   return (
     <section className="page-card diagnostic-priorities">
-      <div className="diagnostic-priorities__heading">
-        <IconBubble icon="alert" tone="danger" />
-        <div className="diagnostic-priorities__titles">
+      <header className="diagnostic-priorities__header">
+        <div className="diagnostic-priorities__header-text">
+          <span className="diagnostic-priorities__eyebrow">Plano de ação</span>
           <h3>Prioridades do município</h3>
-          <p className="diagnostic-priorities__caption">
-            Indicadores comparáveis com maior distância negativa em relação à meta, em ordem de prioridade.
+          <p>
+            Indicadores comparáveis com maior distância negativa em relação à meta.
           </p>
         </div>
-      </div>
-      {items?.length ? (
+        {list.length > 0 && (
+          <span className="diagnostic-priorities__count">
+            {list.length} {list.length === 1 ? 'prioridade' : 'prioridades'}
+          </span>
+        )}
+      </header>
+      {list.length ? (
         <ol className="diagnostic-priorities__list" aria-label="Prioridades do município">
-          {items.map((item, index) => (
+          {list.map((item, index) => (
             <li className="diagnostic-priorities__item" key={item.key}>
               <span className="diagnostic-priorities__rank" aria-hidden="true">{index + 1}</span>
               <div className="diagnostic-priorities__body">
                 <strong className="diagnostic-priorities__indicator" title={item.label}>
                   {item.label}
                 </strong>
-                <div className="diagnostic-priorities__meta">
-                  <span className="diagnostic-priorities__chip">{item.categoryLabel}</span>
-                  <span className="diagnostic-priorities__chip">
-                    Atual: <strong>{item.currentLabel}</strong>
-                  </span>
-                  <span className="diagnostic-priorities__chip">
-                    Meta: <strong>{item.metaLabel}</strong>
-                  </span>
-                  <span className="diagnostic-priorities__chip diagnostic-priorities__chip--negative">
-                    Distância: <strong>{item.distanceLabel}</strong>
-                  </span>
-                </div>
+                <span className="diagnostic-priorities__chip diagnostic-priorities__chip--area">
+                  {item.categoryLabel}
+                </span>
+              </div>
+              <div className="diagnostic-priorities__meta">
+                <span className="diagnostic-priorities__chip">
+                  Atual: <strong>{item.currentLabel}</strong>
+                </span>
+                <span className="diagnostic-priorities__chip">
+                  Meta: <strong>{item.metaLabel}</strong>
+                </span>
+                <span className="diagnostic-priorities__chip diagnostic-priorities__chip--negative">
+                  Distância: <strong>{item.distanceLabel}</strong>
+                </span>
               </div>
             </li>
           ))}
