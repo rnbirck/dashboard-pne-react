@@ -2240,7 +2240,7 @@
   grid-template-columns: 10px minmax(0, 1fr);
   gap: 10px;
   align-items: baseline;
-  padding: 6px 10px;
+  padding: 7px 11px 8px;
 }
 
 .diagnostic-insight-list li + li {
@@ -2271,6 +2271,20 @@
   word-break: break-word;
 }
 
+.insight-note__value {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.insight-note__value.is-positive {
+  color: var(--accent-strong);
+}
+
+.insight-note__value.is-negative {
+  color: var(--danger);
+}
+
 .diagnostic-insight-list small {
   display: inline-flex;
   width: fit-content;
@@ -2290,10 +2304,10 @@
 }
 
 .diagnostic-area {
-  padding: 10px 10px 11px;
+  padding: 11px 11px 12px;
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 8px;
   border-radius: var(--radius-sm);
   background: #ffffff;
   box-shadow: 0 2px 8px rgba(18, 45, 18, 0.04);
@@ -2301,50 +2315,56 @@
 
 .diagnostic-area__title {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
 }
 
 .diagnostic-area__title > div {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .diagnostic-area .diagnostic-icon {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
 }
 
 .diagnostic-area .diagnostic-icon svg {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
 }
 
 .diagnostic-area h4 {
   margin: 0;
   color: var(--text-strong);
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: -0.01em;
   line-height: 1.2;
+  word-break: break-word;
 }
 
 .area-status {
   flex: 0 0 auto;
-  max-width: 100px;
+  max-width: 110px;
   padding: 2px 7px;
   border: 1px solid var(--border);
   border-radius: 999px;
   color: var(--text-muted);
   background: var(--surface-soft);
-  font-size: 0.56rem;
+  font-size: 0.54rem;
   font-weight: 800;
-  line-height: 1.15;
+  line-height: 1.2;
   text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .area-status--success {
@@ -2486,12 +2506,9 @@
   color: var(--text-strong);
   font-size: 0.72rem;
   font-weight: 600;
-  line-height: 1.28;
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  line-height: 1.3;
   word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .area-highlight__note {
@@ -2518,28 +2535,47 @@
 
 .diagnostic-priorities {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .diagnostic-priorities__heading {
   display: flex;
   align-items: center;
   gap: 10px;
+  margin: 0;
+}
+
+.diagnostic-priorities__titles {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.diagnostic-priorities__heading .diagnostic-icon {
+  width: 36px;
+  height: 36px;
+}
+
+.diagnostic-priorities__heading .diagnostic-icon svg {
+  width: 19px;
+  height: 19px;
 }
 
 .diagnostic-priorities__heading h3 {
   margin: 0;
   color: var(--text-strong);
-  font-size: 1.02rem;
+  font-size: 1rem;
   font-weight: 800;
   letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 .diagnostic-priorities__caption {
   margin: 0;
   color: var(--text-muted);
   font-size: 0.82rem;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 .diagnostic-priorities__list {
@@ -2555,7 +2591,7 @@
   grid-template-columns: 22px minmax(0, 1fr);
   gap: 10px;
   align-items: flex-start;
-  padding: 9px 12px;
+  padding: 7px 12px 8px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: #ffffff;
@@ -2578,15 +2614,15 @@
 .diagnostic-priorities__body {
   min-width: 0;
   display: grid;
-  gap: 5px;
+  gap: 4px;
 }
 
 .diagnostic-priorities__indicator {
   min-width: 0;
   color: var(--text-strong);
   font-weight: 700;
-  font-size: 0.86rem;
-  line-height: 1.35;
+  font-size: 0.85rem;
+  line-height: 1.3;
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
@@ -2597,14 +2633,14 @@
 .diagnostic-priorities__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 6px;
+  gap: 3px 5px;
   align-items: center;
 }
 
 .diagnostic-priorities__chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   padding: 2px 7px;
   border-radius: 999px;
   background: var(--surface-soft);

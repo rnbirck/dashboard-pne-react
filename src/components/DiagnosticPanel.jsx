@@ -182,53 +182,47 @@ function SummaryCard({ icon, label, tone, value }) {
 }
 
 function PrioritiesSection({ items }) {
-  if (!items?.length) {
-    return (
-      <section className="page-card diagnostic-priorities">
-        <div className="diagnostic-priorities__heading">
-          <IconBubble icon="alert" tone="danger" />
-          <h3>Prioridades do município</h3>
-        </div>
-        <p className="diagnostic-empty-text">
-          Nenhum indicador abaixo da meta com referência comparável neste ciclo.
-        </p>
-      </section>
-    )
-  }
-
   return (
     <section className="page-card diagnostic-priorities">
       <div className="diagnostic-priorities__heading">
         <IconBubble icon="alert" tone="danger" />
-        <h3>Prioridades do município</h3>
+        <div className="diagnostic-priorities__titles">
+          <h3>Prioridades do município</h3>
+          <p className="diagnostic-priorities__caption">
+            Indicadores comparáveis com maior distância negativa em relação à meta, em ordem de prioridade.
+          </p>
+        </div>
       </div>
-      <p className="diagnostic-priorities__caption">
-        Indicadores comparáveis com maior distância negativa em relação à meta, em ordem de prioridade.
-      </p>
-      <ol className="diagnostic-priorities__list" aria-label="Prioridades do município">
-        {items.map((item, index) => (
-          <li className="diagnostic-priorities__item" key={item.key}>
-            <span className="diagnostic-priorities__rank" aria-hidden="true">{index + 1}</span>
-            <div className="diagnostic-priorities__body">
-              <strong className="diagnostic-priorities__indicator" title={item.label}>
-                {item.label}
-              </strong>
-              <div className="diagnostic-priorities__meta">
-                <span className="diagnostic-priorities__chip">{item.categoryLabel}</span>
-                <span className="diagnostic-priorities__chip">
-                  Atual: <strong>{item.currentLabel}</strong>
-                </span>
-                <span className="diagnostic-priorities__chip">
-                  Meta: <strong>{item.metaLabel}</strong>
-                </span>
-                <span className="diagnostic-priorities__chip diagnostic-priorities__chip--negative">
-                  Distância: <strong>{item.distanceLabel}</strong>
-                </span>
+      {items?.length ? (
+        <ol className="diagnostic-priorities__list" aria-label="Prioridades do município">
+          {items.map((item, index) => (
+            <li className="diagnostic-priorities__item" key={item.key}>
+              <span className="diagnostic-priorities__rank" aria-hidden="true">{index + 1}</span>
+              <div className="diagnostic-priorities__body">
+                <strong className="diagnostic-priorities__indicator" title={item.label}>
+                  {item.label}
+                </strong>
+                <div className="diagnostic-priorities__meta">
+                  <span className="diagnostic-priorities__chip">{item.categoryLabel}</span>
+                  <span className="diagnostic-priorities__chip">
+                    Atual: <strong>{item.currentLabel}</strong>
+                  </span>
+                  <span className="diagnostic-priorities__chip">
+                    Meta: <strong>{item.metaLabel}</strong>
+                  </span>
+                  <span className="diagnostic-priorities__chip diagnostic-priorities__chip--negative">
+                    Distância: <strong>{item.distanceLabel}</strong>
+                  </span>
+                </div>
               </div>
-            </div>
-          </li>
-        ))}
-      </ol>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="diagnostic-empty-text">
+          Nenhum indicador abaixo da meta com referência comparável neste ciclo.
+        </p>
+      )}
     </section>
   )
 }
@@ -246,7 +240,7 @@ function InsightCard({ emptyMessage = 'Nenhum indicador disponível para esta le
             <li key={item.key}>
               <span aria-hidden="true" />
               <div>
-                <p>{item.label} — {item.note}</p>
+                <p>{item.label} — {renderColoredNote(item.note, tone)}</p>
                 {showCategoryChip ? <small>{item.categoryLabel}</small> : null}
               </div>
             </li>
@@ -328,7 +322,7 @@ function HighlightBlock({ title, tone, emptyText, indicator }) {
         className="area-highlight__label"
         title={indicator.label}
       >
-        {truncateText(indicator.label, 80)}
+        {indicator.label}
       </strong>
       <span className="area-highlight__note">{indicator.summary}</span>
     </div>
@@ -347,6 +341,29 @@ function IconBubble({ icon, tone }) {
         {getIconPath(icon)}
       </svg>
     </span>
+  )
+}
+
+function renderColoredNote(note, tone) {
+  if (typeof note !== 'string' || !note) return note
+  const match = note.match(/([+-]?\d+(?:[,.]\d+)?)(\s*p\.p\.)?/)
+  if (!match) return note
+  const start = match.index
+  const end = start + match[0].length
+  const before = note.slice(0, start)
+  const value = note.slice(start, end)
+  const after = note.slice(end)
+  const isNegative = match[1].startsWith('-')
+  const isPositive = match[1].startsWith('+')
+  let valueClass = 'insight-note__value'
+  if (tone === 'success' && isPositive) valueClass += ' is-positive'
+  if (tone === 'danger' && isNegative) valueClass += ' is-negative'
+  return (
+    <>
+      {before}
+      <span className={valueClass}>{value}</span>
+      {after}
+    </>
   )
 }
 
