@@ -12,7 +12,7 @@ const CHART_WIDTH = 980
 const CHART_HEIGHT_INFORMATIVE = 280
 const CHART_HEIGHT_NORMAL = 300
 const CHART_HEIGHT_NEGATIVE = 330
-const PADDING = { bottom: 40, left: 64, right: 68, top: 38 }
+const PADDING = { bottom: 44, left: 64, right: 68, top: 38 }
 
 export function IndicatorHistoryChart({
   display,
@@ -183,8 +183,21 @@ export function IndicatorHistoryChart({
           </g>
 
           <g className="chart-x-labels">
-            {chart.xTicks.map((tick) => (
-              <text key={tick.year} x={tick.x} y={chart.height - 14}>
+            {chart.xTicks.map((tick, i, arr) => (
+              <text
+                key={tick.year}
+                x={
+                  i === 0
+                    ? tick.x + 4
+                    : i === arr.length - 1
+                      ? tick.x - 4
+                      : tick.x
+                }
+                y={chart.height - 12}
+                textAnchor={
+                  i === 0 ? 'start' : i === arr.length - 1 ? 'end' : 'middle'
+                }
+              >
                 {tick.year}
               </text>
             ))}
