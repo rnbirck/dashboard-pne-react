@@ -149,6 +149,8 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
         </div>
       </section>
 
+      <PrioritiesSection items={analysis.priorities} />
+
       <section className="page-card diagnostic-reading">
         <div className="diagnostic-reading__heading">
           <IconBubble icon="book" tone="success" />
@@ -176,6 +178,59 @@ function SummaryCard({ icon, label, tone, value }) {
       </div>
       <IconBubble icon={icon} tone={tone} />
     </article>
+  )
+}
+
+function PrioritiesSection({ items }) {
+  if (!items?.length) {
+    return (
+      <section className="page-card diagnostic-priorities">
+        <div className="diagnostic-priorities__heading">
+          <IconBubble icon="alert" tone="danger" />
+          <h3>Prioridades do município</h3>
+        </div>
+        <p className="diagnostic-empty-text">
+          Nenhum indicador abaixo da meta com referência comparável neste ciclo.
+        </p>
+      </section>
+    )
+  }
+
+  return (
+    <section className="page-card diagnostic-priorities">
+      <div className="diagnostic-priorities__heading">
+        <IconBubble icon="alert" tone="danger" />
+        <h3>Prioridades do município</h3>
+      </div>
+      <p className="diagnostic-priorities__caption">
+        Indicadores comparáveis com maior distância negativa em relação à meta, em ordem de prioridade.
+      </p>
+      <div className="diagnostic-priorities__table" role="table" aria-label="Prioridades do município">
+        <div className="diagnostic-priorities__row diagnostic-priorities__row--head" role="row">
+          <span role="columnheader">Indicador</span>
+          <span role="columnheader">Área</span>
+          <span role="columnheader">Valor atual</span>
+          <span role="columnheader">Meta</span>
+          <span role="columnheader">Distância</span>
+          <span role="columnheader">Situação</span>
+        </div>
+        {items.map((item, index) => (
+          <div className="diagnostic-priorities__row" role="row" key={item.key}>
+            <span role="cell" className="diagnostic-priorities__indicator">
+              <span className="diagnostic-priorities__rank" aria-hidden="true">{index + 1}</span>
+              <strong title={item.label}>{truncateText(item.label, 60)}</strong>
+            </span>
+            <span role="cell" className="diagnostic-priorities__area">{item.categoryLabel}</span>
+            <span role="cell">{item.currentLabel}</span>
+            <span role="cell">{item.metaLabel}</span>
+            <span role="cell" className="diagnostic-priorities__distance is-negative">{item.distanceLabel}</span>
+            <span role="cell">
+              <span className="diagnostic-priorities__status">Abaixo da meta</span>
+            </span>
+          </div>
+        ))}
+      </div>
+    </section>
   )
 }
 
@@ -242,27 +297,48 @@ function AreaCard({ area }) {
         <span className="stacked-bar__danger" style={{ width: `${belowWidth}%` }} />
         <span className="stacked-bar__neutral" style={{ width: `${noComparisonWidth}%` }} />
       </div>
-      <div className="area-position-lines">
-        <PositionLine
-          label="Melhor"
-          value={area.bestIndicator?.summary ?? 'Sem indicador comparável com meta nesta área.'}
-        />
-        <PositionLine
-          label="Maior distância"
-          value={area.worstIndicator?.summary ?? 'Sem indicador abaixo da meta nesta área.'}
-        />
-      </div>
-      <p>{area.reading}</p>
+      <HighlightBlock
+        title="Melhor resultado"
+        tone="success"
+        emptyText="Sem indicador comparável com meta nesta área."
+        indicator={area.bestIndicator}
+      />
+      <HighlightBlock
+        title="Maior lacuna"
+        tone="danger"
+        emptyText="Sem indicador abaixo da meta nesta área."
+        indicator={area.worstIndicator}
+      />
     </article>
   )
 }
 
-function PositionLine({ label, value }) {
+function HighlightBlock({ title, tone, emptyText, indicator }) {
+  if (!indicator) {
+    return (
+      <div className={`area-highlight area-highlight--${tone}`}>
+        <span className="area-highlight__title">{title}</span>
+        <span className="area-highlight__empty">{emptyText}</span>
+      </div>
+    )
+  }
   return (
-    <p className="area-position-line">
-      <strong>{label}:</strong> <span>{value}</span>
-    </p>
+    <div className={`area-highlight area-highlight--${tone}`}>
+      <span className="area-highlight__title">{title}</span>
+      <strong
+        className="area-highlight__label"
+        title={indicator.label}
+      >
+        {truncateText(indicator.label, 80)}
+      </strong>
+      <span className="area-highlight__note">{indicator.summary}</span>
+    </div>
   )
+}
+
+function truncateText(text, maxLength) {
+  if (!text || text.length <= maxLength) return text
+  return `${text.slice(0, maxLength - 1).trimEnd()}…`
 }
 
 function IconBubble({ icon, tone }) {
@@ -336,6 +412,15 @@ function getIconPath(icon) {
       </>
     )
   }
+  if (icon === 'alert') {
+    return (
+      <>
+        <path d="M12 3 2 21h20L12 3Z" />
+        <path d="M12 10v5" />
+        <circle cx="12" cy="18" r="0.6" fill="currentColor" />
+      </>
+    )
+  }
   return AREA_ICON_PATHS.atendimento
 }
 
@@ -356,13 +441,15 @@ function buildDiagnosticAnalysis(categories, results) {
 
   const bestPosition = buildBestPosition(indicators)
   const largestGaps = buildLargestGaps(indicators)
+  const priorities = buildPriorities(indicators)
 
   return {
     areas,
     bestPosition,
     indicators,
     largestGaps,
-    readings: buildReadings(summary, areas),
+    priorities,
+    readings: buildReadings(summary, areas, priorities),
     summary,
   }
 }
@@ -390,7 +477,6 @@ function buildAreaAnalysis(category, results) {
     key: category.key,
     label: category.label,
     noComparison,
-    reading: diagnosis.reading,
     statusLabel: diagnosis.statusLabel,
     statusTone: diagnosis.statusTone,
     total,
@@ -405,17 +491,21 @@ function normalizeDiagnosticIndicator(item, category, result) {
   const distance = getNumericValue(result?.distance, result?.display?.distance)
   const variation = getNumericValue(result?.progress_delta, result?.raw_delta, result?.display?.variation)
   const unit = resolveIndicatorUnit(item, result)
+  const currentValue = Number(result?.end_value)
+  const meta = Number(result?.meta)
 
   return {
     categoryKey: category.key,
     categoryLabel: category.label,
+    currentValue: Number.isFinite(currentValue) ? currentValue : null,
     distance,
     displayDistance: result?.display?.distance,
     displayVariation: result?.display?.variation,
+    isComparable: comparable,
     key: `${category.key}-${item.key}`,
     label: item.label,
+    meta: Number.isFinite(meta) ? meta : null,
     rawKey: item.key,
-    isComparable: comparable,
     status: comparable ? (result?.atingida === true ? 'achieved' : 'below') : 'noComparison',
     unit,
     variation,
@@ -463,66 +553,118 @@ function buildLargestGaps(indicators) {
     .map((indicator) => ({ ...indicator, note: formatDistance(indicator, true) }))
 }
 
-function buildReadings(summary, areas) {
+function buildPriorities(indicators) {
+  return indicators
+    .filter((indicator) => indicator.status === 'below' && indicator.isComparable && Number.isFinite(indicator.distance))
+    .sort((a, b) => a.distance - b.distance)
+    .slice(0, 5)
+    .map((indicator) => ({
+      ...indicator,
+      currentLabel: formatIndicatorValueForPriority(indicator),
+      metaLabel: formatMetaValueForPriority(indicator),
+      distanceLabel: formatDistance(indicator, true),
+    }))
+}
+
+function formatIndicatorValueForPriority(indicator) {
+  const formatted = formatNumberByUnit(
+    indicator.currentValue,
+    indicator.unit,
+  )
+  return formatted
+}
+
+function formatMetaValueForPriority(indicator) {
+  const formatted = formatNumberByUnit(
+    Number(indicator.meta),
+    indicator.unit,
+  )
+  return formatted
+}
+
+function formatNumberByUnit(value, unit) {
+  if (!Number.isFinite(value)) return '-'
+  if (unit === 'percent') {
+    return `${Math.round(value).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}%`
+  }
+  if (unit === 'index' || unit === 'years') {
+    return value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })
+  }
+  return value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })
+}
+
+function buildReadings(summary, areas, priorities) {
   const comparableTotal = summary.achieved + summary.below
   const achievedShare = comparableTotal ? summary.achieved / comparableTotal : 0
   const belowArea = pickAreaByBelowPressure(areas)
   const bestArea = pickAreaByComparableRatio(areas, 'achieved')
   const achievedPercent = Math.round(achievedShare * 100)
   const belowPercent = comparableTotal ? Math.round((summary.below / comparableTotal) * 100) : 0
+  const noComparison = summary.total - comparableTotal
 
-  const overviewTone =
-    achievedShare >= 0.55
-      ? 'boa proporção de metas atingidas'
-      : achievedShare >= 0.25
-        ? 'desempenho heterogêneo entre áreas'
-        : 'baixa proporção de metas atingidas'
-
-  const overview = `Dos ${summary.total} indicadores analisados, ${summary.achieved} aparecem com meta atingida (${achievedPercent}% dos comparáveis) e ${summary.below} estão abaixo da referência (${belowPercent}%). O conjunto indica ${overviewTone} no ciclo vigente.`
+  let overview
+  if (summary.total === 0) {
+    overview = 'Não há indicadores disponíveis para este município no ciclo vigente.'
+  } else if (!comparableTotal) {
+    overview = `Dos ${summary.total} indicadores analisados, nenhum possui referência de meta comparável. A leitura do município é limitada neste ciclo.`
+  } else {
+    const achievedPart = `${summary.achieved} com meta atingida (${achievedPercent}% dos comparáveis)`
+    const belowPart = `${summary.below} abaixo da referência (${belowPercent}% dos comparáveis)`
+    let toneText
+    if (achievedShare >= 0.55) {
+      toneText = 'predominância de metas atingidas no ciclo vigente'
+    } else if (achievedShare >= 0.25) {
+      toneText = 'desempenho heterogêneo entre áreas'
+    } else {
+      toneText = 'predominância de indicadores abaixo da meta'
+    }
+    const noComparisonPart = noComparison > 0
+      ? ` Outros ${noComparison} indicadores não possuem referência comparável.`
+      : ''
+    overview = `Dos ${summary.total} indicadores analisados, ${achievedPart} e ${belowPart}. O conjunto indica ${toneText}.${noComparisonPart}`
+  }
 
   const bestAreaText = bestArea?.comparableTotal > 0
-    ? `${bestArea.label} apresenta o melhor posicionamento relativo, com ${bestArea.achieved} metas atingidas entre ${bestArea.comparableTotal} indicadores comparáveis.`
-    : 'Não há indicadores comparáveis suficientes para esta leitura.'
+    ? `${bestArea.label} é a área mais favorável, com ${bestArea.achieved} metas atingidas em ${bestArea.comparableTotal} indicadores comparáveis (${Math.round((bestArea.achieved / bestArea.comparableTotal) * 100)}%).`
+    : 'Não há indicadores comparáveis suficientes para destacar uma área favorável.'
 
   const belowAreaText = belowArea?.below > 0
-    ? `${belowArea.label} concentra as maiores distâncias em relação às metas, com ${belowArea.below} indicadores abaixo da referência.`
-    : 'Não há indicadores comparáveis suficientes para esta leitura.'
+    ? `${belowArea.label} é a área mais crítica, com ${belowArea.below} indicadores abaixo da meta em ${belowArea.comparableTotal} comparáveis (${Math.round((belowArea.below / belowArea.comparableTotal) * 100)}%).`
+    : 'Não há indicadores comparáveis abaixo da meta para destacar uma área crítica.'
 
-  const distributionText = bestArea?.comparableTotal > 0 && belowArea?.below > 0
-    ? `O desempenho municipal é mais favorável em ${bestArea.label} e mais pressionado em ${belowArea.label}, considerando apenas indicadores comparáveis com meta.`
-    : 'Não há indicadores comparáveis suficientes para esta leitura.'
+  const topPriority = priorities[0]
+  const priorityText = topPriority
+    ? `Concentre atenção em ${topPriority.categoryLabel.toLocaleLowerCase('pt-BR')}, especialmente no indicador "${topPriority.label}", que está ${formatDistance(topPriority, true)}.`
+    : 'Não há indicadores abaixo da meta com prioridade crítica.'
 
   return [
     { key: 'overview', title: 'Quadro geral', text: overview },
     { key: 'best-area', title: 'Área mais favorável', text: bestAreaText },
-    { key: 'gap-area', title: 'Área com maior distância', text: belowAreaText },
-    { key: 'distribution', title: 'Distribuição do desempenho', text: distributionText },
+    { key: 'gap-area', title: 'Área mais crítica', text: belowAreaText },
+    { key: 'priority', title: 'Prioridade de ação', text: priorityText },
   ]
 }
 
 function buildAreaDiagnosis({ achieved, below, comparableTotal }) {
-  const achievedShare = comparableTotal ? achieved / comparableTotal : 0
-  const belowShare = comparableTotal ? below / comparableTotal : 0
-
   if (!comparableTotal) {
     return {
-      reading: 'Não há indicadores comparáveis suficientes para esta leitura.',
-      statusLabel: 'Leitura limitada',
+      statusLabel: 'Baixa comparabilidade',
       statusTone: 'neutral',
     }
   }
 
+  const achievedShare = achieved / comparableTotal
+  const belowShare = below / comparableTotal
+
   if (achievedShare >= 0.5) {
     return {
-      reading: 'Área com melhor proporção relativa de metas atingidas.',
-      statusLabel: 'Mais favorável',
+      statusLabel: 'Resultado favorável',
       statusTone: 'success',
     }
   }
 
-  if (belowShare >= 0.75) {
+  if (belowShare >= 0.75 || achieved === 0) {
     return {
-      reading: 'Concentração de indicadores abaixo da meta.',
       statusLabel: 'Predomínio abaixo da meta',
       statusTone: 'danger',
     }
@@ -530,15 +672,13 @@ function buildAreaDiagnosis({ achieved, below, comparableTotal }) {
 
   if (achieved > 0 && below > 0) {
     return {
-      reading: 'Resultado misto entre metas atingidas e indicadores abaixo da meta.',
       statusLabel: 'Resultado misto',
       statusTone: 'mixed',
     }
   }
 
   return {
-    reading: 'Predomínio de indicadores abaixo da meta.',
-    statusLabel: 'Abaixo da meta',
+    statusLabel: 'Predomínio abaixo da meta',
     statusTone: 'danger',
   }
 }
