@@ -169,14 +169,18 @@ function GoalProgress({ distanceTone, result, unit }) {
   const metaMarkerLabel = formatMetaValue(result, unit)
   const distance = getDisplayValue(result.display, 'distance')
   const progress = calculateGoalProgress(result, unit)
-  const markersAreClose = Math.abs(progress.current - progress.meta) < 7
-  const metaLabelOffset = markersAreClose
-    ? Math.max(progress.meta + 12, Math.min(progress.meta + 18, 96))
+  const end = Number(result.end_value)
+  const meta = Number(result.meta)
+  const isOverLimit = Number.isFinite(end) && Number.isFinite(meta) && end > meta && result.atingida === false
+  const markersAreClose = Math.abs(progress.current - progress.meta) < 8
+  const currentTone = result.atingida ? 'success' : result.atingida === false ? 'warning' : 'muted'
+  const metaLabelOffsetPct = markersAreClose
+    ? Math.min(progress.meta + 14, 95)
     : progress.meta
 
   return (
     <section
-      className="goal-progress"
+      className={`goal-progress${isOverLimit ? ' goal-progress--over-limit' : ''}`}
       aria-label="Acompanhamento da meta"
     >
       <div className="goal-progress__heading">
@@ -185,27 +189,43 @@ function GoalProgress({ distanceTone, result, unit }) {
           {distance}
         </strong>
       </div>
-      <div className="goal-progress__rail">
+      <div className="goal-progress__track">
+        {isOverLimit ? (
+          <>
+            <span
+              className="goal-progress__fill"
+              style={{ width: `${progress.meta}%` }}
+            />
+            <span
+              className="goal-progress__overlimit"
+              style={{
+                left: `${progress.meta}%`,
+                width: `${progress.current - progress.meta}%`,
+              }}
+            />
+          </>
+        ) : (
+          <span
+            className="goal-progress__fill"
+            style={{ width: `${progress.current}%` }}
+          />
+        )}
         <span
-          className="goal-progress__fill"
-          style={{ width: `${progress.fill}%` }}
+          className="goal-progress__target-tick"
+          style={{ left: `${progress.meta}%` }}
         />
         <span
-          className="goal-progress__marker goal-progress__marker--current"
+          className="goal-progress__target-label"
+          style={{ left: `${metaLabelOffsetPct}%` }}
+        >
+          Meta {metaMarkerLabel}
+        </span>
+        <span
+          className={`goal-progress__marker goal-progress__marker--${currentTone}`}
           style={{ left: `${progress.current}%` }}
         >
           <em>{endValue}</em>
         </span>
-        <span
-          className="goal-progress__meta-tick"
-          style={{ left: `${progress.meta}%` }}
-        />
-        <small
-          className="goal-progress__meta-label"
-          style={{ left: `${metaLabelOffset}%` }}
-        >
-          Meta {metaMarkerLabel}
-        </small>
       </div>
     </section>
   )

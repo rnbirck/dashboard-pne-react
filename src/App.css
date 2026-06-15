@@ -1359,14 +1359,14 @@
 }
 
 .goal-progress {
-  padding: 12px 16px 20px;
+  padding: 12px 16px 18px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: #ffffff;
   box-shadow: 0 1px 2px rgba(18, 45, 18, 0.04);
   display: grid;
   gap: 4px;
-  min-height: 82px;
+  min-height: 84px;
   min-width: 0;
   overflow: visible;
 }
@@ -1405,24 +1405,17 @@
   white-space: nowrap;
 }
 
-.goal-progress__distance--success {
-  color: var(--success);
-}
+.goal-progress__distance--success { color: var(--success); }
+.goal-progress__distance--warning { color: var(--danger); }
+.goal-progress__distance--muted   { color: var(--text-soft); }
 
-.goal-progress__distance--warning {
-  color: var(--danger);
-}
-
-.goal-progress__distance--muted {
-  color: var(--text-soft);
-}
-
-.goal-progress__rail {
+/* ── track ── */
+.goal-progress__track {
   position: relative;
-  height: 5px;
-  margin: 22px 0 18px;
+  height: 8px;
+  margin: 26px 0 20px;
   border-radius: var(--radius-pill);
-  background: linear-gradient(90deg, #d8e3d7, #eef3ec);
+  background: #e8efe7;
 }
 
 .goal-progress__fill {
@@ -1431,73 +1424,119 @@
   min-width: 6px;
   max-width: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #8cbd92, var(--accent));
+  background: linear-gradient(90deg, #8abf97, var(--accent));
 }
 
+.goal-progress__overlimit {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: inherit;
+  background: rgba(217, 95, 53, 0.35);
+  z-index: 0;
+}
+
+/* ── current marker (dot + pill) ── */
 .goal-progress__marker {
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
   border: 3px solid #ffffff;
   border-radius: 999px;
-  box-shadow: 0 1px 4px rgba(18, 45, 18, 0.22);
-}
-
-.goal-progress__marker--current {
-  background: var(--accent);
+  box-shadow: 0 2px 8px rgba(31, 122, 63, 0.28);
   z-index: 2;
 }
 
-.goal-progress__marker--current em {
+.goal-progress__marker--success {
+  background: var(--accent);
+}
+
+.goal-progress__marker--warning {
+  background: #d95f35;
+  box-shadow: 0 2px 8px rgba(217, 95, 53, 0.30);
+}
+
+.goal-progress__marker--muted {
+  background: #7a8a7e;
+  box-shadow: 0 2px 8px rgba(120, 140, 126, 0.22);
+}
+
+.goal-progress__marker em {
   position: absolute;
   left: 50%;
-  bottom: calc(100% + 8px);
+  bottom: calc(100% + 9px);
   transform: translateX(-50%);
   padding: 3px 8px;
-  border-radius: 5px;
-  background: var(--accent-strong);
-  color: var(--text-inverted);
-  font-size: 0.68rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.7rem;
   font-style: normal;
   font-weight: 800;
   white-space: nowrap;
   box-shadow: 0 3px 10px rgba(26, 92, 42, 0.18);
-  max-width: 120px;
+  max-width: 130px;
   overflow: hidden;
   text-overflow: ellipsis;
+  pointer-events: none;
 }
 
-.goal-progress__meta-tick {
+.goal-progress__marker--success em {
+  background: var(--accent-strong);
+  color: var(--text-inverted);
+}
+
+.goal-progress__marker--warning em {
+  background: #d95f35;
+  color: #ffffff;
+  box-shadow: 0 3px 10px rgba(217, 95, 53, 0.25);
+}
+
+.goal-progress__marker--muted em {
+  background: #7a8a7e;
+  color: #ffffff;
+  box-shadow: 0 3px 10px rgba(120, 140, 126, 0.18);
+}
+
+/* ── target indicator ── */
+.goal-progress__target-tick {
   position: absolute;
-  top: -8px;
-  bottom: -18px;
+  top: -10px;
+  bottom: -10px;
   width: 2px;
-  background: rgba(108, 116, 112, 0.5);
+  background: rgba(20, 50, 38, 0.38);
   border-radius: 1px;
   transform: translateX(-50%);
   z-index: 1;
   pointer-events: none;
 }
 
-.goal-progress__meta-label {
+.goal-progress__target-tick::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border: 2px solid rgba(20, 50, 38, 0.45);
+  border-radius: 999px;
+  background: #ffffff;
+}
+
+.goal-progress__target-label {
   position: absolute;
   top: calc(100% + 6px);
   max-width: 110px;
   transform: translateX(-50%);
   color: #5f6b63;
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   font-weight: 700;
   line-height: 1.1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   pointer-events: none;
-}
-
-.goal-progress__labels {
-  display: none;
 }
 
 .interpretation-box p {
@@ -1582,52 +1621,47 @@
   display: block;
   width: 100%;
   height: auto;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .chart-grid line {
-  stroke: rgba(61, 95, 54, 0.07);
+  stroke: rgba(61, 95, 54, 0.08);
   stroke-width: 1;
 }
 
-.chart-grid text,
-.chart-x-labels text,
-.chart-meta-line text {
-  fill: var(--text-soft);
-  font-size: 11px;
-  font-weight: 700;
+.chart-grid text {
+  text-anchor: end;
+  font-size: 10px;
+  fill: #7a887e;
+  font-weight: 600;
 }
 
 .chart-x-labels text {
   text-anchor: middle;
   font-size: 11px;
   fill: var(--text-muted);
-}
-
-.chart-grid text {
-  text-anchor: end;
-  font-size: 11px;
+  font-weight: 600;
 }
 
 .chart-axis line {
-  stroke: rgba(61, 95, 54, 0.14);
+  stroke: rgba(61, 95, 54, 0.16);
   stroke-width: 1;
 }
 
 .chart-zero-line line {
-  stroke: rgba(61, 95, 54, 0.22);
+  stroke: rgba(61, 95, 54, 0.24);
   stroke-width: 1.2;
 }
 
 .chart-year-markers line {
-  stroke: rgba(47, 113, 60, 0.10);
+  stroke: rgba(47, 113, 60, 0.08);
   stroke-dasharray: 3 4;
 }
 
 .chart-meta-line line {
-  stroke: #d8632a;
+  stroke: #d96a3a;
   stroke-width: 1.5;
-  stroke-dasharray: 6 4;
+  stroke-dasharray: 7 5;
 }
 
 .chart-meta-line text {
@@ -1641,16 +1675,16 @@
 
 .chart-line {
   fill: none;
-  stroke: var(--accent-strong);
+  stroke: #1f6f3a;
   stroke-width: 2.25;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .chart-points circle {
-  fill: var(--surface-strong);
-  stroke: var(--accent-strong);
-  stroke-width: 2;
+  fill: #ffffff;
+  stroke: #1f6f3a;
+  stroke-width: 2.25;
   cursor: default;
   transition: r 0.14s ease;
 }
@@ -1660,28 +1694,29 @@
 }
 
 .chart-point-label {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 650;
   fill: #2a4a2a;
   paint-order: stroke;
-  stroke: rgba(255, 255, 255, 0.92);
-  stroke-width: 3;
+  stroke: rgba(255, 255, 255, 0.94);
+  stroke-width: 3.5;
   stroke-linejoin: round;
+  text-shadow: none;
 }
 
 .chart-point-label.is-last {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  fill: var(--accent-strong);
+  fill: #1f6f3a;
 }
 
 .chart-meta-label {
-  font-size: 11px;
-  font-weight: 600;
-  fill: #c95a28;
+  font-size: 10px;
+  font-weight: 650;
+  fill: #d96a3a;
   paint-order: stroke;
-  stroke: rgba(255, 255, 255, 0.92);
-  stroke-width: 3;
+  stroke: rgba(255, 255, 255, 0.94);
+  stroke-width: 3.5;
   stroke-linejoin: round;
 }
 
@@ -2863,10 +2898,6 @@
     justify-self: end;
     padding: 2px 6px;
     font-size: 0.6rem;
-  }
-
-  .goal-progress__labels {
-    grid-template-columns: 1fr;
   }
 
   .goal-progress__heading {
