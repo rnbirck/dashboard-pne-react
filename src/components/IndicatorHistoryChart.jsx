@@ -42,8 +42,9 @@ export function IndicatorHistoryChart({
         series,
         showMetaLine,
         startYear,
+        floorNegativeValues,
       }),
-    [display, endYear, meta, resolvedUnit, result, series, showMetaLine, startYear],
+    [display, endYear, meta, resolvedUnit, result, series, showMetaLine, startYear, floorNegativeValues],
   )
 
   if (chart.points.length < 2) {
@@ -235,6 +236,7 @@ function buildChartModel({
   series,
   showMetaLine,
   startYear,
+  floorNegativeValues = false,
 }) {
   const points = normalizeSeries(series, floorNegativeValues)
   const rawMetaValue =
