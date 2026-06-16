@@ -68,8 +68,7 @@
 
 .brand-eyebrow,
 .hero-eyebrow,
-.eyebrow,
-.section-card__eyebrow {
+.eyebrow {
   color: #5f7468;
   font-size: 0.7rem;
   font-weight: 800;
@@ -468,20 +467,6 @@
   stroke-linejoin: round;
 }
 
-.required-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border: 1px solid rgba(240, 90, 36, 0.18);
-  border-radius: var(--radius-pill);
-  background: #fff0e6;
-  color: var(--danger);
-  font-size: 0.72rem;
-  font-weight: 800;
-  box-shadow: var(--shadow-sm);
-}
-
 .required-card h2 {
   margin: 0;
   color: var(--text-strong);
@@ -496,29 +481,6 @@
   color: var(--text-muted);
   line-height: 1.45;
   font-size: 0.84rem;
-}
-
-.selection-alert {
-  min-height: 46px;
-  padding: 10px 14px;
-  border: 1px solid rgba(47, 113, 60, 0.16);
-  border-radius: var(--radius-md);
-  background: var(--accent-ghost);
-  color: var(--accent-strong);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 700;
-  font-size: 0.92rem;
-  box-shadow: var(--shadow-sm);
-}
-
-.selection-alert svg {
-  flex: 0 0 auto;
-  width: 22px;
-  height: 22px;
-  fill: currentColor;
-  stroke: none;
 }
 
 .home-section {
@@ -639,7 +601,6 @@
 }
 
 .info-card h3,
-.step-card h3,
 .module-card h3 {
   margin: 0;
   color: var(--text-strong);
@@ -649,7 +610,6 @@
 }
 
 .info-card p,
-.step-card p,
 .module-card p {
   margin: 4px 0 0;
   color: var(--text-muted);
@@ -678,60 +638,6 @@
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-
-.steps-strip {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--grad-card);
-  box-shadow: var(--shadow-md);
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  overflow: hidden;
-}
-
-.step-card {
-  min-height: 90px;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  background: transparent;
-  padding: 16px 18px;
-  display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
-  position: relative;
-}
-
-.step-card + .step-card::before {
-  content: "...";
-  position: absolute;
-  left: -22px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-soft);
-  font-size: 1.35rem;
-  letter-spacing: 0.18em;
-  font-weight: 800;
-}
-
-.step-number {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  background: var(--accent-ghost);
-  color: var(--text-strong);
-  font-weight: 800;
-  font-size: 1rem;
-  box-shadow: var(--shadow-sm);
-}
-
-.step-card .icon-bubble {
-  width: 44px;
-  height: 44px;
 }
 
 .module-card {
@@ -916,52 +822,11 @@
 .metric-grid,
 .simple-list,
 .state-box,
-.empty-selection,
-.section-card {
+.empty-selection {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--grad-card);
   box-shadow: var(--shadow-md);
-}
-
-.section-card {
-  padding: 0;
-  overflow: hidden;
-}
-
-.section-card--large .section-card__body { padding: 24px; }
-.section-card--normal .section-card__body { padding: 18px 20px; }
-.section-card--small .section-card__body { padding: 14px 16px; }
-
-.section-card__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 18px 20px 14px;
-  border-bottom: 1px solid var(--divider);
-}
-
-.section-card__titles { min-width: 0; }
-.section-card__action { flex-shrink: 0; }
-
-.section-card__title {
-  margin: 0;
-  color: var(--text-strong);
-  font-size: 1.1rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-.section-card__subtitle {
-  margin: 5px 0 0;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-.section-card__body {
-  min-width: 0;
 }
 
 /* =========================
@@ -3074,17 +2939,12 @@
   }
 
   .feature-grid,
-  .module-grid,
-  .steps-strip {
+  .module-grid {
     grid-template-columns: 1fr;
   }
 
   .diretrizes-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .step-card + .step-card::before {
-    content: none;
   }
 
   .cycle-layout {
@@ -3218,7 +3078,6 @@
   }
 
   .info-card,
-  .step-card,
   .module-card {
     grid-template-columns: auto minmax(0, 1fr);
   }
@@ -3285,10 +3144,6 @@
     min-width: 720px;
   }
 
-  .section-card__header {
-    flex-direction: column;
-    gap: 10px;
-  }
 }
 
 /* =========================
@@ -3350,14 +3205,12 @@
   .hero-intro,
   .required-card,
   .info-card,
-  .step-card,
   .module-card,
   .page-card,
   .detail-panel,
   .ranking-block,
   .cycle-category-bar,
-  .indicator-sidebar,
-  .section-card {
+  .indicator-sidebar {
     padding: 16px;
     border-radius: var(--radius-md);
   }
@@ -3417,7 +3270,6 @@
   }
 
   .info-card,
-  .step-card,
   .module-card {
     align-items: start;
     gap: 12px;
@@ -3426,11 +3278,6 @@
   .icon-bubble {
     width: 44px;
     height: 44px;
-  }
-
-  .step-number {
-    width: 30px;
-    height: 30px;
   }
 
   .required-card__top {

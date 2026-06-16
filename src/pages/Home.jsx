@@ -1,21 +1,23 @@
-import { useRef } from 'react'
-import { MunicipalitySelector } from '../components/MunicipalitySelector'
 import { RioGrandeDoSulMap } from '../components/RioGrandeDoSulMap'
 
+const DIRETRIZES = [
+  { num: 'I', title: 'Planejamento estratégico', desc: 'Integra educação ao desenvolvimento local e regional.' },
+  { num: 'II', title: 'Intersetorialidade', desc: 'Articula educação com outras políticas públicas.' },
+  { num: 'III', title: 'Desenvolvimento integral', desc: 'Promove formação social, cultural e econômica.' },
+  { num: 'IV', title: 'Pactuação federativa', desc: 'Fortalece cooperação entre União, Estado e municípios.' },
+  { num: 'V', title: 'Equilíbrio dos recursos', desc: 'Busca financiamento adequado, equitativo e sustentável.' },
+  { num: 'VI', title: 'Liberdade', desc: 'Valoriza aprender, ensinar, pesquisar e divulgar saberes.' },
+  { num: 'VII', title: 'Qualidade e equidade', desc: 'Orienta a formulação das políticas educacionais.' },
+  { num: 'VIII', title: 'Uso de evidências', desc: 'Apoia decisões com dados e resultados educacionais.' },
+  { num: 'IX', title: 'Monitoramento e avaliação', desc: 'Acompanha metas, estratégias e implementação.' },
+  { num: 'X', title: 'Promoção de direitos', desc: 'Valoriza diversidade, direitos humanos e sustentabilidade.' },
+]
+
 export function Home({
-  municipioData,
-  municipios,
   selectedMunicipio,
-  onMunicipioChange,
   onNavigate,
 }) {
-  const selectRef = useRef(null)
   const hasMunicipio = Boolean(selectedMunicipio)
-
-  function focusMunicipioSelect() {
-    selectRef.current?.focus()
-    selectRef.current?.click()
-  }
 
   return (
     <div className="page-stack home-page">
@@ -26,46 +28,69 @@ export function Home({
           </div>
 
           <div className="hero-copy">
-            <span className="hero-eyebrow">Dashboard PNE</span>
             <h1>Indicadores municipais de educação</h1>
             <p>
-              Painel com dados oficiais do Plano Nacional de Educação para análise de metas,
-              tendências e diagnóstico de cada município.
+              Acompanhe indicadores, metas e diagnóstico territorial para apoiar o
+              planejamento educacional do município.
             </p>
           </div>
         </article>
 
-        <aside className="required-card">
-          <div className="required-card__top">
+        <aside className={`required-card context-panel${hasMunicipio ? ' context-panel--selected' : ' context-panel--empty'}`}>
+          <div className="context-panel__top">
             <div className="required-card__icon" aria-hidden="true">
               <PinIcon />
             </div>
-            <span className="required-badge">Obrigatório</span>
-          </div>
-
-          <h2>{hasMunicipio ? `${selectedMunicipio} selecionado` : 'Selecione um município para começar'}</h2>
-
-          <MunicipalitySelector
-            ref={selectRef}
-            variant="hero"
-            municipios={municipios}
-            selectedMunicipio={selectedMunicipio}
-            onChange={onMunicipioChange}
-          />
-
-          <p>
-            A seleção do município é necessária para carregar os indicadores, rankings e o diagnóstico territorial.
-          </p>
-
-          <div className={hasMunicipio ? 'selection-alert is-selected' : 'selection-alert'}>
-            <AlertIcon />
-            <span>
-              {hasMunicipio
-                ? `Dados de ${municipioData?.nome ?? selectedMunicipio} prontos para navegação.`
-                : 'Nenhum município selecionado. Escolha um município para visualizar o painel.'}
+            <span className={hasMunicipio ? 'context-status context-status--ready' : 'context-status context-status--empty'}>
+              {hasMunicipio ? 'Dados prontos para navegação' : 'Nenhum município selecionado'}
             </span>
           </div>
+
+          <div className="context-panel__copy">
+            <span className="context-panel__eyebrow">
+              {hasMunicipio ? 'Município selecionado para análise' : 'Seleção territorial'}
+            </span>
+            <h2>{hasMunicipio ? selectedMunicipio : 'Selecione um município'}</h2>
+            <p>
+              {hasMunicipio
+                ? 'Acesse os ciclos do PNE e o diagnóstico territorial para este município.'
+                : 'Escolha um município no topo da página para visualizar indicadores, metas e diagnóstico territorial.'}
+            </p>
+          </div>
+
+          {hasMunicipio && (
+            <div className="context-actions" aria-label="Atalhos do painel">
+              <button type="button" className="context-action" onClick={() => onNavigate?.('pne2014')}>
+                <CalendarIcon />
+                <span>PNE 2014-2024</span>
+              </button>
+              <button type="button" className="context-action" onClick={() => onNavigate?.('pne2026')}>
+                <CalendarIcon />
+                <span>PNE 2026-2036</span>
+              </button>
+              <button type="button" className="context-action" onClick={() => onNavigate?.('diagnostico')}>
+                <DocumentIcon />
+                <span>Diagnóstico</span>
+              </button>
+            </div>
+          )}
         </aside>
+      </section>
+
+      <section className="home-section home-section--compact home-section--diretrizes">
+        <h2>10 diretrizes do novo PNE</h2>
+        <p className="section-subtitle">
+          O novo Plano Nacional de Educação organiza as prioridades da política educacional
+          brasileira para o ciclo 2026-2036 e orienta o planejamento local.
+        </p>
+        <p className="section-subtitle section-subtitle--accent">
+          Referências para monitoramento, cooperação e melhoria da educação nos municípios.
+        </p>
+        <div className="diretrizes-grid">
+          {DIRETRIZES.map((d) => (
+            <DiretrizCard key={d.num} num={d.num} title={d.title} desc={d.desc} />
+          ))}
+        </div>
       </section>
 
       <section className="home-section home-section--compact">
@@ -112,36 +137,25 @@ export function Home({
           />
         </div>
       </section>
-
-      <section className="home-cta home-cta--compact">
-        <div>
-          <h2>Selecione um município para acessar os indicadores, metas e diagnóstico.</h2>
-        </div>
-        <button type="button" className="primary-button" onClick={focusMunicipioSelect}>
-          <PinIcon />
-          <span>Selecionar município</span>
-        </button>
-      </section>
     </div>
+  )
+}
+
+function DiretrizCard({ num, title, desc }) {
+  return (
+    <article className="diretriz-card">
+      <div className="diretriz-card__header">
+        <span className="diretriz-num">{num}</span>
+        <h3>{title}</h3>
+      </div>
+      <p>{desc}</p>
+    </article>
   )
 }
 
 function FeatureCard({ icon, title, text }) {
   return (
     <article className="info-card">
-      <div className="icon-bubble">{icon}</div>
-      <div>
-        <h3>{title}</h3>
-        <p>{text}</p>
-      </div>
-    </article>
-  )
-}
-
-function StepCard({ icon, number, title, text }) {
-  return (
-    <article className="step-card">
-      <span className="step-number">{number}</span>
       <div className="icon-bubble">{icon}</div>
       <div>
         <h3>{title}</h3>
@@ -173,15 +187,6 @@ function PinIcon() {
   )
 }
 
-function AlertIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 7v6M12 17h.01" />
-    </svg>
-  )
-}
-
 function BarsIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -209,24 +214,6 @@ function InstitutionIcon() {
   )
 }
 
-function PieIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 3v9h9A9 9 0 1 1 12 3Z" />
-      <path d="M15 3.5A9 9 0 0 1 20.5 9H15Z" />
-    </svg>
-  )
-}
-
-function TrendIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 18h16M5 15l5-5 4 4 5-8" />
-      <path d="M15 6h4v4" />
-    </svg>
-  )
-}
-
 function CalendarIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -249,17 +236,6 @@ function ChevronIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="m9 5 7 7-7 7" />
-    </svg>
-  )
-}
-
-function TargetIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="9" />
-      <circle cx="12" cy="12" r="5" />
-      <circle cx="12" cy="12" r="1.8" />
-      <path d="M16 8 21 3M18 3h3v3" />
     </svg>
   )
 }

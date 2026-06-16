@@ -2,19 +2,6 @@ export function getDisplayValue(display, key, fallback = '-') {
   return display?.[key] ?? fallback
 }
 
-export function getCategoryItems(indicadores, cycle, categoryKey) {
-  const categories = indicadores?.cycles?.[cycle]?.categories ?? []
-  return categories.find((category) => category.key === categoryKey)?.items ?? []
-}
-
-export function getCycleCategories(indicadores, cycle) {
-  return indicadores?.cycles?.[cycle]?.categories ?? []
-}
-
-export function findFirstAvailableCategory(categories) {
-  return categories[0]?.key ?? ''
-}
-
 export function getIndicatorTitle(item, result) {
   return item?.label || result?.label || 'Indicador'
 }
@@ -233,30 +220,4 @@ export function formatRankingValue(display, unit, mode = 'variation') {
   }
 
   return raw
-}
-
-export function hasRealData(result) {
-  if (!result) return false
-  if (result.available === false) return false
-  const status = String(result?.display?.status ?? '').toLocaleLowerCase('pt-BR')
-  if (
-    status.includes('indispon') ||
-    status.includes('sem dados') ||
-    status.includes('sem variação') ||
-    status.includes('sem variacao')
-  ) {
-    return false
-  }
-  const start = Number(result?.start_value)
-  const end = Number(result?.end_value)
-  const series = (result?.series ?? [])
-    .map((point) => Number(point?.valor))
-    .filter(Number.isFinite)
-  if (Number.isFinite(start) || Number.isFinite(end)) return true
-  if (series.length > 0) return true
-  return false
-}
-
-export function detectIndicatorUnit(item, result) {
-  return resolveIndicatorUnit(item, result)
 }

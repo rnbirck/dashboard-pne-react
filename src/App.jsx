@@ -99,7 +99,6 @@ function App() {
 function PageContent({
   activePage,
   indicadores,
-  municipioCount,
   municipios,
   municipiosIndex,
   onNavigate,
@@ -129,11 +128,6 @@ function PageContent({
   if (activePage === 'home') {
     return (
       <Home
-        indicadores={indicadores}
-        municipioData={municipioData}
-        municipioCount={municipioCount}
-        municipios={municipios}
-        onMunicipioChange={setSelectedMunicipio}
         onNavigate={onNavigate}
         selectedMunicipio={selectedMunicipio}
       />

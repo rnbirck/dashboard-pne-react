@@ -15,7 +15,6 @@ const CHART_HEIGHT_NEGATIVE = 330
 const PADDING = { bottom: 44, left: 64, right: 68, top: 38 }
 
 export function IndicatorHistoryChart({
-  display,
   endYear,
   item,
   meta,
@@ -34,17 +33,15 @@ export function IndicatorHistoryChart({
   const chart = useMemo(
     () =>
       buildChartModel({
-        display,
         endYear,
         meta,
         resolvedUnit,
-        result,
         series,
         showMetaLine,
         startYear,
         floorNegativeValues,
       }),
-    [display, endYear, meta, resolvedUnit, result, series, showMetaLine, startYear, floorNegativeValues],
+    [endYear, meta, resolvedUnit, series, showMetaLine, startYear, floorNegativeValues],
   )
 
   if (chart.points.length < 2) {
@@ -228,11 +225,9 @@ export function IndicatorHistoryChart({
 }
 
 function buildChartModel({
-  display,
   endYear,
   meta,
   resolvedUnit,
-  result,
   series,
   showMetaLine,
   startYear,

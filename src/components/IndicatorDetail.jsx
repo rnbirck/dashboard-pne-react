@@ -5,7 +5,6 @@ import {
   floorValueForGoal,
   formatIndicatorValue,
   formatMetaValue,
-  formatRankingValue,
   getDisplayValue,
   getIndicatorTitle,
   improveZeroValueInterpretation,
@@ -194,7 +193,6 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
       {hasSeries && (
         <div className="indicator-chart-card">
           <IndicatorHistoryChart
-            display={goalResult.display}
             endYear={result.end_year}
             item={item}
             meta={isComparable ? goalResult.meta : null}
@@ -253,7 +251,7 @@ function GoalProgress({ distanceTone, result, unit }) {
         {isOverLimit ? (
           <>
             <span
-              className="goal-progress__fill"
+              className={`goal-progress__fill goal-progress__fill--${currentTone}`}
               style={{ width: `${progress.meta}%` }}
             />
             <span
@@ -266,7 +264,7 @@ function GoalProgress({ distanceTone, result, unit }) {
           </>
         ) : (
           <span
-            className="goal-progress__fill"
+            className={`goal-progress__fill goal-progress__fill--${currentTone}`}
             style={{ width: `${progress.current}%` }}
           />
         )}
@@ -390,14 +388,4 @@ function getDistanceTone(result, isComparable) {
   if (result?.atingida === true) return 'success'
   if (result?.atingida === false) return 'warning'
   return 'muted'
-}
-
-export function formatRaw(value) {
-  if (value === null || value === undefined) {
-    return '-'
-  }
-  if (typeof value === 'number') {
-    return value.toLocaleString('pt-BR', { maximumFractionDigits: 2 })
-  }
-  return String(value)
 }

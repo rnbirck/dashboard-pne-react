@@ -16,7 +16,7 @@ export const MunicipalitySelector = forwardRef(function MunicipalitySelector(
     value,
     onChange,
     variant = 'default',
-    placeholder = 'Escolha um município',
+    placeholder = 'Buscar município',
   },
   ref,
 ) {
@@ -35,7 +35,7 @@ export const MunicipalitySelector = forwardRef(function MunicipalitySelector(
     click: () => inputRef.current?.click(),
   }))
 
-  const list = Array.isArray(municipios) ? municipios : []
+  const list = useMemo(() => (Array.isArray(municipios) ? municipios : []), [municipios])
 
   const filtered = useMemo(() => {
     const q = normalizeText(query)
@@ -114,7 +114,7 @@ export const MunicipalitySelector = forwardRef(function MunicipalitySelector(
   return (
     <label
       ref={containerRef}
-      className={`municipio-selector ${isHero ? 'municipio-selector--hero' : ''} ${className} ${isOpen ? 'is-open' : ''}`}
+      className={`municipio-selector ${isHero ? 'municipio-selector--hero' : ''} ${current ? 'is-selected' : ''} ${className} ${isOpen ? 'is-open' : ''}`}
     >
       <span className="municipio-selector__label">Município</span>
       <div className="municipio-selector__field">

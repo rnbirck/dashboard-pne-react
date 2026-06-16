@@ -11,12 +11,15 @@ export function Header({ activePage, municipios, onNavigate, onMunicipioChange, 
   return (
     <header className="app-header">
       <div className="brand-lockup">
-        <div className="brand-name">SESI-FIERGS</div>
+        <div className="brand-name" aria-label="SESI-FIERGS">
+          <span>SESI</span>
+          <span>FIERGS</span>
+        </div>
         <div className="brand-divider" aria-hidden="true" />
         <div className="brand-copy">
           <span className="brand-eyebrow">PLATAFORMA</span>
           <h1>Monitoramento Municipal da Educação</h1>
-          <p>Acompanhamento dos municípios em relação às metas do Plano Nacional de Educação</p>
+          <p>Indicadores, metas e diagnóstico municipal</p>
         </div>
       </div>
 
@@ -42,7 +45,7 @@ export function Header({ activePage, municipios, onNavigate, onMunicipioChange, 
           municipios={municipios}
           selectedMunicipio={selectedMunicipio}
           onChange={onMunicipioChange}
-          placeholder="Município..."
+          placeholder="Buscar município"
         />
       </div>
     </header>

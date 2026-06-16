@@ -349,11 +349,6 @@ function HighlightBlock({ title, tone, emptyText, indicator }) {
   )
 }
 
-function truncateText(text, maxLength) {
-  if (!text || text.length <= maxLength) return text
-  return `${text.slice(0, maxLength - 1).trimEnd()}…`
-}
-
 function IconBubble({ icon, tone }) {
   return (
     <span className={`diagnostic-icon diagnostic-icon--${tone}`} aria-hidden="true">

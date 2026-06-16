@@ -31,7 +31,8 @@ export function useAsyncData(factory, dependencies) {
     return () => {
       cancelled = true
     }
-  }, dependencies)
+  // Dependencies are owned by callers so this helper can mirror useEffect's API.
+  }, dependencies) // eslint-disable-line react-hooks/exhaustive-deps
 
   return state
 }

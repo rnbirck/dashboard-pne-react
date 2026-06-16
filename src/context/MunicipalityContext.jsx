@@ -14,7 +14,9 @@ export function MunicipalityProvider({ children, municipios }) {
       if (saved && municipios.includes(saved)) {
         return saved
       }
-    } catch {}
+    } catch {
+      return null
+    }
     return null
   })
 
@@ -26,7 +28,9 @@ export function MunicipalityProvider({ children, municipios }) {
       } else {
         localStorage.removeItem(STORAGE_KEY)
       }
-    } catch {}
+    } catch {
+      // localStorage can be unavailable in restricted browser contexts.
+    }
   }, [])
 
   useEffect(() => {
@@ -34,7 +38,9 @@ export function MunicipalityProvider({ children, municipios }) {
       setSelectedMunicipio(null)
       try {
         localStorage.removeItem(STORAGE_KEY)
-      } catch {}
+      } catch {
+        // localStorage can be unavailable in restricted browser contexts.
+      }
     }
   }, [municipios, selectedMunicipio])
 
