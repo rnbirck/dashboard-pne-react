@@ -13,9 +13,9 @@ $PythonExe = if (Test-Path -LiteralPath $LocalPython) {
   "python"
 }
 $SinopseData = if ($env:SINOPSE_CENSO_DIR) {
-  $env:SINOPSE_CENSO_DIR
+  (Resolve-Path -LiteralPath $env:SINOPSE_CENSO_DIR).Path
 } else {
-  "C:\Users\rnbirck\PROJETOS\SENAI\DB\data\sinopse_estatistica_censo"
+  throw "Defina a variavel de ambiente SINOPSE_CENSO_DIR com o caminho das planilhas da Sinopse Estatistica do Censo Escolar."
 }
 
 Write-Host "[update-data] Exportando JSONs agregados com o pipeline local..."

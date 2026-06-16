@@ -1,7 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const data = JSON.parse(fs.readFileSync(path.join(__dirname, 'public/data/indicadores.json'), 'utf-8'));
+const REPO_ROOT = path.resolve(__dirname, '../..');
+const data = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'public/data/indicadores.json'), 'utf-8'));
 
 for (const [cycleName, cycle] of Object.entries(data.cycles)) {
   console.log(`=== CYCLE: ${cycleName} ===`);

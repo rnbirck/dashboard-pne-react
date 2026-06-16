@@ -24,9 +24,8 @@ export function loadJson(path) {
         ? error
         : new Error(`Erro ao carregar ${path}: ${String(error)}`)
     })
-    .then((data) => {
+    .finally(() => {
       pendingCache.delete(path)
-      return data
     })
 
   pendingCache.set(path, promise)

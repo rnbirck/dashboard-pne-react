@@ -18,10 +18,17 @@ async function runTests() {
     await page.waitForSelector('.state-box--loading', { state: 'detached', timeout: 30000 }).catch(() => {});
   }
 
+  async function selectMunicipio(nome) {
+    const input = page.locator('.municipio-selector__input').first();
+    await input.click();
+    await input.fill(nome);
+    await page.locator('.municipio-selector__option').filter({ hasText: nome }).first().click();
+  }
+
   await page.goto(BASE_URL);
   await waitForLoading();
   await page.waitForSelector('.home-hero', { timeout: 10000 });
-  await page.selectOption('select[aria-label="Selecionar município"]', 'Áurea');
+  await selectMunicipio('Áurea');
   await waitForLoading();
   await page.click('button:has-text("PNE 2014-2024")');
   await waitForLoading();

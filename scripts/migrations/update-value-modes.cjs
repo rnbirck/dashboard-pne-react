@@ -1,7 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const filePath = path.join(__dirname, 'public/data/indicadores.json');
+// Manual migration: mutates public/data/indicadores.json. Do not run automatically.
+const REPO_ROOT = path.resolve(__dirname, '../..');
+const filePath = path.join(REPO_ROOT, 'public/data/indicadores.json');
 const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
 
 // Mapeamento de value_mode por chave de indicador

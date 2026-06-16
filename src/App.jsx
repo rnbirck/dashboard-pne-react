@@ -85,7 +85,6 @@ function App() {
           <PageContent
             activePage={activePage}
             indicadores={initialData.indicadores}
-            municipioCount={initialData.municipios.length}
             municipios={initialData.municipios}
             municipiosIndex={initialData.municipiosIndex}
             onNavigate={setActivePage}
