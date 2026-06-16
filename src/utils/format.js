@@ -51,6 +51,15 @@ export function improveZeroValueInterpretation(text, { isAccumulativeExpansion =
   return improved
 }
 
+export function buildAccumulativeExpansionInterpretation({ endYear, metaValue, metaLabel, distance }) {
+  const yearText = Number.isFinite(endYear) ? `Em ${endYear}, o município` : 'O município'
+  const metaText = Number.isFinite(metaValue) ? `${metaValue}%` : `${metaLabel ?? 'a meta'}`
+  const distanceText = Number.isFinite(distance)
+    ? `${distance > 0 ? '+' : ''}${Math.round(distance).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} p.p.`
+    : 'não calculada'
+  return `${yearText} não registrou expansão acumulada neste indicador. Para acompanhamento da meta, o valor considerado é 0%, com distância de ${distanceText} em relação à meta de ${metaText}.`
+}
+
 const ABSOLUTE_HINTS = [
   'número absoluto',
   'numero absoluto',

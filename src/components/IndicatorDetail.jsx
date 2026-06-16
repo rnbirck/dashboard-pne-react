@@ -1,5 +1,6 @@
 import { forwardRef } from 'react'
 import {
+  buildAccumulativeExpansionInterpretation,
   cleanInterpretationText,
   floorValueForGoal,
   formatIndicatorValue,
@@ -65,11 +66,17 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
           : result.distance,
       }
     : result
-  const flooredDisplayDistance = isAccExpansion && Number.isFinite(flooredResult.distance)
-    ? `${flooredResult.distance > 0 ? '+' : ''}${Math.round(flooredResult.distance).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} p.p.`
-    : getDisplayValue(result.display, 'distance')
-  const formattedStart = formatIndicatorValue(flooredResult.start_value, unit)
-  const formattedEnd = formatIndicatorValue(flooredResult.end_value, unit)
+  const goalResult = isAccExpansion && Number.isFinite(flooredResult.distance)
+    ? {
+        ...flooredResult,
+        display: {
+          ...flooredResult.display,
+          distance: `${flooredResult.distance > 0 ? '+' : ''}${Math.round(flooredResult.distance).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} p.p.`,
+        },
+      }
+    : flooredResult
+  const formattedStart = formatIndicatorValue(goalResult.start_value, unit)
+  const formattedEnd = formatIndicatorValue(goalResult.end_value, unit)
   const variation = roundPpString(getDisplayValue(result.display, 'variation'), ppOptions)
   const hasStartYear = typeof startYear === 'number' && startYear > 0
   const hasEndYear = typeof endYear === 'number' && endYear > 0
@@ -78,9 +85,10 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
   const hasRealSeriesValues = seriesValues.some((v) => v !== 0)
   const hasSeries = (result.series ?? []).length >= 2 && hasRealSeriesValues
 
-  const metaValue = formatMetaValue(flooredResult, unit)
-  const distanceValue = roundPpString(flooredDisplayDistance, ppOptions)
-  const showGoalProgress = isComparable && Number.isFinite(Number(flooredResult?.meta)) && Number.isFinite(Number(flooredResult?.end_value))
+  const metaValue = formatMetaValue(goalResult, unit)
+  const distanceValue = roundPpString(getDisplayValue(goalResult.display, 'distance'), ppOptions)
+  const showGoalProgress = isComparable && Number.isFinite(Number(goalResult?.meta)) && Number.isFinite(Number(goalResult?.end_value))
+  const useCustomInterpretation = isAccExpansion && Number.isFinite(flooredResult.end_value) && flooredResult.end_value <= 0
 
   return (
     <section className="detail-panel" ref={ref}>
@@ -154,26 +162,28 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
       {showGoalProgress && (
         <GoalProgress
           distanceTone={distanceTone}
-          result={flooredResult}
+          result={goalResult}
           unit={unit}
         />
       )}
 
-      {result.display?.interpretation && (
+      {(useCustomInterpretation || result.display?.interpretation) && (
         <div className="interpretation-box">
           <span>Interpretação</span>
           <p>
-            {improveZeroValueInterpretation(
-              cleanInterpretationText(result.display.interpretation, ppOptions),
-              { isAccumulativeExpansion: isAccExpansion },
-            )}
+            {useCustomInterpretation
+              ? buildAccumulativeExpansionInterpretation({
+                  endYear,
+                  metaValue: goalResult.meta,
+                  metaLabel: result.meta_label,
+                  distance: goalResult.distance,
+                })
+              : improveZeroValueInterpretation(
+                  cleanInterpretationText(result.display.interpretation, ppOptions),
+                  { isAccumulativeExpansion: isAccExpansion },
+                )}
           </p>
-          {isAccExpansion && (
-            <small style={{ display: 'block', marginTop: '6px', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
-              O indicador não registrou expansão acumulada no período; para acompanhamento da meta, o valor considerado é 0%.
-            </small>
-          )}
-          {isSingleYear && (
+          {isSingleYear && !useCustomInterpretation && (
             <small style={{ display: 'block', marginTop: '6px', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
               Há apenas um ano disponível para este indicador.
             </small>
@@ -183,10 +193,10 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
 
       {hasSeries && (
         <IndicatorHistoryChart
-          display={result.display}
+          display={goalResult.display}
           endYear={result.end_year}
           item={item}
-          meta={isComparable ? flooredResult.meta : null}
+          meta={isComparable ? goalResult.meta : null}
           result={isAccExpansion ? flooredResult : result}
           series={result.series}
           showMetaLine={isComparable}
@@ -215,10 +225,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
 function GoalProgress({ distanceTone, result, unit }) {
   const endValue = formatIndicatorValue(result.end_value, unit)
   const metaMarkerLabel = formatMetaValue(result, unit)
-  const isAccExpansion = isAccumulativeExpansionIndicator({ label: result?.display?.label }, result)
-  const distance = isAccExpansion && Number.isFinite(result.distance)
-    ? `${result.distance > 0 ? '+' : ''}${Math.round(result.distance).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} p.p.`
-    : getDisplayValue(result.display, 'distance')
+  const distance = getDisplayValue(result.display, 'distance')
   const progress = calculateGoalProgress(result, unit)
   const end = Number(result.end_value)
   const meta = Number(result.meta)
