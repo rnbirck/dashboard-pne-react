@@ -1022,9 +1022,7 @@
   align-items: stretch;
   margin-top: 0;
   min-width: 0;
-  height: 640px;
-  min-height: 640px;
-  max-height: 640px;
+  min-height: var(--pne-workspace-height);
 }
 
 .cycle-workspace {
@@ -1051,10 +1049,8 @@
   box-shadow: 0 4px 14px rgba(18, 45, 18, 0.05);
   padding: 12px;
   min-width: 0;
-  height: 100%;
-  min-height: 0;
-  max-height: 100%;
-  align-self: stretch;
+  height: var(--pne-workspace-height);
+  max-height: var(--pne-workspace-height);
   overflow: hidden;
   box-sizing: border-box;
   display: flex;
@@ -1259,21 +1255,11 @@
   flex-direction: column;
   gap: 10px;
   min-width: 0;
-  height: 100%;
-  min-height: 0;
-  max-height: 100%;
-  align-self: stretch;
-  padding: 12px 14px;
-  overflow: hidden auto;
+  height: var(--pne-workspace-height);
+  min-height: var(--pne-workspace-height);
+  overflow: visible;
   box-sizing: border-box;
-}
-
-.indicator-detail-content {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
-  gap: 10px;
+  padding: 12px 14px;
 }
 
 .indicator-chart-card {
@@ -1764,10 +1750,12 @@
 }
 
 .history-chart--informative .history-chart__canvas {
+  flex: 1 1 auto;
   min-height: 0;
 }
 
 .history-chart--with-negatives .history-chart__canvas {
+  flex: 1 1 auto;
   min-height: 0;
 }
 
