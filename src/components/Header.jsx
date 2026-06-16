@@ -10,12 +10,13 @@ const NAV_ITEMS = [
 export function Header({ activePage, municipios, onNavigate, onMunicipioChange, selectedMunicipio }) {
   return (
     <header className="app-header">
-      <div className="brand-block">
-        <div className="brand-mark" aria-hidden="true">PNE</div>
-        <div className="brand-text">
-          <span className="header-eyebrow">Plano Nacional de Educação</span>
-          <div className="brand-line">Dashboard PNE</div>
-          <p>Leitura territorial dos indicadores municipais de educação</p>
+      <div className="brand-lockup">
+        <div className="brand-name">SESI-FIERGS</div>
+        <div className="brand-divider" aria-hidden="true" />
+        <div className="brand-copy">
+          <span className="brand-eyebrow">PLATAFORMA</span>
+          <h1>Monitoramento Municipal da Educação</h1>
+          <p>Acompanhamento dos municípios em relação às metas do Plano Nacional de Educação</p>
         </div>
       </div>
 

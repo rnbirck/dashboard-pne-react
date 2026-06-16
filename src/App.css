@@ -25,63 +25,67 @@
   grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
   grid-template-rows: auto auto;
   align-items: center;
-  gap: 12px 18px;
-  padding: 0;
-  border-bottom: 0;
+  gap: 18px 24px;
+  padding: 22px 28px 18px;
+  border-bottom: 1px solid rgba(31, 92, 51, 0.12);
+  border-radius: 0 0 18px 18px;
+  background: linear-gradient(90deg, #ffffff 0%, #f4faf3 100%);
 }
 
-.brand-block {
+.brand-lockup {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 18px;
 }
 
-.brand-mark {
-  width: 46px;
-  height: 46px;
+.brand-name {
+  color: #16713a;
+  font-size: 1.45rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  white-space: nowrap;
+}
+
+.brand-divider {
+  width: 1px;
+  height: 44px;
   flex: 0 0 auto;
-  border: 1px solid var(--border-strong);
-  border-radius: 10px;
-  display: grid;
-  place-items: center;
-  background: #ffffff;
-  color: var(--accent-strong);
-  font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  box-shadow: 0 1px 2px rgba(18, 45, 18, 0.04);
+  background: rgba(31, 92, 51, 0.18);
 }
 
-.brand-text {
+.brand-copy {
   min-width: 0;
+  display: grid;
+  gap: 2px;
 }
 
-.header-eyebrow,
+.brand-eyebrow,
 .hero-eyebrow,
 .eyebrow,
 .section-card__eyebrow {
-  color: var(--accent-strong);
-  font-size: 0.66rem;
+  color: #5f7468;
+  font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 0;
 }
 
-.brand-line {
-  color: var(--text-strong);
-  font-size: clamp(1.4rem, 2vw, 1.7rem);
-  font-weight: 800;
-  line-height: 1.05;
+.brand-copy h1 {
+  margin: 0;
+  color: #12351f;
+  font-size: clamp(1.16rem, 1.6vw, 1.35rem);
+  font-weight: 850;
+  line-height: 1.15;
   letter-spacing: -0.03em;
 }
 
-.app-header p {
-  margin: 2px 0 0;
-  color: var(--text-muted);
-  font-size: 0.82rem;
+.brand-copy p {
+  margin: 0;
+  color: #52645a;
+  font-size: 0.9rem;
   line-height: 1.35;
 }
 
@@ -1264,14 +1268,14 @@
 
 .indicator-chart-card {
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: 390px;
   display: flex;
   flex-direction: column;
 }
 
 .detail-empty-state {
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: 390px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2917,7 +2921,7 @@
     grid-template-rows: auto auto;
   }
 
-  .brand-block {
+  .brand-lockup {
     grid-column: 1;
   }
 
@@ -3012,7 +3016,8 @@
 
   .app-header {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 14px;
+    padding: 18px 20px 16px;
   }
 
   .header-selector {
@@ -3022,11 +3027,19 @@
     width: 100%;
   }
 
-  .brand-block,
+  .brand-lockup,
   .cycle-hero,
   .diagnostic-hero,
   .detail-heading {
     align-items: flex-start;
+  }
+
+  .brand-lockup {
+    gap: 14px;
+  }
+
+  .brand-divider {
+    display: none;
   }
 
   .top-nav {
@@ -3168,25 +3181,31 @@
     gap: 18px;
   }
 
-  .brand-mark {
-    width: 48px;
-    height: 48px;
-    font-size: 1.1rem;
+  .app-header {
+    padding: 16px 16px 14px;
   }
 
-  .brand-block {
+  .brand-lockup {
     gap: 12px;
   }
 
-  .brand-line {
-    font-size: 1.5rem;
+  .brand-name {
+    font-size: 1.18rem;
   }
 
-  .header-eyebrow {
+  .brand-divider {
+    display: none;
+  }
+
+  .brand-eyebrow {
     font-size: 0.64rem;
   }
 
-  .app-header p {
+  .brand-copy h1 {
+    font-size: 1.08rem;
+  }
+
+  .brand-copy p {
     font-size: 0.84rem;
   }
 
