@@ -1,7 +1,7 @@
 # Dashboard PNE React/Vite
 
-Primeira base navegável do Dashboard PNE em React/Vite, usando apenas dados JSON
-estáticos exportados pelo projeto legado Python/Dash.
+Base navegavel do Dashboard PNE em React/Vite, usando dados JSON estaticos
+exportados pelo pipeline local em `data_pipeline`.
 
 ## Rodar localmente
 
@@ -11,12 +11,17 @@ npm install
 npm run dev
 ```
 
-O Vite abre a aplicação em `http://127.0.0.1:5173/` ou na próxima porta livre.
+O Vite abre a aplicacao em `http://127.0.0.1:5173/` ou na proxima porta livre.
 
 ## Atualizar os dados
 
-Os dados públicos do React ficam em `public/data`. Eles são gerados a partir do
-projeto Python/Dash e particionados por município.
+Os dados publicos do React ficam em `public/data`. Eles sao gerados a partir do
+pipeline local em `data_pipeline` e particionados por municipio.
+
+Antes de atualizar os dados pela primeira vez, crie `data_pipeline/.env` a partir
+de `data_pipeline/.env.example` com as credenciais do banco local. Se quiser usar
+um Python especifico, defina `PNE_PYTHON`; se as planilhas da Sinopse estiverem em
+outro lugar, defina `SINOPSE_CENSO_DIR`.
 
 ```powershell
 cd C:\Users\rnbirck\PROJETOS\DASHBOARD-PNE-REACT
@@ -25,33 +30,38 @@ cd C:\Users\rnbirck\PROJETOS\DASHBOARD-PNE-REACT
 
 Esse script:
 
-- executa `scripts/export_static_data.py --include-derived` no projeto Python;
-- executa `scripts/partition_static_data.py`;
+- executa `data_pipeline/scripts/export_static_data.py --include-derived`;
+- executa `data_pipeline/scripts/partition_static_data.py`;
 - limpa e recopia `public/data` no projeto React;
+- recalcula os indicadores de creche e pre-escola com as planilhas da Sinopse
+  Estatistica do Censo Escolar;
 - roda `npm run build`.
 
 ## Estrutura dos dados
 
-- `public/data/municipios.json`: lista global de municípios.
+- `data_pipeline/queries`: queries SQL usadas para captar dados do banco.
+- `data_pipeline/src`: modulos Python usados para calcular indicadores, rankings
+  e diagnostico.
+- `public/data/municipios.json`: lista global de municipios.
 - `public/data/indicadores.json`: categorias e metadados dos indicadores.
-- `public/data/municipios_index.json`: mapa de município para slug e arquivo.
-- `public/data/municipios/{slug}/index.json`: indicadores, rankings e diagnóstico
-  do município selecionado.
+- `public/data/municipios_index.json`: mapa de municipio para slug e arquivo.
+- `public/data/municipios/{slug}/index.json`: indicadores, rankings e diagnostico
+  do municipio selecionado.
 
-Os arquivos grandes agregados por ciclo não são necessários no React. A aplicação
-carrega apenas os dados globais pequenos na abertura e, depois, o JSON do município
+Os arquivos grandes agregados por ciclo nao sao necessarios no React. A aplicacao
+carrega apenas os dados globais pequenos na abertura e, depois, o JSON do municipio
 selecionado sob demanda.
 
-## Build e hospedagem estática
+## Build e hospedagem estatica
 
 ```powershell
 npm run build
 ```
 
-O build gera a pasta `dist`, pronta para hospedagem estática. A hospedagem precisa
+O build gera a pasta `dist`, pronta para hospedagem estatica. A hospedagem precisa
 servir os arquivos de `dist` e os JSONs copiados de `public/data`.
 
-## Segurança
+## Seguranca
 
-`public/data` é público no navegador. Não coloque `.env`, senhas, strings de
-conexão, tokens, dumps privados ou qualquer segredo nessa pasta.
+`public/data` e publico no navegador. Nao coloque `.env`, senhas, strings de
+conexao, tokens, dumps privados ou qualquer segredo nessa pasta.

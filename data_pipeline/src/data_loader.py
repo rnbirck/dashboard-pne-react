@@ -1,0 +1,183 @@
+from src.data.repository import (
+    clear_data_cache,
+    fetch_table,
+    load_atendimento_overview_data,
+    get_data_cache_ttl_seconds,
+    get_supabase_client,
+    load_dataset,
+    load_municipios,
+)
+
+
+def fetch_supabase_table(_client, table_name: str):
+    return fetch_table(table_name)
+
+
+def load_pne_data():
+    return load_dataset("pne_data")
+
+
+def load_pre_escola_data():
+    return load_dataset("pre_escola_data")
+
+
+def load_basico_6_17_data():
+    return load_dataset("basico_6_17_data")
+
+
+def load_basico_15_17_data():
+    return load_dataset("basico_15_17_data")
+
+
+def load_basico_integral_data():
+    return load_dataset("basico_integral_data")
+
+
+def load_escolas_integral_data():
+    return load_dataset("escolas_integral_data")
+
+
+def load_medio_tecnico_data():
+    return load_dataset("medio_tecnico_data")
+
+
+def load_ept_nivel_medio_data():
+    return load_dataset("ept_nivel_medio_data")
+
+
+def load_eja_integrada_educacao_profissional_data():
+    return load_dataset("eja_integrada_educacao_profissional_data")
+
+
+def load_censo_populacao_alfabetizacao_data():
+    return load_dataset("censo_populacao_alfabetizacao_data")
+
+
+def load_censo_populacao_escolaridade_media_18_29_data():
+    return load_dataset("censo_populacao_escolaridade_media_18_29_data")
+
+
+def load_censo_populacao_escolaridade_media_18_29_racial_data():
+    return load_dataset("censo_populacao_escolaridade_media_18_29_racial_data")
+
+
+def load_censo_populacao_ensino_medio_15_17_data():
+    return load_dataset("censo_populacao_ensino_medio_15_17_data")
+
+
+def load_censo_populacao_ensino_fundamental_6_14_data():
+    return load_dataset("censo_populacao_ensino_fundamental_6_14_data")
+
+
+def load_censo_populacao_ensino_fundamental_concluido_18_mais_data():
+    return load_dataset("censo_populacao_ensino_fundamental_concluido_18_mais_data")
+
+
+def load_censo_populacao_ensino_fundamental_concluido_18_29_data():
+    return load_dataset("censo_populacao_ensino_fundamental_concluido_18_29_data")
+
+
+def load_censo_populacao_ensino_fundamental_concluido_15_29_data():
+    return load_dataset("censo_populacao_ensino_fundamental_concluido_15_29_data")
+
+
+def load_censo_populacao_ensino_medio_concluido_18_mais_data():
+    return load_dataset("censo_populacao_ensino_medio_concluido_18_mais_data")
+
+
+def load_censo_populacao_ensino_medio_concluido_18_29_data():
+    return load_dataset("censo_populacao_ensino_medio_concluido_18_29_data")
+
+
+def load_taxa_alfabetizacao_data():
+    return load_dataset("taxa_alfabetizacao_data")
+
+
+def load_saeb_proficiencia_data():
+    return load_dataset("saeb_proficiencia_data")
+
+
+def load_saeb_ideb_data():
+    return load_dataset("saeb_ideb_data")
+
+
+def load_distorcao_idade_serie_data():
+    return load_dataset("distorcao_idade_serie_data")
+
+
+def load_adequacao_docente_data():
+    return load_dataset("adequacao_docente_data")
+
+
+def load_docentes_pos_graduacao_data():
+    return load_dataset("docentes_pos_graduacao_data")
+
+
+def load_docentes_temporarios_data():
+    return load_dataset("docentes_temporarios_data")
+
+
+def load_rendimento_professores_data():
+    return load_dataset("rendimento_professores_data")
+
+
+def load_atendimento_educacional_especializado_data():
+    return load_dataset("atendimento_educacional_especializado_data")
+
+
+def load_infraestrutura_escolar_data():
+    return load_dataset("infraestrutura_escolar_data")
+
+
+def load_saeb_matematica_data():
+    return load_dataset("saeb_matematica_data")
+
+
+def load_pne_2014_2024_metricas_data():
+    return load_dataset("pne_2014_2024_metricas_data")
+
+
+def load_pne_2026_2036_metricas_data():
+    return load_dataset("pne_2026_2036_metricas_data")
+
+
+__all__ = [
+    "clear_data_cache",
+    "fetch_supabase_table",
+    "load_atendimento_overview_data",
+    "get_data_cache_ttl_seconds",
+    "get_supabase_client",
+    "load_municipios",
+    "load_basico_15_17_data",
+    "load_basico_6_17_data",
+    "load_basico_integral_data",
+    "load_escolas_integral_data",
+    "load_ept_nivel_medio_data",
+    "load_eja_integrada_educacao_profissional_data",
+    "load_censo_populacao_alfabetizacao_data",
+    "load_censo_populacao_escolaridade_media_18_29_data",
+    "load_censo_populacao_escolaridade_media_18_29_racial_data",
+    "load_censo_populacao_ensino_medio_15_17_data",
+    "load_censo_populacao_ensino_fundamental_6_14_data",
+    "load_censo_populacao_ensino_fundamental_concluido_18_mais_data",
+    "load_censo_populacao_ensino_fundamental_concluido_18_29_data",
+    "load_censo_populacao_ensino_fundamental_concluido_15_29_data",
+    "load_censo_populacao_ensino_medio_concluido_18_mais_data",
+    "load_censo_populacao_ensino_medio_concluido_18_29_data",
+    "load_medio_tecnico_data",
+    "load_pne_data",
+    "load_pre_escola_data",
+    "load_adequacao_docente_data",
+    "load_docentes_pos_graduacao_data",
+    "load_docentes_temporarios_data",
+    "load_rendimento_professores_data",
+    "load_atendimento_educacional_especializado_data",
+    "load_infraestrutura_escolar_data",
+    "load_distorcao_idade_serie_data",
+    "load_saeb_ideb_data",
+    "load_saeb_proficiencia_data",
+    "load_saeb_matematica_data",
+    "load_pne_2014_2024_metricas_data",
+    "load_pne_2026_2036_metricas_data",
+    "load_taxa_alfabetizacao_data",
+]
