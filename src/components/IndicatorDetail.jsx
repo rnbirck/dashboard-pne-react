@@ -192,19 +192,21 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
       )}
 
       {hasSeries && (
-        <IndicatorHistoryChart
-          display={goalResult.display}
-          endYear={result.end_year}
-          item={item}
-          meta={isComparable ? goalResult.meta : null}
-          result={isAccExpansion ? flooredResult : result}
-          series={result.series}
-          showMetaLine={isComparable}
-          startYear={result.start_year}
-          title={getIndicatorTitle(item, result)}
-          unit={unit}
-          floorNegativeValues={isAccExpansion}
-        />
+        <div className="indicator-chart-card">
+          <IndicatorHistoryChart
+            display={goalResult.display}
+            endYear={result.end_year}
+            item={item}
+            meta={isComparable ? goalResult.meta : null}
+            result={isAccExpansion ? flooredResult : result}
+            series={result.series}
+            showMetaLine={isComparable}
+            startYear={result.start_year}
+            title={getIndicatorTitle(item, result)}
+            unit={unit}
+            floorNegativeValues={isAccExpansion}
+          />
+        </div>
       )}
 
       {!hasSeries && !isInformative && (
