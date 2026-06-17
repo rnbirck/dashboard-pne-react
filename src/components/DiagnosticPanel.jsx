@@ -159,9 +159,9 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
 
       <section className="page-card diagnostic-section">
         <h3>Posicionamento por tema</h3>
-        <div className="diagnostic-area-table">
+        <div className="diagnostic-area-grid">
           {analysis.areas.map((area) => (
-            <AreaRow area={area} key={area.key} />
+            <AreaMiniCard area={area} key={area.key} />
           ))}
         </div>
       </section>
@@ -278,43 +278,54 @@ function InsightCard({ emptyMessage = 'Nenhum indicador disponível para esta le
   )
 }
 
-function AreaRow({ area }) {
-  const achievedWidth = getSegmentWidth(area.achieved, area.total)
-  const belowWidth = getSegmentWidth(area.below, area.total)
-  const noComparisonWidth = getSegmentWidth(area.noComparison, area.total)
-  const hasItems = area.total > 0
+function AreaMiniCard({ area }) {
+  const total = area.total
+  const achievedPct = total > 0 ? (area.achieved / total) * 100 : 0
+  const belowPct = total > 0 ? (area.below / total) * 100 : 0
+  const noComparisonPct = total > 0 ? (area.noComparison / total) * 100 : 0
+  const hasItems = total > 0
   const gapLabel = area.worstIndicator
     ? `${area.worstIndicator.label} (${area.worstIndicator.summary})`
     : '—'
 
   return (
-    <div className="diagnostic-area-row">
-      <div className="diagnostic-area-row__header">
-        <div className="diagnostic-area-row__title">
+    <div className="diagnostic-area-mini-card">
+      <div className="diagnostic-area-mini-card__header">
+        <div className="diagnostic-area-mini-card__title">
           <IconBubble icon={area.key} tone="success" />
           <h4>{area.label}</h4>
         </div>
         <span className={`area-status area-status--${area.statusTone}`}>{area.statusLabel}</span>
       </div>
-      <div className="diagnostic-area-row__metrics">
-        <span className="diagnostic-area-row__metric">Total <strong>{area.total}</strong></span>
-        <span className="diagnostic-area-row__metric">Atingidas <strong className="is-success">{area.achieved}</strong></span>
-        <span className="diagnostic-area-row__metric">Abaixo <strong className="is-danger">{area.below}</strong></span>
-        <span className="diagnostic-area-row__metric">Sem comp. <strong>{area.noComparison}</strong></span>
+      <div className="diagnostic-area-mini-card__metrics">
+        <div className="diagnostic-area-mini-card__metric">
+          <span>Total</span>
+          <strong>{area.total}</strong>
+        </div>
+        <div className="diagnostic-area-mini-card__metric">
+          <span>Atingidas</span>
+          <strong className="is-success">{area.achieved}</strong>
+        </div>
+        <div className="diagnostic-area-mini-card__metric">
+          <span>Abaixo</span>
+          <strong className="is-danger">{area.below}</strong>
+        </div>
+        <div className="diagnostic-area-mini-card__metric">
+          <span>Sem comp.</span>
+          <strong>{area.noComparison}</strong>
+        </div>
       </div>
       {hasItems ? (
-        <div className="diagnostic-area-row__bar" aria-label={`Distribuição de ${area.label}`}>
-          <span className="diagnostic-area-row__bar-achieved" style={{ width: `${achievedWidth}%` }} />
-          <span className="diagnostic-area-row__bar-below" style={{ width: `${belowWidth}%` }} />
-          <span className="diagnostic-area-row__bar-neutral" style={{ width: `${noComparisonWidth}%` }} />
+        <div className="diagnostic-area-mini-card__bar" aria-label={`Distribuição de ${area.label}`}>
+          <span className="diagnostic-area-mini-card__bar-achieved" style={{ width: `${achievedPct}%` }} />
+          <span className="diagnostic-area-mini-card__bar-below" style={{ width: `${belowPct}%` }} />
+          <span className="diagnostic-area-mini-card__bar-neutral" style={{ width: `${noComparisonPct}%` }} />
         </div>
       ) : (
-        <div className="diagnostic-area-row__bar diagnostic-area-row__bar--empty">
-          <span>Sem indicadores comparáveis</span>
-        </div>
+        <div className="diagnostic-area-mini-card__bar" />
       )}
-      <div className="diagnostic-area-row__gap">
-        Lacuna principal: {gapLabel}
+      <div className="diagnostic-area-mini-card__gap" title={gapLabel}>
+        Lacuna: {gapLabel}
       </div>
     </div>
   )
