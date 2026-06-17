@@ -158,10 +158,10 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
       </section>
 
       <section className="page-card diagnostic-section">
-        <h3>Posicionamento por área</h3>
-        <div className="diagnostic-grid">
+        <h3>Posicionamento por tema</h3>
+        <div className="diagnostic-area-table">
           {analysis.areas.map((area) => (
-            <AreaCard area={area} key={area.key} />
+            <AreaRow area={area} key={area.key} />
           ))}
         </div>
       </section>
@@ -278,78 +278,44 @@ function InsightCard({ emptyMessage = 'Nenhum indicador disponível para esta le
   )
 }
 
-function AreaCard({ area }) {
+function AreaRow({ area }) {
   const achievedWidth = getSegmentWidth(area.achieved, area.total)
   const belowWidth = getSegmentWidth(area.below, area.total)
   const noComparisonWidth = getSegmentWidth(area.noComparison, area.total)
+  const hasItems = area.total > 0
+  const gapLabel = area.worstIndicator
+    ? `${area.worstIndicator.label} (${area.worstIndicator.summary})`
+    : '—'
 
   return (
-    <article className="diagnostic-area">
-      <div className="diagnostic-area__title">
-        <div>
+    <div className="diagnostic-area-row">
+      <div className="diagnostic-area-row__header">
+        <div className="diagnostic-area-row__title">
           <IconBubble icon={area.key} tone="success" />
           <h4>{area.label}</h4>
         </div>
         <span className={`area-status area-status--${area.statusTone}`}>{area.statusLabel}</span>
       </div>
-      <dl>
-        <div>
-          <dt>Total</dt>
-          <dd>{area.total}</dd>
-        </div>
-        <div>
-          <dt>Atingidas</dt>
-          <dd className="is-success">{area.achieved}</dd>
-        </div>
-        <div>
-          <dt>Abaixo da meta</dt>
-          <dd className="is-danger">{area.below}</dd>
-        </div>
-        <div>
-          <dt>Sem comp.</dt>
-          <dd>{area.noComparison}</dd>
-        </div>
-      </dl>
-      <div className="stacked-bar" aria-label={`Distribuição de ${area.label}`}>
-        <span className="stacked-bar__success" style={{ width: `${achievedWidth}%` }} />
-        <span className="stacked-bar__danger" style={{ width: `${belowWidth}%` }} />
-        <span className="stacked-bar__neutral" style={{ width: `${noComparisonWidth}%` }} />
+      <div className="diagnostic-area-row__metrics">
+        <span className="diagnostic-area-row__metric">Total <strong>{area.total}</strong></span>
+        <span className="diagnostic-area-row__metric">Atingidas <strong className="is-success">{area.achieved}</strong></span>
+        <span className="diagnostic-area-row__metric">Abaixo <strong className="is-danger">{area.below}</strong></span>
+        <span className="diagnostic-area-row__metric">Sem comp. <strong>{area.noComparison}</strong></span>
       </div>
-      <HighlightBlock
-        title="Melhor"
-        tone="success"
-        emptyText="Sem indicador comparável com meta nesta área."
-        indicator={area.bestIndicator}
-      />
-      <HighlightBlock
-        title="Lacuna"
-        tone="danger"
-        emptyText="Sem indicador abaixo da meta nesta área."
-        indicator={area.worstIndicator}
-      />
-    </article>
-  )
-}
-
-function HighlightBlock({ title, tone, emptyText, indicator }) {
-  if (!indicator) {
-    return (
-      <div className={`area-highlight area-highlight--${tone}`}>
-        <span className="area-highlight__title">{title}</span>
-        <span className="area-highlight__empty">{emptyText}</span>
+      {hasItems ? (
+        <div className="diagnostic-area-row__bar" aria-label={`Distribuição de ${area.label}`}>
+          <span className="diagnostic-area-row__bar-achieved" style={{ width: `${achievedWidth}%` }} />
+          <span className="diagnostic-area-row__bar-below" style={{ width: `${belowWidth}%` }} />
+          <span className="diagnostic-area-row__bar-neutral" style={{ width: `${noComparisonWidth}%` }} />
+        </div>
+      ) : (
+        <div className="diagnostic-area-row__bar diagnostic-area-row__bar--empty">
+          <span>Sem indicadores comparáveis</span>
+        </div>
+      )}
+      <div className="diagnostic-area-row__gap">
+        Lacuna principal: {gapLabel}
       </div>
-    )
-  }
-  return (
-    <div className={`area-highlight area-highlight--${tone}`}>
-      <span className="area-highlight__title">{title}</span>
-      <strong
-        className="area-highlight__label"
-        title={indicator.label}
-      >
-        {indicator.label}
-      </strong>
-      <span className="area-highlight__note">{indicator.summary}</span>
     </div>
   )
 }
