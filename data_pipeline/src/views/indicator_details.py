@@ -2,6 +2,7 @@ import pandas as pd
 
 from src.data_loader import load_basico_15_17_por_dependencia_data
 from src.data_loader import load_basico_6_17_por_dependencia_data
+from src.data_loader import load_basico_integral_por_dependencia_data
 from src.data_loader import load_creche_por_dependencia_data
 from src.data_loader import load_pre_escola_por_dependencia_data
 
@@ -276,11 +277,116 @@ def build_basico_15_17_details(municipio):
     )
 
 
+def build_basico_integral_details(municipio):
+    df = _safe_load(load_basico_integral_por_dependencia_data)
+    required_columns = {
+        "ano",
+        "municipio",
+        "dependencia",
+        "mat_basico",
+        "mat_basico_integral",
+    }
+    if df.empty or not required_columns.issubset(df.columns):
+        return None
+
+    dff = df[df["municipio"] == municipio].copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = pd.to_numeric(dff["ano"], errors="coerce")
+    dff["mat_basico"] = pd.to_numeric(dff["mat_basico"], errors="coerce")
+    dff["mat_basico_integral"] = pd.to_numeric(
+        dff["mat_basico_integral"], errors="coerce"
+    )
+    dff["dependencia"] = dff["dependencia"].apply(_normalizar_dependencia)
+    dff = dff.dropna(
+        subset=["ano", "mat_basico", "mat_basico_integral", "dependencia"]
+    ).copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = dff["ano"].astype(int)
+    dff["mat_basico"] = dff["mat_basico"].clip(lower=0)
+    dff["mat_basico_integral"] = dff["mat_basico_integral"].clip(lower=0)
+
+    grouped = (
+        dff.groupby(["ano", "dependencia"], as_index=False)
+        .agg({"mat_basico_integral": "sum", "mat_basico": "sum"})
+        .sort_values(["ano", "dependencia"])
+    )
+
+    total_by_year = (
+        grouped.groupby("ano", as_index=False)
+        .agg({"mat_basico_integral": "sum", "mat_basico": "sum"})
+        .rename(columns={"mat_basico_integral": "valor"})
+        .sort_values("ano")
+    )
+    total_by_year["valor"] = total_by_year["valor"].astype(int)
+    total_by_year["mat_basico"] = total_by_year["mat_basico"].astype(int)
+
+    series_total = [
+        {"ano": int(row["ano"]), "valor": int(row["valor"])}
+        for _, row in total_by_year.iterrows()
+        if row["valor"] > 0
+    ]
+
+    series_components = []
+    for _, row in total_by_year.iterrows():
+        numerador = int(row["valor"])
+        denominador = int(row["mat_basico"])
+        if numerador <= 0 or denominador <= 0:
+            continue
+        series_components.append(
+            {
+                "ano": int(row["ano"]),
+                "numerador": numerador,
+                "denominador": denominador,
+                "percentual": round((numerador / denominador) * 100, 1),
+            }
+        )
+
+    pivot = grouped.pivot(
+        index="ano", columns="dependencia", values="mat_basico_integral"
+    ).fillna(0)
+    for dep in _DEPENDENCIA_ORDER:
+        if dep not in pivot.columns:
+            pivot[dep] = 0
+    pivot = pivot[_DEPENDENCIA_ORDER].reset_index().sort_values("ano")
+
+    series_dependencia = [
+        {
+            "ano": int(row["ano"]),
+            "municipal": int(row["municipal"]),
+            "estadual": int(row["estadual"]),
+            "privada": int(row["privada"]),
+            "federal": int(row["federal"]),
+        }
+        for _, row in pivot.iterrows()
+    ]
+
+    if not series_total or not series_dependencia or not series_components:
+        return None
+
+    return {
+        "title": "Matrículas em tempo integral na educação básica pública",
+        "subtitle": "Total de matrículas em tempo integral na educação básica pública, total de matrículas da educação básica pública e distribuição por dependência administrativa.",
+        "unit": "matrículas",
+        "calculation": {
+            "numerator_label": "Matrículas em tempo integral",
+            "denominator_label": "Total de matrículas da educação básica pública",
+        },
+        "series_total": series_total,
+        "series_dependencia": series_dependencia,
+        "series_components": series_components,
+    }
+
+
 DETAIL_BUILDERS = {
     "creche": build_creche_details,
     "pre_escola": build_pre_escola_details,
     "basico_6_17": build_basico_6_17_details,
     "basico_15_17": build_basico_15_17_details,
+    "basico_integral": build_basico_integral_details,
 }
 
 
