@@ -3,7 +3,7 @@ const pendingCache = new Map()
 
 export function loadJson(path) {
   if (dataCache.has(path)) {
-    return dataCache.get(path)
+    return Promise.resolve(dataCache.get(path))
   }
 
   if (pendingCache.has(path)) {

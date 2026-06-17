@@ -110,14 +110,14 @@ function PageContent({
   )
 
   const municipioState = useAsyncData(
-    () => {
+    async () => {
       if (!selectedMunicipioEntry?.slug) {
-        return Promise.resolve(null)
+        return null
       }
-      return loadMunicipioData(selectedMunicipioEntry.slug).then((data) => {
-        primeMunicipioCache(selectedMunicipioEntry.slug, data)
-        return data
-      })
+
+      const data = await loadMunicipioData(selectedMunicipioEntry.slug)
+      primeMunicipioCache(selectedMunicipioEntry.slug, data)
+      return data
     },
     [selectedMunicipioEntry?.slug],
   )
