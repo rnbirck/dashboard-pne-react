@@ -165,6 +165,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
         <RankingBlock
           title="Avanços no período"
           items={normalizedRanking.topAvancos}
+          emptyMessage="Nenhum avanço relevante nesta categoria."
           unit={normalizedRanking.topAvancos?.[0]?.unit}
           tone="success"
         />
@@ -237,22 +238,12 @@ function buildCycleManagementStats(categories, municipioResults) {
 function normalizeRankings(activeRanking, categoryItems, municipioResults) {
   const itemByKey = new Map(categoryItems.map((item) => [item.key, item]))
   const seenAdvanceKeys = new Set()
-  const topAvancos = (activeRanking?.top_avancos ?? [])
-    .map((item) => normalizeRankingItem(item, itemByKey, municipioResults))
-    .filter((item) => {
-      if (!item?.indicator_key || seenAdvanceKeys.has(item.indicator_key)) return false
-      seenAdvanceKeys.add(item.indicator_key)
-      return parsePpValue(item.display?.variation ?? item.display?.distance) > 0
-    })
-    .sort((a, b) => (
-      parsePpValue(b.display?.variation ?? b.display?.distance) -
-      parsePpValue(a.display?.variation ?? a.display?.distance)
-    ))
-    .slice(0, 3)
+  const topAvancos = buildTopAvancos(activeRanking, categoryItems, itemByKey, municipioResults, seenAdvanceKeys)
 
   const advanceKeys = new Set(topAvancos.map((item) => item.indicator_key))
   const explicitAttention = (activeRanking?.top_atencao ?? [])
     .map((item) => normalizeRankingItem(item, itemByKey, municipioResults))
+    .filter((item) => item && itemByKey.has(item.indicator_key))
   const categoryAttention = categoryItems.map((item) => normalizeRankingItem({
     indicator_key: item.key,
     label: item.label,
@@ -272,6 +263,35 @@ function normalizeRankings(activeRanking, categoryItems, municipioResults) {
   return { topAvancos, topAtencao }
 }
 
+function buildTopAvancos(activeRanking, categoryItems, itemByKey, municipioResults, seenAdvanceKeys) {
+  const fromJson = (activeRanking?.top_avancos ?? [])
+    .map((item) => normalizeRankingItem(item, itemByKey, municipioResults))
+    .filter((item) => item && itemByKey.has(item.indicator_key))
+
+  const result = []
+  const allAdvanceCandidates = [
+    ...fromJson,
+    ...categoryItems.map((item) =>
+      normalizeRankingItem({ indicator_key: item.key, label: item.label, sub: item.sub }, itemByKey, municipioResults)
+    ),
+  ]
+  const seen = new Set()
+  for (const item of allAdvanceCandidates) {
+    if (!item?.indicator_key || seen.has(item.indicator_key)) continue
+    seen.add(item.indicator_key)
+    const variation = parsePpValue(item.display?.variation ?? item.display?.distance)
+    if (!Number.isFinite(variation) || variation <= 0) continue
+    result.push(item)
+  }
+  result.sort((a, b) => (
+    parsePpValue(b.display?.variation ?? b.display?.distance) -
+    parsePpValue(a.display?.variation ?? a.display?.distance)
+  ))
+  const top3 = result.slice(0, 3)
+  top3.forEach((item) => seenAdvanceKeys.add(item.indicator_key))
+  return top3
+}
+
 function normalizeRankingItem(item, itemByKey, municipioResults) {
   if (!item) return null
   const key = item.indicator_key ?? item.key
@@ -281,7 +301,7 @@ function normalizeRankingItem(item, itemByKey, municipioResults) {
   return {
     ...item,
     indicator_key: key,
-    label: item.label ?? categoryItem?.label ?? key,
+    label: item.label ?? categoryItem?.label ?? makeIndicatorLabel(key),
     sub: item.sub ?? categoryItem?.sub,
     unit,
     display: {
@@ -289,6 +309,13 @@ function normalizeRankingItem(item, itemByKey, municipioResults) {
       ...result?.display,
     },
   }
+}
+
+function makeIndicatorLabel(key) {
+  return key
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
 }
 
 function isCriticalRankingItem(item, result) {

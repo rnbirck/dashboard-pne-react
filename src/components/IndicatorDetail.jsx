@@ -160,7 +160,6 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
 
       {showGoalProgress && (
         <GoalProgress
-          distanceTone={distanceTone}
           result={goalResult}
           unit={unit}
         />
@@ -222,10 +221,9 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
   )
 })
 
-function GoalProgress({ distanceTone, result, unit }) {
+function GoalProgress({ result, unit }) {
   const endValue = formatIndicatorValue(result.end_value, unit)
   const metaMarkerLabel = formatMetaValue(result, unit)
-  const distance = getDisplayValue(result.display, 'distance')
   const progress = calculateGoalProgress(result, unit)
   const end = Number(result.end_value)
   const meta = Number(result.meta)
@@ -243,9 +241,6 @@ function GoalProgress({ distanceTone, result, unit }) {
     >
       <div className="goal-progress__heading">
         <span>Acompanhamento da meta</span>
-        <strong className={`goal-progress__distance goal-progress__distance--${distanceTone}`}>
-          {distance}
-        </strong>
       </div>
       <div className="goal-progress__track">
         {isOverLimit ? (
