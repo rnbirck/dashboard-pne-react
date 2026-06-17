@@ -250,7 +250,7 @@ def _build_matriculas_basico_details(
     return {
         "title": title,
         "subtitle": subtitle,
-        "unit": "matrÃ­culas",
+        "unit": "matrículas",
         "series_total": series_total,
         "series_dependencia": series_dependencia,
     }
@@ -261,8 +261,8 @@ def build_basico_6_17_details(municipio):
         municipio,
         loader=load_basico_6_17_por_dependencia_data,
         value_column="matriculas_basico_6_17",
-        title="MatrÃ­culas na educaÃ§Ã£o bÃ¡sica â€” 6 a 17 anos",
-        subtitle="Total de matrÃ­culas de 6 a 17 anos na educaÃ§Ã£o bÃ¡sica e distribuiÃ§Ã£o por dependÃªncia administrativa.",
+        title="Matrículas na educação básica — 6 a 17 anos",
+        subtitle="Total de matrículas de 6 a 17 anos na educação básica e distribuição por dependência administrativa.",
     )
 
 
@@ -271,8 +271,8 @@ def build_basico_15_17_details(municipio):
         municipio,
         loader=load_basico_15_17_por_dependencia_data,
         value_column="matriculas_basico_15_17",
-        title="MatrÃ­culas na educaÃ§Ã£o bÃ¡sica â€” 15 a 17 anos",
-        subtitle="Total de matrÃ­culas de 15 a 17 anos na educaÃ§Ã£o bÃ¡sica e distribuiÃ§Ã£o por dependÃªncia administrativa.",
+        title="Matrículas na educação básica — 15 a 17 anos",
+        subtitle="Total de matrículas de 15 a 17 anos na educação básica e distribuição por dependência administrativa. Este complemento mostra as matrículas escolares disponíveis no Censo Escolar.",
     )
 
 
