@@ -60,13 +60,6 @@ const AREA_ICON_PATHS = {
 export function DiagnosticPanel({ categories = [], data, municipio, results = {} }) {
   const analysis = buildDiagnosticAnalysis(categories, results)
   const [selectedFilter, setSelectedFilter] = useState('all')
-  const filterOptions = useMemo(
-    () => [
-      { key: 'all', label: 'Todas' },
-      ...analysis.areas.map(({ key, label }) => ({ key, label })),
-    ],
-    [analysis.areas],
-  )
   const filteredIndicators = useMemo(
     () => {
       if (selectedFilter === 'all') return analysis.indicators
@@ -122,17 +115,27 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
         </div>
       </section>
 
-      <section className="diagnostic-filter-bar" aria-label="Filtrar destaques por categoria">
-        <span>Filtrar destaques</span>
-        <div className="diagnostic-filter-chips">
-          {filterOptions.map((option) => (
+      <section className="diagnostic-theme-filter" aria-label="Filtrar destaques por tema">
+        <div className="diagnostic-theme-filter__eyebrow">Temas de análise</div>
+        <div className="diagnostic-theme-filter__grid">
+          <button
+            type="button"
+            className={`diagnostic-theme-filter__card${selectedFilter === 'all' ? ' is-active' : ''}`}
+            onClick={() => setSelectedFilter('all')}
+          >
+            <span>Todas</span>
+            <span className="diagnostic-theme-filter__count">{analysis.summary.total}</span>
+          </button>
+          {analysis.areas.map((area) => (
             <button
-              className={`diagnostic-filter-chip${selectedFilter === option.key ? ' is-active' : ''}`}
-              key={option.key}
-              onClick={() => setSelectedFilter(option.key)}
+              key={area.key}
               type="button"
+              title={area.fullLabel ?? area.label}
+              className={`diagnostic-theme-filter__card${selectedFilter === area.key ? ' is-active' : ''}`}
+              onClick={() => setSelectedFilter(area.key)}
             >
-              {option.label}
+              <span>{area.label}</span>
+              <span className="diagnostic-theme-filter__count">{area.total}</span>
             </button>
           ))}
         </div>
