@@ -79,6 +79,9 @@ def load_aggregate_payloads() -> dict[str, dict]:
     payloads["diagnostico"] = load_json(
         SOURCE_DIR / "pne_2026_2036" / "diagnostico_por_municipio.json"
     )
+    payloads["indicator_details"] = load_json(
+        SOURCE_DIR / "indicator_details_por_municipio.json"
+    )
     return payloads
 
 
@@ -94,6 +97,10 @@ def extract_diagnostico(payload: dict, municipio: str) -> dict:
     return payload.get("municipios", {}).get(municipio, {})
 
 
+def extract_indicator_details(payload: dict, municipio: str) -> dict:
+    return payload.get("municipios", {}).get(municipio, {}).get("indicator_details", {})
+
+
 def build_municipio_payload(payloads: dict[str, dict], municipio: str, slug: str) -> dict:
     return {
         "municipio": municipio,
@@ -107,6 +114,7 @@ def build_municipio_payload(payloads: dict[str, dict], municipio: str, slug: str
             "rankings": extract_rankings(payloads["pne_2026_2036_rankings"], municipio),
             "diagnostico": extract_diagnostico(payloads["diagnostico"], municipio),
         },
+        "indicator_details": extract_indicator_details(payloads["indicator_details"], municipio),
     }
 
 

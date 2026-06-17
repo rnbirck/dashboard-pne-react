@@ -266,6 +266,41 @@ def _export_cycle_results(
     }
 
 
+def _export_indicator_details(
+    *,
+    municipios: list[str],
+    shared: Any,
+    errors: list[dict[str, Any]],
+) -> dict[str, Any]:
+    exported = 0
+    municipio_payloads: dict[str, Any] = {}
+
+    print("\nProcessando dados complementares...")
+    for index, municipio in enumerate(municipios, start=1):
+        try:
+            details = shared._build_indicator_details(municipio)
+            municipio_payloads[municipio] = {"indicator_details": details}
+            exported += 1
+        except Exception as exc:  # noqa: BLE001 - export should continue per city.
+            errors.append(
+                {
+                    "cycle": "indicator_details",
+                    "municipio": municipio,
+                    "stage": "indicator_details",
+                    "error": str(exc),
+                    "traceback": traceback.format_exc(limit=4),
+                }
+            )
+            municipio_payloads[municipio] = {"indicator_details": {}, "error": str(exc)}
+
+    return {
+        "generated_at": _generated_at(),
+        "total_municipios": len(municipios),
+        "municipios_exportados": exported,
+        "municipios": municipio_payloads,
+    }
+
+
 def _ranking_display(
     *,
     item: Mapping[str, Any],
@@ -772,6 +807,15 @@ def main() -> int:
         output_path = EXPORT_DIR / cycle_key / "indicadores_por_municipio.json"
         _write_json(output_path, cycle_payload)
         generated_files.append(output_path)
+
+    indicator_details_payload = _export_indicator_details(
+        municipios=municipios,
+        shared=pne_shared,
+        errors=errors,
+    )
+    indicator_details_path = EXPORT_DIR / "indicator_details_por_municipio.json"
+    _write_json(indicator_details_path, indicator_details_payload)
+    generated_files.append(indicator_details_path)
 
     if args.include_derived:
         for cycle_key, cycle_module in cycle_modules.items():

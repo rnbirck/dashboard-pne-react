@@ -19,11 +19,15 @@ import {
   getStableVisualDomain,
   projectValueToPercent,
 } from '../utils/visualDomain'
+import { IndicatorComplementaryData } from './IndicatorComplementaryData'
 import { IndicatorHistoryChart } from './IndicatorHistoryChart'
 import { MetricCard } from './MetricCard'
 import { StatusBadge } from './StatusBadge'
 
-export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, result }, ref) {
+export const IndicatorDetail = forwardRef(function IndicatorDetail(
+  { item, municipioData, result },
+  ref,
+) {
   if (!item || !result) {
     return (
       <section className="detail-panel empty-panel" ref={ref}>
@@ -218,6 +222,8 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
           />
         </div>
       )}
+
+      <IndicatorComplementaryData indicatorKey={item?.key} municipioData={municipioData} />
 
       {!hasSeries && !isInformative && (
         <div className="detail-empty-state">

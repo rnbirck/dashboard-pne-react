@@ -3,6 +3,8 @@ from urllib.parse import quote
 import pandas as pd
 from dash import html
 
+from src.data_loader import load_creche_por_dependencia_data
+
 GOAL_AT_LEAST = "at_least"
 GOAL_AT_MOST = "at_most"
 DISPLAY_DECIMALS = 1
@@ -930,3 +932,104 @@ def _ranking_card(title, accent, items, metric_key):
             "height": "100%",
         },
     )
+
+
+_DEPENDENCIA_ORDER = ["municipal", "estadual", "privada", "federal"]
+
+
+def _normalizar_dependencia(value):
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return None
+    normalized = (
+        str(value)
+        .lower()
+        .strip()
+        .replace("á", "a")
+        .replace("é", "e")
+        .replace("í", "i")
+        .replace("ó", "o")
+        .replace("ú", "u")
+        .replace("ã", "a")
+        .replace("õ", "o")
+        .replace("ç", "c")
+    )
+    if normalized in {"publica", "pública"}:
+        return None
+    return normalized if normalized in _DEPENDENCIA_ORDER else None
+
+
+def _build_creche_complementary_data(municipio):
+    df = _safe_load(load_creche_por_dependencia_data)
+    if df.empty or "municipio" not in df.columns:
+        return None
+
+    dff = df[df["municipio"] == municipio].copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = pd.to_numeric(dff["ano"], errors="coerce")
+    dff["mat_infantil_creche"] = pd.to_numeric(
+        dff["mat_infantil_creche"], errors="coerce"
+    )
+    dff["dependencia"] = dff["dependencia"].apply(_normalizar_dependencia)
+    dff = dff.dropna(subset=["ano", "mat_infantil_creche", "dependencia"]).copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = dff["ano"].astype(int)
+    dff["mat_infantil_creche"] = dff["mat_infantil_creche"].clip(lower=0)
+
+    grouped = (
+        dff.groupby(["ano", "dependencia"], as_index=False)["mat_infantil_creche"]
+        .sum()
+        .sort_values(["ano", "dependencia"])
+    )
+
+    total_by_year = (
+        grouped.groupby("ano", as_index=False)["mat_infantil_creche"]
+        .sum()
+        .rename(columns={"mat_infantil_creche": "valor"})
+        .sort_values("ano")
+    )
+    total_by_year["valor"] = total_by_year["valor"].astype(int)
+    series_total = [
+        {"ano": int(row["ano"]), "valor": int(row["valor"])}
+        for _, row in total_by_year.iterrows()
+        if row["valor"] > 0
+    ]
+
+    pivot = grouped.pivot(index="ano", columns="dependencia", values="mat_infantil_creche").fillna(0)
+    for dep in _DEPENDENCIA_ORDER:
+        if dep not in pivot.columns:
+            pivot[dep] = 0
+    pivot = pivot[_DEPENDENCIA_ORDER].reset_index().sort_values("ano")
+
+    series_dependencia = [
+        {
+            "ano": int(row["ano"]),
+            "municipal": int(row["municipal"]),
+            "estadual": int(row["estadual"]),
+            "privada": int(row["privada"]),
+            "federal": int(row["federal"]),
+        }
+        for _, row in pivot.iterrows()
+    ]
+
+    if not series_total or not series_dependencia:
+        return None
+
+    return {
+        "title": "Matrículas em creche",
+        "subtitle": "Total de matrículas de 0 a 3 anos em creche e distribuição por dependência administrativa.",
+        "unit": "matrículas",
+        "series_total": series_total,
+        "series_dependencia": series_dependencia,
+    }
+
+
+def _build_indicator_details(municipio):
+    details = {}
+    creche_data = _build_creche_complementary_data(municipio)
+    if creche_data is not None:
+        details["creche"] = creche_data
+    return details
