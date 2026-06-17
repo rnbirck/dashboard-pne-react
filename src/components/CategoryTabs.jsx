@@ -1,6 +1,6 @@
-export function CategoryTabs({ categories, selectedCategory, onSelectCategory }) {
+export function CategoryTabs({ categories, selectedCategory, onSelectCategory, ariaLabel = 'Categorias' }) {
   return (
-    <div className="category-tabs" role="tablist" aria-label="Categorias">
+    <div className="category-tabs" role="tablist" aria-label={ariaLabel}>
       {categories.map((category) => (
         <button
           className={

@@ -3,6 +3,7 @@ import { CategoryTabs } from '../components/CategoryTabs'
 import { IndicatorDetail, isAvailableIndicator, isComparableIndicator } from '../components/IndicatorDetail'
 import { IndicatorList } from '../components/IndicatorList'
 import { RankingBlock } from '../components/RankingBlock'
+import { buildThematicGroups } from '../data/thematicGroups'
 import { isAccumulativeExpansionIndicator, resolveIndicatorUnit } from '../utils/format'
 import { normalizePopulationPercentResults } from '../utils/indicatorValues'
 
@@ -11,22 +12,26 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     () => indicadores?.cycles?.[cycle]?.categories ?? [],
     [indicadores, cycle],
   )
-  const [selectedCategoryKey, setSelectedCategoryKey] = useState('')
+  const thematicGroups = useMemo(
+    () => buildThematicGroups(categories),
+    [categories],
+  )
+  const [selectedGroupKey, setSelectedGroupKey] = useState('')
   const [selectedIndicatorKey, setSelectedIndicatorKey] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const detailPanelRef = useRef(null)
 
-  const selectedCategory = useMemo(() => {
-    if (!categories.length) return null
+  const selectedGroup = useMemo(() => {
+    if (!thematicGroups.length) return null
     return (
-      categories.find((category) => category.key === selectedCategoryKey) ??
-      categories[0]
+      thematicGroups.find((group) => group.key === selectedGroupKey) ??
+      thematicGroups[0]
     )
-  }, [categories, selectedCategoryKey])
+  }, [thematicGroups, selectedGroupKey])
 
-  const allCategoryItems = useMemo(
-    () => selectedCategory?.items ?? [],
-    [selectedCategory],
+  const allGroupItems = useMemo(
+    () => selectedGroup?.items ?? [],
+    [selectedGroup],
   )
   const municipioResults = municipioData?.[cycle]?.indicadores ?? null
   const allCycleItems = useMemo(
@@ -38,39 +43,38 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     [municipioResults, allCycleItems],
   )
   const municipioRankings = municipioData?.[cycle]?.rankings ?? null
-  const availableCategoryItems = useMemo(
-    () => allCategoryItems.filter((item) => isAvailableIndicator(normalizedMunicipioResults?.[item.key])),
-    [allCategoryItems, normalizedMunicipioResults],
+  const availableGroupItems = useMemo(
+    () => allGroupItems.filter((item) => isAvailableIndicator(normalizedMunicipioResults?.[item.key])),
+    [allGroupItems, normalizedMunicipioResults],
   )
-  const filteredCategoryItems = useMemo(() => {
+  const filteredGroupItems = useMemo(() => {
     const query = searchQuery.trim().toLocaleLowerCase('pt-BR')
-    if (!query) return availableCategoryItems
-    return availableCategoryItems.filter((item) => item.label.toLocaleLowerCase('pt-BR').includes(query))
-  }, [availableCategoryItems, searchQuery])
+    if (!query) return availableGroupItems
+    return availableGroupItems.filter((item) => item.label.toLocaleLowerCase('pt-BR').includes(query))
+  }, [availableGroupItems, searchQuery])
   const activeIndicatorKey = useMemo(() => {
-    if (!availableCategoryItems.length) return ''
-    if (availableCategoryItems.some((item) => item.key === selectedIndicatorKey)) {
+    if (!availableGroupItems.length) return ''
+    if (availableGroupItems.some((item) => item.key === selectedIndicatorKey)) {
       return selectedIndicatorKey
     }
-    return availableCategoryItems[0].key
-  }, [availableCategoryItems, selectedIndicatorKey])
+    return availableGroupItems[0].key
+  }, [availableGroupItems, selectedIndicatorKey])
   const activeItem = useMemo(
-    () => availableCategoryItems.find((item) => item.key === activeIndicatorKey) ?? availableCategoryItems[0],
-    [activeIndicatorKey, availableCategoryItems],
+    () => availableGroupItems.find((item) => item.key === activeIndicatorKey) ?? availableGroupItems[0],
+    [activeIndicatorKey, availableGroupItems],
   )
   const activeResult = activeItem ? normalizedMunicipioResults?.[activeItem.key] : null
-  const activeRanking = municipioRankings?.[selectedCategory?.key]
   const normalizedRanking = useMemo(
-    () => normalizeRankings(activeRanking, allCategoryItems, normalizedMunicipioResults),
-    [activeRanking, allCategoryItems, normalizedMunicipioResults],
+    () => normalizeRankings(municipioRankings, allGroupItems, normalizedMunicipioResults),
+    [municipioRankings, allGroupItems, normalizedMunicipioResults],
   )
   const cycleManagementStats = useMemo(
     () => buildCycleManagementStats(categories, normalizedMunicipioResults),
     [categories, normalizedMunicipioResults],
   )
 
-  function handleCategorySelect(categoryKey) {
-    setSelectedCategoryKey(categoryKey)
+  function handleGroupSelect(groupKey) {
+    setSelectedGroupKey(groupKey)
     setSelectedIndicatorKey('')
     setSearchQuery('')
   }
@@ -114,11 +118,12 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
 
       <section className="cycle-workspace">
         <div className="cycle-category-bar">
-          <span className="eyebrow">Categorias</span>
+          <span className="eyebrow">Temas</span>
           <CategoryTabs
-            categories={categories}
-            selectedCategory={selectedCategory?.key}
-            onSelectCategory={handleCategorySelect}
+            categories={thematicGroups}
+            selectedCategory={selectedGroup?.key}
+            onSelectCategory={handleGroupSelect}
+            ariaLabel="Temas"
           />
         </div>
 
@@ -126,11 +131,11 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
           <aside className="indicator-sidebar">
             <div className="indicator-sidebar__heading">
               <h3>Indicadores</h3>
-              <span>{availableCategoryItems.length}</span>
+              <span>{availableGroupItems.length}</span>
             </div>
-            {availableCategoryItems.length === 0 ? (
+            {availableGroupItems.length === 0 ? (
               <div className="indicator-sidebar__empty" style={{ padding: '10px 12px', color: 'var(--text-muted)', fontSize: '0.82rem', lineHeight: '1.4' }}>
-                <p>Nenhum indicador disponível para este município nesta categoria.</p>
+                <p>Nenhum indicador disponível para este município neste tema.</p>
               </div>
             ) : (
               <>
@@ -148,7 +153,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
                   />
                 </label>
                 <IndicatorList
-                  items={filteredCategoryItems}
+                  items={filteredGroupItems}
                   results={normalizedMunicipioResults}
                   selectedIndicator={activeItem?.key}
                   onSelectIndicator={setSelectedIndicatorKey}
@@ -165,14 +170,14 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
         <RankingBlock
           title="Avanços no período"
           items={normalizedRanking.topAvancos}
-          emptyMessage="Nenhum avanço relevante nesta categoria."
+          emptyMessage="Nenhum avanço relevante neste tema."
           unit={normalizedRanking.topAvancos?.[0]?.unit}
           tone="success"
         />
         <RankingBlock
           title="Pontos de atenção"
           items={normalizedRanking.topAtencao}
-          emptyMessage="Nenhum indicador crítico nesta categoria."
+          emptyMessage="Nenhum indicador crítico neste tema."
           valueMode="distance"
           unit={normalizedRanking.topAtencao?.[0]?.unit}
           tone="warning"
@@ -235,8 +240,9 @@ function buildCycleManagementStats(categories, municipioResults) {
   return stats
 }
 
-function normalizeRankings(activeRanking, categoryItems, municipioResults) {
+function normalizeRankings(rankingsByCategory, categoryItems, municipioResults) {
   const itemByKey = new Map(categoryItems.map((item) => [item.key, item]))
+  const activeRanking = mergeRankingsByIndicator(rankingsByCategory, itemByKey)
   const seenAdvanceKeys = new Set()
   const topAvancos = buildTopAvancos(activeRanking, categoryItems, itemByKey, municipioResults, seenAdvanceKeys)
 
@@ -296,13 +302,14 @@ function normalizeRankingItem(item, itemByKey, municipioResults) {
   if (!item) return null
   const key = item.indicator_key ?? item.key
   const categoryItem = itemByKey.get(key)
+  if (!categoryItem) return null
   const result = municipioResults?.[key]
   const unit = resolveIndicatorUnit(categoryItem, result)
   return {
     ...item,
     indicator_key: key,
-    label: item.label ?? categoryItem?.label ?? makeIndicatorLabel(key),
-    sub: item.sub ?? categoryItem?.sub,
+    label: item.label ?? categoryItem.label,
+    sub: item.sub ?? categoryItem.sub,
     unit,
     display: {
       ...item.display,
@@ -311,11 +318,24 @@ function normalizeRankingItem(item, itemByKey, municipioResults) {
   }
 }
 
-function makeIndicatorLabel(key) {
-  return key
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
+function mergeRankingsByIndicator(rankingsByCategory, itemByKey) {
+  const merged = {
+    top_avancos: [],
+    top_atencao: [],
+  }
+
+  Object.values(rankingsByCategory ?? {}).forEach((categoryRanking) => {
+    ;(categoryRanking?.top_avancos ?? []).forEach((item) => {
+      const key = item?.indicator_key ?? item?.key
+      if (itemByKey.has(key)) merged.top_avancos.push(item)
+    })
+    ;(categoryRanking?.top_atencao ?? []).forEach((item) => {
+      const key = item?.indicator_key ?? item?.key
+      if (itemByKey.has(key)) merged.top_atencao.push(item)
+    })
+  })
+
+  return merged
 }
 
 function isCriticalRankingItem(item, result) {
