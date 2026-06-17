@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { DiagnosticPanel } from '../components/DiagnosticPanel'
+import { buildThematicGroups } from '../data/thematicGroups'
 import { normalizePopulationPercentResults } from '../utils/indicatorValues'
 
 export function Diagnostico({ indicadores, municipioData, selectedMunicipio }) {
@@ -7,6 +8,10 @@ export function Diagnostico({ indicadores, municipioData, selectedMunicipio }) {
   const cycleCategories = useMemo(
     () => indicadores?.cycles?.pne_2026_2036?.categories ?? [],
     [indicadores],
+  )
+  const thematicCategories = useMemo(
+    () => buildThematicGroups(cycleCategories),
+    [cycleCategories],
   )
   const cycleResults = useMemo(
     () => municipioData?.pne_2026_2036?.indicadores ?? {},
@@ -23,7 +28,7 @@ export function Diagnostico({ indicadores, municipioData, selectedMunicipio }) {
 
   return (
     <DiagnosticPanel
-      categories={cycleCategories}
+      categories={thematicCategories}
       data={diagnostico}
       municipio={selectedMunicipio}
       results={normalizedCycleResults}

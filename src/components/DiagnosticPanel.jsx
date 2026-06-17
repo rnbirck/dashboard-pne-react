@@ -61,14 +61,19 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
   const analysis = buildDiagnosticAnalysis(categories, results)
   const [selectedFilter, setSelectedFilter] = useState('all')
   const filterOptions = useMemo(
-    () => [{ key: 'all', label: 'Todas' }, ...analysis.areas.map(({ key, label }) => ({ key, label }))],
+    () => [
+      { key: 'all', label: 'Todas' },
+      ...analysis.areas.map(({ key, label }) => ({ key, label })),
+    ],
     [analysis.areas],
   )
   const filteredIndicators = useMemo(
-    () => selectedFilter === 'all'
-      ? analysis.indicators
-      : analysis.indicators.filter((indicator) => indicator.categoryKey === selectedFilter),
-    [analysis.indicators, selectedFilter],
+    () => {
+      if (selectedFilter === 'all') return analysis.indicators
+      const area = analysis.areas.find((a) => a.key === selectedFilter)
+      return area ? area.indicators : []
+    },
+    [analysis.indicators, analysis.areas, selectedFilter],
   )
   const filteredBestPosition = useMemo(() => buildBestPosition(filteredIndicators), [filteredIndicators])
   const filteredLargestGaps = useMemo(() => buildLargestGaps(filteredIndicators), [filteredIndicators])
@@ -382,8 +387,19 @@ function renderColoredNote(note, tone) {
   )
 }
 
+const ICON_ALIAS = {
+  educacao_basica: 'atendimento',
+  educacao_integral: 'atendimento',
+  eja_educacao_profissional: 'escolaridade_populacao',
+  educacao_especial: 'atendimento',
+  ideb_saeb_fluxo: 'rendimento',
+  infraestrutura_tecnologia: 'infraestrutura',
+  gestao_ambiental: 'infraestrutura',
+}
+
 function getIconPath(icon) {
-  if (AREA_ICON_PATHS[icon]) return AREA_ICON_PATHS[icon]
+  const resolvedIcon = ICON_ALIAS[icon] ?? icon
+  if (AREA_ICON_PATHS[resolvedIcon]) return AREA_ICON_PATHS[resolvedIcon]
 
   if (icon === 'clipboard') {
     return (
@@ -459,7 +475,11 @@ function buildDiagnosticAnalysis(categories, results) {
   const areas = categories.map((category) => buildAreaAnalysis(category, results))
   const indicators = areas.flatMap((area) => area.indicators)
 
-  const summary = indicators.reduce(
+  const uniqueIndicators = Array.from(
+    new Map(indicators.map((indicator) => [indicator.rawKey, indicator])).values()
+  )
+
+  const summary = uniqueIndicators.reduce(
     (acc, indicator) => {
       acc.total += 1
       if (indicator.status === 'achieved') acc.achieved += 1
@@ -470,14 +490,14 @@ function buildDiagnosticAnalysis(categories, results) {
     { achieved: 0, below: 0, noComparison: 0, total: 0 },
   )
 
-  const bestPosition = buildBestPosition(indicators)
-  const largestGaps = buildLargestGaps(indicators)
-  const priorities = buildPriorities(indicators)
+  const bestPosition = buildBestPosition(uniqueIndicators)
+  const largestGaps = buildLargestGaps(uniqueIndicators)
+  const priorities = buildPriorities(uniqueIndicators)
 
   return {
     areas,
     bestPosition,
-    indicators,
+    indicators: uniqueIndicators,
     largestGaps,
     priorities,
     readings: buildReadings(summary, areas, priorities),
@@ -506,7 +526,8 @@ function buildAreaAnalysis(category, results) {
     comparableTotal,
     indicators,
     key: category.key,
-    label: category.label,
+    label: category.shortLabel ?? category.label,
+    fullLabel: category.label,
     noComparison,
     statusLabel: diagnosis.statusLabel,
     statusTone: diagnosis.statusTone,
@@ -533,7 +554,7 @@ function normalizeDiagnosticIndicator(item, category, result) {
 
   return {
     categoryKey: category.key,
-    categoryLabel: category.label,
+    categoryLabel: category.shortLabel ?? category.label,
     currentValue: Number.isFinite(currentValue) ? currentValue : null,
     distance,
     displayDistance: result?.display?.distance,
