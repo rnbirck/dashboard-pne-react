@@ -1,96 +1,54 @@
 import { RioGrandeDoSulMap } from '../components/RioGrandeDoSulMap'
 
 const DIRETRIZES = [
-  { num: 'I', title: 'Planejamento estratégico', desc: 'Integra educação ao desenvolvimento local e regional.' },
-  { num: 'II', title: 'Intersetorialidade', desc: 'Articula educação com outras políticas públicas.' },
-  { num: 'III', title: 'Desenvolvimento integral', desc: 'Promove formação social, cultural e econômica.' },
-  { num: 'IV', title: 'Pactuação federativa', desc: 'Fortalece cooperação entre União, Estado e municípios.' },
-  { num: 'V', title: 'Equilíbrio dos recursos', desc: 'Busca financiamento adequado, equitativo e sustentável.' },
-  { num: 'VI', title: 'Liberdade', desc: 'Valoriza aprender, ensinar, pesquisar e divulgar saberes.' },
-  { num: 'VII', title: 'Qualidade e equidade', desc: 'Orienta a formulação das políticas educacionais.' },
-  { num: 'VIII', title: 'Uso de evidências', desc: 'Apoia decisões com dados e resultados educacionais.' },
-  { num: 'IX', title: 'Monitoramento e avaliação', desc: 'Acompanha metas, estratégias e implementação.' },
-  { num: 'X', title: 'Promoção de direitos', desc: 'Valoriza diversidade, direitos humanos e sustentabilidade.' },
+  { num: '1', title: 'Planejamento estratégico' },
+  { num: '2', title: 'Intersetorialidade' },
+  { num: '3', title: 'Desenvolvimento integral' },
+  { num: '4', title: 'Pactuação federativa' },
+  { num: '5', title: 'Equilíbrio dos recursos' },
+  { num: '6', title: 'Liberdade' },
+  { num: '7', title: 'Qualidade e equidade' },
+  { num: '8', title: 'Uso de evidências' },
+  { num: '9', title: 'Monitoramento e avaliação' },
+  { num: '10', title: 'Promoção de direitos' },
 ]
 
-export function Home({
-  selectedMunicipio,
-  onNavigate,
-}) {
-  const hasMunicipio = Boolean(selectedMunicipio)
+export function Home({ selectedMunicipio, onNavigate }) {
+  const municipioLabel = selectedMunicipio || 'Selecione um município'
 
   return (
     <div className="page-stack home-page">
       <section className="home-hero">
         <article className="hero-intro">
+          <div className="hero-copy">
+            <h1>Painel municipal de educação</h1>
+            <p>
+              Consulte indicadores, metas e diagnóstico territorial do município selecionado,
+              organizados por ciclo do Plano Nacional de Educação.
+            </p>
+          </div>
+
           <div className="rs-illustration" aria-hidden="true">
             <RioGrandeDoSulMap />
           </div>
-
-          <div className="hero-copy">
-            <h1>Indicadores municipais de educação</h1>
-            <p>
-              Acompanhe indicadores, metas e diagnóstico territorial para apoiar o
-              planejamento educacional do município.
-            </p>
-          </div>
         </article>
 
-        <aside className={`required-card context-panel${hasMunicipio ? ' context-panel--selected' : ' context-panel--empty'}`}>
-          <div className="context-panel__top">
-            <div className="required-card__icon" aria-hidden="true">
-              <PinIcon />
-            </div>
-            <span className={hasMunicipio ? 'context-status context-status--ready' : 'context-status context-status--empty'}>
-              {hasMunicipio ? 'Dados prontos para navegação' : 'Nenhum município selecionado'}
-            </span>
-          </div>
-
+        <aside className="required-card context-panel">
           <div className="context-panel__copy">
-            <span className="context-panel__eyebrow">
-              {hasMunicipio ? 'Município selecionado para análise' : 'Seleção territorial'}
-            </span>
-            <h2>{hasMunicipio ? selectedMunicipio : 'Selecione um município'}</h2>
-            <p>
-              {hasMunicipio
-                ? 'Acesse os ciclos do PNE e o diagnóstico territorial para este município.'
-                : 'Escolha um município no topo da página para visualizar indicadores, metas e diagnóstico territorial.'}
-            </p>
+            <span className="context-panel__eyebrow">Município selecionado</span>
+            <div className="context-panel__municipio">
+              <PinIcon />
+              <h2>{municipioLabel}</h2>
+            </div>
+            <p>Acesse os módulos disponíveis para este município.</p>
           </div>
 
-          {hasMunicipio && (
-            <div className="context-actions" aria-label="Atalhos do painel">
-              <button type="button" className="context-action" onClick={() => onNavigate?.('pne2014')}>
-                <CalendarIcon />
-                <span>PNE 2014-2024</span>
-              </button>
-              <button type="button" className="context-action" onClick={() => onNavigate?.('pne2026')}>
-                <CalendarIcon />
-                <span>PNE 2026-2036</span>
-              </button>
-              <button type="button" className="context-action" onClick={() => onNavigate?.('diagnostico')}>
-                <DocumentIcon />
-                <span>Diagnóstico</span>
-              </button>
-            </div>
-          )}
+          <div className="context-actions" aria-label="Atalhos do painel">
+            <ModuleLink icon={<CalendarIcon />} label="PNE 2014–2024" onClick={() => onNavigate?.('pne2014')} />
+            <ModuleLink icon={<CalendarIcon />} label="PNE 2026–2036" onClick={() => onNavigate?.('pne2026')} />
+            <ModuleLink icon={<DocumentIcon />} label="Diagnóstico" onClick={() => onNavigate?.('diagnostico')} />
+          </div>
         </aside>
-      </section>
-
-      <section className="home-section home-section--compact home-section--diretrizes">
-        <h2>10 diretrizes do novo PNE</h2>
-        <p className="section-subtitle">
-          O novo Plano Nacional de Educação organiza as prioridades da política educacional
-          brasileira para o ciclo 2026-2036 e orienta o planejamento local.
-        </p>
-        <p className="section-subtitle section-subtitle--accent">
-          Referências para monitoramento, cooperação e melhoria da educação nos municípios.
-        </p>
-        <div className="diretrizes-grid">
-          {DIRETRIZES.map((d) => (
-            <DiretrizCard key={d.num} num={d.num} title={d.title} desc={d.desc} />
-          ))}
-        </div>
       </section>
 
       <section className="home-section home-section--compact">
@@ -99,18 +57,27 @@ export function Home({
           <FeatureCard
             icon={<BarsIcon />}
             title="Indicadores por ciclo"
-            text="Indicadores organizados por ciclos do PNE, com evolução dos resultados do município."
+            text="Explore os indicadores organizados por ciclo do PNE."
           />
           <FeatureCard
-            icon={<AwardIcon />}
-            title="Metas e situação"
-            text="Acompanhe o avanço do município em relação às metas do Plano Nacional de Educação."
+            icon={<TargetIcon />}
+            title="Metas e estratégias"
+            text="Consulte as metas e estratégias do Plano Nacional de Educação."
           />
           <FeatureCard
             icon={<InstitutionIcon />}
             title="Diagnóstico municipal"
-            text="Visão integrada dos principais desafios e avanços do território para apoiar decisões."
+            text="Acesse o diagnóstico territorial com informações e análises do município."
           />
+        </div>
+      </section>
+
+      <section className="home-section home-section--compact home-section--diretrizes">
+        <h2>10 diretrizes do novo PNE</h2>
+        <div className="diretrizes-grid">
+          {DIRETRIZES.map((diretriz) => (
+            <DiretrizCard key={diretriz.num} num={diretriz.num} title={diretriz.title} />
+          ))}
         </div>
       </section>
 
@@ -119,20 +86,20 @@ export function Home({
         <div className="module-grid">
           <ModuleCard
             icon={<CalendarIcon />}
-            title="PNE 2014-2024"
-            text="Veja os indicadores e metas do ciclo anterior, com evolução dos resultados do município."
+            title="PNE 2014–2024"
+            text="Consulte indicadores e metas do ciclo anterior do PNE."
             onClick={() => onNavigate?.('pne2014')}
           />
           <ModuleCard
             icon={<CalendarIcon />}
-            title="PNE 2026-2036"
-            text="Acompanhe os indicadores do novo ciclo e identifique prioridades para os próximos anos."
+            title="PNE 2026–2036"
+            text="Acompanhe indicadores e prioridades do novo ciclo."
             onClick={() => onNavigate?.('pne2026')}
           />
           <ModuleCard
             icon={<DocumentIcon />}
             title="Diagnóstico"
-            text="Diagnóstico territorial com análises e destaques da realidade do município."
+            text="Acesse o diagnóstico territorial com informações e análises do município."
             onClick={() => onNavigate?.('diagnostico')}
           />
         </div>
@@ -141,14 +108,11 @@ export function Home({
   )
 }
 
-function DiretrizCard({ num, title, desc }) {
+function DiretrizCard({ num, title }) {
   return (
     <article className="diretriz-card">
-      <div className="diretriz-card__header">
-        <span className="diretriz-num">{num}</span>
-        <h3>{title}</h3>
-      </div>
-      <p>{desc}</p>
+      <span className="diretriz-num">{num}</span>
+      <h3>{title}</h3>
     </article>
   )
 }
@@ -161,6 +125,7 @@ function FeatureCard({ icon, title, text }) {
         <h3>{title}</h3>
         <p>{text}</p>
       </div>
+      <ChevronIcon />
     </article>
   )
 }
@@ -173,6 +138,16 @@ function ModuleCard({ icon, title, text, onClick }) {
         <h3>{title}</h3>
         <p>{text}</p>
       </div>
+      <ChevronIcon />
+    </button>
+  )
+}
+
+function ModuleLink({ icon, label, onClick }) {
+  return (
+    <button type="button" className="context-action" onClick={onClick}>
+      {icon}
+      <span>{label}</span>
       <ChevronIcon />
     </button>
   )
@@ -196,12 +171,12 @@ function BarsIcon() {
   )
 }
 
-function AwardIcon() {
+function TargetIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="8" r="5" />
-      <path d="m8.5 12-2 8 5.5-3 5.5 3-2-8" />
-      <path d="m10 8 1.3 1.3L14.5 6" />
+      <circle cx="12" cy="12" r="8" />
+      <circle cx="12" cy="12" r="4" />
+      <path d="m14.5 9.5 4-4M18.5 5.5h-4v4" />
     </svg>
   )
 }

@@ -13,15 +13,51 @@ npm run dev
 
 O Vite abre a aplicacao em `http://127.0.0.1:5173/` ou na proxima porta livre.
 
+## Comandos disponiveis
+
+```powershell
+npm run dev
+npm run build
+npm run lint
+npm run check:units
+npm run list:indicators
+npm run test:e2e
+```
+
+- `npm run dev`: inicia o Vite para desenvolvimento local.
+- `npm run build`: gera o build estatico em `dist`.
+- `npm run lint`: valida o codigo com ESLint.
+- `npm run check:units`: verifica coerencia dos `value_mode` em `public/data/indicadores.json`.
+- `npm run list:indicators`: lista indicadores e modos de valor para revisao manual.
+- `npm run test:e2e`: roda o teste Playwright contra uma instancia local ja ativa.
+
+Para o teste e2e, mantenha o Vite rodando em `localhost:5173`:
+
+```powershell
+npm run dev -- --host 127.0.0.1 --port 5173
+npm run test:e2e
+```
+
+Se precisar testar outro endereco, defina `BASE_URL` antes de rodar `test:e2e`.
+
 ## Atualizar os dados
 
 Os dados publicos do React ficam em `public/data`. Eles sao gerados a partir do
 pipeline local em `data_pipeline` e particionados por municipio.
 
 Antes de atualizar os dados pela primeira vez, crie `data_pipeline/.env` a partir
-de `data_pipeline/.env.example` com as credenciais do banco local. Se quiser usar
-um Python especifico, defina `PNE_PYTHON`; se as planilhas da Sinopse estiverem em
-outro lugar, defina `SINOPSE_CENSO_DIR`.
+de `data_pipeline/.env.example` com as credenciais do banco local.
+
+`SINOPSE_CENSO_DIR` e obrigatorio para `scripts/update_react_data.ps1` e deve
+apontar para a pasta com as planilhas da Sinopse Estatistica do Censo Escolar.
+`PNE_PYTHON` continua opcional, caso queira usar um Python especifico.
+
+Exemplo no PowerShell:
+
+```powershell
+$env:SINOPSE_CENSO_DIR = "C:\caminho\para\sinopse_estatistica_censo"
+$env:PNE_PYTHON = "C:\caminho\para\python.exe" # opcional
+```
 
 ```powershell
 cd C:\Users\rnbirck\PROJETOS\DASHBOARD-PNE-REACT

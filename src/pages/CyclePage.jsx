@@ -4,6 +4,7 @@ import { IndicatorDetail, isAvailableIndicator, isComparableIndicator } from '..
 import { IndicatorList } from '../components/IndicatorList'
 import { RankingBlock } from '../components/RankingBlock'
 import { isAccumulativeExpansionIndicator, resolveIndicatorUnit } from '../utils/format'
+import { normalizePopulationPercentResults } from '../utils/indicatorValues'
 
 export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio, title }) {
   const categories = useMemo(
@@ -28,10 +29,18 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     [selectedCategory],
   )
   const municipioResults = municipioData?.[cycle]?.indicadores ?? null
+  const allCycleItems = useMemo(
+    () => categories.flatMap((category) => category.items ?? []),
+    [categories],
+  )
+  const normalizedMunicipioResults = useMemo(
+    () => normalizePopulationPercentResults(municipioResults, allCycleItems),
+    [municipioResults, allCycleItems],
+  )
   const municipioRankings = municipioData?.[cycle]?.rankings ?? null
   const availableCategoryItems = useMemo(
-    () => allCategoryItems.filter((item) => isAvailableIndicator(municipioResults?.[item.key])),
-    [allCategoryItems, municipioResults],
+    () => allCategoryItems.filter((item) => isAvailableIndicator(normalizedMunicipioResults?.[item.key])),
+    [allCategoryItems, normalizedMunicipioResults],
   )
   const filteredCategoryItems = useMemo(() => {
     const query = searchQuery.trim().toLocaleLowerCase('pt-BR')
@@ -49,15 +58,15 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     () => availableCategoryItems.find((item) => item.key === activeIndicatorKey) ?? availableCategoryItems[0],
     [activeIndicatorKey, availableCategoryItems],
   )
-  const activeResult = activeItem ? municipioResults?.[activeItem.key] : null
+  const activeResult = activeItem ? normalizedMunicipioResults?.[activeItem.key] : null
   const activeRanking = municipioRankings?.[selectedCategory?.key]
   const normalizedRanking = useMemo(
-    () => normalizeRankings(activeRanking, allCategoryItems, municipioResults),
-    [activeRanking, allCategoryItems, municipioResults],
+    () => normalizeRankings(activeRanking, allCategoryItems, normalizedMunicipioResults),
+    [activeRanking, allCategoryItems, normalizedMunicipioResults],
   )
   const cycleManagementStats = useMemo(
-    () => buildCycleManagementStats(categories, municipioResults),
-    [categories, municipioResults],
+    () => buildCycleManagementStats(categories, normalizedMunicipioResults),
+    [categories, normalizedMunicipioResults],
   )
 
   function handleCategorySelect(categoryKey) {
@@ -140,7 +149,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
                 </label>
                 <IndicatorList
                   items={filteredCategoryItems}
-                  results={municipioResults}
+                  results={normalizedMunicipioResults}
                   selectedIndicator={activeItem?.key}
                   onSelectIndicator={setSelectedIndicatorKey}
                 />
@@ -276,8 +285,8 @@ function normalizeRankingItem(item, itemByKey, municipioResults) {
     sub: item.sub ?? categoryItem?.sub,
     unit,
     display: {
-      ...result?.display,
       ...item.display,
+      ...result?.display,
     },
   }
 }
