@@ -347,6 +347,17 @@ function buildTopAvancos(activeRanking, categoryItems, itemByKey, municipioResul
   return top3
 }
 
+function resolveRankingLabel(item, categoryItem, key) {
+  const rawLabel = String(item?.label ?? '').trim()
+  const looksLikeSlug = /^[a-z0-9_]+$/i.test(rawLabel)
+
+  if (!rawLabel || rawLabel === key || rawLabel === item?.indicator_key || rawLabel === item?.key || looksLikeSlug) {
+    return categoryItem.label
+  }
+
+  return rawLabel
+}
+
 function normalizeRankingItem(item, itemByKey, municipioResults) {
   if (!item) return null
   const key = item.indicator_key ?? item.key
@@ -357,7 +368,7 @@ function normalizeRankingItem(item, itemByKey, municipioResults) {
   return {
     ...item,
     indicator_key: key,
-    label: item.label ?? categoryItem.label,
+    label: resolveRankingLabel(item, categoryItem, key),
     sub: item.sub ?? categoryItem.sub,
     unit,
     display: {

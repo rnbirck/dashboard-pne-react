@@ -88,6 +88,9 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
   const distanceValue = roundPpString(getDisplayValue(goalResult.display, 'distance'), ppOptions)
   const showGoalProgress = isComparable && Number.isFinite(Number(goalResult?.meta)) && Number.isFinite(Number(goalResult?.end_value))
   const useCustomInterpretation = isAccExpansion && Number.isFinite(flooredResult.end_value) && flooredResult.end_value <= 0
+  const shouldImproveZeroInterpretation =
+    Number.isFinite(Number(goalResult.end_value)) &&
+    Number(goalResult.end_value) <= 0
 
   return (
     <section className="detail-panel" ref={ref}>
@@ -176,10 +179,20 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail({ item, resul
                   metaLabel: result.meta_label,
                   distance: goalResult.distance,
                 })
-              : improveZeroValueInterpretation(
-                  cleanInterpretationText(result.display.interpretation, ppOptions),
-                  { isAccumulativeExpansion: isAccExpansion },
-                )}
+              : shouldImproveZeroInterpretation
+                ? improveZeroValueInterpretation(
+                    cleanInterpretationText(result.display.interpretation, ppOptions),
+                    { isAccumulativeExpansion: isAccExpansion },
+                  )
+                : isComparable
+                  ? buildComparableInterpretation({
+                      endYear,
+                      formattedEnd,
+                      metaValue,
+                      distanceValue,
+                      atingida: result.atingida,
+                    })
+                  : cleanInterpretationText(result.display.interpretation, ppOptions)}
           </p>
           {isSingleYear && !useCustomInterpretation && (
             <small style={{ display: 'block', marginTop: '6px', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
@@ -376,6 +389,11 @@ function getBoundaryYear(result, boundary) {
     .sort((a, b) => a - b)
   if (!years.length) return '-'
   return boundary === 'start' ? years[0] : years[years.length - 1]
+}
+
+function buildComparableInterpretation({ endYear, formattedEnd, metaValue, distanceValue, atingida }) {
+  const adverbio = atingida === true ? 'acima' : 'abaixo'
+  return `Em ${endYear}, o município chegou a ${formattedEnd}, ${adverbio} da meta definida (${metaValue}). A distância em relação à meta é de ${distanceValue}.`
 }
 
 function getDistanceTone(result, isComparable) {

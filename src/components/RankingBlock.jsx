@@ -17,9 +17,10 @@ export function RankingBlock({
       {items?.length ? (
         <ol>
           {items.map((item, index) => {
+            const itemUnit = item.unit ?? unit
             const isIdeb = isIdebLabel(item.label)
             const value = roundPpString(
-              pickRankingValue(item.display, valueMode, unit),
+              pickRankingValue(item.display, valueMode, itemUnit),
               { keepOneDecimal: isIdeb },
             )
             return (
