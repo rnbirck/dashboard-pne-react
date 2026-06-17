@@ -10,6 +10,7 @@ export default defineConfig([
     'build/**',
     'node_modules/**',
     '.venv/**',
+    '**/.venv/**',
     'public/data/**',
     'data_pipeline/export/**',
     '*.log',

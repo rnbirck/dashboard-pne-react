@@ -42,6 +42,12 @@ def load_json(path: Path) -> dict:
         return json.load(file)
 
 
+def load_optional_json(path: Path, fallback: dict | None = None) -> dict:
+    if path.exists():
+        return load_json(path)
+    return fallback or {}
+
+
 def write_json(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as file:
@@ -72,11 +78,11 @@ def load_aggregate_payloads() -> dict[str, dict]:
         payloads[f"{cycle}_indicadores"] = load_json(
             SOURCE_DIR / cycle / "indicadores_por_municipio.json"
         )
-        payloads[f"{cycle}_rankings"] = load_json(
+        payloads[f"{cycle}_rankings"] = load_optional_json(
             SOURCE_DIR / cycle / "rankings_por_municipio.json"
         )
 
-    payloads["diagnostico"] = load_json(
+    payloads["diagnostico"] = load_optional_json(
         SOURCE_DIR / "pne_2026_2036" / "diagnostico_por_municipio.json"
     )
     payloads["indicator_details"] = load_json(

@@ -867,11 +867,6 @@ function getNumericValue(...values) {
   return Number.NaN
 }
 
-function getSegmentWidth(value, total) {
-  if (!total || !value) return 0
-  return Math.max(3, (value / total) * 100)
-}
-
 function getSortValue(value) {
   return Number.isFinite(value) ? value : -Infinity
 }

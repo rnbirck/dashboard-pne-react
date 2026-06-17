@@ -88,10 +88,17 @@ const VALUE_MODE_MAP = {
 let updated = 0;
 let missing = [];
 
+function resolveValueMode(cycleName, key) {
+  if (cycleName === 'pne_2026_2036' && key === 'medio_tecnico') {
+    return 'percent';
+  }
+  return VALUE_MODE_MAP[key];
+}
+
 for (const [cycleName, cycle] of Object.entries(data.cycles)) {
   for (const category of cycle.categories) {
     for (const item of category.items) {
-      const expectedVm = VALUE_MODE_MAP[item.key];
+      const expectedVm = resolveValueMode(cycleName, item.key);
       if (!expectedVm) {
         missing.push(`${cycleName} / ${category.key} / ${item.key}`);
         continue;

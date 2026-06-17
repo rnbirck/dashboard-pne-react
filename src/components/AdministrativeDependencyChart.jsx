@@ -16,6 +16,13 @@ function formatNumber(value) {
   return value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })
 }
 
+function shouldShowYearLabel(index, total) {
+  const lastIndex = total - 1
+  if (index === 0 || index === lastIndex) return true
+  if (total <= 8) return true
+  return index % 2 === 0 && index < lastIndex - 1
+}
+
 export function AdministrativeDependencyChart({ series, title = 'Por dependência administrativa' }) {
   const rows = useMemo(() => {
     return (series ?? [])
@@ -94,14 +101,16 @@ export function AdministrativeDependencyChart({ series, title = 'Por dependênci
                   y = segmentY
                   return segment
                 })}
-                <text
-                  x={x + barWidth / 2}
-                  y={CHART_HEIGHT - PADDING.bottom + 18}
-                  textAnchor="middle"
-                  className="complementary-chart__x-label"
-                >
-                  {row.year}
-                </text>
+                {shouldShowYearLabel(index, rows.length) ? (
+                  <text
+                    x={x + barWidth / 2}
+                    y={CHART_HEIGHT - PADDING.bottom + 18}
+                    textAnchor="middle"
+                    className="complementary-chart__x-label"
+                  >
+                    {row.year}
+                  </text>
+                ) : null}
               </g>
             )
           })}

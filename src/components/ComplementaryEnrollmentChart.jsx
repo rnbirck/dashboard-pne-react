@@ -9,6 +9,13 @@ function formatNumber(value) {
   return value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })
 }
 
+function shouldShowYearLabel(index, total) {
+  const lastIndex = total - 1
+  if (index === 0 || index === lastIndex) return true
+  if (total <= 8) return true
+  return index % 2 === 0 && index < lastIndex - 1
+}
+
 export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em creche', unit = 'Matrículas' }) {
   const points = useMemo(() => {
     return (series ?? [])
@@ -35,13 +42,13 @@ export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em c
   const yScale = (value) =>
     PADDING.top + plotHeight - ((value - minValue) / valueSpan) * plotHeight
 
-  const zeroY = yScale(0)
+  const baselineY = CHART_HEIGHT - PADDING.bottom
 
   const pathD = points
     .map((p, i) => `${i === 0 ? 'M' : 'L'}${xScale(p.year).toFixed(1)} ${yScale(p.value).toFixed(1)}`)
     .join(' ')
 
-  const areaD = `${pathD} L${xScale(maxYear).toFixed(1)} ${zeroY.toFixed(1)} L${xScale(minYear).toFixed(1)} ${zeroY.toFixed(1)} Z`
+  const areaD = `${pathD} L${xScale(maxYear).toFixed(1)} ${baselineY.toFixed(1)} L${xScale(minYear).toFixed(1)} ${baselineY.toFixed(1)} Z`
 
   return (
     <section className="complementary-chart">
@@ -89,6 +96,7 @@ export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em c
           ))}
 
           {points.map((p, i) => {
+            if (!shouldShowYearLabel(i, points.length)) return null
             const x = xScale(p.year)
             const anchor = i === 0 ? 'start' : i === points.length - 1 ? 'end' : 'middle'
             const dx = i === 0 ? 6 : i === points.length - 1 ? -6 : 0
