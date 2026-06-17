@@ -78,7 +78,7 @@ export const THEMATIC_GROUPS = [
   {
     key: 'educacao_integral',
     label: 'Educação Integral',
-    shortLabel: 'Integral',
+    shortLabel: 'Educação Integral',
     icon: 'IN',
     accent: '#16a34a',
     indicatorKeys: ['basico_integral', 'escolas_integral'],
@@ -86,7 +86,7 @@ export const THEMATIC_GROUPS = [
   {
     key: 'eja_educacao_profissional',
     label: 'EJA e Educação Profissional',
-    shortLabel: 'EJA + Profissional',
+    shortLabel: 'EJA e Educação Profissional',
     icon: 'EP',
     accent: '#0891b2',
     indicatorKeys: [
@@ -101,7 +101,7 @@ export const THEMATIC_GROUPS = [
   {
     key: 'educacao_especial',
     label: 'Educação Especial',
-    shortLabel: 'Especial',
+    shortLabel: 'Educação Especial',
     icon: 'EE',
     accent: '#db2777',
     indicatorKeys: ['aee', 'salas_acessiveis'],
@@ -146,7 +146,7 @@ export const THEMATIC_GROUPS = [
   {
     key: 'infraestrutura_tecnologia',
     label: 'Infraestrutura e Tecnologia',
-    shortLabel: 'Infra + Tecnologia',
+    shortLabel: 'Infraestrutura e Tecnologia',
     icon: 'IT',
     accent: '#059669',
     indicatorKeys: [
@@ -169,7 +169,7 @@ export const THEMATIC_GROUPS = [
   {
     key: 'gestao_ambiental',
     label: 'Gestão Escolar e Educação Ambiental',
-    shortLabel: 'Gestão + Ambiental',
+    shortLabel: 'Gestão Escolar e Educação Ambiental',
     icon: 'GA',
     accent: '#65a30d',
     indicatorKeys: ['conselho_escolar', 'proposta_pedagogica', 'educacao_ambiental'],
@@ -177,7 +177,7 @@ export const THEMATIC_GROUPS = [
   {
     key: 'escolaridade_populacao',
     label: 'Escolaridade da População',
-    shortLabel: 'Escolaridade',
+    shortLabel: 'Escolaridade da População',
     icon: 'EP',
     accent: '#0f766e',
     indicatorKeys: [
