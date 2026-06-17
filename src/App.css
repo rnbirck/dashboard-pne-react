@@ -964,6 +964,47 @@
   gap: 10px;
 }
 
+.cycle-category-bar__controls {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.basic-education-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.basic-education-filter__chip {
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: #ffffff;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 750;
+  white-space: nowrap;
+  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease, transform 0.12s ease;
+}
+
+.basic-education-filter__chip:hover,
+.basic-education-filter__chip.is-active {
+  border-color: var(--accent-soft);
+  background: var(--accent-ghost);
+  color: var(--accent-strong);
+}
+
+.basic-education-filter__chip.is-active {
+  font-weight: 850;
+}
+
+.basic-education-filter__chip:active {
+  transform: translateY(1px);
+}
+
 .indicator-sidebar {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);

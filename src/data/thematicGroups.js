@@ -1,54 +1,78 @@
-export const THEMATIC_GROUPS = [
+const EDUCACAO_INFANTIL_KEYS = ['creche', 'pre_escola']
+
+const ENSINO_FUNDAMENTAL_KEYS = [
+  'basico_6_17',
+  'alfabetizacao',
+  'ideb_anos_iniciais',
+  'ideb_anos_finais',
+  'saeb_matematica_anos_iniciais',
+  'saeb_matematica_anos_finais',
+  'saeb_portugues_anos_iniciais',
+  'saeb_portugues_anos_finais',
+  'idade_regular_quinto',
+  'idade_regular_nono',
+  'adequacao_ai',
+  'adequacao_af',
+  'ensino_fundamental_ou_completo_pop_6_14',
+  'fundamental_concluido_18_mais',
+  'fundamental_concluido_15_29',
+]
+
+const ENSINO_MEDIO_KEYS = [
+  'basico_15_17',
+  'ensino_medio_ou_basica_completa_pop_15_17',
+  'ideb_ensino_medio',
+  'saeb_matematica_ensino_medio',
+  'saeb_portugues_ensino_medio',
+  'idade_regular_medio',
+  'adequacao_em',
+  'medio_tecnico_total',
+  'medio_tecnico',
+  'medio_tecnico_participacao_publica',
+  'subsequente_expansao',
+  'medio_concluido_18_mais',
+  'medio_concluido_18_29',
+]
+
+function uniqueKeys(keys) {
+  return [...new Set(keys)]
+}
+
+export const BASIC_EDUCATION_FILTERS = [
+  {
+    key: 'todos',
+    label: 'Todos',
+    indicatorKeys: uniqueKeys([
+      ...EDUCACAO_INFANTIL_KEYS,
+      ...ENSINO_FUNDAMENTAL_KEYS,
+      ...ENSINO_MEDIO_KEYS,
+    ]),
+  },
   {
     key: 'educacao_infantil',
     label: 'Educação Infantil',
-    icon: 'EI',
-    accent: '#f97316',
-    indicatorKeys: ['creche', 'pre_escola'],
+    indicatorKeys: EDUCACAO_INFANTIL_KEYS,
   },
   {
     key: 'ensino_fundamental',
     label: 'Ensino Fundamental',
-    icon: 'EF',
-    accent: '#2563eb',
-    indicatorKeys: [
-      'basico_6_17',
-      'alfabetizacao',
-      'ideb_anos_iniciais',
-      'ideb_anos_finais',
-      'saeb_matematica_anos_iniciais',
-      'saeb_matematica_anos_finais',
-      'saeb_portugues_anos_iniciais',
-      'saeb_portugues_anos_finais',
-      'idade_regular_quinto',
-      'idade_regular_nono',
-      'adequacao_ai',
-      'adequacao_af',
-      'ensino_fundamental_ou_completo_pop_6_14',
-      'fundamental_concluido_18_mais',
-      'fundamental_concluido_15_29',
-    ],
+    indicatorKeys: ENSINO_FUNDAMENTAL_KEYS,
   },
   {
     key: 'ensino_medio',
     label: 'Ensino Médio',
-    icon: 'EM',
-    accent: '#7c3aed',
-    indicatorKeys: [
-      'basico_15_17',
-      'ensino_medio_ou_basica_completa_pop_15_17',
-      'ideb_ensino_medio',
-      'saeb_matematica_ensino_medio',
-      'saeb_portugues_ensino_medio',
-      'idade_regular_medio',
-      'adequacao_em',
-      'medio_tecnico_total',
-      'medio_tecnico',
-      'medio_tecnico_participacao_publica',
-      'subsequente_expansao',
-      'medio_concluido_18_mais',
-      'medio_concluido_18_29',
-    ],
+    indicatorKeys: ENSINO_MEDIO_KEYS,
+  },
+]
+
+export const THEMATIC_GROUPS = [
+  {
+    key: 'educacao_basica',
+    label: 'Educação Básica',
+    icon: 'EB',
+    accent: '#2563eb',
+    indicatorKeys: BASIC_EDUCATION_FILTERS[0].indicatorKeys,
+    filters: BASIC_EDUCATION_FILTERS,
   },
   {
     key: 'educacao_integral',
@@ -172,10 +196,31 @@ export function buildThematicGroups(categories) {
     })
   })
 
-  return THEMATIC_GROUPS.map((group) => ({
+  return THEMATIC_GROUPS.map((group) => materializeGroup(group, indicatorByKey))
+    .filter((group) => group.items.length > 0)
+}
+
+function materializeGroup(group, indicatorByKey) {
+  const filters = group.filters
+    ?.map((filter) => materializeFilter(filter, indicatorByKey))
+    .filter((filter) => filter.items.length > 0)
+
+  return {
     ...group,
-    items: group.indicatorKeys
-      .map((indicatorKey) => indicatorByKey.get(indicatorKey))
-      .filter(Boolean),
-  })).filter((group) => group.items.length > 0)
+    items: materializeItems(group.indicatorKeys, indicatorByKey),
+    ...(filters ? { filters } : {}),
+  }
+}
+
+function materializeFilter(filter, indicatorByKey) {
+  return {
+    ...filter,
+    items: materializeItems(filter.indicatorKeys, indicatorByKey),
+  }
+}
+
+function materializeItems(indicatorKeys, indicatorByKey) {
+  return indicatorKeys
+    .map((indicatorKey) => indicatorByKey.get(indicatorKey))
+    .filter(Boolean)
 }

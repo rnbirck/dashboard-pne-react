@@ -17,6 +17,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     [categories],
   )
   const [selectedGroupKey, setSelectedGroupKey] = useState('')
+  const [selectedBasicEducationFilterKey, setSelectedBasicEducationFilterKey] = useState('todos')
   const [selectedIndicatorKey, setSelectedIndicatorKey] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const detailPanelRef = useRef(null)
@@ -29,9 +30,17 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     )
   }, [thematicGroups, selectedGroupKey])
 
-  const allGroupItems = useMemo(
-    () => selectedGroup?.items ?? [],
-    [selectedGroup],
+  const selectedBasicEducationFilter = useMemo(() => {
+    const filters = selectedGroup?.filters ?? []
+    if (!filters.length) return null
+    return (
+      filters.find((filter) => filter.key === selectedBasicEducationFilterKey) ??
+      filters[0]
+    )
+  }, [selectedGroup, selectedBasicEducationFilterKey])
+  const visibleGroupItems = useMemo(
+    () => selectedBasicEducationFilter?.items ?? selectedGroup?.items ?? [],
+    [selectedBasicEducationFilter, selectedGroup],
   )
   const municipioResults = municipioData?.[cycle]?.indicadores ?? null
   const allCycleItems = useMemo(
@@ -44,8 +53,8 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   )
   const municipioRankings = municipioData?.[cycle]?.rankings ?? null
   const availableGroupItems = useMemo(
-    () => allGroupItems.filter((item) => isAvailableIndicator(normalizedMunicipioResults?.[item.key])),
-    [allGroupItems, normalizedMunicipioResults],
+    () => visibleGroupItems.filter((item) => isAvailableIndicator(normalizedMunicipioResults?.[item.key])),
+    [visibleGroupItems, normalizedMunicipioResults],
   )
   const filteredGroupItems = useMemo(() => {
     const query = searchQuery.trim().toLocaleLowerCase('pt-BR')
@@ -65,8 +74,8 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   )
   const activeResult = activeItem ? normalizedMunicipioResults?.[activeItem.key] : null
   const normalizedRanking = useMemo(
-    () => normalizeRankings(municipioRankings, allGroupItems, normalizedMunicipioResults),
-    [municipioRankings, allGroupItems, normalizedMunicipioResults],
+    () => normalizeRankings(municipioRankings, visibleGroupItems, normalizedMunicipioResults),
+    [municipioRankings, visibleGroupItems, normalizedMunicipioResults],
   )
   const cycleManagementStats = useMemo(
     () => buildCycleManagementStats(categories, normalizedMunicipioResults),
@@ -75,6 +84,13 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
 
   function handleGroupSelect(groupKey) {
     setSelectedGroupKey(groupKey)
+    setSelectedBasicEducationFilterKey('todos')
+    setSelectedIndicatorKey('')
+    setSearchQuery('')
+  }
+
+  function handleBasicEducationFilterSelect(filterKey) {
+    setSelectedBasicEducationFilterKey(filterKey)
     setSelectedIndicatorKey('')
     setSearchQuery('')
   }
@@ -119,12 +135,21 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
       <section className="cycle-workspace">
         <div className="cycle-category-bar">
           <span className="eyebrow">Temas</span>
-          <CategoryTabs
-            categories={thematicGroups}
-            selectedCategory={selectedGroup?.key}
-            onSelectCategory={handleGroupSelect}
-            ariaLabel="Temas"
-          />
+          <div className="cycle-category-bar__controls">
+            <CategoryTabs
+              categories={thematicGroups}
+              selectedCategory={selectedGroup?.key}
+              onSelectCategory={handleGroupSelect}
+              ariaLabel="Temas"
+            />
+            {selectedGroup?.filters?.length ? (
+              <BasicEducationFilter
+                filters={selectedGroup.filters}
+                selectedFilter={selectedBasicEducationFilter?.key}
+                onSelectFilter={handleBasicEducationFilterSelect}
+              />
+            ) : null}
+          </div>
         </div>
 
         <div className="cycle-layout">
@@ -193,6 +218,27 @@ function ManagementMetricCard({ detail, label, tone, value }) {
       <small>{label}</small>
       <span>{value}</span>
       <em>{detail}</em>
+    </div>
+  )
+}
+
+function BasicEducationFilter({ filters, selectedFilter, onSelectFilter }) {
+  return (
+    <div className="basic-education-filter" role="tablist" aria-label="Etapas da Educação Básica">
+      {filters.map((filter) => (
+        <button
+          className={
+            filter.key === selectedFilter
+              ? 'basic-education-filter__chip is-active'
+              : 'basic-education-filter__chip'
+          }
+          key={filter.key}
+          type="button"
+          onClick={() => onSelectFilter(filter.key)}
+        >
+          {filter.label}
+        </button>
+      ))}
     </div>
   )
 }
