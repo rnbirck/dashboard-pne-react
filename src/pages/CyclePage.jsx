@@ -144,7 +144,10 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
             />
             {selectedGroup?.filters?.length ? (
               <div className="basic-education-filter-wrap">
-                <span className="eyebrow">Etapa da Educação Básica</span>
+                <div className="basic-education-filter-wrap__header">
+                  <span>Etapa da Educação Básica</span>
+                  <small>Selecione quais indicadores deseja visualizar</small>
+                </div>
                 <BasicEducationFilter
                   filters={selectedGroup.filters}
                   selectedFilter={selectedBasicEducationFilter?.key}
