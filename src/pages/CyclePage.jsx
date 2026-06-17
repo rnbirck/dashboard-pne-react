@@ -134,7 +134,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
 
       <section className="cycle-workspace">
         <div className="cycle-category-bar">
-          <span className="eyebrow">Temas</span>
+          <span className="eyebrow">Temas de análise</span>
           <div className="cycle-category-bar__controls">
             <CategoryTabs
               categories={thematicGroups}
@@ -143,11 +143,14 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
               ariaLabel="Temas"
             />
             {selectedGroup?.filters?.length ? (
-              <BasicEducationFilter
-                filters={selectedGroup.filters}
-                selectedFilter={selectedBasicEducationFilter?.key}
-                onSelectFilter={handleBasicEducationFilterSelect}
-              />
+              <div className="basic-education-filter-wrap">
+                <span className="eyebrow">Etapa da Educação Básica</span>
+                <BasicEducationFilter
+                  filters={selectedGroup.filters}
+                  selectedFilter={selectedBasicEducationFilter?.key}
+                  onSelectFilter={handleBasicEducationFilterSelect}
+                />
+              </div>
             ) : null}
           </div>
         </div>

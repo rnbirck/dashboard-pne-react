@@ -8,9 +8,11 @@ export function CategoryTabs({ categories, selectedCategory, onSelectCategory, a
           }
           key={category.key}
           type="button"
+          title={category.label}
           onClick={() => onSelectCategory(category.key)}
         >
-          {category.label}
+          <span>{category.shortLabel ?? category.label}</span>
+          <span className="category-tab__count">{category.items?.length ?? 0}</span>
         </button>
       ))}
     </div>

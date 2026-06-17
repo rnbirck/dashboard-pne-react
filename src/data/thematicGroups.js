@@ -69,6 +69,7 @@ export const THEMATIC_GROUPS = [
   {
     key: 'educacao_basica',
     label: 'Educação Básica',
+    shortLabel: 'Educação Básica',
     icon: 'EB',
     accent: '#2563eb',
     indicatorKeys: BASIC_EDUCATION_FILTERS[0].indicatorKeys,
@@ -77,6 +78,7 @@ export const THEMATIC_GROUPS = [
   {
     key: 'educacao_integral',
     label: 'Educação Integral',
+    shortLabel: 'Integral',
     icon: 'IN',
     accent: '#16a34a',
     indicatorKeys: ['basico_integral', 'escolas_integral'],
@@ -84,6 +86,7 @@ export const THEMATIC_GROUPS = [
   {
     key: 'eja_educacao_profissional',
     label: 'EJA e Educação Profissional',
+    shortLabel: 'EJA + Profissional',
     icon: 'EP',
     accent: '#0891b2',
     indicatorKeys: [
@@ -98,6 +101,7 @@ export const THEMATIC_GROUPS = [
   {
     key: 'educacao_especial',
     label: 'Educação Especial',
+    shortLabel: 'Especial',
     icon: 'EE',
     accent: '#db2777',
     indicatorKeys: ['aee', 'salas_acessiveis'],
@@ -105,6 +109,7 @@ export const THEMATIC_GROUPS = [
   {
     key: 'ideb_saeb_fluxo',
     label: 'IDEB / SAEB e Fluxo Escolar',
+    shortLabel: 'IDEB / SAEB',
     icon: 'IS',
     accent: '#4f46e5',
     indicatorKeys: [
@@ -126,6 +131,7 @@ export const THEMATIC_GROUPS = [
   {
     key: 'corpo_docente',
     label: 'Corpo Docente',
+    shortLabel: 'Corpo Docente',
     icon: 'CD',
     accent: '#ca8a04',
     indicatorKeys: [
@@ -140,6 +146,7 @@ export const THEMATIC_GROUPS = [
   {
     key: 'infraestrutura_tecnologia',
     label: 'Infraestrutura e Tecnologia',
+    shortLabel: 'Infra + Tecnologia',
     icon: 'IT',
     accent: '#059669',
     indicatorKeys: [
@@ -162,6 +169,7 @@ export const THEMATIC_GROUPS = [
   {
     key: 'gestao_ambiental',
     label: 'Gestão Escolar e Educação Ambiental',
+    shortLabel: 'Gestão + Ambiental',
     icon: 'GA',
     accent: '#65a30d',
     indicatorKeys: ['conselho_escolar', 'proposta_pedagogica', 'educacao_ambiental'],
@@ -169,6 +177,7 @@ export const THEMATIC_GROUPS = [
   {
     key: 'escolaridade_populacao',
     label: 'Escolaridade da População',
+    shortLabel: 'Escolaridade',
     icon: 'EP',
     accent: '#0f766e',
     indicatorKeys: [
