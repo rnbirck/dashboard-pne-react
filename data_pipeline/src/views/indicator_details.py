@@ -1,5 +1,7 @@
 import pandas as pd
 
+from src.data_loader import load_basico_15_17_por_dependencia_data
+from src.data_loader import load_basico_6_17_por_dependencia_data
 from src.data_loader import load_creche_por_dependencia_data
 from src.data_loader import load_pre_escola_por_dependencia_data
 
@@ -178,9 +180,107 @@ def build_pre_escola_details(municipio):
     }
 
 
+def _build_matriculas_basico_details(
+    municipio,
+    *,
+    loader,
+    value_column,
+    title,
+    subtitle,
+):
+    df = _safe_load(loader)
+    if df.empty or "municipio" not in df.columns:
+        return None
+
+    dff = df[df["municipio"] == municipio].copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = pd.to_numeric(dff["ano"], errors="coerce")
+    dff[value_column] = pd.to_numeric(dff[value_column], errors="coerce")
+    dff["dependencia"] = dff["dependencia"].apply(_normalizar_dependencia)
+    dff = dff.dropna(subset=["ano", value_column, "dependencia"]).copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = dff["ano"].astype(int)
+    dff[value_column] = dff[value_column].clip(lower=0)
+
+    grouped = (
+        dff.groupby(["ano", "dependencia"], as_index=False)[value_column]
+        .sum()
+        .sort_values(["ano", "dependencia"])
+    )
+
+    total_by_year = (
+        grouped.groupby("ano", as_index=False)[value_column]
+        .sum()
+        .rename(columns={value_column: "valor"})
+        .sort_values("ano")
+    )
+    total_by_year["valor"] = total_by_year["valor"].astype(int)
+    series_total = [
+        {"ano": int(row["ano"]), "valor": int(row["valor"])}
+        for _, row in total_by_year.iterrows()
+        if row["valor"] > 0
+    ]
+
+    pivot = grouped.pivot(
+        index="ano", columns="dependencia", values=value_column
+    ).fillna(0)
+    for dep in _DEPENDENCIA_ORDER:
+        if dep not in pivot.columns:
+            pivot[dep] = 0
+    pivot = pivot[_DEPENDENCIA_ORDER].reset_index().sort_values("ano")
+
+    series_dependencia = [
+        {
+            "ano": int(row["ano"]),
+            "municipal": int(row["municipal"]),
+            "estadual": int(row["estadual"]),
+            "privada": int(row["privada"]),
+            "federal": int(row["federal"]),
+        }
+        for _, row in pivot.iterrows()
+    ]
+
+    if not series_total or not series_dependencia:
+        return None
+
+    return {
+        "title": title,
+        "subtitle": subtitle,
+        "unit": "matrÃ­culas",
+        "series_total": series_total,
+        "series_dependencia": series_dependencia,
+    }
+
+
+def build_basico_6_17_details(municipio):
+    return _build_matriculas_basico_details(
+        municipio,
+        loader=load_basico_6_17_por_dependencia_data,
+        value_column="matriculas_basico_6_17",
+        title="MatrÃ­culas na educaÃ§Ã£o bÃ¡sica â€” 6 a 17 anos",
+        subtitle="Total de matrÃ­culas de 6 a 17 anos na educaÃ§Ã£o bÃ¡sica e distribuiÃ§Ã£o por dependÃªncia administrativa.",
+    )
+
+
+def build_basico_15_17_details(municipio):
+    return _build_matriculas_basico_details(
+        municipio,
+        loader=load_basico_15_17_por_dependencia_data,
+        value_column="matriculas_basico_15_17",
+        title="MatrÃ­culas na educaÃ§Ã£o bÃ¡sica â€” 15 a 17 anos",
+        subtitle="Total de matrÃ­culas de 15 a 17 anos na educaÃ§Ã£o bÃ¡sica e distribuiÃ§Ã£o por dependÃªncia administrativa.",
+    )
+
+
 DETAIL_BUILDERS = {
     "creche": build_creche_details,
     "pre_escola": build_pre_escola_details,
+    "basico_6_17": build_basico_6_17_details,
+    "basico_15_17": build_basico_15_17_details,
 }
 
 
