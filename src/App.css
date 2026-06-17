@@ -3526,6 +3526,16 @@
     padding: 8px 10px;
   }
 
+  .empty-selection,
+  .empty-state {
+    padding: 28px 20px;
+  }
+
+  .municipio-selector {
+    min-width: 100%;
+  }
+}
+
 @media (max-width: 900px) {
   .diagnostic-priorities__header {
     flex-direction: column;
@@ -3547,12 +3557,63 @@
   }
 }
 
-  .empty-selection,
-  .empty-state {
-    padding: 28px 20px;
+/* =========================
+   Large screens: 1600px+
+   ========================= */
+@media (min-width: 1600px) {
+  .dashboard-shell {
+    padding: 18px 28px 36px;
   }
 
-  .municipio-selector {
-    min-width: 100%;
+  .dashboard-frame {
+    gap: 16px;
+  }
+
+  .app-header {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+    gap: 16px 32px;
+    padding: 20px 30px 14px;
+  }
+
+  .header-selector {
+    max-width: 360px;
+  }
+
+  .home-hero {
+    grid-template-columns: minmax(0, 1.45fr) minmax(360px, 0.55fr);
+    gap: 22px;
+  }
+
+  .hero-intro {
+    min-height: 300px;
+    padding: 32px 38px;
+    grid-template-columns: minmax(360px, 0.95fr) minmax(380px, 1.05fr);
+    gap: 30px;
+  }
+
+  .rs-map {
+    max-height: 280px;
+  }
+
+  .feature-grid,
+  .module-grid {
+    gap: 18px;
+  }
+
+  .diretrizes-grid {
+    gap: 10px;
+  }
+
+  .metric-grid {
+    gap: 12px;
+  }
+
+  .ranking-grid,
+  .two-column {
+    gap: 14px;
+  }
+
+  .cycle-layout {
+    gap: 18px;
   }
 }
