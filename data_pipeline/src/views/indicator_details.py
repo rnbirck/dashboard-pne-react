@@ -4,6 +4,7 @@ from src.data_loader import load_basico_15_17_por_dependencia_data
 from src.data_loader import load_basico_6_17_por_dependencia_data
 from src.data_loader import load_basico_integral_por_dependencia_data
 from src.data_loader import load_creche_por_dependencia_data
+from src.data_loader import load_pre_escola_data
 from src.data_loader import load_pre_escola_por_dependencia_data
 
 
@@ -172,13 +173,56 @@ def build_pre_escola_details(municipio):
     if not series_total or not series_dependencia:
         return None
 
-    return {
+    payload = {
         "title": "Matrículas na pré-escola",
         "subtitle": "Total de matrículas de 4 a 5 anos na pré-escola e distribuição por dependência administrativa.",
         "unit": "matrículas",
         "series_total": series_total,
         "series_dependencia": series_dependencia,
     }
+
+    pop_df = _safe_load(load_pre_escola_data)
+    if not pop_df.empty and {"ano", "municipio", "pop_4_5"}.issubset(pop_df.columns):
+        pop_dff = pop_df[pop_df["municipio"] == municipio].copy()
+        if not pop_dff.empty:
+            pop_dff["ano"] = pd.to_numeric(pop_dff["ano"], errors="coerce")
+            pop_dff["pop_4_5"] = pd.to_numeric(pop_dff["pop_4_5"], errors="coerce")
+            pop_by_year = (
+                pop_dff.dropna(subset=["ano", "pop_4_5"])
+                .groupby("ano", as_index=False)["pop_4_5"]
+                .max()
+                .sort_values("ano")
+            )
+            total_by_year_map = {
+                int(row["ano"]): int(row["valor"])
+                for _, row in total_by_year.iterrows()
+                if pd.notna(row["ano"]) and pd.notna(row["valor"]) and row["valor"] > 0
+            }
+            series_components = []
+            for _, row in pop_by_year.iterrows():
+                ano = int(row["ano"])
+                numerador = total_by_year_map.get(ano)
+                denominador = row["pop_4_5"]
+                if numerador is None or pd.isna(denominador) or denominador <= 0:
+                    continue
+                denominador = int(denominador)
+                series_components.append(
+                    {
+                        "ano": ano,
+                        "numerador": numerador,
+                        "denominador": denominador,
+                        "percentual": round((numerador / denominador) * 100, 1),
+                    }
+                )
+
+            if series_components:
+                payload["calculation"] = {
+                    "numerator_label": "Matrículas na pré-escola",
+                    "denominator_label": "População de 4 a 5 anos",
+                }
+                payload["series_components"] = series_components
+
+    return payload
 
 
 def _build_matriculas_basico_details(
