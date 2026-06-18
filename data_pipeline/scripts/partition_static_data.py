@@ -191,10 +191,17 @@ def main() -> int:
         slug = slug_map[municipio]
         print(f"[partition] {position}/{len(municipios)} {municipio} -> {slug}")
         try:
+            municipio_payload = build_municipio_payload(payloads, municipio, slug)
             write_json(
                 OUTPUT_DIR / "municipios" / slug / "index.json",
-                build_municipio_payload(payloads, municipio, slug),
+                municipio_payload,
             )
+            for indicator_key, detail_payload in municipio_payload.get("indicator_details", {}).items():
+                if detail_payload:
+                    write_json(
+                        OUTPUT_DIR / "municipios" / slug / "details" / f"{indicator_key}.json",
+                        detail_payload,
+                    )
         except Exception as exc:  # noqa: BLE001 - keep processing other municipalities.
             errors.append({"municipio": municipio, "slug": slug, "erro": str(exc)})
             print(f"[partition] ERRO em {municipio}: {exc}")
