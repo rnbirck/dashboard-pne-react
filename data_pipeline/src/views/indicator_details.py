@@ -4,6 +4,7 @@ from src.data_loader import load_basico_15_17_por_dependencia_data
 from src.data_loader import load_basico_6_17_por_dependencia_data
 from src.data_loader import load_basico_integral_por_dependencia_data
 from src.data_loader import load_creche_por_dependencia_data
+from src.data_loader import load_pne_data
 from src.data_loader import load_pre_escola_data
 from src.data_loader import load_pre_escola_por_dependencia_data
 
@@ -102,13 +103,73 @@ def build_creche_details(municipio):
     if not series_total or not series_dependencia:
         return None
 
-    return {
+    payload = {
         "title": "Matrículas em creche",
-        "subtitle": "Total de matrículas de 0 a 3 anos em creche e distribuição por dependência administrativa.",
+        "subtitle": "Total de matrículas em creche e distribuição por dependência administrativa com dados do Censo Escolar. Os números usados no cálculo percentual seguem a base consolidada do indicador em cada ciclo.",
         "unit": "matrículas",
+        "calculation": {
+            "numerator_label": "Matrículas em creche",
+            "denominator_label": "População de 0 a 3 anos",
+        },
         "series_total": series_total,
         "series_dependencia": series_dependencia,
     }
+
+    calculation_df = _safe_load(load_pne_data)
+    required_columns = {"ano", "municipio", "mat_infantil_creche", "mat_basico_0_3", "pop_0_3"}
+    if not calculation_df.empty and required_columns.issubset(calculation_df.columns):
+        calculation_dff = calculation_df[calculation_df["municipio"] == municipio].copy()
+        if not calculation_dff.empty:
+            calculation_dff["ano"] = pd.to_numeric(calculation_dff["ano"], errors="coerce")
+            calculation_dff["mat_infantil_creche"] = pd.to_numeric(
+                calculation_dff["mat_infantil_creche"], errors="coerce"
+            )
+            calculation_dff["mat_basico_0_3"] = pd.to_numeric(
+                calculation_dff["mat_basico_0_3"], errors="coerce"
+            )
+            calculation_dff["pop_0_3"] = pd.to_numeric(
+                calculation_dff["pop_0_3"], errors="coerce"
+            )
+            calculation_dff = calculation_dff.dropna(subset=["ano", "pop_0_3"]).copy()
+
+            components_by_cycle = {}
+            cycle_numerators = {
+                "pne_2014_2024": "mat_infantil_creche",
+                "pne_2026_2036": "mat_basico_0_3",
+            }
+            for cycle, numerator_column in cycle_numerators.items():
+                if numerator_column not in calculation_dff.columns:
+                    continue
+                yearly = (
+                    calculation_dff.dropna(subset=[numerator_column])
+                    .groupby("ano", as_index=False)
+                    .agg({numerator_column: "sum", "pop_0_3": "max"})
+                    .sort_values("ano")
+                )
+                components = []
+                for _, row in yearly.iterrows():
+                    numerador = row[numerator_column]
+                    denominador = row["pop_0_3"]
+                    if pd.isna(numerador) or pd.isna(denominador) or denominador <= 0:
+                        continue
+                    numerador = int(numerador)
+                    denominador = int(denominador)
+                    components.append(
+                        {
+                            "ano": int(row["ano"]),
+                            "numerador": numerador,
+                            "denominador": denominador,
+                            "percentual": round((numerador / denominador) * 100, 1),
+                        }
+                    )
+
+                if components:
+                    components_by_cycle[cycle] = components
+
+            if components_by_cycle:
+                payload["series_components_by_cycle"] = components_by_cycle
+
+    return payload
 
 
 def build_pre_escola_details(municipio):
