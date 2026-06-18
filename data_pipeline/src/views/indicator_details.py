@@ -4,8 +4,10 @@ from src.data_loader import load_basico_15_17_data
 from src.data_loader import load_basico_15_17_por_dependencia_data
 from src.data_loader import load_basico_6_17_data
 from src.data_loader import load_basico_6_17_por_dependencia_data
+from src.data_loader import load_atendimento_educacional_especializado_data
 from src.data_loader import load_basico_integral_por_dependencia_data
 from src.data_loader import load_creche_por_dependencia_data
+from src.data_loader import load_escolas_integral_data
 from src.data_loader import load_pne_data
 from src.data_loader import load_pre_escola_data
 from src.data_loader import load_pre_escola_por_dependencia_data
@@ -573,12 +575,202 @@ def build_basico_integral_details(municipio):
     }
 
 
+def build_escolas_integral_details(municipio):
+    df = _safe_load(load_escolas_integral_data)
+    required_columns = {
+        "ano",
+        "municipio",
+        "escolas_publicas_com_integral",
+        "escolas_publicas_total",
+    }
+    if df.empty or not required_columns.issubset(df.columns):
+        return None
+
+    dff = df[df["municipio"] == municipio].copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = pd.to_numeric(dff["ano"], errors="coerce")
+    dff["escolas_publicas_com_integral"] = pd.to_numeric(
+        dff["escolas_publicas_com_integral"], errors="coerce"
+    )
+    dff["escolas_publicas_total"] = pd.to_numeric(
+        dff["escolas_publicas_total"], errors="coerce"
+    )
+    dff = dff.dropna(
+        subset=[
+            "ano",
+            "escolas_publicas_com_integral",
+            "escolas_publicas_total",
+        ]
+    ).copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = dff["ano"].astype(int)
+    dff["escolas_publicas_com_integral"] = dff["escolas_publicas_com_integral"].clip(
+        lower=0
+    )
+    dff["escolas_publicas_total"] = dff["escolas_publicas_total"].clip(lower=0)
+
+    total_by_year = (
+        dff.groupby("ano", as_index=False)["escolas_publicas_com_integral"]
+        .sum()
+        .rename(columns={"escolas_publicas_com_integral": "valor"})
+        .sort_values("ano")
+    )
+    total_by_year["valor"] = total_by_year["valor"].astype(int)
+    series_total = [
+        {"ano": int(row["ano"]), "valor": int(row["valor"])}
+        for _, row in total_by_year.iterrows()
+        if row["valor"] > 0
+    ]
+
+    yearly = (
+        dff.groupby("ano", as_index=False)
+        .agg(
+            {
+                "escolas_publicas_com_integral": "sum",
+                "escolas_publicas_total": "max",
+            }
+        )
+        .sort_values("ano")
+    )
+    series_components = []
+    for _, row in yearly.iterrows():
+        numerador = row["escolas_publicas_com_integral"]
+        denominador = row["escolas_publicas_total"]
+        if pd.isna(numerador) or pd.isna(denominador) or denominador <= 0:
+            continue
+        numerador = int(numerador)
+        denominador = int(denominador)
+        series_components.append(
+            {
+                "ano": int(row["ano"]),
+                "numerador": numerador,
+                "denominador": denominador,
+                "percentual": round((numerador / denominador) * 100, 1),
+            }
+        )
+
+    if not series_total or not series_components:
+        return None
+
+    return {
+        "title": "Escolas públicas com alunos em jornada de tempo integral",
+        "subtitle": "Total de escolas públicas da educação básica que possuem, pelo menos, 25% dos alunos em jornada integral e o total de escolas públicas.",
+        "unit": "escolas",
+        "calculation": {
+            "numerator_label": "Escolas públicas com jornada em tempo integral",
+            "denominator_label": "Total de escolas públicas",
+        },
+        "series_total": series_total,
+        "series_components": series_components,
+    }
+
+
+def build_aee_details(municipio):
+    df = _safe_load(load_atendimento_educacional_especializado_data)
+    required_columns = {
+        "ano",
+        "municipio",
+        "quantidade_aee",
+        "total_turmas_educacao_especial",
+    }
+    if df.empty or not required_columns.issubset(df.columns):
+        return None
+
+    dff = df[df["municipio"] == municipio].copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = pd.to_numeric(dff["ano"], errors="coerce")
+    dff["quantidade_aee"] = pd.to_numeric(
+        dff["quantidade_aee"], errors="coerce"
+    )
+    dff["total_turmas_educacao_especial"] = pd.to_numeric(
+        dff["total_turmas_educacao_especial"], errors="coerce"
+    )
+    dff = dff.dropna(
+        subset=[
+            "ano",
+            "quantidade_aee",
+            "total_turmas_educacao_especial",
+        ]
+    ).copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = dff["ano"].astype(int)
+    dff["quantidade_aee"] = dff["quantidade_aee"].clip(lower=0)
+    dff["total_turmas_educacao_especial"] = dff[
+        "total_turmas_educacao_especial"
+    ].clip(lower=0)
+
+    total_by_year = (
+        dff.groupby("ano", as_index=False)["quantidade_aee"]
+        .sum()
+        .rename(columns={"quantidade_aee": "valor"})
+        .sort_values("ano")
+    )
+    total_by_year["valor"] = total_by_year["valor"].astype(int)
+    series_total = [
+        {"ano": int(row["ano"]), "valor": int(row["valor"])}
+        for _, row in total_by_year.iterrows()
+        if row["valor"] > 0
+    ]
+
+    yearly = (
+        dff.groupby("ano", as_index=False)
+        .agg(
+            {
+                "quantidade_aee": "sum",
+                "total_turmas_educacao_especial": "max",
+            }
+        )
+        .sort_values("ano")
+    )
+    series_components = []
+    for _, row in yearly.iterrows():
+        numerador = row["quantidade_aee"]
+        denominador = row["total_turmas_educacao_especial"]
+        if pd.isna(numerador) or pd.isna(denominador) or denominador <= 0:
+            continue
+        numerador = int(numerador)
+        denominador = int(denominador)
+        series_components.append(
+            {
+                "ano": int(row["ano"]),
+                "numerador": numerador,
+                "denominador": denominador,
+                "percentual": round((numerador / denominador) * 100, 1),
+            }
+        )
+
+    if not series_total or not series_components:
+        return None
+
+    return {
+        "title": "Oferta de AEE na educação especial",
+        "subtitle": "Total de turmas de Atendimento Educacional Especializado e o total de turmas de educação especial no município.",
+        "unit": "turmas",
+        "calculation": {
+            "numerator_label": "Turmas de Atendimento Educacional Especializado",
+            "denominator_label": "Total de turmas de educação especial",
+        },
+        "series_total": series_total,
+        "series_components": series_components,
+    }
+
+
 DETAIL_BUILDERS = {
     "creche": build_creche_details,
     "pre_escola": build_pre_escola_details,
     "basico_6_17": build_basico_6_17_details,
     "basico_15_17": build_basico_15_17_details,
     "basico_integral": build_basico_integral_details,
+    "escolas_integral": build_escolas_integral_details,
+    "aee": build_aee_details,
 }
 
 
