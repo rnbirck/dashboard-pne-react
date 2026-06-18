@@ -1518,7 +1518,7 @@ def build_acesso_internet_disp_pessoais_details(municipio):
 
 
 def build_rede_local_details(municipio):
-    return _build_infra_details(
+    payload = _build_infra_details(
         municipio,
         count_column="escolas_com_rede_local",
         denominator_column="qntd_escolas",
@@ -1528,9 +1528,20 @@ def build_rede_local_details(municipio):
         unit="escolas",
     )
 
+    if payload is not None:
+        dep_df = _safe_load(load_infraestrutura_escolar_por_dependencia_data)
+        if not dep_df.empty:
+            series_dependencia = _build_infra_dependency_series(
+                dep_df, municipio, "escolas_com_rede_local"
+            )
+            if series_dependencia:
+                payload["series_dependencia"] = series_dependencia
+
+    return payload
+
 
 def build_rede_wireless_details(municipio):
-    return _build_infra_details(
+    payload = _build_infra_details(
         municipio,
         count_column="escolas_com_rede_wireless",
         denominator_column="qntd_escolas",
@@ -1540,9 +1551,20 @@ def build_rede_wireless_details(municipio):
         unit="escolas",
     )
 
+    if payload is not None:
+        dep_df = _safe_load(load_infraestrutura_escolar_por_dependencia_data)
+        if not dep_df.empty:
+            series_dependencia = _build_infra_dependency_series(
+                dep_df, municipio, "escolas_com_rede_wireless"
+            )
+            if series_dependencia:
+                payload["series_dependencia"] = series_dependencia
+
+    return payload
+
 
 def build_banda_larga_details(municipio):
-    return _build_infra_details(
+    payload = _build_infra_details(
         municipio,
         count_column="escolas_com_banda_larga",
         denominator_column="qntd_escolas",
@@ -1552,9 +1574,20 @@ def build_banda_larga_details(municipio):
         unit="escolas",
     )
 
+    if payload is not None:
+        dep_df = _safe_load(load_infraestrutura_escolar_por_dependencia_data)
+        if not dep_df.empty:
+            series_dependencia = _build_infra_dependency_series(
+                dep_df, municipio, "escolas_com_banda_larga"
+            )
+            if series_dependencia:
+                payload["series_dependencia"] = series_dependencia
+
+    return payload
+
 
 def build_educacao_ambiental_details(municipio):
-    return _build_infra_details(
+    payload = _build_infra_details(
         municipio,
         count_column="escolas_com_educacao_ambiental",
         denominator_column="qntd_escolas",
@@ -1563,6 +1596,17 @@ def build_educacao_ambiental_details(municipio):
         title="Escolas que promovem educação ambiental",
         unit="escolas",
     )
+
+    if payload is not None:
+        dep_df = _safe_load(load_infraestrutura_escolar_por_dependencia_data)
+        if not dep_df.empty:
+            series_dependencia = _build_infra_dependency_series(
+                dep_df, municipio, "escolas_com_educacao_ambiental"
+            )
+            if series_dependencia:
+                payload["series_dependencia"] = series_dependencia
+
+    return payload
 
 
 def build_conselho_escolar_details(municipio):
