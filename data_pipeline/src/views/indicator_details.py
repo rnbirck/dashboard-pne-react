@@ -1,6 +1,7 @@
 import pandas as pd
 
 from src.data_loader import load_basico_15_17_por_dependencia_data
+from src.data_loader import load_basico_6_17_data
 from src.data_loader import load_basico_6_17_por_dependencia_data
 from src.data_loader import load_basico_integral_por_dependencia_data
 from src.data_loader import load_creche_por_dependencia_data
@@ -293,6 +294,10 @@ def _build_matriculas_basico_details(
     value_column,
     title,
     subtitle,
+    component_loader=None,
+    component_numerator_column=None,
+    component_denominator_column=None,
+    calculation=None,
 ):
     df = _safe_load(loader)
     if df.empty or "municipio" not in df.columns:
@@ -353,13 +358,80 @@ def _build_matriculas_basico_details(
     if not series_total or not series_dependencia:
         return None
 
-    return {
+    payload = {
         "title": title,
         "subtitle": subtitle,
         "unit": "matrículas",
         "series_total": series_total,
         "series_dependencia": series_dependencia,
     }
+
+    if (
+        component_loader is not None
+        and component_numerator_column
+        and component_denominator_column
+        and calculation
+    ):
+        component_df = _safe_load(component_loader)
+        required_columns = {
+            "ano",
+            "municipio",
+            component_numerator_column,
+            component_denominator_column,
+        }
+        if not component_df.empty and required_columns.issubset(component_df.columns):
+            component_dff = component_df[component_df["municipio"] == municipio].copy()
+            if not component_dff.empty:
+                component_dff["ano"] = pd.to_numeric(
+                    component_dff["ano"], errors="coerce"
+                )
+                component_dff[component_numerator_column] = pd.to_numeric(
+                    component_dff[component_numerator_column], errors="coerce"
+                )
+                component_dff[component_denominator_column] = pd.to_numeric(
+                    component_dff[component_denominator_column], errors="coerce"
+                )
+                component_dff = component_dff.dropna(
+                    subset=[
+                        "ano",
+                        component_numerator_column,
+                        component_denominator_column,
+                    ]
+                ).copy()
+
+                yearly = (
+                    component_dff.groupby("ano", as_index=False)
+                    .agg(
+                        {
+                            component_numerator_column: "sum",
+                            component_denominator_column: "max",
+                        }
+                    )
+                    .sort_values("ano")
+                )
+
+                series_components = []
+                for _, row in yearly.iterrows():
+                    numerador = row[component_numerator_column]
+                    denominador = row[component_denominator_column]
+                    if pd.isna(numerador) or pd.isna(denominador) or denominador <= 0:
+                        continue
+                    numerador = int(numerador)
+                    denominador = int(denominador)
+                    series_components.append(
+                        {
+                            "ano": int(row["ano"]),
+                            "numerador": numerador,
+                            "denominador": denominador,
+                            "percentual": round((numerador / denominador) * 100, 1),
+                        }
+                    )
+
+                if series_components:
+                    payload["calculation"] = calculation
+                    payload["series_components"] = series_components
+
+    return payload
 
 
 def build_basico_6_17_details(municipio):
@@ -368,7 +440,14 @@ def build_basico_6_17_details(municipio):
         loader=load_basico_6_17_por_dependencia_data,
         value_column="matriculas_basico_6_17",
         title="Matrículas na educação básica — 6 a 17 anos",
-        subtitle="Total de matrículas de 6 a 17 anos na educação básica e distribuição por dependência administrativa.",
+        subtitle="Total de matrículas de 6 a 17 anos na educação básica e distribuição por dependência administrativa. Os números usados no cálculo percentual seguem a base consolidada do indicador.",
+        component_loader=load_basico_6_17_data,
+        component_numerator_column="mat_basico_6_17",
+        component_denominator_column="pop_6_17",
+        calculation={
+            "numerator_label": "Matrículas de 6 a 17 anos na educação básica",
+            "denominator_label": "População de 6 a 17 anos",
+        },
     )
 
 
