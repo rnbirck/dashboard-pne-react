@@ -70,6 +70,11 @@ DATASET_SPECS: dict[str, DatasetSpec] = {
         base_table="pne_escolas_publicas_integral",
         local_query_file="escolas_integral.sql",
     ),
+    "escolas_integral_por_dependencia_data": DatasetSpec(
+        name="escolas_integral_por_dependencia_data",
+        base_table="pne_escolas_publicas_integral_por_dependencia",
+        local_query_file="escolas_integral_por_dependencia.sql",
+    ),
     "creche_por_dependencia_data": DatasetSpec(
         name="creche_por_dependencia_data",
         base_table="pne_matriculas_creche_por_dependencia",
@@ -248,6 +253,7 @@ LOCAL_QUERY_FILES_BY_TABLE: dict[str, str] = {
     "pne_matriculas_basico_15_17": "matriculas_basico_15_17.sql",
     "pne_matriculas_basico_integral": "matriculas_basico_integral.sql",
     "pne_escolas_publicas_integral": "escolas_integral.sql",
+    "pne_escolas_publicas_integral_por_dependencia": "escolas_integral_por_dependencia.sql",
     "pne_matriculas_medio_tecnico": "matriculas_medio_tecnico.sql",
     "ept_nivel_medio": "ept_nivel_medio.sql",
     "eja_integrada_educacao_profissional": "eja_integrada_educacao_profissional.sql",

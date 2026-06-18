@@ -22,6 +22,7 @@ from src.data_loader import load_docentes_temporarios_data
 from src.data_loader import load_eja_integrada_educacao_profissional_data
 from src.data_loader import load_ept_nivel_medio_data
 from src.data_loader import load_escolas_integral_data
+from src.data_loader import load_escolas_integral_por_dependencia_data
 from src.data_loader import load_infraestrutura_escolar_data
 from src.data_loader import load_infraestrutura_escolar_por_dependencia_data
 from src.data_loader import load_pne_data
@@ -638,6 +639,125 @@ def build_basico_integral_details(municipio):
     }
 
 
+def _build_escolas_integral_dependency_payload(municipio):
+    df = _safe_load(load_escolas_integral_por_dependencia_data)
+    required_columns = {
+        "ano",
+        "municipio",
+        "dependencia",
+        "escolas_publicas_com_integral",
+        "escolas_publicas_total",
+        "percentual_escolas_publicas_com_integral",
+    }
+    if df.empty or not required_columns.issubset(df.columns):
+        return {}
+
+    dff = df[df["municipio"] == municipio].copy()
+    if dff.empty:
+        return {}
+
+    dependency_order = ["federal", "estadual", "municipal"]
+    dff["dependencia"] = dff["dependencia"].astype(str).str.lower().str.strip()
+    dff = dff[dff["dependencia"].isin(dependency_order)].copy()
+    if dff.empty:
+        return {}
+
+    dff["ano"] = pd.to_numeric(dff["ano"], errors="coerce")
+    for column in [
+        "escolas_publicas_com_integral",
+        "escolas_publicas_total",
+        "percentual_escolas_publicas_com_integral",
+    ]:
+        dff[column] = pd.to_numeric(dff[column], errors="coerce")
+    dff = dff.dropna(
+        subset=[
+            "ano",
+            "dependencia",
+            "escolas_publicas_com_integral",
+            "escolas_publicas_total",
+            "percentual_escolas_publicas_com_integral",
+        ]
+    ).copy()
+    if dff.empty:
+        return {}
+
+    dff["ano"] = dff["ano"].astype(int)
+    for column in [
+        "escolas_publicas_com_integral",
+        "escolas_publicas_total",
+        "percentual_escolas_publicas_com_integral",
+    ]:
+        dff[column] = dff[column].clip(lower=0)
+
+    grouped = (
+        dff.groupby(["ano", "dependencia"], as_index=False)
+        .agg(
+            {
+                "escolas_publicas_com_integral": "sum",
+                "escolas_publicas_total": "sum",
+            }
+        )
+        .sort_values(["ano", "dependencia"])
+    )
+    grouped["percentual_escolas_publicas_com_integral"] = (
+        100.0
+        * grouped["escolas_publicas_com_integral"]
+        / grouped["escolas_publicas_total"].replace(0, pd.NA)
+    )
+
+    pivot = grouped.pivot(
+        index="ano",
+        columns="dependencia",
+        values="percentual_escolas_publicas_com_integral",
+    ).reset_index()
+    series_dependencia = []
+    for _, row in pivot.iterrows():
+        entry = {"ano": int(row["ano"])}
+        for dependency in dependency_order:
+            if dependency in pivot.columns and pd.notna(row[dependency]):
+                entry[dependency] = round(float(row[dependency]), 1)
+        if len(entry) > 1:
+            series_dependencia.append(entry)
+
+    series_dependencia_components = []
+    for _, row in grouped.iterrows():
+        numerador = row["escolas_publicas_com_integral"]
+        denominador = row["escolas_publicas_total"]
+        percentual = row["percentual_escolas_publicas_com_integral"]
+        if (
+            pd.isna(numerador)
+            or pd.isna(denominador)
+            or pd.isna(percentual)
+            or denominador <= 0
+        ):
+            continue
+        series_dependencia_components.append(
+            {
+                "ano": int(row["ano"]),
+                "dependencia": row["dependencia"],
+                "numerador": int(numerador),
+                "denominador": int(denominador),
+                "percentual": round(float(percentual), 1),
+            }
+        )
+
+    if not series_dependencia:
+        return {}
+
+    payload = {
+        "dependency_unit": "%",
+        "dependency_value_type": "percent",
+        "dependency_calculation": {
+            "numerator_label": "Escolas publicas com jornada em tempo integral na rede",
+            "denominator_label": "Total de escolas publicas da rede",
+        },
+        "series_dependencia": series_dependencia,
+    }
+    if series_dependencia_components:
+        payload["series_dependencia_components"] = series_dependencia_components
+    return payload
+
+
 def build_escolas_integral_details(municipio):
     df = _safe_load(load_escolas_integral_data)
     required_columns = {
@@ -719,7 +839,7 @@ def build_escolas_integral_details(municipio):
     if not series_total or not series_components:
         return None
 
-    return {
+    payload = {
         "title": "Escolas públicas com alunos em jornada de tempo integral",
         "subtitle": "Total de escolas públicas da educação básica que possuem, pelo menos, 25% dos alunos em jornada integral e o total de escolas públicas.",
         "unit": "escolas",
@@ -730,6 +850,9 @@ def build_escolas_integral_details(municipio):
         "series_total": series_total,
         "series_components": series_components,
     }
+
+    payload.update(_build_escolas_integral_dependency_payload(municipio))
+    return payload
 
 
 def build_aee_details(municipio):

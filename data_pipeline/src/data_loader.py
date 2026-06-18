@@ -37,6 +37,10 @@ def load_escolas_integral_data():
     return load_dataset("escolas_integral_data")
 
 
+def load_escolas_integral_por_dependencia_data():
+    return load_dataset("escolas_integral_por_dependencia_data")
+
+
 def load_creche_por_dependencia_data():
     return load_dataset("creche_por_dependencia_data")
 
@@ -176,6 +180,7 @@ __all__ = [
     "load_basico_6_17_data",
     "load_basico_integral_data",
     "load_escolas_integral_data",
+    "load_escolas_integral_por_dependencia_data",
     "load_creche_por_dependencia_data",
     "load_pre_escola_por_dependencia_data",
     "load_basico_6_17_por_dependencia_data",
