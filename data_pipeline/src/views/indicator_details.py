@@ -1266,7 +1266,9 @@ def build_subsequente_expansao_details(municipio):
         return None
 
     series_dependencia = _build_column_based_dependency_series(df, municipio, {
-        "publica": "mat_subsequente_publica",
+        "federal": "mat_subsequente_federal",
+        "estadual": "mat_subsequente_estadual",
+        "municipal": "mat_subsequente_municipal",
     })
 
     payload = {

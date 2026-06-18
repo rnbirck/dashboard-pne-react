@@ -15,6 +15,9 @@ SELECT
     e.mat_subsequente_total,
     e.mat_subsequente_total AS mat_profissional_tecnico_subsequente,
     e.mat_subsequente_publica,
+    e.mat_subsequente_federal,
+    e.mat_subsequente_estadual,
+    e.mat_subsequente_municipal,
     e.mat_integrada_eja_total,
     e.mat_integrada_eja_publica
 FROM ept_nivel_medio e

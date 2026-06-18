@@ -4,7 +4,7 @@ const CHART_WIDTH = 600
 const CHART_HEIGHT = 240
 const PADDING = { top: 24, right: 24, bottom: 60, left: 64 }
 
-const DEPENDENCY_KEYS = [
+const ALL_DEPENDENCY_KEYS = [
   { key: 'federal', label: 'Federal', color: '#ea580c' },
   { key: 'estadual', label: 'Estadual', color: '#7c3aed' },
   { key: 'municipal', label: 'Municipal', color: '#2563eb' },
@@ -33,23 +33,32 @@ export function AdministrativeDependencyChart({
   valueType,
 }) {
   const isPercent = valueType === 'percent' || unit === '%'
-  const rows = useMemo(() => {
-    return (series ?? [])
-      .map((p) => ({
-        year: Number(p?.ano),
-        federal: Number(p?.federal) || 0,
-        estadual: Number(p?.estadual) || 0,
-        municipal: Number(p?.municipal) || 0,
-        privada: Number(p?.privada) || 0,
-      }))
-      .filter((p) => Number.isFinite(p.year))
-      .sort((a, b) => a.year - b.year)
+
+  const activeKeys = useMemo(() => {
+    if (!series || series.length === 0) return []
+    return ALL_DEPENDENCY_KEYS.filter((dep) =>
+      series.some((p) => Number(p?.[dep.key]) > 0)
+    )
   }, [series])
 
-  if (rows.length === 0) return null
+  const rows = useMemo(() => {
+    if (activeKeys.length === 0) return []
+    return (series ?? [])
+      .map((p) => {
+        const row = { year: Number(p?.ano) }
+        for (const dep of activeKeys) {
+          row[dep.key] = Number(p?.[dep.key]) || 0
+        }
+        return row
+      })
+      .filter((p) => Number.isFinite(p.year))
+      .sort((a, b) => a.year - b.year)
+  }, [series, activeKeys])
 
-  const totals = rows.map((r) => r.federal + r.estadual + r.municipal + r.privada)
-  const values = rows.flatMap((row) => DEPENDENCY_KEYS.map((dep) => row[dep.key]))
+  if (rows.length === 0 || activeKeys.length === 0) return null
+
+  const totals = rows.map((r) => activeKeys.reduce((sum, dep) => sum + r[dep.key], 0))
+  const values = rows.flatMap((row) => activeKeys.map((dep) => row[dep.key]))
   const maxValue = Math.max(...(isPercent ? values : totals), 1)
 
   const plotWidth = CHART_WIDTH - PADDING.left - PADDING.right
@@ -95,7 +104,7 @@ export function AdministrativeDependencyChart({
 
           {isPercent ? (
             <>
-              {DEPENDENCY_KEYS.map((dep) => {
+              {activeKeys.map((dep) => {
                 const points = rows
                   .filter((row) => row[dep.key] > 0)
                   .map((row) => ({
@@ -143,8 +152,9 @@ export function AdministrativeDependencyChart({
               let y = CHART_HEIGHT - PADDING.bottom
               return (
                 <g key={row.year}>
-                  {DEPENDENCY_KEYS.map((dep) => {
+                  {activeKeys.map((dep) => {
                     const value = row[dep.key]
+                    if (value <= 0) return null
                     const barHeight = (value / Math.max(maxValue, 1)) * plotHeight
                     const segmentY = y - barHeight
                     const segment = (
@@ -180,7 +190,7 @@ export function AdministrativeDependencyChart({
         </svg>
       </div>
       <div className="complementary-chart__legend">
-        {DEPENDENCY_KEYS.map((dep) => (
+        {activeKeys.map((dep) => (
           <span key={dep.key} className="complementary-chart__legend-item">
             <span className="complementary-chart__legend-swatch" style={{ backgroundColor: dep.color }} />
             {dep.label}
