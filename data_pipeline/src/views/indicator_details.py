@@ -7,6 +7,7 @@ from src.data_loader import load_basico_6_17_por_dependencia_data
 from src.data_loader import load_atendimento_educacional_especializado_data
 from src.data_loader import load_basico_integral_por_dependencia_data
 from src.data_loader import load_creche_por_dependencia_data
+from src.data_loader import load_eja_integrada_educacao_profissional_data
 from src.data_loader import load_ept_nivel_medio_data
 from src.data_loader import load_escolas_integral_data
 from src.data_loader import load_pne_data
@@ -1052,6 +1053,108 @@ def build_subsequente_expansao_details(municipio):
     }
 
 
+def build_eja_integrada_educacao_profissional_details(municipio):
+    df = _safe_load(load_eja_integrada_educacao_profissional_data)
+    required_columns = {
+        "ano",
+        "municipio",
+        "mat_eja_total",
+        "mat_eja_integrada_educacao_profissional_calculada",
+    }
+    if df.empty or not required_columns.issubset(df.columns):
+        return None
+
+    dff = df[df["municipio"] == municipio].copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = pd.to_numeric(dff["ano"], errors="coerce")
+    dff["mat_eja_total"] = pd.to_numeric(
+        dff["mat_eja_total"], errors="coerce"
+    )
+    dff["mat_eja_integrada_educacao_profissional_calculada"] = pd.to_numeric(
+        dff["mat_eja_integrada_educacao_profissional_calculada"], errors="coerce"
+    )
+    dff = dff.dropna(
+        subset=[
+            "ano",
+            "mat_eja_total",
+            "mat_eja_integrada_educacao_profissional_calculada",
+        ]
+    ).copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = dff["ano"].astype(int)
+    dff["mat_eja_total"] = dff["mat_eja_total"].clip(lower=0)
+    dff["mat_eja_integrada_educacao_profissional_calculada"] = dff[
+        "mat_eja_integrada_educacao_profissional_calculada"
+    ].clip(lower=0)
+
+    total_by_year = (
+        dff.groupby("ano", as_index=False)["mat_eja_integrada_educacao_profissional_calculada"]
+        .sum()
+        .rename(
+            columns={
+                "mat_eja_integrada_educacao_profissional_calculada": "valor"
+            }
+        )
+        .sort_values("ano")
+    )
+    total_by_year["valor"] = total_by_year["valor"].astype(int)
+    series_total = [
+        {"ano": int(row["ano"]), "valor": int(row["valor"])}
+        for _, row in total_by_year.iterrows()
+        if row["valor"] > 0
+    ]
+
+    yearly = (
+        dff.groupby("ano", as_index=False)
+        .agg(
+            {
+                "mat_eja_integrada_educacao_profissional_calculada": "sum",
+                "mat_eja_total": "max",
+            }
+        )
+        .sort_values("ano")
+    )
+    components_2014 = []
+    for _, row in yearly.iterrows():
+        numerador = row["mat_eja_integrada_educacao_profissional_calculada"]
+        denominador = row["mat_eja_total"]
+        if pd.isna(numerador) or pd.isna(denominador) or denominador <= 0:
+            continue
+        numerador = int(numerador)
+        denominador = int(denominador)
+        components_2014.append(
+            {
+                "ano": int(row["ano"]),
+                "numerador": numerador,
+                "denominador": denominador,
+                "percentual": round((numerador / denominador) * 100, 1),
+            }
+        )
+
+    series_components_by_cycle = {}
+    if components_2014:
+        series_components_by_cycle["pne_2014_2024"] = components_2014
+
+    if not series_total:
+        return None
+
+    return {
+        "title": "Matrículas do EJA integradas à educação profissional",
+        "subtitle": "Número absoluto de matrículas do EJA integradas à educação profissional no município. No ciclo 2014‑2024 também é apresentado o percentual em relação ao total de matrículas do EJA.",
+        "unit": "matrículas",
+        "calculation": {
+            "numerator_label": "Matrículas do EJA integradas à educação profissional",
+            "denominator_label": "Total de matrículas do EJA",
+        },
+        "series_total": series_total,
+        "series_components_by_cycle": series_components_by_cycle,
+    }
+
+
 DETAIL_BUILDERS = {
     "creche": build_creche_details,
     "pre_escola": build_pre_escola_details,
@@ -1064,6 +1167,7 @@ DETAIL_BUILDERS = {
     "medio_tecnico_total": build_medio_tecnico_total_details,
     "medio_tecnico_participacao_publica": build_medio_tecnico_participacao_publica_details,
     "subsequente_expansao": build_subsequente_expansao_details,
+    "eja_integrada_educacao_profissional": build_eja_integrada_educacao_profissional_details,
 }
 
 
