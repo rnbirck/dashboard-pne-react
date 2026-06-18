@@ -7,6 +7,7 @@ from src.data_loader import load_basico_6_17_por_dependencia_data
 from src.data_loader import load_atendimento_educacional_especializado_data
 from src.data_loader import load_basico_integral_por_dependencia_data
 from src.data_loader import load_creche_por_dependencia_data
+from src.data_loader import load_ept_nivel_medio_data
 from src.data_loader import load_escolas_integral_data
 from src.data_loader import load_pne_data
 from src.data_loader import load_pre_escola_data
@@ -763,6 +764,294 @@ def build_aee_details(municipio):
     }
 
 
+def build_medio_tecnico_details(municipio):
+    df = _safe_load(load_ept_nivel_medio_data)
+    required_columns = {
+        "ano",
+        "municipio",
+        "mat_ept_nivel_medio_total",
+        "mat_ept_nivel_medio_publica",
+        "mat_integrado_total",
+    }
+    if df.empty or not required_columns.issubset(df.columns):
+        return None
+
+    dff = df[df["municipio"] == municipio].copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = pd.to_numeric(dff["ano"], errors="coerce")
+    dff["mat_ept_nivel_medio_total"] = pd.to_numeric(
+        dff["mat_ept_nivel_medio_total"], errors="coerce"
+    )
+    dff["mat_ept_nivel_medio_publica"] = pd.to_numeric(
+        dff["mat_ept_nivel_medio_publica"], errors="coerce"
+    )
+    dff["mat_integrado_total"] = pd.to_numeric(
+        dff["mat_integrado_total"], errors="coerce"
+    )
+    dff = dff.dropna(
+        subset=[
+            "ano",
+            "mat_ept_nivel_medio_total",
+            "mat_ept_nivel_medio_publica",
+            "mat_integrado_total",
+        ]
+    ).copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = dff["ano"].astype(int)
+    dff["mat_ept_nivel_medio_total"] = dff["mat_ept_nivel_medio_total"].clip(lower=0)
+    dff["mat_ept_nivel_medio_publica"] = dff["mat_ept_nivel_medio_publica"].clip(lower=0)
+    dff["mat_integrado_total"] = dff["mat_integrado_total"].clip(lower=0)
+
+    total_by_year = (
+        dff.groupby("ano", as_index=False)["mat_ept_nivel_medio_total"]
+        .sum()
+        .rename(columns={"mat_ept_nivel_medio_total": "valor"})
+        .sort_values("ano")
+    )
+    total_by_year["valor"] = total_by_year["valor"].astype(int)
+    series_total = [
+        {"ano": int(row["ano"]), "valor": int(row["valor"])}
+        for _, row in total_by_year.iterrows()
+        if row["valor"] > 0
+    ]
+
+    yearly_2026 = (
+        dff.groupby("ano", as_index=False)
+        .agg(
+            {
+                "mat_integrado_total": "sum",
+                "mat_ept_nivel_medio_total": "max",
+            }
+        )
+        .sort_values("ano")
+    )
+    components_2026 = []
+    for _, row in yearly_2026.iterrows():
+        numerador = row["mat_integrado_total"]
+        denominador = row["mat_ept_nivel_medio_total"]
+        if pd.isna(numerador) or pd.isna(denominador) or denominador <= 0:
+            continue
+        numerador = int(numerador)
+        denominador = int(denominador)
+        components_2026.append(
+            {
+                "ano": int(row["ano"]),
+                "numerador": numerador,
+                "denominador": denominador,
+                "percentual": round((numerador / denominador) * 100, 1),
+            }
+        )
+
+    series_components_by_cycle = {}
+    if components_2026:
+        series_components_by_cycle["pne_2026_2036"] = components_2026
+
+    if not series_total or not series_components_by_cycle:
+        return None
+
+    return {
+        "title": "Matrículas em EPT de nível médio",
+        "subtitle": "Total de matrículas da Educação Profissional e Tecnológica de nível médio e, no ciclo 2026‑2036, o percentual integrado à educação profissional técnica.",
+        "unit": "matrículas",
+        "calculation": {
+            "numerator_label": "Matrículas integradas à educação profissional técnica",
+            "denominator_label": "Total de matrículas do ensino médio",
+        },
+        "series_total": series_total,
+        "series_components_by_cycle": series_components_by_cycle,
+    }
+
+
+def build_medio_tecnico_total_details(municipio):
+    df = _safe_load(load_ept_nivel_medio_data)
+    required_columns = {
+        "ano",
+        "municipio",
+        "mat_ept_nivel_medio_total",
+    }
+    if df.empty or not required_columns.issubset(df.columns):
+        return None
+
+    dff = df[df["municipio"] == municipio].copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = pd.to_numeric(dff["ano"], errors="coerce")
+    dff["mat_ept_nivel_medio_total"] = pd.to_numeric(
+        dff["mat_ept_nivel_medio_total"], errors="coerce"
+    )
+    dff = dff.dropna(subset=["ano", "mat_ept_nivel_medio_total"]).copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = dff["ano"].astype(int)
+    dff["mat_ept_nivel_medio_total"] = dff["mat_ept_nivel_medio_total"].clip(lower=0)
+
+    total_by_year = (
+        dff.groupby("ano", as_index=False)["mat_ept_nivel_medio_total"]
+        .sum()
+        .rename(columns={"mat_ept_nivel_medio_total": "valor"})
+        .sort_values("ano")
+    )
+    total_by_year["valor"] = total_by_year["valor"].astype(int)
+    series_total = [
+        {"ano": int(row["ano"]), "valor": int(row["valor"])}
+        for _, row in total_by_year.iterrows()
+        if row["valor"] > 0
+    ]
+
+    if not series_total:
+        return None
+
+    return {
+        "title": "Número absoluto de matrículas em EPT de nível médio",
+        "subtitle": "Total de matrículas da Educação Profissional e Tecnológica de nível médio no município.",
+        "unit": "matrículas",
+        "series_total": series_total,
+    }
+
+
+def build_medio_tecnico_participacao_publica_details(municipio):
+    df = _safe_load(load_ept_nivel_medio_data)
+    required_columns = {
+        "ano",
+        "municipio",
+        "mat_ept_nivel_medio_total",
+        "mat_ept_nivel_medio_publica",
+    }
+    if df.empty or not required_columns.issubset(df.columns):
+        return None
+
+    dff = df[df["municipio"] == municipio].copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = pd.to_numeric(dff["ano"], errors="coerce")
+    dff["mat_ept_nivel_medio_total"] = pd.to_numeric(
+        dff["mat_ept_nivel_medio_total"], errors="coerce"
+    )
+    dff["mat_ept_nivel_medio_publica"] = pd.to_numeric(
+        dff["mat_ept_nivel_medio_publica"], errors="coerce"
+    )
+    dff = dff.dropna(
+        subset=["ano", "mat_ept_nivel_medio_total", "mat_ept_nivel_medio_publica"]
+    ).copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = dff["ano"].astype(int)
+    dff["mat_ept_nivel_medio_total"] = dff["mat_ept_nivel_medio_total"].clip(lower=0)
+    dff["mat_ept_nivel_medio_publica"] = dff["mat_ept_nivel_medio_publica"].clip(lower=0)
+
+    total_by_year = (
+        dff.groupby("ano", as_index=False)["mat_ept_nivel_medio_total"]
+        .sum()
+        .rename(columns={"mat_ept_nivel_medio_total": "valor"})
+        .sort_values("ano")
+    )
+    total_by_year["valor"] = total_by_year["valor"].astype(int)
+    series_total = [
+        {"ano": int(row["ano"]), "valor": int(row["valor"])}
+        for _, row in total_by_year.iterrows()
+        if row["valor"] > 0
+    ]
+
+    yearly = (
+        dff.groupby("ano", as_index=False)
+        .agg(
+            {
+                "mat_ept_nivel_medio_publica": "sum",
+                "mat_ept_nivel_medio_total": "max",
+            }
+        )
+        .sort_values("ano")
+    )
+    series_components = []
+    for _, row in yearly.iterrows():
+        numerador = row["mat_ept_nivel_medio_publica"]
+        denominador = row["mat_ept_nivel_medio_total"]
+        if pd.isna(numerador) or pd.isna(denominador) or denominador <= 0:
+            continue
+        numerador = int(numerador)
+        denominador = int(denominador)
+        series_components.append(
+            {
+                "ano": int(row["ano"]),
+                "numerador": numerador,
+                "denominador": denominador,
+                "percentual": round((numerador / denominador) * 100, 1),
+            }
+        )
+
+    if not series_total or not series_components:
+        return None
+
+    return {
+        "title": "Participação acumulada do segmento público na expansão da EPT de nível médio",
+        "subtitle": "Compara o número de matrículas públicas com o total de matrículas em EPT de nível médio a cada ano.",
+        "unit": "matrículas",
+        "calculation": {
+            "numerator_label": "Matrículas em EPT de nível médio - público",
+            "denominator_label": "Total de matrículas em EPT de nível médio",
+        },
+        "series_total": series_total,
+        "series_components": series_components,
+    }
+
+
+def build_subsequente_expansao_details(municipio):
+    df = _safe_load(load_ept_nivel_medio_data)
+    required_columns = {
+        "ano",
+        "municipio",
+        "mat_subsequente_total",
+    }
+    if df.empty or not required_columns.issubset(df.columns):
+        return None
+
+    dff = df[df["municipio"] == municipio].copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = pd.to_numeric(dff["ano"], errors="coerce")
+    dff["mat_subsequente_total"] = pd.to_numeric(
+        dff["mat_subsequente_total"], errors="coerce"
+    )
+    dff = dff.dropna(subset=["ano", "mat_subsequente_total"]).copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = dff["ano"].astype(int)
+    dff["mat_subsequente_total"] = dff["mat_subsequente_total"].clip(lower=0)
+
+    total_by_year = (
+        dff.groupby("ano", as_index=False)["mat_subsequente_total"]
+        .sum()
+        .rename(columns={"mat_subsequente_total": "valor"})
+        .sort_values("ano")
+    )
+    total_by_year["valor"] = total_by_year["valor"].astype(int)
+    series_total = [
+        {"ano": int(row["ano"]), "valor": int(row["valor"])}
+        for _, row in total_by_year.iterrows()
+        if row["valor"] > 0
+    ]
+
+    if not series_total:
+        return None
+
+    return {
+        "title": "Expansão acumulada das matrículas em cursos técnicos subsequentes",
+        "subtitle": "Número absoluto de matrículas em cursos técnicos subsequentes da Educação Profissional e Tecnológica de nível médio no município.",
+        "unit": "matrículas",
+        "series_total": series_total,
+    }
+
+
 DETAIL_BUILDERS = {
     "creche": build_creche_details,
     "pre_escola": build_pre_escola_details,
@@ -771,6 +1060,10 @@ DETAIL_BUILDERS = {
     "basico_integral": build_basico_integral_details,
     "escolas_integral": build_escolas_integral_details,
     "aee": build_aee_details,
+    "medio_tecnico": build_medio_tecnico_details,
+    "medio_tecnico_total": build_medio_tecnico_total_details,
+    "medio_tecnico_participacao_publica": build_medio_tecnico_participacao_publica_details,
+    "subsequente_expansao": build_subsequente_expansao_details,
 }
 
 
