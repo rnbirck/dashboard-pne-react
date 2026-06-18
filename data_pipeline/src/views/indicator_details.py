@@ -1138,12 +1138,21 @@ def build_subsequente_expansao_details(municipio):
     if not series_total:
         return None
 
-    return {
+    series_dependencia = _build_column_based_dependency_series(df, municipio, {
+        "publica": "mat_subsequente_publica",
+    })
+
+    payload = {
         "title": "Expansão acumulada das matrículas em cursos técnicos subsequentes",
         "subtitle": "Número absoluto de matrículas em cursos técnicos subsequentes da Educação Profissional e Tecnológica de nível médio no município.",
         "unit": "matrículas",
         "series_total": series_total,
     }
+
+    if series_dependencia:
+        payload["series_dependencia"] = series_dependencia
+
+    return payload
 
 
 def build_eja_integrada_educacao_profissional_details(municipio):
