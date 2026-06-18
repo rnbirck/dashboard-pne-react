@@ -1995,10 +1995,13 @@ def _build_adequacao_docente_details(municipio, *, etapa, title):
     if dff.empty:
         return None
 
-    dff["dependencia"] = dff["dependencia"].astype(str).str.lower().str.strip()
-    dff = dff[dff["dependencia"] == "total"].copy()
-    if dff.empty:
-        return None
+    dff["dependencia"] = (
+        dff["dependencia"]
+        .astype(str)
+        .str.lower()
+        .str.strip()
+        .replace({"pÃºblica": "publica", "pública": "publica"})
+    )
 
     dff["ano"] = pd.to_numeric(dff["ano"], errors="coerce")
     dff["percentual_adequacao"] = pd.to_numeric(
@@ -2011,8 +2014,12 @@ def _build_adequacao_docente_details(municipio, *, etapa, title):
     dff["ano"] = dff["ano"].astype(int)
     dff["percentual_adequacao"] = dff["percentual_adequacao"].clip(lower=0)
 
+    total_df = dff[dff["dependencia"] == "total"].copy()
+    if total_df.empty:
+        return None
+
     total_by_year = (
-        dff.groupby("ano", as_index=False)["percentual_adequacao"]
+        total_df.groupby("ano", as_index=False)["percentual_adequacao"]
         .mean()
         .rename(columns={"percentual_adequacao": "valor"})
         .sort_values("ano")
@@ -2026,12 +2033,41 @@ def _build_adequacao_docente_details(municipio, *, etapa, title):
     if not series_total:
         return None
 
-    return {
+    dependency_order = ["federal", "estadual", "municipal", "privada"]
+    dependency_df = dff[dff["dependencia"].isin(dependency_order)].copy()
+    series_dependencia = []
+    if not dependency_df.empty:
+        dependency_by_year = (
+            dependency_df.groupby(["ano", "dependencia"], as_index=False)[
+                "percentual_adequacao"
+            ]
+            .mean()
+            .sort_values(["ano", "dependencia"])
+        )
+        pivot = dependency_by_year.pivot(
+            index="ano", columns="dependencia", values="percentual_adequacao"
+        ).reset_index()
+        for _, row in pivot.iterrows():
+            entry = {"ano": int(row["ano"])}
+            for dependency in dependency_order:
+                if dependency in pivot.columns and pd.notna(row[dependency]):
+                    entry[dependency] = round(float(row[dependency]), 1)
+            if len(entry) > 1:
+                series_dependencia.append(entry)
+
+    payload = {
         "title": title,
-        "subtitle": "Historico do percentual de docentes com formacao adequada no municipio.",
+        "subtitle": "Historico do percentual de docentes com formacao adequada no municipio, com abertura por dependencia administrativa quando disponivel.",
         "unit": "%",
+        "dependency_unit": "%",
+        "dependency_value_type": "percent",
         "series_total": series_total,
     }
+
+    if series_dependencia:
+        payload["series_dependencia"] = series_dependencia
+
+    return payload
 
 
 def build_adequacao_ai_details(municipio):

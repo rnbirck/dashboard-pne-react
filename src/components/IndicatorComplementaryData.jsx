@@ -87,6 +87,8 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData 
         {hasDependencia ? (
           <AdministrativeDependencyChart
             series={details.series_dependencia}
+            unit={details.dependency_unit || details.unit}
+            valueType={details.dependency_value_type}
             title="Por dependência administrativa"
           />
         ) : null}
