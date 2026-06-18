@@ -57,6 +57,53 @@ def _normalizar_dependencia(value):
     return normalized if normalized in _DEPENDENCIA_ORDER else None
 
 
+def _build_column_based_dependency_series(df, municipio, column_map):
+    if df.empty or "ano" not in df.columns:
+        return []
+
+    if "municipio" in df.columns:
+        dff = df[df["municipio"] == municipio].copy()
+    else:
+        dff = df.copy()
+
+    if dff.empty:
+        return []
+
+    dff["ano"] = pd.to_numeric(dff["ano"], errors="coerce")
+    for dep_key, col_name in column_map.items():
+        if col_name in dff.columns:
+            dff[col_name] = pd.to_numeric(dff[col_name], errors="coerce")
+
+    available_columns = [col for col in column_map.values() if col in dff.columns]
+    if not available_columns:
+        return []
+
+    dff = dff.dropna(subset=["ano"] + available_columns).copy()
+    if dff.empty:
+        return []
+
+    dff["ano"] = dff["ano"].astype(int)
+    for col in available_columns:
+        dff[col] = dff[col].clip(lower=0)
+
+    agg_dict = {col: "sum" for col in available_columns}
+    grouped = (
+        dff.groupby("ano", as_index=False)
+        .agg(agg_dict)
+        .sort_values("ano")
+    )
+
+    series_dependencia = []
+    for _, row in grouped.iterrows():
+        entry = {"ano": int(row["ano"])}
+        for dep_key, col_name in column_map.items():
+            if col_name in grouped.columns:
+                entry[dep_key] = int(row[col_name])
+        series_dependencia.append(entry)
+
+    return series_dependencia
+
+
 def build_creche_details(municipio):
     df = _safe_load(load_creche_por_dependencia_data)
     if df.empty or "municipio" not in df.columns:
@@ -918,12 +965,24 @@ def build_medio_tecnico_total_details(municipio):
     if not series_total:
         return None
 
-    return {
+    series_dependencia = _build_column_based_dependency_series(df, municipio, {
+        "publica": "mat_ept_nivel_medio_publica",
+        "federal": "mat_ept_nivel_medio_federal",
+        "estadual": "mat_ept_nivel_medio_estadual",
+        "municipal": "mat_ept_nivel_medio_municipal",
+    })
+
+    payload = {
         "title": "Número absoluto de matrículas em EPT de nível médio",
         "subtitle": "Total de matrículas da Educação Profissional e Tecnológica de nível médio no município.",
         "unit": "matrículas",
         "series_total": series_total,
     }
+
+    if series_dependencia:
+        payload["series_dependencia"] = series_dependencia
+
+    return payload
 
 
 def build_medio_tecnico_participacao_publica_details(municipio):
