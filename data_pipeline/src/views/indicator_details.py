@@ -911,7 +911,14 @@ def build_medio_tecnico_details(municipio):
     if not series_total or not series_components_by_cycle:
         return None
 
-    return {
+    series_dependencia = _build_column_based_dependency_series(df, municipio, {
+        "publica": "mat_ept_nivel_medio_publica",
+        "federal": "mat_ept_nivel_medio_federal",
+        "estadual": "mat_ept_nivel_medio_estadual",
+        "municipal": "mat_ept_nivel_medio_municipal",
+    })
+
+    payload = {
         "title": "Matrículas em EPT de nível médio",
         "subtitle": "Total de matrículas da Educação Profissional e Tecnológica de nível médio e, no ciclo 2026‑2036, o percentual integrado à educação profissional técnica.",
         "unit": "matrículas",
@@ -922,6 +929,11 @@ def build_medio_tecnico_details(municipio):
         "series_total": series_total,
         "series_components_by_cycle": series_components_by_cycle,
     }
+
+    if series_dependencia:
+        payload["series_dependencia"] = series_dependencia
+
+    return payload
 
 
 def build_medio_tecnico_total_details(municipio):
@@ -1060,7 +1072,14 @@ def build_medio_tecnico_participacao_publica_details(municipio):
     if not series_total or not series_components:
         return None
 
-    return {
+    series_dependencia = _build_column_based_dependency_series(df, municipio, {
+        "publica": "mat_ept_nivel_medio_publica",
+        "federal": "mat_ept_nivel_medio_federal",
+        "estadual": "mat_ept_nivel_medio_estadual",
+        "municipal": "mat_ept_nivel_medio_municipal",
+    })
+
+    payload = {
         "title": "Participação acumulada do segmento público na expansão da EPT de nível médio",
         "subtitle": "Compara o número de matrículas públicas com o total de matrículas em EPT de nível médio a cada ano.",
         "unit": "matrículas",
@@ -1071,6 +1090,11 @@ def build_medio_tecnico_participacao_publica_details(municipio):
         "series_total": series_total,
         "series_components": series_components,
     }
+
+    if series_dependencia:
+        payload["series_dependencia"] = series_dependencia
+
+    return payload
 
 
 def build_subsequente_expansao_details(municipio):
