@@ -1,3 +1,6 @@
+import { useEffect, useState } from 'react'
+
+import { loadIndicatorDetail } from '../data/staticData'
 import { AdministrativeDependencyChart } from './AdministrativeDependencyChart'
 import { ComplementaryEnrollmentChart } from './ComplementaryEnrollmentChart'
 
@@ -8,7 +11,44 @@ const percentFormatter = new Intl.NumberFormat('pt-BR', {
 })
 
 export function IndicatorComplementaryData({ indicatorKey, municipioData }) {
-  const details = municipioData?.indicator_details?.[indicatorKey]
+  const slug = municipioData?.slug
+  const fallbackDetails = municipioData?.indicator_details?.[indicatorKey] ?? null
+  const [details, setDetails] = useState(null)
+
+  useEffect(() => {
+    let isMounted = true
+
+    if (!indicatorKey) {
+      setDetails(null)
+      return () => {
+        isMounted = false
+      }
+    }
+
+    if (!slug) {
+      setDetails(fallbackDetails)
+      return () => {
+        isMounted = false
+      }
+    }
+
+    setDetails(null)
+    loadIndicatorDetail(slug, indicatorKey)
+      .then((data) => {
+        if (isMounted) {
+          setDetails(data)
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setDetails(fallbackDetails)
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [slug, indicatorKey, fallbackDetails])
 
   if (!details) {
     return null

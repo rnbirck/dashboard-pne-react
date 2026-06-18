@@ -48,6 +48,10 @@ export function loadMunicipioData(slug) {
   return loadJson(`/data/municipios/${slug}/index.json`)
 }
 
+export function loadIndicatorDetail(slug, indicatorKey) {
+  return loadJson(`/data/municipios/${slug}/details/${indicatorKey}.json`)
+}
+
 export function primeMunicipioCache(slug, data) {
   if (!slug) return
   dataCache.set(`/data/municipios/${slug}/index.json`, data)
