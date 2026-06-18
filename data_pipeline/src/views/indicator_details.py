@@ -1316,6 +1316,14 @@ def _build_infra_details(municipio, *, count_column, denominator_column, numerat
             }
         )
 
+    series_dependencia = []
+    if include_public_dependency:
+        series_dependencia = [
+            {"ano": int(row["ano"]), "publica": int(row["valor"])}
+            for _, row in total_by_year.iterrows()
+            if row["valor"] > 0
+        ]
+
     if not series_total or not series_components:
         return None
 
@@ -1331,7 +1339,7 @@ def _build_infra_details(municipio, *, count_column, denominator_column, numerat
         "series_components": series_components,
     }
 
-    if include_public_dependency and series_dependencia:
+    if series_dependencia:
         payload["series_dependencia"] = series_dependencia
 
     return payload
@@ -2256,17 +2264,6 @@ def build_razao_escolaridade_racial_18_29_details(municipio):
         for _, row in total_by_year.iterrows()
         if row["valor"] > 0
     ]
-
-    series_dependencia = []
-    if include_public_dependency:
-        series_dependencia = [
-            {
-                "ano": int(row["ano"]),
-                "publica": int(row["valor"]),
-            }
-            for _, row in total_by_year.iterrows()
-            if row["valor"] > 0
-        ]
 
     yearly = (
         dff.groupby("ano", as_index=False)
