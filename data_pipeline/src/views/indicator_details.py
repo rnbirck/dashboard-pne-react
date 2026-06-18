@@ -1370,10 +1370,32 @@ def build_eja_integrada_educacao_profissional_details(municipio):
     if components_2014:
         series_components_by_cycle["pne_2014_2024"] = components_2014
 
+    dependencia_columns = {
+        "federal": "mat_eja_integrada_educacao_profissional_federal",
+        "estadual": "mat_eja_integrada_educacao_profissional_estadual",
+        "municipal": "mat_eja_integrada_educacao_profissional_municipal",
+        "privada": "mat_eja_integrada_educacao_profissional_privada",
+    }
+    series_by_dependencia = None
+    if all(col in dff.columns for col in dependencia_columns.values()):
+        dep_rows = []
+        for _, row in dff.iterrows():
+            entry = {"ano": int(row["ano"])}
+            has_value = False
+            for dep, col in dependencia_columns.items():
+                val = int(row[col]) if pd.notna(row[col]) and row[col] >= 0 else 0
+                if val > 0:
+                    entry[dep] = val
+                    has_value = True
+            if has_value:
+                dep_rows.append(entry)
+        if dep_rows:
+            series_by_dependencia = dep_rows
+
     if not series_total:
         return None
 
-    return {
+    result = {
         "title": "Matrículas do EJA integradas à educação profissional",
         "subtitle": "Número absoluto de matrículas do EJA integradas à educação profissional no município. No ciclo 2014‑2024 também é apresentado o percentual em relação ao total de matrículas do EJA.",
         "unit": "matrículas",
@@ -1384,6 +1406,10 @@ def build_eja_integrada_educacao_profissional_details(municipio):
         "series_total": series_total,
         "series_components_by_cycle": series_components_by_cycle,
     }
+    if series_by_dependencia is not None:
+        result["series_by_dependencia"] = series_by_dependencia
+
+    return result
 
 
 def _build_infra_details(municipio, *, count_column, denominator_column, numerator_label, denominator_label, title, unit, include_public_dependency=False):
