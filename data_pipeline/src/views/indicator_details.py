@@ -6,6 +6,13 @@ from src.data_loader import load_basico_6_17_data
 from src.data_loader import load_basico_6_17_por_dependencia_data
 from src.data_loader import load_atendimento_educacional_especializado_data
 from src.data_loader import load_basico_integral_por_dependencia_data
+from src.data_loader import load_censo_populacao_alfabetizacao_data
+from src.data_loader import load_censo_populacao_ensino_fundamental_6_14_data
+from src.data_loader import load_censo_populacao_ensino_fundamental_concluido_15_29_data
+from src.data_loader import load_censo_populacao_ensino_fundamental_concluido_18_mais_data
+from src.data_loader import load_censo_populacao_ensino_medio_15_17_data
+from src.data_loader import load_censo_populacao_ensino_medio_concluido_18_29_data
+from src.data_loader import load_censo_populacao_ensino_medio_concluido_18_mais_data
 from src.data_loader import load_creche_por_dependencia_data
 from src.data_loader import load_eja_integrada_educacao_profissional_data
 from src.data_loader import load_ept_nivel_medio_data
@@ -1432,6 +1439,179 @@ def build_tablet_aluno_details(municipio):
     )
 
 
+def _build_censo_percentual_details(
+    municipio,
+    *,
+    loader,
+    numerator_column,
+    denominator_column,
+    title,
+    unit,
+    numerator_label,
+    denominator_label,
+):
+    df = _safe_load(loader)
+    required_columns = {"ano", "municipio", numerator_column, denominator_column}
+    if df.empty or not required_columns.issubset(df.columns):
+        return None
+
+    dff = df[df["municipio"] == municipio].copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = pd.to_numeric(dff["ano"], errors="coerce")
+    dff[numerator_column] = pd.to_numeric(dff[numerator_column], errors="coerce")
+    dff[denominator_column] = pd.to_numeric(dff[denominator_column], errors="coerce")
+    dff = dff.dropna(subset=["ano", numerator_column, denominator_column]).copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = dff["ano"].astype(int)
+    dff[numerator_column] = dff[numerator_column].clip(lower=0)
+    dff[denominator_column] = dff[denominator_column].clip(lower=0)
+
+    total_by_year = (
+        dff.groupby("ano", as_index=False)[numerator_column]
+        .sum()
+        .rename(columns={numerator_column: "valor"})
+        .sort_values("ano")
+    )
+    total_by_year["valor"] = total_by_year["valor"].astype(int)
+    series_total = [
+        {"ano": int(row["ano"]), "valor": int(row["valor"])}
+        for _, row in total_by_year.iterrows()
+        if row["valor"] > 0
+    ]
+
+    yearly = (
+        dff.groupby("ano", as_index=False)
+        .agg({numerator_column: "sum", denominator_column: "max"})
+        .sort_values("ano")
+    )
+    series_components = []
+    for _, row in yearly.iterrows():
+        numerador = row[numerator_column]
+        denominador = row[denominator_column]
+        if pd.isna(numerador) or pd.isna(denominador) or denominador <= 0:
+            continue
+        numerador = int(numerador)
+        denominador = int(denominador)
+        series_components.append(
+            {
+                "ano": int(row["ano"]),
+                "numerador": numerador,
+                "denominador": denominador,
+                "percentual": round((numerador / denominador) * 100, 1),
+            }
+        )
+
+    if not series_total or not series_components:
+        return None
+
+    return {
+        "title": title,
+        "subtitle": f"Total de pessoas na condição e total de {unit} no município.",
+        "unit": unit,
+        "calculation": {
+            "numerator_label": numerator_label,
+            "denominator_label": denominator_label,
+        },
+        "series_total": series_total,
+        "series_components": series_components,
+    }
+
+
+def build_alfabetizacao_pop_15_mais_details(municipio):
+    return _build_censo_percentual_details(
+        municipio,
+        loader=load_censo_populacao_alfabetizacao_data,
+        numerator_column="alfabetizadas_15_mais",
+        denominator_column="total_15_mais",
+        title="Pessoas de 15 anos ou mais alfabetizadas",
+        unit="pessoas",
+        numerator_label="Pessoas de 15 anos ou mais alfabetizadas",
+        denominator_label="População de 15 anos ou mais",
+    )
+
+
+def build_ensino_medio_ou_basica_completa_pop_15_17_details(municipio):
+    return _build_censo_percentual_details(
+        municipio,
+        loader=load_censo_populacao_ensino_medio_15_17_data,
+        numerator_column="populacao_15_17_ensino_medio_ou_basica_completa",
+        denominator_column="populacao_15_17_total",
+        title="População de 15 a 17 anos com ensino médio ou educação básica completa",
+        unit="pessoas",
+        numerator_label="População de 15 a 17 anos com ensino médio ou educação básica completa",
+        denominator_label="População de 15 a 17 anos",
+    )
+
+
+def build_ensino_fundamental_ou_completo_pop_6_14_details(municipio):
+    return _build_censo_percentual_details(
+        municipio,
+        loader=load_censo_populacao_ensino_fundamental_6_14_data,
+        numerator_column="populacao_6_14_ensino_fundamental_ou_completo",
+        denominator_column="populacao_6_14_total",
+        title="População de 6 a 14 anos no ensino fundamental ou com fundamental completo",
+        unit="pessoas",
+        numerator_label="População de 6 a 14 anos no ensino fundamental ou com fundamental completo",
+        denominator_label="População de 6 a 14 anos",
+    )
+
+
+def build_fundamental_concluido_18_mais_details(municipio):
+    return _build_censo_percentual_details(
+        municipio,
+        loader=load_censo_populacao_ensino_fundamental_concluido_18_mais_data,
+        numerator_column="populacao_18_mais_ensino_fundamental_concluido",
+        denominator_column="populacao_18_mais_total",
+        title="População de 18 anos ou mais com ensino fundamental concluído",
+        unit="pessoas",
+        numerator_label="População de 18 anos ou mais com ensino fundamental concluído",
+        denominator_label="População de 18 anos ou mais",
+    )
+
+
+def build_fundamental_concluido_15_29_details(municipio):
+    return _build_censo_percentual_details(
+        municipio,
+        loader=load_censo_populacao_ensino_fundamental_concluido_15_29_data,
+        numerator_column="populacao_15_29_ensino_fundamental_concluido",
+        denominator_column="populacao_15_29_total",
+        title="População de 15 a 29 anos com ensino fundamental concluído",
+        unit="pessoas",
+        numerator_label="População de 15 a 29 anos com ensino fundamental concluído",
+        denominator_label="População de 15 a 29 anos",
+    )
+
+
+def build_medio_concluido_18_mais_details(municipio):
+    return _build_censo_percentual_details(
+        municipio,
+        loader=load_censo_populacao_ensino_medio_concluido_18_mais_data,
+        numerator_column="populacao_18_mais_ensino_medio_concluido",
+        denominator_column="populacao_18_mais_total",
+        title="População de 18 anos ou mais com ensino médio concluído",
+        unit="pessoas",
+        numerator_label="População de 18 anos ou mais com ensino médio concluído",
+        denominator_label="População de 18 anos ou mais",
+    )
+
+
+def build_medio_concluido_18_29_details(municipio):
+    return _build_censo_percentual_details(
+        municipio,
+        loader=load_censo_populacao_ensino_medio_concluido_18_29_data,
+        numerator_column="populacao_18_29_ensino_medio_concluido",
+        denominator_column="populacao_18_29_total",
+        title="População de 18 a 29 anos com ensino médio concluído",
+        unit="pessoas",
+        numerator_label="População de 18 a 29 anos com ensino médio concluído",
+        denominator_label="População de 18 a 29 anos",
+    )
+
+
 DETAIL_BUILDERS = {
     "creche": build_creche_details,
     "pre_escola": build_pre_escola_details,
@@ -1462,6 +1642,13 @@ DETAIL_BUILDERS = {
     "desktop_aluno": build_desktop_aluno_details,
     "comp_portatil_aluno": build_comp_portatil_aluno_details,
     "tablet_aluno": build_tablet_aluno_details,
+    "alfabetizacao_pop_15_mais": build_alfabetizacao_pop_15_mais_details,
+    "ensino_medio_ou_basica_completa_pop_15_17": build_ensino_medio_ou_basica_completa_pop_15_17_details,
+    "ensino_fundamental_ou_completo_pop_6_14": build_ensino_fundamental_ou_completo_pop_6_14_details,
+    "fundamental_concluido_18_mais": build_fundamental_concluido_18_mais_details,
+    "fundamental_concluido_15_29": build_fundamental_concluido_15_29_details,
+    "medio_concluido_18_mais": build_medio_concluido_18_mais_details,
+    "medio_concluido_18_29": build_medio_concluido_18_29_details,
 }
 
 
