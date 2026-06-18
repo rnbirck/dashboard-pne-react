@@ -17,6 +17,7 @@ from src.data_loader import load_censo_populacao_escolaridade_media_18_29_data
 from src.data_loader import load_censo_populacao_escolaridade_media_18_29_racial_data
 from src.data_loader import load_creche_por_dependencia_data
 from src.data_loader import load_docentes_pos_graduacao_data
+from src.data_loader import load_docentes_temporarios_data
 from src.data_loader import load_eja_integrada_educacao_profissional_data
 from src.data_loader import load_ept_nivel_medio_data
 from src.data_loader import load_escolas_integral_data
@@ -2062,6 +2063,141 @@ def build_pos_graduacao_details(municipio):
     }
 
 
+def build_temporarios_details(municipio):
+    df = _safe_load(load_docentes_temporarios_data)
+    required_columns = {
+        "ano",
+        "municipio",
+        "dependencia",
+        "percentual_temporarios",
+        "docentes_temporarios",
+        "total_docentes",
+    }
+    if df.empty or not required_columns.issubset(df.columns):
+        return None
+
+    dff = df[df["municipio"] == municipio].copy()
+    if dff.empty:
+        return None
+
+    allowed_dependencies = ["publica", "federal", "estadual", "municipal"]
+    dff["dependencia"] = (
+        dff["dependencia"]
+        .astype(str)
+        .str.lower()
+        .str.strip()
+        .replace({"pÃºblica": "publica"})
+    )
+    dff = dff[dff["dependencia"].isin(allowed_dependencies)].copy()
+    if dff.empty:
+        return None
+
+    numeric_columns = [
+        "ano",
+        "percentual_temporarios",
+        "docentes_temporarios",
+        "total_docentes",
+    ]
+    for column in numeric_columns:
+        dff[column] = pd.to_numeric(dff[column], errors="coerce")
+
+    dff = dff.dropna(
+        subset=[
+            "ano",
+            "dependencia",
+            "percentual_temporarios",
+            "docentes_temporarios",
+            "total_docentes",
+        ]
+    ).copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = dff["ano"].astype(int)
+    dff["percentual_temporarios"] = dff["percentual_temporarios"].clip(lower=0)
+    dff["docentes_temporarios"] = dff["docentes_temporarios"].clip(lower=0)
+    dff["total_docentes"] = dff["total_docentes"].clip(lower=0)
+
+    public_df = dff[dff["dependencia"] == "publica"].copy()
+    if public_df.empty:
+        return None
+
+    yearly_public = (
+        public_df.groupby("ano", as_index=False)
+        .agg(
+            {
+                "percentual_temporarios": "mean",
+                "docentes_temporarios": "sum",
+                "total_docentes": "sum",
+            }
+        )
+        .sort_values("ano")
+    )
+
+    series_total = [
+        {
+            "ano": int(row["ano"]),
+            "valor": round(float(row["percentual_temporarios"]), 1),
+        }
+        for _, row in yearly_public.iterrows()
+        if row["percentual_temporarios"] > 0
+    ]
+
+    series_components = []
+    for _, row in yearly_public.iterrows():
+        numerador = row["docentes_temporarios"]
+        denominador = row["total_docentes"]
+        if pd.isna(numerador) or pd.isna(denominador) or denominador <= 0:
+            continue
+        series_components.append(
+            {
+                "ano": int(row["ano"]),
+                "numerador": int(numerador),
+                "denominador": int(denominador),
+                "percentual": round(float(row["percentual_temporarios"]), 1),
+            }
+        )
+
+    dependency_df = (
+        dff.groupby(["ano", "dependencia"], as_index=False)["docentes_temporarios"]
+        .sum()
+        .sort_values(["ano", "dependencia"])
+    )
+    series_dependencia = []
+    for ano, group in dependency_df.groupby("ano", sort=True):
+        entry = {"ano": int(ano)}
+        for dependency in allowed_dependencies:
+            dep_rows = group[group["dependencia"] == dependency]
+            if dep_rows.empty:
+                continue
+            value = dep_rows["docentes_temporarios"].sum()
+            if pd.isna(value):
+                continue
+            entry[dependency] = int(value)
+        if any(key != "ano" and value > 0 for key, value in entry.items()):
+            series_dependencia.append(entry)
+
+    if not series_total or not series_components:
+        return None
+
+    payload = {
+        "title": "Docentes da rede publica com vinculo temporario",
+        "subtitle": "Percentual de docentes da rede publica com contrato temporario no municipio.",
+        "unit": "%",
+        "calculation": {
+            "numerator_label": "Docentes temporarios da rede publica",
+            "denominator_label": "Total de docentes da rede publica",
+        },
+        "series_total": series_total,
+        "series_components": series_components,
+    }
+
+    if series_dependencia:
+        payload["series_dependencia"] = series_dependencia
+
+    return payload
+
+
 def build_razao_escolaridade_racial_18_29_details(municipio):
     df = _safe_load(load_censo_populacao_escolaridade_media_18_29_racial_data)
     required_columns = {
@@ -2216,6 +2352,7 @@ DETAIL_BUILDERS = {
     "escolaridade_media_18_29": build_escolaridade_media_18_29_details,
     "razao_escolaridade_racial_18_29": build_razao_escolaridade_racial_18_29_details,
     "pos_graduacao": build_pos_graduacao_details,
+    "temporarios": build_temporarios_details,
 }
 
 
