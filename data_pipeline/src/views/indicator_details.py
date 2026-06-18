@@ -1165,7 +1165,7 @@ def build_eja_integrada_educacao_profissional_details(municipio):
     }
 
 
-def _build_infra_details(municipio, *, count_column, denominator_column, numerator_label, denominator_label, title, unit):
+def _build_infra_details(municipio, *, count_column, denominator_column, numerator_label, denominator_label, title, unit, include_public_dependency=False):
     df = _safe_load(load_infraestrutura_escolar_data)
     required_columns = {"ano", "municipio", count_column, denominator_column}
     if df.empty or not required_columns.issubset(df.columns):
@@ -1224,7 +1224,7 @@ def _build_infra_details(municipio, *, count_column, denominator_column, numerat
     if not series_total or not series_components:
         return None
 
-    return {
+    payload = {
         "title": title,
         "subtitle": f"Total de {unit} com a característica e total de {unit} no município.",
         "unit": unit,
@@ -1235,6 +1235,11 @@ def _build_infra_details(municipio, *, count_column, denominator_column, numerat
         "series_total": series_total,
         "series_components": series_components,
     }
+
+    if include_public_dependency and series_dependencia:
+        payload["series_dependencia"] = series_dependencia
+
+    return payload
 
 
 def build_internet_details(municipio):
@@ -1366,6 +1371,7 @@ def build_conselho_escolar_details(municipio):
         denominator_label="Total de escolas públicas",
         title="Escolas públicas com conselho escolar instituído e em funcionamento",
         unit="escolas públicas",
+        include_public_dependency=True,
     )
 
 
@@ -1378,6 +1384,7 @@ def build_proposta_pedagogica_details(municipio):
         denominator_label="Total de escolas públicas",
         title="Escolas públicas com projeto político pedagógico",
         unit="escolas públicas",
+        include_public_dependency=True,
     )
 
 
@@ -1713,10 +1720,21 @@ def build_razao_escolaridade_racial_18_29_details(municipio):
     )
     total_by_year["valor"] = total_by_year["valor"].astype(float)
     series_total = [
-        {"ano": int(row["ano"]), "valor": float(row["valor"])}
+        {"ano": int(row["ano"]), "valor": int(row["valor"])}
         for _, row in total_by_year.iterrows()
-        if row["valor"] is not None
+        if row["valor"] > 0
     ]
+
+    series_dependencia = []
+    if include_public_dependency:
+        series_dependencia = [
+            {
+                "ano": int(row["ano"]),
+                "publica": int(row["valor"]),
+            }
+            for _, row in total_by_year.iterrows()
+            if row["valor"] > 0
+        ]
 
     yearly = (
         dff.groupby("ano", as_index=False)
