@@ -1636,7 +1636,7 @@ def build_proposta_pedagogica_details(municipio):
 
 
 def build_salas_climatizadas_details(municipio):
-    return _build_infra_details(
+    payload = _build_infra_details(
         municipio,
         count_column="qt_salas_utiliza_climatizadas",
         denominator_column="qt_salas_utilizadas",
@@ -1646,9 +1646,20 @@ def build_salas_climatizadas_details(municipio):
         unit="salas",
     )
 
+    if payload is not None:
+        dep_df = _safe_load(load_infraestrutura_escolar_por_dependencia_data)
+        if not dep_df.empty:
+            series_dependencia = _build_infra_dependency_series(
+                dep_df, municipio, "qt_salas_utiliza_climatizadas"
+            )
+            if series_dependencia:
+                payload["series_dependencia"] = series_dependencia
+
+    return payload
+
 
 def build_salas_acessiveis_details(municipio):
-    return _build_infra_details(
+    payload = _build_infra_details(
         municipio,
         count_column="qt_salas_utilizadas_acessiveis",
         denominator_column="qt_salas_utilizadas",
@@ -1658,9 +1669,20 @@ def build_salas_acessiveis_details(municipio):
         unit="salas",
     )
 
+    if payload is not None:
+        dep_df = _safe_load(load_infraestrutura_escolar_por_dependencia_data)
+        if not dep_df.empty:
+            series_dependencia = _build_infra_dependency_series(
+                dep_df, municipio, "qt_salas_utilizadas_acessiveis"
+            )
+            if series_dependencia:
+                payload["series_dependencia"] = series_dependencia
+
+    return payload
+
 
 def build_desktop_aluno_details(municipio):
-    return _build_infra_details(
+    payload = _build_infra_details(
         municipio,
         count_column="escolas_com_desktop_aluno",
         denominator_column="qntd_escolas",
@@ -1670,9 +1692,20 @@ def build_desktop_aluno_details(municipio):
         unit="escolas",
     )
 
+    if payload is not None:
+        dep_df = _safe_load(load_infraestrutura_escolar_por_dependencia_data)
+        if not dep_df.empty:
+            series_dependencia = _build_infra_dependency_series(
+                dep_df, municipio, "escolas_com_desktop_aluno"
+            )
+            if series_dependencia:
+                payload["series_dependencia"] = series_dependencia
+
+    return payload
+
 
 def build_comp_portatil_aluno_details(municipio):
-    return _build_infra_details(
+    payload = _build_infra_details(
         municipio,
         count_column="escolas_com_comp_portatil_aluno",
         denominator_column="qntd_escolas",
@@ -1682,9 +1715,20 @@ def build_comp_portatil_aluno_details(municipio):
         unit="escolas",
     )
 
+    if payload is not None:
+        dep_df = _safe_load(load_infraestrutura_escolar_por_dependencia_data)
+        if not dep_df.empty:
+            series_dependencia = _build_infra_dependency_series(
+                dep_df, municipio, "escolas_com_comp_portatil_aluno"
+            )
+            if series_dependencia:
+                payload["series_dependencia"] = series_dependencia
+
+    return payload
+
 
 def build_tablet_aluno_details(municipio):
-    return _build_infra_details(
+    payload = _build_infra_details(
         municipio,
         count_column="escolas_com_tablet_aluno",
         denominator_column="qntd_escolas",
@@ -1693,6 +1737,17 @@ def build_tablet_aluno_details(municipio):
         title="Escolas com tablets para alunos",
         unit="escolas",
     )
+
+    if payload is not None:
+        dep_df = _safe_load(load_infraestrutura_escolar_por_dependencia_data)
+        if not dep_df.empty:
+            series_dependencia = _build_infra_dependency_series(
+                dep_df, municipio, "escolas_com_tablet_aluno"
+            )
+            if series_dependencia:
+                payload["series_dependencia"] = series_dependencia
+
+    return payload
 
 
 def _build_censo_percentual_details(
