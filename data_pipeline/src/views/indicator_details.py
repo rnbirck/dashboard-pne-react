@@ -1,5 +1,6 @@
 import pandas as pd
 
+from src.data_loader import load_basico_15_17_data
 from src.data_loader import load_basico_15_17_por_dependencia_data
 from src.data_loader import load_basico_6_17_data
 from src.data_loader import load_basico_6_17_por_dependencia_data
@@ -457,7 +458,14 @@ def build_basico_15_17_details(municipio):
         loader=load_basico_15_17_por_dependencia_data,
         value_column="matriculas_basico_15_17",
         title="Matrículas na educação básica — 15 a 17 anos",
-        subtitle="Total de matrículas de 15 a 17 anos na educação básica e distribuição por dependência administrativa. Este complemento mostra as matrículas escolares disponíveis no Censo Escolar.",
+        subtitle="Total de matrículas de 15 a 17 anos na educação básica e distribuição por dependência administrativa. A distribuição por dependência vem do Censo Escolar e os componentes do cálculo vêm da base consolidada do indicador.",
+        component_loader=load_basico_15_17_data,
+        component_numerator_column="mat_basico_15_17",
+        component_denominator_column="pop_15_17",
+        calculation={
+            "numerator_label": "Matrículas de 15 a 17 anos na educação básica",
+            "denominator_label": "População de 15 a 17 anos",
+        },
     )
 
 
