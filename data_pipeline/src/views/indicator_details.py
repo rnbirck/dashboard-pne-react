@@ -13,6 +13,8 @@ from src.data_loader import load_censo_populacao_ensino_fundamental_concluido_18
 from src.data_loader import load_censo_populacao_ensino_medio_15_17_data
 from src.data_loader import load_censo_populacao_ensino_medio_concluido_18_29_data
 from src.data_loader import load_censo_populacao_ensino_medio_concluido_18_mais_data
+from src.data_loader import load_censo_populacao_escolaridade_media_18_29_data
+from src.data_loader import load_censo_populacao_escolaridade_media_18_29_racial_data
 from src.data_loader import load_creche_por_dependencia_data
 from src.data_loader import load_eja_integrada_educacao_profissional_data
 from src.data_loader import load_ept_nivel_medio_data
@@ -1612,6 +1614,154 @@ def build_medio_concluido_18_29_details(municipio):
     )
 
 
+def build_escolaridade_media_18_29_details(municipio):
+    df = _safe_load(load_censo_populacao_escolaridade_media_18_29_data)
+    required_columns = {"ano", "municipio", "escolaridade_media_18_29"}
+    if df.empty or not required_columns.issubset(df.columns):
+        return None
+
+    dff = df[df["municipio"] == municipio].copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = pd.to_numeric(dff["ano"], errors="coerce")
+    dff["escolaridade_media_18_29"] = pd.to_numeric(
+        dff["escolaridade_media_18_29"], errors="coerce"
+    )
+    dff = dff.dropna(subset=["ano", "escolaridade_media_18_29"]).copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = dff["ano"].astype(int)
+    dff["escolaridade_media_18_29"] = dff["escolaridade_media_18_29"].clip(lower=0)
+
+    total_by_year = (
+        dff.groupby("ano", as_index=False)["escolaridade_media_18_29"]
+        .mean()
+        .rename(columns={"escolaridade_media_18_29": "valor"})
+        .sort_values("ano")
+    )
+    total_by_year["valor"] = total_by_year["valor"].astype(float)
+    series_total = [
+        {"ano": int(row["ano"]), "valor": float(row["valor"])}
+        for _, row in total_by_year.iterrows()
+        if row["valor"] is not None
+    ]
+
+    if not series_total:
+        return None
+
+    return {
+        "title": "Escolaridade média da população de 18 a 29 anos",
+        "subtitle": "Média de anos de estudo da população de 18 a 29 anos no município.",
+        "unit": "anos",
+        "series_total": series_total,
+    }
+
+
+def build_razao_escolaridade_racial_18_29_details(municipio):
+    df = _safe_load(load_censo_populacao_escolaridade_media_18_29_racial_data)
+    required_columns = {
+        "ano",
+        "municipio",
+        "escolaridade_media_negros_18_29",
+        "escolaridade_media_nao_negros_18_29",
+        "razao_percentual_escolaridade_negros_nao_negros_18_29",
+    }
+    if df.empty or not required_columns.issubset(df.columns):
+        return None
+
+    dff = df[df["municipio"] == municipio].copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = pd.to_numeric(dff["ano"], errors="coerce")
+    dff["escolaridade_media_negros_18_29"] = pd.to_numeric(
+        dff["escolaridade_media_negros_18_29"], errors="coerce"
+    )
+    dff["escolaridade_media_nao_negros_18_29"] = pd.to_numeric(
+        dff["escolaridade_media_nao_negros_18_29"], errors="coerce"
+    )
+    dff["razao_percentual_escolaridade_negros_nao_negros_18_29"] = pd.to_numeric(
+        dff["razao_percentual_escolaridade_negros_nao_negros_18_29"],
+        errors="coerce",
+    )
+    dff = dff.dropna(
+        subset=[
+            "ano",
+            "escolaridade_media_negros_18_29",
+            "escolaridade_media_nao_negros_18_29",
+            "razao_percentual_escolaridade_negros_nao_negros_18_29",
+        ]
+    ).copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = dff["ano"].astype(int)
+    dff["escolaridade_media_negros_18_29"] = dff["escolaridade_media_negros_18_29"].clip(lower=0)
+    dff["escolaridade_media_nao_negros_18_29"] = dff["escolaridade_media_nao_negros_18_29"].clip(lower=0)
+
+    total_by_year = (
+        dff.groupby("ano", as_index=False)["razao_percentual_escolaridade_negros_nao_negros_18_29"]
+        .mean()
+        .rename(
+            columns={
+                "razao_percentual_escolaridade_negros_nao_negros_18_29": "valor"
+            }
+        )
+        .sort_values("ano")
+    )
+    total_by_year["valor"] = total_by_year["valor"].astype(float)
+    series_total = [
+        {"ano": int(row["ano"]), "valor": float(row["valor"])}
+        for _, row in total_by_year.iterrows()
+        if row["valor"] is not None
+    ]
+
+    yearly = (
+        dff.groupby("ano", as_index=False)
+        .agg(
+            {
+                "escolaridade_media_negros_18_29": "mean",
+                "escolaridade_media_nao_negros_18_29": "mean",
+            }
+        )
+        .sort_values("ano")
+    )
+    series_components = []
+    for _, row in yearly.iterrows():
+        numerador = row["escolaridade_media_negros_18_29"]
+        denominador = row["escolaridade_media_nao_negros_18_29"]
+        if pd.isna(numerador) or pd.isna(denominador) or denominador <= 0:
+            continue
+        numerador = float(numerador)
+        denominador = float(denominador)
+        percentual = round((numerador / denominador) * 100, 1)
+        series_components.append(
+            {
+                "ano": int(row["ano"]),
+                "numerador": numerador,
+                "denominador": denominador,
+                "percentual": percentual,
+            }
+        )
+
+    if not series_total or not series_components:
+        return None
+
+    return {
+        "title": "Razão entre escolaridade média de negros e não negros de 18 a 29 anos",
+        "subtitle": "Razão percentual entre a média de anos de estudo da população negra e da não negra de 18 a 29 anos no município.",
+        "unit": "razão (%)",
+        "calculation": {
+            "numerator_label": "Média de anos de estudo da população negra de 18 a 29 anos",
+            "denominator_label": "Média de anos de estudo da população não negra de 18 a 29 anos",
+        },
+        "series_total": series_total,
+        "series_components": series_components,
+    }
+
+
 DETAIL_BUILDERS = {
     "creche": build_creche_details,
     "pre_escola": build_pre_escola_details,
@@ -1649,6 +1799,8 @@ DETAIL_BUILDERS = {
     "fundamental_concluido_15_29": build_fundamental_concluido_15_29_details,
     "medio_concluido_18_mais": build_medio_concluido_18_mais_details,
     "medio_concluido_18_29": build_medio_concluido_18_29_details,
+    "escolaridade_media_18_29": build_escolaridade_media_18_29_details,
+    "razao_escolaridade_racial_18_29": build_razao_escolaridade_racial_18_29_details,
 }
 
 
