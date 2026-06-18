@@ -225,6 +225,11 @@ DATASET_SPECS: dict[str, DatasetSpec] = {
         base_table="pne_2026_2036_metricas",
         local_query_file="pne_2026_2036_metricas.sql",
     ),
+    "infraestrutura_escolar_por_dependencia_data": DatasetSpec(
+        name="infraestrutura_escolar_por_dependencia_data",
+        base_table="pne_infraestrutura_escolar_por_dependencia",
+        local_query_file="infraestrutura_escolar_por_dependencia.sql",
+    ),
 }
 
 LOCAL_QUERY_FILES_BY_TABLE: dict[str, str] = {
@@ -266,6 +271,7 @@ LOCAL_QUERY_FILES_BY_TABLE: dict[str, str] = {
     "rendimento_professores_razao_percentual": "rendimento_professores.sql",
     "atendimento_educacional_especializado": "atendimento_educacional_especializado.sql",
     "infraestrutura_escolar": "infraestrutura_escolar.sql",
+    "pne_infraestrutura_escolar_por_dependencia": "infraestrutura_escolar_por_dependencia.sql",
     "pne_2014_2024_metricas": "pne_2014_2024_metricas.sql",
     "pne_2026_2036_metricas": "pne_2026_2036_metricas.sql",
 }

@@ -149,6 +149,10 @@ def load_infraestrutura_escolar_data():
     return load_dataset("infraestrutura_escolar_data")
 
 
+def load_infraestrutura_escolar_por_dependencia_data():
+    return load_dataset("infraestrutura_escolar_por_dependencia_data")
+
+
 def load_saeb_matematica_data():
     return load_dataset("saeb_matematica_data")
 
@@ -198,6 +202,7 @@ __all__ = [
     "load_rendimento_professores_data",
     "load_atendimento_educacional_especializado_data",
     "load_infraestrutura_escolar_data",
+    "load_infraestrutura_escolar_por_dependencia_data",
     "load_distorcao_idade_serie_data",
     "load_saeb_ideb_data",
     "load_saeb_proficiencia_data",
