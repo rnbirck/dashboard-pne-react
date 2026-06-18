@@ -10,7 +10,7 @@ const percentFormatter = new Intl.NumberFormat('pt-BR', {
   minimumFractionDigits: 0,
 })
 
-export function IndicatorComplementaryData({ indicatorKey, municipioData }) {
+export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData }) {
   const slug = municipioData?.slug
   const fallbackDetails = municipioData?.indicator_details?.[indicatorKey] ?? null
   const [details, setDetails] = useState(null)
@@ -57,8 +57,10 @@ export function IndicatorComplementaryData({ indicatorKey, municipioData }) {
   const hasTotal = Array.isArray(details.series_total) && details.series_total.length > 0
   const hasDependencia =
     Array.isArray(details.series_dependencia) && details.series_dependencia.length > 0
+  const calculationComponents =
+    details.series_components_by_cycle?.[cycle] ?? details.series_components
   const hasComponents =
-    Array.isArray(details.series_components) && details.series_components.length > 0
+    Array.isArray(calculationComponents) && calculationComponents.length > 0
 
   if (!hasTotal && !hasDependencia && !hasComponents) {
     return null
@@ -103,7 +105,7 @@ export function IndicatorComplementaryData({ indicatorKey, municipioData }) {
                 </tr>
               </thead>
               <tbody>
-                {details.series_components.map((row) => (
+                {calculationComponents.map((row) => (
                   <tr key={row.ano}>
                     <td>{row.ano}</td>
                     <td>{numberFormatter.format(row.numerador)}</td>

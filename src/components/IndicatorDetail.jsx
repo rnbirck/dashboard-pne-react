@@ -25,7 +25,7 @@ import { MetricCard } from './MetricCard'
 import { StatusBadge } from './StatusBadge'
 
 export const IndicatorDetail = forwardRef(function IndicatorDetail(
-  { item, municipioData, result },
+  { cycle, item, municipioData, result },
   ref,
 ) {
   if (!item || !result) {
@@ -223,7 +223,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
         </div>
       )}
 
-      <IndicatorComplementaryData indicatorKey={item?.key} municipioData={municipioData} />
+      <IndicatorComplementaryData cycle={cycle} indicatorKey={item?.key} municipioData={municipioData} />
 
       {!hasSeries && !isInformative && (
         <div className="detail-empty-state">

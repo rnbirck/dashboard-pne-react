@@ -193,7 +193,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
             )}
           </aside>
 
-          <IndicatorDetail item={activeItem} municipioData={municipioData} ref={detailPanelRef} result={activeResult} />
+          <IndicatorDetail cycle={cycle} item={activeItem} municipioData={municipioData} ref={detailPanelRef} result={activeResult} />
         </div>
       </section>
 
