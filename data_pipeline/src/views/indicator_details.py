@@ -16,6 +16,7 @@ from src.data_loader import load_censo_populacao_ensino_medio_concluido_18_mais_
 from src.data_loader import load_censo_populacao_escolaridade_media_18_29_data
 from src.data_loader import load_censo_populacao_escolaridade_media_18_29_racial_data
 from src.data_loader import load_creche_por_dependencia_data
+from src.data_loader import load_docentes_pos_graduacao_data
 from src.data_loader import load_eja_integrada_educacao_profissional_data
 from src.data_loader import load_ept_nivel_medio_data
 from src.data_loader import load_escolas_integral_data
@@ -1968,6 +1969,99 @@ def build_escolaridade_media_18_29_details(municipio):
     }
 
 
+def build_pos_graduacao_details(municipio):
+    df = _safe_load(load_docentes_pos_graduacao_data)
+    required_columns = {
+        "ano",
+        "municipio",
+        "percentual_pos_graduacao",
+        "docentes_pos_graduacao",
+        "total_docentes",
+    }
+    if df.empty or not required_columns.issubset(df.columns):
+        return None
+
+    dff = df[df["municipio"] == municipio].copy()
+    if dff.empty:
+        return None
+
+    numeric_columns = [
+        "ano",
+        "percentual_pos_graduacao",
+        "docentes_pos_graduacao",
+        "total_docentes",
+    ]
+    for column in numeric_columns:
+        dff[column] = pd.to_numeric(dff[column], errors="coerce")
+
+    dff = dff.dropna(
+        subset=[
+            "ano",
+            "percentual_pos_graduacao",
+            "docentes_pos_graduacao",
+            "total_docentes",
+        ]
+    ).copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = dff["ano"].astype(int)
+    dff["percentual_pos_graduacao"] = dff["percentual_pos_graduacao"].clip(lower=0)
+    dff["docentes_pos_graduacao"] = dff["docentes_pos_graduacao"].clip(lower=0)
+    dff["total_docentes"] = dff["total_docentes"].clip(lower=0)
+
+    yearly = (
+        dff.groupby("ano", as_index=False)
+        .agg(
+            {
+                "percentual_pos_graduacao": "mean",
+                "docentes_pos_graduacao": "sum",
+                "total_docentes": "sum",
+            }
+        )
+        .sort_values("ano")
+    )
+
+    series_total = [
+        {
+            "ano": int(row["ano"]),
+            "valor": round(float(row["percentual_pos_graduacao"]), 1),
+        }
+        for _, row in yearly.iterrows()
+        if row["percentual_pos_graduacao"] > 0
+    ]
+
+    series_components = []
+    for _, row in yearly.iterrows():
+        numerador = row["docentes_pos_graduacao"]
+        denominador = row["total_docentes"]
+        if pd.isna(numerador) or pd.isna(denominador) or denominador <= 0:
+            continue
+        series_components.append(
+            {
+                "ano": int(row["ano"]),
+                "numerador": int(numerador),
+                "denominador": int(denominador),
+                "percentual": round(float(row["percentual_pos_graduacao"]), 1),
+            }
+        )
+
+    if not series_total or not series_components:
+        return None
+
+    return {
+        "title": "Docentes da educacao basica com pos-graduacao",
+        "subtitle": "Percentual de docentes da educacao basica com especializacao, mestrado ou doutorado no municipio.",
+        "unit": "%",
+        "calculation": {
+            "numerator_label": "Docentes com pos-graduacao",
+            "denominator_label": "Total de docentes",
+        },
+        "series_total": series_total,
+        "series_components": series_components,
+    }
+
+
 def build_razao_escolaridade_racial_18_29_details(municipio):
     df = _safe_load(load_censo_populacao_escolaridade_media_18_29_racial_data)
     required_columns = {
@@ -2121,6 +2215,7 @@ DETAIL_BUILDERS = {
     "medio_concluido_18_29": build_medio_concluido_18_29_details,
     "escolaridade_media_18_29": build_escolaridade_media_18_29_details,
     "razao_escolaridade_racial_18_29": build_razao_escolaridade_racial_18_29_details,
+    "pos_graduacao": build_pos_graduacao_details,
 }
 
 
