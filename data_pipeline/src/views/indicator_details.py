@@ -20,6 +20,7 @@ from src.data_loader import load_eja_integrada_educacao_profissional_data
 from src.data_loader import load_ept_nivel_medio_data
 from src.data_loader import load_escolas_integral_data
 from src.data_loader import load_infraestrutura_escolar_data
+from src.data_loader import load_infraestrutura_escolar_por_dependencia_data
 from src.data_loader import load_pne_data
 from src.data_loader import load_pre_escola_data
 from src.data_loader import load_pre_escola_por_dependencia_data
@@ -1334,8 +1335,52 @@ def _build_infra_details(municipio, *, count_column, denominator_column, numerat
     return payload
 
 
+def _build_infra_dependency_series(df, municipio, count_column):
+    if df.empty or "ano" not in df.columns:
+        return []
+
+    dff = df[df["municipio"] == municipio].copy()
+    if dff.empty:
+        return []
+
+    dff = dff[dff["dependencia"].notna()].copy()
+    dff["dependencia"] = dff["dependencia"].str.strip().str.lower()
+    dff = dff[dff["dependencia"] != ""].copy()
+    if dff.empty:
+        return []
+
+    dff["ano"] = pd.to_numeric(dff["ano"], errors="coerce")
+    dff[count_column] = pd.to_numeric(dff[count_column], errors="coerce")
+    dff = dff.dropna(subset=["ano", count_column]).copy()
+    if dff.empty:
+        return []
+
+    dff["ano"] = dff["ano"].astype(int)
+    dff[count_column] = dff[count_column].clip(lower=0)
+
+    grouped = (
+        dff.groupby(["ano", "dependencia"], as_index=False)[count_column]
+        .sum()
+        .sort_values(["ano", "dependencia"])
+    )
+
+    pivot = grouped.pivot(
+        index="ano", columns="dependencia", values=count_column
+    ).fillna(0)
+
+    series_dependencia = []
+    for index, row in pivot.iterrows():
+        entry = {"ano": int(index)}
+        for dep in pivot.columns:
+            value = int(row[dep])
+            entry[dep] = value
+        series_dependencia.append(entry)
+
+    return series_dependencia
+
+
 def build_internet_details(municipio):
-    return _build_infra_details(
+    payload = _build_infra_details(
         municipio,
         count_column="escolas_com_internet",
         denominator_column="qntd_escolas",
@@ -1344,6 +1389,17 @@ def build_internet_details(municipio):
         title="Escolas da educação básica com acesso à internet",
         unit="escolas",
     )
+
+    if payload is not None:
+        dep_df = _safe_load(load_infraestrutura_escolar_por_dependencia_data)
+        if not dep_df.empty:
+            series_dependencia = _build_infra_dependency_series(
+                dep_df, municipio, "escolas_com_internet"
+            )
+            if series_dependencia:
+                payload["series_dependencia"] = series_dependencia
+
+    return payload
 
 
 def build_internet_alunos_details(municipio):
