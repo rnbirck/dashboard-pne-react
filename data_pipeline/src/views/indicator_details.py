@@ -10,6 +10,7 @@ from src.data_loader import load_creche_por_dependencia_data
 from src.data_loader import load_eja_integrada_educacao_profissional_data
 from src.data_loader import load_ept_nivel_medio_data
 from src.data_loader import load_escolas_integral_data
+from src.data_loader import load_infraestrutura_escolar_data
 from src.data_loader import load_pne_data
 from src.data_loader import load_pre_escola_data
 from src.data_loader import load_pre_escola_por_dependencia_data
@@ -1155,6 +1156,282 @@ def build_eja_integrada_educacao_profissional_details(municipio):
     }
 
 
+def _build_infra_details(municipio, *, count_column, denominator_column, numerator_label, denominator_label, title, unit):
+    df = _safe_load(load_infraestrutura_escolar_data)
+    required_columns = {"ano", "municipio", count_column, denominator_column}
+    if df.empty or not required_columns.issubset(df.columns):
+        return None
+
+    dff = df[df["municipio"] == municipio].copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = pd.to_numeric(dff["ano"], errors="coerce")
+    dff[count_column] = pd.to_numeric(dff[count_column], errors="coerce")
+    dff[denominator_column] = pd.to_numeric(dff[denominator_column], errors="coerce")
+    dff = dff.dropna(subset=["ano", count_column, denominator_column]).copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = dff["ano"].astype(int)
+    dff[count_column] = dff[count_column].clip(lower=0)
+    dff[denominator_column] = dff[denominator_column].clip(lower=0)
+
+    total_by_year = (
+        dff.groupby("ano", as_index=False)[count_column]
+        .sum()
+        .rename(columns={count_column: "valor"})
+        .sort_values("ano")
+    )
+    total_by_year["valor"] = total_by_year["valor"].astype(int)
+    series_total = [
+        {"ano": int(row["ano"]), "valor": int(row["valor"])}
+        for _, row in total_by_year.iterrows()
+        if row["valor"] > 0
+    ]
+
+    yearly = (
+        dff.groupby("ano", as_index=False)
+        .agg({count_column: "sum", denominator_column: "max"})
+        .sort_values("ano")
+    )
+    series_components = []
+    for _, row in yearly.iterrows():
+        numerador = row[count_column]
+        denominador = row[denominator_column]
+        if pd.isna(numerador) or pd.isna(denominador) or denominador <= 0:
+            continue
+        numerador = int(numerador)
+        denominador = int(denominador)
+        series_components.append(
+            {
+                "ano": int(row["ano"]),
+                "numerador": numerador,
+                "denominador": denominador,
+                "percentual": round((numerador / denominador) * 100, 1),
+            }
+        )
+
+    if not series_total or not series_components:
+        return None
+
+    return {
+        "title": title,
+        "subtitle": f"Total de {unit} com a característica e total de {unit} no município.",
+        "unit": unit,
+        "calculation": {
+            "numerator_label": numerator_label,
+            "denominator_label": denominator_label,
+        },
+        "series_total": series_total,
+        "series_components": series_components,
+    }
+
+
+def build_internet_details(municipio):
+    return _build_infra_details(
+        municipio,
+        count_column="escolas_com_internet",
+        denominator_column="qntd_escolas",
+        numerator_label="Escolas com internet",
+        denominator_label="Total de escolas",
+        title="Escolas da educação básica com acesso à internet",
+        unit="escolas",
+    )
+
+
+def build_internet_alunos_details(municipio):
+    return _build_infra_details(
+        municipio,
+        count_column="escolas_com_internet_alunos",
+        denominator_column="qntd_escolas",
+        numerator_label="Escolas com internet para alunos",
+        denominator_label="Total de escolas",
+        title="Escolas com internet disponível para os alunos",
+        unit="escolas",
+    )
+
+
+def build_internet_aprendizagem_details(municipio):
+    return _build_infra_details(
+        municipio,
+        count_column="escolas_com_internet_aprendizagem",
+        denominator_column="qntd_escolas",
+        numerator_label="Escolas com internet para aprendizagem",
+        denominator_label="Total de escolas",
+        title="Escolas com internet usada na aprendizagem",
+        unit="escolas",
+    )
+
+
+def build_internet_comunidade_details(municipio):
+    return _build_infra_details(
+        municipio,
+        count_column="escolas_com_internet_comunidade",
+        denominator_column="qntd_escolas",
+        numerator_label="Escolas com internet para comunidade",
+        denominator_label="Total de escolas",
+        title="Escolas com internet aberta à comunidade",
+        unit="escolas",
+    )
+
+
+def build_acesso_internet_computador_details(municipio):
+    return _build_infra_details(
+        municipio,
+        count_column="escolas_com_acesso_internet_computador",
+        denominator_column="qntd_escolas",
+        numerator_label="Escolas com acesso à internet por computador",
+        denominator_label="Total de escolas",
+        title="Escolas com acesso dos alunos à internet por computador",
+        unit="escolas",
+    )
+
+
+def build_acesso_internet_disp_pessoais_details(municipio):
+    return _build_infra_details(
+        municipio,
+        count_column="escolas_com_acesso_internet_disp_pessoais",
+        denominator_column="qntd_escolas",
+        numerator_label="Escolas com acesso à internet por dispositivos pessoais",
+        denominator_label="Total de escolas",
+        title="Escolas com acesso dos alunos à internet por dispositivos pessoais",
+        unit="escolas",
+    )
+
+
+def build_rede_local_details(municipio):
+    return _build_infra_details(
+        municipio,
+        count_column="escolas_com_rede_local",
+        denominator_column="qntd_escolas",
+        numerator_label="Escolas com rede local",
+        denominator_label="Total de escolas",
+        title="Escolas com rede local de computadores",
+        unit="escolas",
+    )
+
+
+def build_rede_wireless_details(municipio):
+    return _build_infra_details(
+        municipio,
+        count_column="escolas_com_rede_wireless",
+        denominator_column="qntd_escolas",
+        numerator_label="Escolas com rede sem fio",
+        denominator_label="Total de escolas",
+        title="Escolas com rede local sem fio",
+        unit="escolas",
+    )
+
+
+def build_banda_larga_details(municipio):
+    return _build_infra_details(
+        municipio,
+        count_column="escolas_com_banda_larga",
+        denominator_column="qntd_escolas",
+        numerator_label="Escolas com banda larga",
+        denominator_label="Total de escolas",
+        title="Escolas com internet banda larga",
+        unit="escolas",
+    )
+
+
+def build_educacao_ambiental_details(municipio):
+    return _build_infra_details(
+        municipio,
+        count_column="escolas_com_educacao_ambiental",
+        denominator_column="qntd_escolas",
+        numerator_label="Escolas com educação ambiental",
+        denominator_label="Total de escolas",
+        title="Escolas que promovem educação ambiental",
+        unit="escolas",
+    )
+
+
+def build_conselho_escolar_details(municipio):
+    return _build_infra_details(
+        municipio,
+        count_column="escolas_publicas_com_orgao_conselho_escolar",
+        denominator_column="escolas_publicas_total",
+        numerator_label="Escolas públicas com conselho escolar",
+        denominator_label="Total de escolas públicas",
+        title="Escolas públicas com conselho escolar instituído e em funcionamento",
+        unit="escolas públicas",
+    )
+
+
+def build_proposta_pedagogica_details(municipio):
+    return _build_infra_details(
+        municipio,
+        count_column="escolas_publicas_com_proposta_pedagogica",
+        denominator_column="escolas_publicas_total",
+        numerator_label="Escolas públicas com proposta pedagógica",
+        denominator_label="Total de escolas públicas",
+        title="Escolas públicas com projeto político pedagógico",
+        unit="escolas públicas",
+    )
+
+
+def build_salas_climatizadas_details(municipio):
+    return _build_infra_details(
+        municipio,
+        count_column="qt_salas_utiliza_climatizadas",
+        denominator_column="qt_salas_utilizadas",
+        numerator_label="Salas climatizadas",
+        denominator_label="Total de salas utilizadas",
+        title="Salas de aula climatizadas",
+        unit="salas",
+    )
+
+
+def build_salas_acessiveis_details(municipio):
+    return _build_infra_details(
+        municipio,
+        count_column="qt_salas_utilizadas_acessiveis",
+        denominator_column="qt_salas_utilizadas",
+        numerator_label="Salas acessíveis",
+        denominator_label="Total de salas utilizadas",
+        title="Salas de aula com acessibilidade",
+        unit="salas",
+    )
+
+
+def build_desktop_aluno_details(municipio):
+    return _build_infra_details(
+        municipio,
+        count_column="escolas_com_desktop_aluno",
+        denominator_column="qntd_escolas",
+        numerator_label="Escolas com desktop para aluno",
+        denominator_label="Total de escolas",
+        title="Escolas com computadores de mesa para alunos",
+        unit="escolas",
+    )
+
+
+def build_comp_portatil_aluno_details(municipio):
+    return _build_infra_details(
+        municipio,
+        count_column="escolas_com_comp_portatil_aluno",
+        denominator_column="qntd_escolas",
+        numerator_label="Escolas com computador portátil para aluno",
+        denominator_label="Total de escolas",
+        title="Escolas com computadores portáteis para alunos",
+        unit="escolas",
+    )
+
+
+def build_tablet_aluno_details(municipio):
+    return _build_infra_details(
+        municipio,
+        count_column="escolas_com_tablet_aluno",
+        denominator_column="qntd_escolas",
+        numerator_label="Escolas com tablet para aluno",
+        denominator_label="Total de escolas",
+        title="Escolas com tablets para alunos",
+        unit="escolas",
+    )
+
+
 DETAIL_BUILDERS = {
     "creche": build_creche_details,
     "pre_escola": build_pre_escola_details,
@@ -1168,6 +1445,23 @@ DETAIL_BUILDERS = {
     "medio_tecnico_participacao_publica": build_medio_tecnico_participacao_publica_details,
     "subsequente_expansao": build_subsequente_expansao_details,
     "eja_integrada_educacao_profissional": build_eja_integrada_educacao_profissional_details,
+    "internet": build_internet_details,
+    "internet_alunos": build_internet_alunos_details,
+    "internet_aprendizagem": build_internet_aprendizagem_details,
+    "internet_comunidade": build_internet_comunidade_details,
+    "acesso_internet_computador": build_acesso_internet_computador_details,
+    "acesso_internet_disp_pessoais": build_acesso_internet_disp_pessoais_details,
+    "rede_local": build_rede_local_details,
+    "rede_wireless": build_rede_wireless_details,
+    "banda_larga": build_banda_larga_details,
+    "educacao_ambiental": build_educacao_ambiental_details,
+    "conselho_escolar": build_conselho_escolar_details,
+    "proposta_pedagogica": build_proposta_pedagogica_details,
+    "salas_climatizadas": build_salas_climatizadas_details,
+    "salas_acessiveis": build_salas_acessiveis_details,
+    "desktop_aluno": build_desktop_aluno_details,
+    "comp_portatil_aluno": build_comp_portatil_aluno_details,
+    "tablet_aluno": build_tablet_aluno_details,
 }
 
 
