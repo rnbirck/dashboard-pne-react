@@ -16,6 +16,7 @@ from src.data_loader import load_censo_populacao_ensino_medio_concluido_18_mais_
 from src.data_loader import load_censo_populacao_escolaridade_media_18_29_data
 from src.data_loader import load_censo_populacao_escolaridade_media_18_29_racial_data
 from src.data_loader import load_creche_por_dependencia_data
+from src.data_loader import load_adequacao_docente_data
 from src.data_loader import load_docentes_pos_graduacao_data
 from src.data_loader import load_docentes_temporarios_data
 from src.data_loader import load_eja_integrada_educacao_profissional_data
@@ -1978,6 +1979,85 @@ def build_escolaridade_media_18_29_details(municipio):
     }
 
 
+def _build_adequacao_docente_details(municipio, *, etapa, title):
+    df = _safe_load(load_adequacao_docente_data)
+    required_columns = {
+        "ano",
+        "municipio",
+        "dependencia",
+        "etapa",
+        "percentual_adequacao",
+    }
+    if df.empty or not required_columns.issubset(df.columns):
+        return None
+
+    dff = df[(df["municipio"] == municipio) & (df["etapa"] == etapa)].copy()
+    if dff.empty:
+        return None
+
+    dff["dependencia"] = dff["dependencia"].astype(str).str.lower().str.strip()
+    dff = dff[dff["dependencia"] == "total"].copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = pd.to_numeric(dff["ano"], errors="coerce")
+    dff["percentual_adequacao"] = pd.to_numeric(
+        dff["percentual_adequacao"], errors="coerce"
+    )
+    dff = dff.dropna(subset=["ano", "percentual_adequacao"]).copy()
+    if dff.empty:
+        return None
+
+    dff["ano"] = dff["ano"].astype(int)
+    dff["percentual_adequacao"] = dff["percentual_adequacao"].clip(lower=0)
+
+    total_by_year = (
+        dff.groupby("ano", as_index=False)["percentual_adequacao"]
+        .mean()
+        .rename(columns={"percentual_adequacao": "valor"})
+        .sort_values("ano")
+    )
+    series_total = [
+        {"ano": int(row["ano"]), "valor": round(float(row["valor"]), 1)}
+        for _, row in total_by_year.iterrows()
+        if row["valor"] > 0
+    ]
+
+    if not series_total:
+        return None
+
+    return {
+        "title": title,
+        "subtitle": "Historico do percentual de docentes com formacao adequada no municipio.",
+        "unit": "%",
+        "series_total": series_total,
+    }
+
+
+def build_adequacao_ai_details(municipio):
+    return _build_adequacao_docente_details(
+        municipio,
+        etapa="anos_iniciais",
+        title="Docentes com formacao adequada nos anos iniciais",
+    )
+
+
+def build_adequacao_af_details(municipio):
+    return _build_adequacao_docente_details(
+        municipio,
+        etapa="anos_finais",
+        title="Docentes com formacao adequada nos anos finais",
+    )
+
+
+def build_adequacao_em_details(municipio):
+    return _build_adequacao_docente_details(
+        municipio,
+        etapa="ensino_medio",
+        title="Docentes com formacao adequada no ensino medio",
+    )
+
+
 def build_pos_graduacao_details(municipio):
     df = _safe_load(load_docentes_pos_graduacao_data)
     required_columns = {
@@ -2348,6 +2428,9 @@ DETAIL_BUILDERS = {
     "medio_concluido_18_29": build_medio_concluido_18_29_details,
     "escolaridade_media_18_29": build_escolaridade_media_18_29_details,
     "razao_escolaridade_racial_18_29": build_razao_escolaridade_racial_18_29_details,
+    "adequacao_ai": build_adequacao_ai_details,
+    "adequacao_af": build_adequacao_af_details,
+    "adequacao_em": build_adequacao_em_details,
     "pos_graduacao": build_pos_graduacao_details,
     "temporarios": build_temporarios_details,
 }
