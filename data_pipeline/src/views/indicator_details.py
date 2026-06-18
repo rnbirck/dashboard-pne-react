@@ -1403,7 +1403,7 @@ def build_internet_details(municipio):
 
 
 def build_internet_alunos_details(municipio):
-    return _build_infra_details(
+    payload = _build_infra_details(
         municipio,
         count_column="escolas_com_internet_alunos",
         denominator_column="qntd_escolas",
@@ -1413,9 +1413,20 @@ def build_internet_alunos_details(municipio):
         unit="escolas",
     )
 
+    if payload is not None:
+        dep_df = _safe_load(load_infraestrutura_escolar_por_dependencia_data)
+        if not dep_df.empty:
+            series_dependencia = _build_infra_dependency_series(
+                dep_df, municipio, "escolas_com_internet_alunos"
+            )
+            if series_dependencia:
+                payload["series_dependencia"] = series_dependencia
+
+    return payload
+
 
 def build_internet_aprendizagem_details(municipio):
-    return _build_infra_details(
+    payload = _build_infra_details(
         municipio,
         count_column="escolas_com_internet_aprendizagem",
         denominator_column="qntd_escolas",
@@ -1425,9 +1436,20 @@ def build_internet_aprendizagem_details(municipio):
         unit="escolas",
     )
 
+    if payload is not None:
+        dep_df = _safe_load(load_infraestrutura_escolar_por_dependencia_data)
+        if not dep_df.empty:
+            series_dependencia = _build_infra_dependency_series(
+                dep_df, municipio, "escolas_com_internet_aprendizagem"
+            )
+            if series_dependencia:
+                payload["series_dependencia"] = series_dependencia
+
+    return payload
+
 
 def build_internet_comunidade_details(municipio):
-    return _build_infra_details(
+    payload = _build_infra_details(
         municipio,
         count_column="escolas_com_internet_comunidade",
         denominator_column="qntd_escolas",
@@ -1437,9 +1459,20 @@ def build_internet_comunidade_details(municipio):
         unit="escolas",
     )
 
+    if payload is not None:
+        dep_df = _safe_load(load_infraestrutura_escolar_por_dependencia_data)
+        if not dep_df.empty:
+            series_dependencia = _build_infra_dependency_series(
+                dep_df, municipio, "escolas_com_internet_comunidade"
+            )
+            if series_dependencia:
+                payload["series_dependencia"] = series_dependencia
+
+    return payload
+
 
 def build_acesso_internet_computador_details(municipio):
-    return _build_infra_details(
+    payload = _build_infra_details(
         municipio,
         count_column="escolas_com_acesso_internet_computador",
         denominator_column="qntd_escolas",
@@ -1449,9 +1482,20 @@ def build_acesso_internet_computador_details(municipio):
         unit="escolas",
     )
 
+    if payload is not None:
+        dep_df = _safe_load(load_infraestrutura_escolar_por_dependencia_data)
+        if not dep_df.empty:
+            series_dependencia = _build_infra_dependency_series(
+                dep_df, municipio, "escolas_com_acesso_internet_computador"
+            )
+            if series_dependencia:
+                payload["series_dependencia"] = series_dependencia
+
+    return payload
+
 
 def build_acesso_internet_disp_pessoais_details(municipio):
-    return _build_infra_details(
+    payload = _build_infra_details(
         municipio,
         count_column="escolas_com_acesso_internet_disp_pessoais",
         denominator_column="qntd_escolas",
@@ -1460,6 +1504,17 @@ def build_acesso_internet_disp_pessoais_details(municipio):
         title="Escolas com acesso dos alunos à internet por dispositivos pessoais",
         unit="escolas",
     )
+
+    if payload is not None:
+        dep_df = _safe_load(load_infraestrutura_escolar_por_dependencia_data)
+        if not dep_df.empty:
+            series_dependencia = _build_infra_dependency_series(
+                dep_df, municipio, "escolas_com_acesso_internet_disp_pessoais"
+            )
+            if series_dependencia:
+                payload["series_dependencia"] = series_dependencia
+
+    return payload
 
 
 def build_rede_local_details(municipio):
