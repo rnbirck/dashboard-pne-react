@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import shutil
 import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
@@ -48,24 +47,93 @@ def load_optional_json(path: Path, fallback: dict | None = None) -> dict:
     return fallback or {}
 
 
-def write_json(path: Path, payload: dict) -> None:
+def render_json(payload: dict) -> str:
+    return json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
+
+
+def record_write(path: Path, expected_paths: set[Path]) -> None:
+    expected_paths.add(path.resolve())
+
+
+def write_text_if_changed(path: Path, content: str, stats: dict[str, int]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as file:
-        json.dump(payload, file, ensure_ascii=False, indent=2)
-        file.write("\n")
+
+    if path.exists():
+        current = path.read_text(encoding="utf-8")
+        if current == content:
+            stats["preserved"] += 1
+            return
+        action = "updated"
+    else:
+        action = "created"
+
+    path.write_text(content, encoding="utf-8")
+    stats[action] += 1
 
 
-def safe_reset_output_dir() -> None:
+def write_json(
+    path: Path,
+    payload: dict,
+    stats: dict[str, int],
+    expected_paths: set[Path],
+) -> None:
+    record_write(path, expected_paths)
+    write_text_if_changed(path, render_json(payload), stats)
+
+
+def copy_file_if_changed(
+    source: Path,
+    destination: Path,
+    stats: dict[str, int],
+    expected_paths: set[Path],
+) -> None:
+    record_write(destination, expected_paths)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    content = source.read_bytes()
+
+    if destination.exists():
+        if destination.read_bytes() == content:
+            stats["preserved"] += 1
+            return
+        action = "updated"
+    else:
+        action = "created"
+
+    destination.write_bytes(content)
+    stats[action] += 1
+
+
+def safe_prepare_output_dir() -> None:
     resolved_output = OUTPUT_DIR.resolve()
     expected_parent = (BASE_DIR / "export").resolve()
 
     if resolved_output.parent != expected_parent:
         raise RuntimeError(f"Diretório de saída inesperado: {resolved_output}")
 
-    if OUTPUT_DIR.exists():
-        shutil.rmtree(OUTPUT_DIR)
-
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def remove_orphan_json_files(
+    output_dir: Path,
+    expected_paths: set[Path],
+    stats: dict[str, int],
+) -> None:
+    expected = {path.resolve() for path in expected_paths}
+
+    for path in output_dir.rglob("*.json"):
+        if path.resolve() in expected:
+            continue
+        path.unlink()
+        stats["removed"] += 1
+
+    directories = [path for path in output_dir.rglob("*") if path.is_dir()]
+    for directory in sorted(directories, key=lambda path: len(path.parts), reverse=True):
+        if directory == output_dir:
+            continue
+        try:
+            directory.rmdir()
+        except OSError:
+            pass
 
 
 def load_aggregate_payloads() -> dict[str, dict]:
@@ -134,6 +202,13 @@ def format_size(bytes_count: int) -> str:
     return f"{bytes_count} B"
 
 
+def resolve_generated_at(payloads: dict[str, dict]) -> str:
+    generated_at = payloads.get("municipios", {}).get("generated_at")
+    if generated_at:
+        return str(generated_at)
+    return datetime.now(timezone.utc).isoformat()
+
+
 def main() -> int:
     global SOURCE_DIR, OUTPUT_DIR
 
@@ -162,13 +237,25 @@ def main() -> int:
     payloads = load_aggregate_payloads()
     municipios = payloads["municipios"].get("municipios", [])
     slug_map = unique_slugs(municipios)
+    stats = {"created": 0, "updated": 0, "preserved": 0, "removed": 0}
+    expected_paths: set[Path] = set()
 
-    safe_reset_output_dir()
+    safe_prepare_output_dir()
 
-    shutil.copy2(SOURCE_DIR / "municipios.json", OUTPUT_DIR / "municipios.json")
-    shutil.copy2(SOURCE_DIR / "indicadores.json", OUTPUT_DIR / "indicadores.json")
+    copy_file_if_changed(
+        SOURCE_DIR / "municipios.json",
+        OUTPUT_DIR / "municipios.json",
+        stats,
+        expected_paths,
+    )
+    copy_file_if_changed(
+        SOURCE_DIR / "indicadores.json",
+        OUTPUT_DIR / "indicadores.json",
+        stats,
+        expected_paths,
+    )
 
-    generated_at = datetime.now(timezone.utc).isoformat()
+    generated_at = resolve_generated_at(payloads)
     index_items = [
         {
             "nome": municipio,
@@ -184,6 +271,8 @@ def main() -> int:
             "total_municipios": len(index_items),
             "municipios": index_items,
         },
+        stats,
+        expected_paths,
     )
 
     errors: list[dict[str, str]] = []
@@ -195,12 +284,16 @@ def main() -> int:
             write_json(
                 OUTPUT_DIR / "municipios" / slug / "index.json",
                 municipio_payload,
+                stats,
+                expected_paths,
             )
             for indicator_key, detail_payload in municipio_payload.get("indicator_details", {}).items():
                 if detail_payload:
                     write_json(
                         OUTPUT_DIR / "municipios" / slug / "details" / f"{indicator_key}.json",
                         detail_payload,
+                        stats,
+                        expected_paths,
                     )
         except Exception as exc:  # noqa: BLE001 - keep processing other municipalities.
             errors.append({"municipio": municipio, "slug": slug, "erro": str(exc)})
@@ -210,7 +303,11 @@ def main() -> int:
         write_json(
             OUTPUT_DIR / "partition_errors.json",
             {"generated_at": generated_at, "total_erros": len(errors), "errors": errors},
+            stats,
+            expected_paths,
         )
+
+    remove_orphan_json_files(OUTPUT_DIR, expected_paths, stats)
 
     files = list(OUTPUT_DIR.rglob("*.json"))
     municipio_files = list((OUTPUT_DIR / "municipios").rglob("index.json"))
@@ -219,6 +316,10 @@ def main() -> int:
 
     print("[partition] Concluído.")
     print(f"[partition] Municípios particionados: {len(municipio_files)}")
+    print(f"[partition] Arquivos criados: {stats['created']}")
+    print(f"[partition] Arquivos atualizados: {stats['updated']}")
+    print(f"[partition] Arquivos preservados: {stats['preserved']}")
+    print(f"[partition] Arquivos removidos: {stats['removed']}")
     print(f"[partition] Erros: {len(errors)}")
     print(f"[partition] Arquivos JSON: {len(files)}")
     print(f"[partition] Tamanho total: {format_size(total_size)}")
