@@ -1,10 +1,13 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { isMissing } from '../utils/educationFormatters'
 
-const BAR_HEIGHT = 200
-const PADDING = { top: 16, right: 16, bottom: 40, left: 140 }
+const CHART_WIDTH = 760
+const BAR_GAP = 14
+const BAR_ROW_HEIGHT = 34
+const PADDING = { top: 16, right: 96, bottom: 20, left: 190 }
 
-export function EducationBarChart({ data, title, color = '#2563eb' }) {
+export function EducationBarChart({ data, title, color = '#2563eb', formatLabel = (v) => String(v) }) {
+  const [activeBar, setActiveBar] = useState(null)
   const chart = useMemo(() => buildBars(data), [data])
 
   if (!chart || chart.bars.length === 0) {
@@ -15,90 +18,81 @@ export function EducationBarChart({ data, title, color = '#2563eb' }) {
     )
   }
 
-  const totalWidth = PADDING.left + chart.bars.length * 80 + PADDING.right
+  const chartHeight = PADDING.top + PADDING.bottom + chart.bars.length * BAR_ROW_HEIGHT
 
   return (
     <div className="education-chart education-chart--bar">
       {title && <h4 className="education-chart__title">{title}</h4>}
-      <svg viewBox={`0 0 ${totalWidth} ${BAR_HEIGHT}`} role="img" aria-label={title || 'Gráfico de barras'}>
-        <g className="chart-grid">
-          {chart.yTicks.map((tick, i) => (
-            <g key={`y-${i}`}>
-              <line
-                x1={PADDING.left}
-                x2={totalWidth - PADDING.right}
-                y1={tick.y}
-                y2={tick.y}
-                stroke="#e8ede4"
-                strokeWidth="1"
+      <div className="education-chart__canvas">
+        <svg viewBox={`0 0 ${CHART_WIDTH} ${chartHeight}`} role="img" aria-label={title || 'Gráfico de barras'}>
+          <g className="chart-grid">
+            {chart.xTicks.map((tick, i) => (
+              <g key={`x-${i}`}>
+                <line x1={tick.x} x2={tick.x} y1={PADDING.top - 4} y2={chartHeight - PADDING.bottom + 4} stroke="#e8ede4" strokeWidth="1" />
+                <text x={tick.x} y={chartHeight - 3} textAnchor="middle" className="chart-axis-label">{tick.label}</text>
+              </g>
+            ))}
+          </g>
+          {chart.bars.map((bar, i) => (
+            <g key={`bar-${i}`}>
+              <text x={PADDING.left - 12} y={bar.y + 15} textAnchor="end" className="chart-bar-cat">{bar.category}</text>
+              <rect
+                x={PADDING.left}
+                y={bar.y}
+                width={bar.width}
+                height={BAR_ROW_HEIGHT - BAR_GAP}
+                fill={color}
+                fillOpacity={activeBar === i ? '1' : '0.85'}
+                rx="4"
+                onMouseEnter={() => setActiveBar(i)}
+                onMouseLeave={() => setActiveBar(null)}
+                style={{ cursor: 'pointer', transition: 'fill-opacity 0.12s' }}
               />
-              <text x={PADDING.left - 10} y={tick.y + 4} textAnchor="end" className="chart-axis-label">
-                {tick.label}
-              </text>
+              <text x={PADDING.left + bar.width + 8} y={bar.y + 15} textAnchor="start" className="chart-bar-label">{bar.label}</text>
             </g>
           ))}
-        </g>
-        {chart.bars.map((bar, i) => (
-          <g key={`bar-${i}`}>
-            <rect
-              x={bar.x}
-              y={bar.y}
-              width={bar.width}
-              height={bar.height}
-              fill={color}
-              fillOpacity="0.85"
-              rx="3"
-            />
-            <text x={bar.x + bar.width / 2} y={bar.y - 6} textAnchor="middle" className="chart-bar-label">
-              {bar.label}
-            </text>
-            <text x={PADDING.left - 10} y={bar.y + bar.height / 2 + 4} textAnchor="end" className="chart-bar-cat">
-              {bar.category}
-            </text>
-          </g>
-        ))}
-        <line
-          x1={PADDING.left}
-          x2={totalWidth - PADDING.right}
-          y1={BAR_HEIGHT - PADDING.bottom}
-          y2={BAR_HEIGHT - PADDING.bottom}
-          stroke="#c4ccc0"
-          strokeWidth="1"
-        />
-      </svg>
+          <line x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={chartHeight - PADDING.bottom} y2={chartHeight - PADDING.bottom} stroke="#c4ccc0" strokeWidth="1" />
+        </svg>
+        {activeBar !== null && chart.bars[activeBar] && (
+          <div className="education-chart__tooltip education-chart__tooltip--bar">
+            <strong>{chart.bars[activeBar].fullCategory}</strong>
+            <span>{formatLabel(chart.bars[activeBar].rawValue)}</span>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
 
 function buildBars(data) {
   if (!Array.isArray(data) || data.length === 0) return null
-
-  const filtered = data.filter((d) => !isMissing(d.value) && d.value > 0)
+  const filtered = data
+    .filter((d) => !isMissing(d.value) && Number(d.value) > 0)
+    .sort((a, b) => Number(b.value) - Number(a.value))
   if (filtered.length === 0) return null
 
-  const maxVal = Math.max(...filtered.map((d) => d.value))
-  const plotH = BAR_HEIGHT - PADDING.top - PADDING.bottom
-
+  const maxVal = Math.max(...filtered.map((d) => Number(d.value)))
+  const plotW = CHART_WIDTH - PADDING.left - PADDING.right
   const bars = filtered.map((d, i) => {
-    const height = (d.value / maxVal) * plotH
-    const barWidth = 50
-    const x = PADDING.left + i * 80 + 15
-    const y = BAR_HEIGHT - PADDING.bottom - height
+    const value = Number(d.value)
     return {
-      x,
-      y,
-      width: barWidth,
-      height,
-      category: d.label,
-      label: d.value.toLocaleString('pt-BR', { maximumFractionDigits: 0 }),
+      y: PADDING.top + i * BAR_ROW_HEIGHT,
+      width: (value / maxVal) * plotW,
+      category: shortenLabel(d.label),
+      fullCategory: d.label,
+      label: value.toLocaleString('pt-BR', { maximumFractionDigits: 0 }),
+      rawValue: value,
     }
   })
-
-  const yTicksRaw = [0, maxVal * 0.25, maxVal * 0.5, maxVal * 0.75, maxVal]
-  const yTicks = yTicksRaw.map((val) => ({
+  const xTicksRaw = [0, maxVal * 0.25, maxVal * 0.5, maxVal * 0.75, maxVal]
+  const xTicks = xTicksRaw.map((val) => ({
     label: Math.round(val).toLocaleString('pt-BR'),
-    y: BAR_HEIGHT - PADDING.bottom - (val / maxVal) * plotH,
+    x: PADDING.left + (val / maxVal) * plotW,
   }))
+  return { bars, xTicks }
+}
 
-  return { bars, yTicks }
+function shortenLabel(label) {
+  if (!label || label.length <= 28) return label
+  return `${label.slice(0, 25)}...`
 }
