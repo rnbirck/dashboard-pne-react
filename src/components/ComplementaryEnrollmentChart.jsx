@@ -1,12 +1,18 @@
 import { useMemo } from 'react'
 
 const CHART_WIDTH = 600
-const CHART_HEIGHT = 240
-const PADDING = { top: 24, right: 24, bottom: 44, left: 64 }
+const CHART_HEIGHT = 300
+const PADDING = { top: 34, right: 28, bottom: 48, left: 64 }
 
 function formatNumber(value) {
   if (!Number.isFinite(value)) return '-'
   return value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })
+}
+
+function roundUp(value) {
+  if (!Number.isFinite(value) || value <= 0) return 1
+  const magnitude = 10 ** Math.floor(Math.log10(value))
+  return Math.ceil(value / magnitude) * magnitude
 }
 
 function shouldShowYearLabel(index, total) {
@@ -14,6 +20,12 @@ function shouldShowYearLabel(index, total) {
   if (index === 0 || index === lastIndex) return true
   if (total <= 8) return true
   return index % 2 === 0 && index < lastIndex - 1
+}
+
+function shouldShowValueLabel(point, index, points, maxValue) {
+  if (index === 0 || index === points.length - 1) return true
+  if (point.value === maxValue) return true
+  return points.length <= 8 ? index % 2 === 0 : index % 3 === 0
 }
 
 export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em creche', unit = 'Matrículas' }) {
@@ -27,9 +39,10 @@ export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em c
   if (points.length === 0) return null
 
   const values = points.map((p) => p.value)
-  const minValue = Math.min(...values)
+  const minValue = 0
   const maxValue = Math.max(...values)
-  const valueSpan = maxValue - minValue || 1
+  const yMax = roundUp(maxValue * 1.12)
+  const valueSpan = yMax - minValue || 1
 
   const minYear = points[0].year
   const maxYear = points[points.length - 1].year
@@ -72,12 +85,25 @@ export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em c
             y2={CHART_HEIGHT - PADDING.bottom}
             className="complementary-chart__axis"
           />
+          {[0.25, 0.5, 0.75].map((ratio) => {
+            const y = PADDING.top + plotHeight * ratio
+            return (
+              <line
+                className="complementary-chart__gridline"
+                key={ratio}
+                x1={PADDING.left}
+                x2={CHART_WIDTH - PADDING.right}
+                y1={y}
+                y2={y}
+              />
+            )
+          })}
 
           <text x={PADDING.left - 10} y={PADDING.top + 6} textAnchor="end" className="complementary-chart__tick">
-            {formatNumber(maxValue)}
+            {formatNumber(yMax)}
           </text>
           <text x={PADDING.left - 10} y={CHART_HEIGHT - PADDING.bottom} textAnchor="end" className="complementary-chart__tick">
-            {formatNumber(minValue)}
+            0
           </text>
 
           <path d={areaD} className="complementary-chart__area" />
@@ -96,6 +122,24 @@ export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em c
           ))}
 
           {points.map((p, i) => {
+            if (!shouldShowValueLabel(p, i, points, maxValue)) return null
+            const x = xScale(p.year)
+            const y = Math.max(yScale(p.value) - 10, PADDING.top + 10)
+            const anchor = i === 0 ? 'start' : i === points.length - 1 ? 'end' : 'middle'
+            return (
+              <text
+                className="complementary-chart__value-label"
+                key={`value-${p.year}`}
+                textAnchor={anchor}
+                x={x}
+                y={y}
+              >
+                {formatNumber(p.value)}
+              </text>
+            )
+          })}
+
+          {points.map((p, i) => {
             if (!shouldShowYearLabel(i, points.length)) return null
             const x = xScale(p.year)
             const anchor = i === 0 ? 'start' : i === points.length - 1 ? 'end' : 'middle'
@@ -104,7 +148,7 @@ export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em c
               <text
                 key={`label-${p.year}`}
                 x={x + dx}
-                y={CHART_HEIGHT - 16}
+                y={CHART_HEIGHT - 18}
                 textAnchor={anchor}
                 className="complementary-chart__x-label"
               >

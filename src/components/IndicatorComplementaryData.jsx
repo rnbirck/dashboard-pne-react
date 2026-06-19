@@ -147,6 +147,9 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData 
           <span className="complementary-data__description">
             Histórico de matrículas, dependência administrativa e números usados no cálculo
           </span>
+          <span className="complementary-data__action">
+            Clique para explorar dados complementares
+          </span>
           <span className="complementary-data__chips" aria-hidden="true">
             {options.map((option) => (
               <span className="complementary-data__chip" key={option.key}>
