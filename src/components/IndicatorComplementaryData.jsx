@@ -10,6 +10,16 @@ const percentFormatter = new Intl.NumberFormat('pt-BR', {
   minimumFractionDigits: 0,
 })
 
+const CENSUS_INDICATOR_KEYS = new Set([
+  'alfabetizacao_pop_15_mais',
+  'fundamental_concluido_18_mais',
+  'fundamental_concluido_15_29',
+  'medio_concluido_18_mais',
+  'medio_concluido_18_29',
+  'escolaridade_media_18_29',
+  'razao_escolaridade_racial_18_29',
+])
+
 export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData, result }) {
   const slug = municipioData?.slug
   const fallbackDetails = municipioData?.indicator_details?.[indicatorKey] ?? null
@@ -58,23 +68,39 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
   )
   const calculationComponents =
     details?.series_components_by_cycle?.[cycle] ?? details?.series_components
+  const isCensusIndicator = useMemo(
+    () => isDemographicCensusIndicator(indicatorKey, details),
+    [indicatorKey, details],
+  )
   const filteredTotal = useMemo(
-    () => normalizeCycleSeries(filterRowsByCycle(details?.series_total, cycleRange), cycleRange),
-    [details?.series_total, cycleRange],
+    () => {
+      if (isCensusIndicator) return filterRealRows(details?.series_total)
+      return normalizeCycleSeries(filterRowsByCycle(details?.series_total, cycleRange), cycleRange)
+    },
+    [details?.series_total, cycleRange, isCensusIndicator],
   )
   const filteredDependencia = useMemo(
-    () => normalizeCycleSeries(filterRowsByCycle(details?.series_dependencia, cycleRange), cycleRange),
-    [details?.series_dependencia, cycleRange],
+    () => {
+      if (isCensusIndicator) return []
+      return normalizeCycleSeries(filterRowsByCycle(details?.series_dependencia, cycleRange), cycleRange)
+    },
+    [details?.series_dependencia, cycleRange, isCensusIndicator],
   )
   const filteredComponents = useMemo(
-    () =>
-      filterRowsByCycle(calculationComponents, cycleRange)
+    () => {
+      const rows = isCensusIndicator
+        ? filterRealRows(calculationComponents)
+        : filterRowsByCycle(calculationComponents, cycleRange)
+      return rows
         .slice()
-        .sort((a, b) => Number(b?.ano) - Number(a?.ano)),
-    [calculationComponents, cycleRange],
+        .sort((a, b) => Number(b?.ano) - Number(a?.ano))
+    },
+    [calculationComponents, cycleRange, isCensusIndicator],
   )
 
-  const hasTotal = filteredTotal.length > 0
+  const hasTotal = isCensusIndicator
+    ? countRowsWithValue(filteredTotal, 'valor') >= 2
+    : filteredTotal.length > 0
   const hasDependencia = filteredDependencia.length > 0
   const hasComponents = filteredComponents.length > 0
   const numeratorLabel = details?.calculation?.numerator_label || 'Numerador'
@@ -88,7 +114,7 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
     if (hasTotal) {
       availableOptions.push({
         key: 'enrollment-history',
-        label: 'Histórico de matrículas',
+        label: isCensusIndicator ? 'Histórico' : 'Histórico de matrículas',
         content: (
           <ComplementaryEnrollmentChart
             series={filteredTotal}
@@ -138,6 +164,7 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
     hasComponents,
     hasDependencia,
     hasTotal,
+    isCensusIndicator,
     numeratorLabel,
   ])
 
@@ -152,6 +179,7 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
 
   const activeOption = options.find((option) => option.key === activeTab) ?? options[0]
   const contentId = `indicator-explore-more-${indicatorKey || 'detail'}`
+  const optionsDescription = buildOptionsDescription(options)
 
   return (
     <section className={`complementary-data${isOpen ? ' is-open' : ''}`} aria-label="Explorar mais">
@@ -165,7 +193,7 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
         <span className="complementary-data__summary">
           <span className="complementary-data__title">Explorar mais</span>
           <span className="complementary-data__description">
-            Histórico de matrículas, dependência administrativa e números usados no cálculo
+            {optionsDescription}
           </span>
           <span className="complementary-data__action">
             Clique para explorar dados complementares
@@ -251,6 +279,58 @@ function filterRowsByCycle(rows, range) {
     if (Number.isFinite(range?.max) && year > range.max) return false
     return true
   })
+}
+
+function filterRealRows(rows) {
+  if (!Array.isArray(rows)) return []
+  return rows.filter((row) => Number.isFinite(Number(row?.ano)) && rowHasRealValue(row))
+}
+
+function rowHasRealValue(row) {
+  if (!row) return false
+  return Object.entries(row).some(([key, value]) => {
+    if (key === 'ano') return false
+    const numeric = Number(value)
+    return Number.isFinite(numeric)
+  })
+}
+
+function countRowsWithValue(rows, key) {
+  if (!Array.isArray(rows)) return 0
+  return rows.filter((row) => Number.isFinite(Number(row?.[key]))).length
+}
+
+function buildOptionsDescription(options) {
+  const labels = options.map((option) => option.label.toLocaleLowerCase('pt-BR'))
+  if (labels.length === 0) return 'Dados complementares disponíveis'
+  if (labels.length === 1) return labels[0]
+  if (labels.length === 2) return `${labels[0]} e ${labels[1]}`
+  return `${labels.slice(0, -1).join(', ')} e ${labels[labels.length - 1]}`
+}
+
+function isDemographicCensusIndicator(indicatorKey, details) {
+  if (CENSUS_INDICATOR_KEYS.has(indicatorKey)) return true
+
+  const text = [
+    details?.title,
+    details?.subtitle,
+    details?.calculation?.numerator_label,
+    details?.calculation?.denominator_label,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLocaleLowerCase('pt-BR')
+
+  return (
+    text.includes('censo demografico') ||
+    (
+      details?.unit === 'pessoas' &&
+      text.includes('populacao') &&
+      !Array.isArray(details?.series_dependencia)
+    )
+  )
 }
 
 function resolveCycleRange(cycle, result, details) {
