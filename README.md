@@ -21,6 +21,8 @@ npm run build
 npm run lint
 npm run check:units
 npm run list:indicators
+npm run update:data
+npm run update:data:skip-build
 npm run validate:details
 npm run test:e2e
 ```
@@ -30,6 +32,8 @@ npm run test:e2e
 - `npm run lint`: valida o codigo com ESLint.
 - `npm run check:units`: verifica coerencia dos `value_mode` em `public/data/indicadores.json`.
 - `npm run list:indicators`: lista indicadores e modos de valor para revisao manual.
+- `npm run update:data`: roda export, partition, sync para `public/data`, validacao e build.
+- `npm run update:data:skip-build`: roda a atualizacao dos dados sem executar o build final.
 - `npm run validate:details`: valida o contrato basico dos JSONs em `public/data/municipios/*/details/*.json`.
 - `npm run test:e2e`: roda o teste Playwright contra uma instancia local ja ativa.
 
@@ -42,19 +46,49 @@ npm run test:e2e
 
 Se precisar testar outro endereco, defina `BASE_URL` antes de rodar `test:e2e`.
 
-## Atualizar os dados
+## Atualizacao dos dados estaticos
 
 Os dados publicos do React ficam em `public/data`. Eles sao gerados a partir do
 pipeline local em `data_pipeline` e particionados por municipio.
 
+O comando principal e:
+
+```powershell
+npm run update:data
+```
+
+Esse comando orquestra:
+
+- `python data_pipeline/scripts/export_static_data.py --include-derived`;
+- `python data_pipeline/scripts/partition_static_data.py`;
+- sincronizacao de `data_pipeline/export/data_partitioned` para `public/data`;
+- `npm run validate:details`;
+- `npm run build`.
+
+Use `npm run update:data:skip-build` quando quiser atualizar e validar os dados
+sem gerar o build estatico no final. Use
+`python data_pipeline/scripts/update_static_data.py --validate-only` quando
+quiser rodar apenas a validacao dos detalhes, sem export, partition, sync ou
+build.
+
+O orquestrador para no primeiro erro, mostra `git status --short` no final e nao
+faz commit nem push. Antes de etapas que podem alterar dados, ele bloqueia a
+execucao se houver alteracoes fora de `public/data`.
+
+`public/data` continua versionado porque e a fonte servida pelo React.
+`data_pipeline/export` e intermediario do pipeline local e nao deve ser
+commitado.
+
 Antes de atualizar os dados pela primeira vez, crie `data_pipeline/.env` a partir
 de `data_pipeline/.env.example` com as credenciais do banco local.
 
-`SINOPSE_CENSO_DIR` e obrigatorio para `scripts/update_react_data.ps1` e deve
-apontar para a pasta com as planilhas da Sinopse Estatistica do Censo Escolar.
-`PNE_PYTHON` continua opcional, caso queira usar um Python especifico.
+O fluxo legado `scripts/update_react_data.ps1` tambem recalcula indicadores de
+creche e pre-escola a partir das planilhas da Sinopse Estatistica do Censo
+Escolar. Para esse script, `SINOPSE_CENSO_DIR` deve apontar para a pasta com as
+planilhas e `PNE_PYTHON` continua opcional, caso queira usar um Python
+especifico.
 
-Exemplo no PowerShell:
+Exemplo no PowerShell para o fluxo legado:
 
 ```powershell
 $env:SINOPSE_CENSO_DIR = "C:\caminho\para\sinopse_estatistica_censo"
