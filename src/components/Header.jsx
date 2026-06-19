@@ -4,6 +4,7 @@ const NAV_ITEMS = [
   { key: 'home', label: 'Início', icon: HomeIcon },
   { key: 'pne2014', label: 'PNE 2014-2024', icon: CalendarIcon },
   { key: 'pne2026', label: 'PNE 2026-2036', icon: CalendarIcon },
+  { key: 'educacao', label: 'Educação', icon: EducationIcon },
   { key: 'diagnostico', label: 'Diagnóstico', icon: DocumentIcon },
 ]
 
@@ -75,6 +76,15 @@ function DocumentIcon() {
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M7 3h7l4 4v14H7z" />
       <path d="M14 3v5h5M9.5 13h5M9.5 17h5" />
+    </svg>
+  )
+}
+
+function EducationIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M22 10L12 5 2 10l10 5 10-5z" />
+      <path d="M6 12v5c0 1 3 2.5 6 2.5s6-1.5 6-2.5v-5" />
     </svg>
   )
 }

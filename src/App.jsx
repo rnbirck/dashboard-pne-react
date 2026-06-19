@@ -13,6 +13,7 @@ import {
 } from './data/staticData'
 import { CyclePage } from './pages/CyclePage'
 import { Diagnostico } from './pages/Diagnostico'
+import { EducacaoPage } from './pages/EducacaoPage'
 import { MunicipalitySelector } from './components/MunicipalitySelector'
 import { Home } from './pages/Home'
 import { useAsyncData } from './utils/useAsyncData'
@@ -185,6 +186,14 @@ function PageContent({
       <Diagnostico
         indicadores={indicadores}
         municipioData={municipioData}
+        selectedMunicipio={selectedMunicipio}
+      />
+    )
+  }
+
+  if (activePage === 'educacao') {
+    return (
+      <EducacaoPage
         selectedMunicipio={selectedMunicipio}
       />
     )
