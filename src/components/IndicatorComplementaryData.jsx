@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { loadIndicatorDetail } from '../data/staticData'
+import { isDemographicCensusIndicator } from '../utils/indicatorSeries'
 import { AdministrativeDependencyChart } from './AdministrativeDependencyChart'
 import { ComplementaryEnrollmentChart } from './ComplementaryEnrollmentChart'
 
@@ -9,16 +10,6 @@ const percentFormatter = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 1,
   minimumFractionDigits: 0,
 })
-
-const CENSUS_INDICATOR_KEYS = new Set([
-  'alfabetizacao_pop_15_mais',
-  'fundamental_concluido_18_mais',
-  'fundamental_concluido_15_29',
-  'medio_concluido_18_mais',
-  'medio_concluido_18_29',
-  'escolaridade_media_18_29',
-  'razao_escolaridade_racial_18_29',
-])
 
 export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData, result }) {
   const slug = municipioData?.slug
@@ -69,7 +60,7 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
   const calculationComponents =
     details?.series_components_by_cycle?.[cycle] ?? details?.series_components
   const isCensusIndicator = useMemo(
-    () => isDemographicCensusIndicator(indicatorKey, details),
+    () => isDemographicCensusIndicator({ indicatorKey, item: null, details }),
     [indicatorKey, details],
   )
   const filteredTotal = useMemo(
@@ -306,31 +297,6 @@ function buildOptionsDescription(options) {
   if (labels.length === 1) return labels[0]
   if (labels.length === 2) return `${labels[0]} e ${labels[1]}`
   return `${labels.slice(0, -1).join(', ')} e ${labels[labels.length - 1]}`
-}
-
-function isDemographicCensusIndicator(indicatorKey, details) {
-  if (CENSUS_INDICATOR_KEYS.has(indicatorKey)) return true
-
-  const text = [
-    details?.title,
-    details?.subtitle,
-    details?.calculation?.numerator_label,
-    details?.calculation?.denominator_label,
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLocaleLowerCase('pt-BR')
-
-  return (
-    text.includes('censo demografico') ||
-    (
-      details?.unit === 'pessoas' &&
-      text.includes('populacao') &&
-      !Array.isArray(details?.series_dependencia)
-    )
-  )
 }
 
 function resolveCycleRange(cycle, result, details) {

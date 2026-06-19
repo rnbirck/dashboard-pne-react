@@ -18,20 +18,11 @@ import {
 } from '../utils/visualDomain'
 import { IndicatorComplementaryData } from './IndicatorComplementaryData'
 import { IndicatorHistoryChart } from './IndicatorHistoryChart'
+import { isDemographicCensusIndicator, buildDisplayIndicatorSeries } from '../utils/indicatorSeries'
 import { MetricCard } from './MetricCard'
 import { PNE_2026_GOAL_TEXTS } from '../data/pne2026GoalTexts'
 import { PNE_2014_GOAL_TEXTS } from '../data/pne2014GoalTexts'
 import { StatusBadge } from './StatusBadge'
-
-const CENSUS_INDICATOR_KEYS = new Set([
-  'alfabetizacao_pop_15_mais',
-  'fundamental_concluido_18_mais',
-  'fundamental_concluido_15_29',
-  'medio_concluido_18_mais',
-  'medio_concluido_18_29',
-  'escolaridade_media_18_29',
-  'razao_escolaridade_racial_18_29',
-])
 
 export const IndicatorDetail = forwardRef(function IndicatorDetail(
   { cycle, item, municipioData, result },
@@ -54,17 +45,10 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
   }
 
   const cycleMinYear = cycle === 'pne_2014_2024' ? 2014 : null
-  const isCensusIndicator = isDemographicCensusIndicator(item?.key, municipioData?.indicator_details?.[item?.key])
-  const censusSeries = isCensusIndicator
-    ? buildCensusIndicatorSeries(municipioData?.indicator_details?.[item?.key])
-    : []
-  const baseSeries = isCensusIndicator && censusSeries.length > 0
-    ? censusSeries
-    : (result.series ?? [])
+  const details = municipioData?.indicator_details?.[item?.key]
+  const isCensusIndicator = isDemographicCensusIndicator({ indicatorKey: item?.key, item, details })
+  const displaySeries = buildDisplayIndicatorSeries({ cycle, result, details, item, indicatorKey: item?.key })
   const effectiveCycleMinYear = isCensusIndicator ? null : cycleMinYear
-  const displaySeries = effectiveCycleMinYear
-    ? baseSeries.filter((p) => Number(p?.ano) >= effectiveCycleMinYear)
-    : baseSeries
   const filteredStartYear = effectiveCycleMinYear && Number.isFinite(Number(result.start_year)) && Number(result.start_year) < effectiveCycleMinYear
     ? effectiveCycleMinYear
     : startYearFromSeries(displaySeries) ?? result.start_year
@@ -519,44 +503,6 @@ function parseDisplayNumber(value) {
   if (!match) return Number.NaN
   const numeric = Number(match[0].replace(',', '.'))
   return Number.isFinite(numeric) ? numeric : Number.NaN
-}
-
-function isDemographicCensusIndicator(indicatorKey, details) {
-  if (CENSUS_INDICATOR_KEYS.has(indicatorKey)) return true
-
-  const text = [
-    details?.source,
-    details?.fonte,
-    details?.methodology,
-    details?.description,
-    details?.calculation?.source,
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLocaleLowerCase('pt-BR')
-
-  return text.includes('censo demografico') || text.includes('censo demográfico')
-}
-
-function buildCensusIndicatorSeries(details) {
-  const componentSeries = extractCensusSeries(details?.series_components, 'percentual')
-  if (componentSeries.length > 0) return componentSeries
-
-  return extractCensusSeries(details?.series_total, 'valor')
-}
-
-function extractCensusSeries(rows, valueKey) {
-  if (!Array.isArray(rows)) return []
-
-  const byYear = new Map()
-  rows.forEach((row) => {
-    const ano = Number(row?.ano)
-    const valor = Number(row?.[valueKey])
-    if (!Number.isFinite(ano) || !Number.isFinite(valor)) return
-    byYear.set(ano, { ano, valor })
-  })
-
-  return Array.from(byYear.values()).sort((a, b) => a.ano - b.ano)
 }
 
 function startYearFromSeries(series) {
