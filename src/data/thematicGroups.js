@@ -26,10 +26,6 @@ const ENSINO_MEDIO_KEYS = [
   'saeb_portugues_ensino_medio',
   'idade_regular_medio',
   'adequacao_em',
-  'medio_tecnico_total',
-  'medio_tecnico',
-  'medio_tecnico_participacao_publica',
-  'subsequente_expansao',
   'medio_concluido_18_mais',
   'medio_concluido_18_29',
 ]
@@ -95,7 +91,6 @@ export const THEMATIC_GROUPS = [
       'medio_tecnico',
       'medio_tecnico_participacao_publica',
       'subsequente_expansao',
-      'alfabetizacao_pop_15_mais',
     ],
   },
   {
@@ -176,8 +171,8 @@ export const THEMATIC_GROUPS = [
   },
   {
     key: 'escolaridade_populacao',
-    label: 'Escolaridade da População',
-    shortLabel: 'Escolaridade da População',
+    label: 'Escolaridade e Alfabetização',
+    shortLabel: 'Escolaridade e Alfabetização',
     icon: 'EP',
     accent: '#0f766e',
     indicatorKeys: [
