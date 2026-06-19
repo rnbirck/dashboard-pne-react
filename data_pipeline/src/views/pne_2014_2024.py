@@ -203,6 +203,7 @@ def _build_grouped_precomputed_fallback_results(
     group_column,
     value_column,
     filters=None,
+    use_precomputed=True,
     target_start_year,
     target_end_year,
     direction=GOAL_AT_LEAST,
@@ -211,15 +212,17 @@ def _build_grouped_precomputed_fallback_results(
     pending_groups = {}
 
     for result_key, (group_value, meta) in result_groups.items():
-        precomputed = _build_precomputed_result(
-            municipio,
-            result_key,
-            meta=meta,
-            meta_label=precomputed_meta_label,
-            direction=direction,
-            target_start_year=target_start_year,
-            target_end_year=target_end_year,
-        )
+        precomputed = None
+        if use_precomputed:
+            precomputed = _build_precomputed_result(
+                municipio,
+                result_key,
+                meta=meta,
+                meta_label=precomputed_meta_label,
+                direction=direction,
+                target_start_year=target_start_year,
+                target_end_year=target_end_year,
+            )
         if precomputed is not None:
             results[result_key] = precomputed
             continue
@@ -308,6 +311,7 @@ def _calculate_adequacao_results(municipio):
         group_column="etapa",
         value_column="percentual_adequacao",
         filters={"dependencia": "total"},
+        use_precomputed=False,
         target_start_year=TARGET_START_YEAR,
         target_end_year=TARGET_END_YEAR,
     )

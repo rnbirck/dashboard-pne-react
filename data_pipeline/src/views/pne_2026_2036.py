@@ -515,6 +515,7 @@ def _build_grouped_value_results(
     meta_label,
     target_start_year,
     target_end_year,
+    filters=None,
     direction=GOAL_AT_LEAST,
 ):
     results = {
@@ -535,14 +536,16 @@ def _build_grouped_value_results(
     ):
         return results
 
-    dff = (
-        df[df["municipio"] == municipio]
-        .loc[:, ["ano", group_column, value_column]]
-        .copy()
-    )
+    dff = df[df["municipio"] == municipio].copy()
+    if filters:
+        for column, value in filters.items():
+            if column not in dff.columns:
+                return results
+            dff = dff[dff[column] == value]
     if dff.empty:
         return results
 
+    dff = dff.loc[:, ["ano", group_column, value_column]].copy()
     dff["ano"] = pd.to_numeric(dff["ano"], errors="coerce")
     dff[value_column] = pd.to_numeric(dff[value_column], errors="coerce")
     dff = dff.dropna(subset=["ano", value_column]).copy()
@@ -664,6 +667,7 @@ def _calculate_adequacao_results(municipio):
         meta_label="Meta PNE 2036",
         target_start_year=2019,
         target_end_year=TARGET_END_YEAR,
+        filters={"dependencia": "total"},
     )
 
 
@@ -1299,7 +1303,7 @@ def _calc_adequacao(municipio, etapa_key):
         value_column="percentual_adequacao",
         meta=META_ADEQUACAO,
         meta_label="Meta PNE 2036",
-        filters={"etapa": etapa_key},
+        filters={"etapa": etapa_key, "dependencia": "total"},
         target_start_year=2019,
         target_end_year=TARGET_END_YEAR,
     )
@@ -1327,16 +1331,6 @@ def _calc_pos_graduacao(municipio):
 
 
 def _calc_temporarios(municipio):
-    precomputed = _build_precomputed_result(
-        municipio,
-        "temporarios",
-        meta=META_TEMPORARIOS,
-        meta_label="Meta PNE 2031",
-        direction=GOAL_AT_MOST,
-    )
-    if precomputed is not None:
-        return precomputed
-
     return _build_value_result(
         load_docentes_temporarios_data,
         municipio,
@@ -1344,6 +1338,7 @@ def _calc_temporarios(municipio):
         meta=META_TEMPORARIOS,
         meta_label="Meta PNE 2031",
         direction=GOAL_AT_MOST,
+        filters={"dependencia": "publica"},
         target_start_year=TARGET_START_YEAR,
         target_end_year=TARGET_END_YEAR,
     )

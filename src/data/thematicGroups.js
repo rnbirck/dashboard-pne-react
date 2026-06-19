@@ -2,17 +2,8 @@ const EDUCACAO_INFANTIL_KEYS = ['creche', 'pre_escola']
 
 const ENSINO_FUNDAMENTAL_KEYS = [
   'basico_6_17',
-  'alfabetizacao',
-  'ideb_anos_iniciais',
-  'ideb_anos_finais',
-  'saeb_matematica_anos_iniciais',
-  'saeb_matematica_anos_finais',
-  'saeb_portugues_anos_iniciais',
-  'saeb_portugues_anos_finais',
   'idade_regular_quinto',
   'idade_regular_nono',
-  'adequacao_ai',
-  'adequacao_af',
   'ensino_fundamental_ou_completo_pop_6_14',
   'fundamental_concluido_18_mais',
   'fundamental_concluido_15_29',
@@ -21,11 +12,7 @@ const ENSINO_FUNDAMENTAL_KEYS = [
 const ENSINO_MEDIO_KEYS = [
   'basico_15_17',
   'ensino_medio_ou_basica_completa_pop_15_17',
-  'ideb_ensino_medio',
-  'saeb_matematica_ensino_medio',
-  'saeb_portugues_ensino_medio',
   'idade_regular_medio',
-  'adequacao_em',
   'medio_concluido_18_mais',
   'medio_concluido_18_29',
 ]
