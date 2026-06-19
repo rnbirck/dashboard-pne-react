@@ -188,6 +188,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
                   results={normalizedMunicipioResults}
                   selectedIndicator={activeItem?.key}
                   onSelectIndicator={setSelectedIndicatorKey}
+                  stageFilters={selectedGroup?.key === 'educacao_basica' ? selectedGroup.filters : null}
                 />
               </>
             )}

@@ -1,6 +1,6 @@
 import { StatusBadge } from './StatusBadge'
 
-export function IndicatorList({ items, selectedIndicator, onSelectIndicator, results }) {
+export function IndicatorList({ items, selectedIndicator, onSelectIndicator, results, stageFilters }) {
   return (
     <div className="indicator-list">
       {items.map((item) => {
@@ -17,6 +17,7 @@ export function IndicatorList({ items, selectedIndicator, onSelectIndicator, res
               ? 'warning'
               : 'muted'
         const compactStatus = getCompactStatusLabel(statusLabel)
+        const stageLabel = getStageTagLabel(item.key, stageFilters)
         return (
           <button
             className={
@@ -28,13 +29,20 @@ export function IndicatorList({ items, selectedIndicator, onSelectIndicator, res
             title={item.label}
           >
             <span className="indicator-row__label">{item.label}</span>
-            <StatusBadge
-              className="indicator-status"
-              displayStatus={compactStatus}
-              status={statusLabel}
-              title={statusLabel}
-              tone={tone}
-            />
+            <span className="indicator-row__badges">
+              <StatusBadge
+                className="indicator-status"
+                displayStatus={compactStatus}
+                status={statusLabel}
+                title={statusLabel}
+                tone={tone}
+              />
+              {stageLabel ? (
+                <span className="indicator-stage-badge" title={`Etapa: ${stageLabel}`}>
+                  {stageLabel}
+                </span>
+              ) : null}
+            </span>
           </button>
         )
       })}
@@ -54,4 +62,41 @@ function getCompactStatusLabel(statusLabel) {
     return 'Atingida'
   }
   return statusLabel
+}
+
+function getStageTagLabel(itemKey, stageFilters) {
+  const stages = (stageFilters ?? [])
+    .filter((filter) => filter.key !== 'todos' && filterIncludesItem(filter, itemKey))
+    .map((filter) => filter.key)
+
+  if (!stages.length) return null
+  if (stages.length >= 3) return 'Todas as etapas'
+
+  if (stages.length === 1) {
+    return STAGE_LABELS[stages[0]] ?? null
+  }
+
+  return stages
+    .map((stageKey) => STAGE_COMPACT_LABELS[stageKey])
+    .filter(Boolean)
+    .join(' + ')
+}
+
+function filterIncludesItem(filter, itemKey) {
+  return (
+    filter.indicatorKeys?.includes(itemKey) ||
+    filter.items?.some((item) => item.key === itemKey)
+  )
+}
+
+const STAGE_LABELS = {
+  educacao_infantil: 'Educação Infantil',
+  ensino_fundamental: 'Ensino Fundamental',
+  ensino_medio: 'Ensino Médio',
+}
+
+const STAGE_COMPACT_LABELS = {
+  educacao_infantil: 'Infantil',
+  ensino_fundamental: 'Fundamental',
+  ensino_medio: 'Médio',
 }

@@ -1243,7 +1243,6 @@
 
 .indicator-row .status-badge {
   flex-shrink: 0;
-  align-self: flex-start;
   white-space: nowrap;
   max-width: 100%;
   padding: 3px 7px;
@@ -1256,8 +1255,33 @@
   text-overflow: ellipsis;
 }
 
+.indicator-row__badges {
+  align-self: flex-start;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
 .indicator-status {
   flex-shrink: 0;
+}
+
+.indicator-stage-badge {
+  flex-shrink: 1;
+  max-width: 100%;
+  padding: 3px 7px;
+  border: 1px solid rgba(31, 78, 121, 0.14);
+  border-radius: var(--radius-pill);
+  background: #eef4f7;
+  color: #47606b;
+  font-size: 0.6rem;
+  font-weight: 750;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .indicator-row .status-badge--success {
@@ -4013,7 +4037,7 @@
 .complementary-chart__legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 14px 16px;
   margin-top: 6px;
 }
 
@@ -4025,17 +4049,17 @@
 .complementary-chart__legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.76rem;
+  gap: 7px;
+  font-size: 0.82rem;
   color: var(--text-muted);
-  font-weight: 500;
+  font-weight: 650;
 }
 
 .complementary-chart__legend-swatch {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  opacity: 0.82;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  opacity: 0.88;
 }
 
 .complementary-chart__tooltip {
