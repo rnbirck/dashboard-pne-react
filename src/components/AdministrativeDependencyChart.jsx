@@ -44,17 +44,20 @@ export function AdministrativeDependencyChart({
   const activeKeys = useMemo(() => {
     if (!series || series.length === 0) return []
     return ALL_DEPENDENCY_KEYS.filter((dep) =>
-      series.some((p) => Number(p?.[dep.key]) > 0)
+      series.some((p) => {
+        const v = p?.[dep.key]
+        return v !== null && v !== undefined && Number(v) > 0
+      })
     )
   }, [series])
 
-  const rows = useMemo(() => {
+  const rawRows = useMemo(() => {
     if (activeKeys.length === 0) return []
     return (series ?? [])
       .map((p) => {
         const row = { year: Number(p?.ano) }
         for (const dep of activeKeys) {
-          row[dep.key] = Number(p?.[dep.key]) || 0
+          row[dep.key] = p?.[dep.key] !== null && p?.[dep.key] !== undefined ? Number(p[dep.key]) : null
         }
         return row
       })
@@ -62,10 +65,14 @@ export function AdministrativeDependencyChart({
       .sort((a, b) => a.year - b.year)
   }, [series, activeKeys])
 
-  if (rows.length === 0 || activeKeys.length === 0) return null
+  if (rawRows.length === 0 || activeKeys.length === 0) return null
 
-  const totals = rows.map((r) => activeKeys.reduce((sum, dep) => sum + r[dep.key], 0))
-  const values = rows.flatMap((row) => activeKeys.map((dep) => row[dep.key]))
+  const rows = rawRows
+  const allHaveAnyValue = rows.some((r) => activeKeys.some((dep) => Number.isFinite(r[dep.key])))
+  if (!allHaveAnyValue) return null
+
+  const totals = rows.map((r) => activeKeys.reduce((sum, dep) => sum + (Number.isFinite(r[dep.key]) ? r[dep.key] : 0), 0))
+  const values = rows.flatMap((row) => activeKeys.map((dep) => Number.isFinite(row[dep.key]) ? row[dep.key] : 0))
   const maxValue = isPercent ? Math.max(...values, 1) : roundUp(Math.max(...totals, 1) * 1.1)
 
   const plotWidth = CHART_WIDTH - PADDING.left - PADDING.right
@@ -149,24 +156,40 @@ export function AdministrativeDependencyChart({
           {isPercent ? (
             <>
               {activeKeys.map((dep) => {
-                const points = rows
-                  .filter((row) => row[dep.key] > 0)
+                const allPoints = rows
                   .map((row) => ({
                     color: dep.color,
                     dependency: dep.label,
                     value: row[dep.key],
                     year: row.year,
                     x: xScale(row.year),
-                    y: yScale(row[dep.key]),
+                    y: Number.isFinite(row[dep.key]) ? yScale(row[dep.key]) : null,
                   }))
-                if (points.length === 0) return null
-                const pathD = points
-                  .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
-                  .join(' ')
+                const segments = []
+                let current = []
+                for (const p of allPoints) {
+                  if (!Number.isFinite(p.value)) {
+                    if (current.length > 0) {
+                      segments.push(current)
+                      current = []
+                    }
+                    continue
+                  }
+                  current.push(p)
+                }
+                if (current.length > 0) segments.push(current)
+                if (segments.length === 0) return null
                 return (
                   <g key={dep.key}>
-                    <path d={pathD} fill="none" stroke={dep.color} strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.84" strokeWidth="2.5" />
-                    {points.map((point) => (
+                    {segments.map((seg, si) => {
+                      const pathD = seg
+                        .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
+                        .join(' ')
+                      return (
+                        <path key={si} d={pathD} fill="none" stroke={dep.color} strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.84" strokeWidth="2.5" />
+                      )
+                    })}
+                    {allPoints.filter((p) => Number.isFinite(p.value)).map((point) => (
                       <circle
                         aria-label={`${point.dependency} ${point.year}: ${formatTooltipValue(point.value)}`}
                         className={`complementary-chart__dependency-point${activePoint?.dependency === point.dependency && activePoint?.year === point.year ? ' is-active' : ''}`}
@@ -211,7 +234,7 @@ export function AdministrativeDependencyChart({
                 <g key={row.year}>
                   {activeKeys.map((dep) => {
                     const value = row[dep.key]
-                    if (value <= 0) return null
+                    if (!Number.isFinite(value) || value <= 0) return null
                     const rawBarHeight = (value / Math.max(maxValue, 1)) * plotHeight
                     const barHeight = Math.max(rawBarHeight, 3)
                     const segmentY = y - barHeight
@@ -250,6 +273,7 @@ export function AdministrativeDependencyChart({
                   })}
                   {shouldShowYearLabel(index, rows.length) ? (
                     <text
+                      key={`label-${row.year}`}
                       x={x + barWidth / 2}
                       y={CHART_HEIGHT - PADDING.bottom + 18}
                       textAnchor="middle"

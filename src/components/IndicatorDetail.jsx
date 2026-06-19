@@ -20,19 +20,39 @@ import { IndicatorComplementaryData } from './IndicatorComplementaryData'
 import { IndicatorHistoryChart } from './IndicatorHistoryChart'
 import { MetricCard } from './MetricCard'
 import { PNE_2026_GOAL_TEXTS } from '../data/pne2026GoalTexts'
+import { PNE_2014_GOAL_TEXTS } from '../data/pne2014GoalTexts'
 import { StatusBadge } from './StatusBadge'
 
 export const IndicatorDetail = forwardRef(function IndicatorDetail(
   { cycle, item, municipioData, result },
   ref,
 ) {
-  if (!item || !result) {
+  if (!item) {
     return (
       <section className="detail-panel empty-panel" ref={ref}>
         <p>Selecione um indicador para ver os detalhes.</p>
       </section>
     )
   }
+
+  if (!result) {
+    return (
+      <section className="detail-panel empty-panel" ref={ref}>
+        <p>Este indicador não possui série histórica disponível para este município no ciclo vigente.</p>
+      </section>
+    )
+  }
+
+  const cycleMinYear = cycle === 'pne_2014_2024' ? 2014 : null
+  const displaySeries = cycleMinYear
+    ? (result.series ?? []).filter((p) => Number(p?.ano) >= cycleMinYear)
+    : (result.series ?? [])
+  const filteredStartYear = cycleMinYear && Number.isFinite(Number(result.start_year)) && Number(result.start_year) < cycleMinYear
+    ? cycleMinYear
+    : startYearFromSeries(displaySeries) ?? result.start_year
+  const filteredEndYear = cycleMinYear
+    ? endYearFromSeries(displaySeries) ?? result.end_year
+    : result.end_year
 
   const status = getDisplayValue(result.display, 'status')
   const normalizedStatus = String(status).toLocaleLowerCase('pt-BR')
@@ -46,8 +66,10 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
         ? 'warning'
         : 'muted'
   const isComparable = isComparableIndicator(result)
-  const startYear = getBoundaryYear(result, 'start')
-  const endYear = getBoundaryYear(result, 'end')
+  const rawStartYear = getBoundaryYear(result, 'start')
+  const rawEndYear = getBoundaryYear(result, 'end')
+  const startYear = filteredStartYear ?? rawStartYear
+  const endYear = filteredEndYear ?? rawEndYear
   const distanceTone = getDistanceTone(result, isComparable)
   const unit = resolveIndicatorUnit(item, result)
   const isIdeb = isIdebIndicator(item, result)
@@ -82,15 +104,20 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
   const hasStartYear = typeof startYear === 'number' && startYear > 0
   const hasEndYear = typeof endYear === 'number' && endYear > 0
   const isSingleYear = isSingleYearIndicator(result)
-  const seriesValues = (result.series ?? []).map((p) => Number(p?.valor)).filter(Number.isFinite)
+  const seriesValues = displaySeries.map((p) => Number(p?.valor)).filter(Number.isFinite)
   const hasRealSeriesValues = seriesValues.some((v) => v !== 0)
-  const hasSeries = (result.series ?? []).length >= 2 && hasRealSeriesValues
+  const hasSeries = displaySeries.length >= 2 && hasRealSeriesValues
 
   const metaValue = formatMetaValue(goalResult, unit)
   const distanceValue = roundPpString(getDisplayValue(goalResult.display, 'distance'), ppOptions)
   const showGoalProgress = isComparable && Number.isFinite(Number(goalResult?.meta)) && Number.isFinite(Number(goalResult?.end_value))
-  const legalGoal = cycle === 'pne_2026_2036' && item.metaRef
-    ? PNE_2026_GOAL_TEXTS[item.metaRef]
+  const goalTexts = cycle === 'pne_2026_2036'
+    ? PNE_2026_GOAL_TEXTS
+    : cycle === 'pne_2014_2024'
+      ? PNE_2014_GOAL_TEXTS
+      : null
+  const legalGoal = goalTexts && item.metaRef
+    ? goalTexts[item.metaRef]
     : null
   const quickReading = buildQuickReading({
     atingida: goalResult.atingida,
@@ -207,7 +234,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
             item={item}
             meta={isComparable ? goalResult.meta : null}
             result={isAccExpansion ? flooredResult : result}
-            series={result.series}
+            series={displaySeries}
             showMetaLine={isComparable}
             startYear={result.start_year}
             title={getIndicatorTitle(item, result)}
@@ -474,4 +501,14 @@ function parseDisplayNumber(value) {
   if (!match) return Number.NaN
   const numeric = Number(match[0].replace(',', '.'))
   return Number.isFinite(numeric) ? numeric : Number.NaN
+}
+
+function startYearFromSeries(series) {
+  const years = series.map((p) => Number(p?.ano)).filter((y) => Number.isFinite(y))
+  return years.length ? Math.min(...years) : null
+}
+
+function endYearFromSeries(series) {
+  const years = series.map((p) => Number(p?.ano)).filter((y) => Number.isFinite(y))
+  return years.length ? Math.max(...years) : null
 }

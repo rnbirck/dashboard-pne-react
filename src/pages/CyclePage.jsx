@@ -1,16 +1,17 @@
 import { useMemo, useRef, useState } from 'react'
 import { CategoryTabs } from '../components/CategoryTabs'
-import { IndicatorDetail, isAvailableIndicator, isComparableIndicator } from '../components/IndicatorDetail'
+import { IndicatorDetail, isComparableIndicator } from '../components/IndicatorDetail'
 import { IndicatorList } from '../components/IndicatorList'
 import { RankingBlock } from '../components/RankingBlock'
 import { PNE_2026_INDICATOR_GOAL_REFS } from '../data/pne2026IndicatorGoalRefs'
+import { PNE_2014_INDICATOR_GOAL_REFS } from '../data/pne2014IndicatorGoalRefs'
 import { buildThematicGroups } from '../data/thematicGroups'
 import { isAccumulativeExpansionIndicator, resolveIndicatorUnit } from '../utils/format'
 import { normalizePopulationPercentResults } from '../utils/indicatorValues'
 
 export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio, title }) {
   const categories = useMemo(
-    () => enrichPne2026GoalRefs(indicadores?.cycles?.[cycle]?.categories ?? [], cycle),
+    () => enrichGoalRefs(indicadores?.cycles?.[cycle]?.categories ?? [], cycle),
     [indicadores, cycle],
   )
   const thematicGroups = useMemo(
@@ -53,25 +54,21 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     [municipioResults, allCycleItems],
   )
   const municipioRankings = municipioData?.[cycle]?.rankings ?? null
-  const availableGroupItems = useMemo(
-    () => visibleGroupItems.filter((item) => isAvailableIndicator(normalizedMunicipioResults?.[item.key])),
-    [visibleGroupItems, normalizedMunicipioResults],
-  )
   const filteredGroupItems = useMemo(() => {
     const query = searchQuery.trim().toLocaleLowerCase('pt-BR')
-    if (!query) return availableGroupItems
-    return availableGroupItems.filter((item) => item.label.toLocaleLowerCase('pt-BR').includes(query))
-  }, [availableGroupItems, searchQuery])
+    if (!query) return visibleGroupItems
+    return visibleGroupItems.filter((item) => item.label.toLocaleLowerCase('pt-BR').includes(query))
+  }, [visibleGroupItems, searchQuery])
   const activeIndicatorKey = useMemo(() => {
-    if (!availableGroupItems.length) return ''
-    if (availableGroupItems.some((item) => item.key === selectedIndicatorKey)) {
+    if (!visibleGroupItems.length) return ''
+    if (visibleGroupItems.some((item) => item.key === selectedIndicatorKey)) {
       return selectedIndicatorKey
     }
-    return availableGroupItems[0].key
-  }, [availableGroupItems, selectedIndicatorKey])
+    return visibleGroupItems[0].key
+  }, [visibleGroupItems, selectedIndicatorKey])
   const activeItem = useMemo(
-    () => availableGroupItems.find((item) => item.key === activeIndicatorKey) ?? availableGroupItems[0],
-    [activeIndicatorKey, availableGroupItems],
+    () => visibleGroupItems.find((item) => item.key === activeIndicatorKey) ?? visibleGroupItems[0],
+    [activeIndicatorKey, visibleGroupItems],
   )
   const activeResult = activeItem ? normalizedMunicipioResults?.[activeItem.key] : null
   const normalizedRanking = useMemo(
@@ -163,9 +160,9 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
           <aside className="indicator-sidebar">
             <div className="indicator-sidebar__heading">
               <h3>Indicadores</h3>
-              <span>{availableGroupItems.length}</span>
+              <span>{filteredGroupItems.length}</span>
             </div>
-            {availableGroupItems.length === 0 ? (
+            {filteredGroupItems.length === 0 ? (
               <div className="indicator-sidebar__empty" style={{ padding: '10px 12px', color: 'var(--text-muted)', fontSize: '0.82rem', lineHeight: '1.4' }}>
                 <p>Nenhum indicador disponível para este município neste tema.</p>
               </div>
@@ -220,15 +217,21 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   )
 }
 
-function enrichPne2026GoalRefs(categories, cycle) {
-  if (cycle !== 'pne_2026_2036') return categories
+function enrichGoalRefs(categories, cycle) {
+  const refMap = cycle === 'pne_2026_2036'
+    ? PNE_2026_INDICATOR_GOAL_REFS
+    : cycle === 'pne_2014_2024'
+      ? PNE_2014_INDICATOR_GOAL_REFS
+      : null
+
+  if (!refMap) return categories
 
   return categories.map((category) => ({
     ...category,
     items: (category.items ?? []).map((item) => ({
       ...item,
-      ...(PNE_2026_INDICATOR_GOAL_REFS[item.key]
-        ? { metaRef: PNE_2026_INDICATOR_GOAL_REFS[item.key] }
+      ...(refMap[item.key]
+        ? { metaRef: refMap[item.key] }
         : {}),
     })),
   }))

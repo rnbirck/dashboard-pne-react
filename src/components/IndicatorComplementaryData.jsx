@@ -59,11 +59,11 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
   const calculationComponents =
     details?.series_components_by_cycle?.[cycle] ?? details?.series_components
   const filteredTotal = useMemo(
-    () => filterRowsByCycle(details?.series_total, cycleRange),
+    () => normalizeCycleSeries(filterRowsByCycle(details?.series_total, cycleRange), cycleRange),
     [details?.series_total, cycleRange],
   )
   const filteredDependencia = useMemo(
-    () => filterRowsByCycle(details?.series_dependencia, cycleRange),
+    () => normalizeCycleSeries(filterRowsByCycle(details?.series_dependencia, cycleRange), cycleRange),
     [details?.series_dependencia, cycleRange],
   )
   const filteredComponents = useMemo(
@@ -255,7 +255,6 @@ function filterRowsByCycle(rows, range) {
 
 function resolveCycleRange(cycle, result, details) {
   const resultYears = collectYears(result?.series)
-  const explicitStart = Number(result?.start_year)
   const detailYears = [
     ...collectYears(details?.series_total),
     ...collectYears(details?.series_dependencia),
@@ -264,7 +263,7 @@ function resolveCycleRange(cycle, result, details) {
 
   if (cycle === 'pne_2014_2024') {
     return {
-      min: Number.isFinite(explicitStart) ? explicitStart : 2014,
+      min: 2014,
       max: 2024,
     }
   }
@@ -288,4 +287,32 @@ function collectYears(rows) {
   return rows
     .map((row) => Number(row?.ano))
     .filter((year) => Number.isFinite(year))
+}
+
+function normalizeCycleSeries(rows, range) {
+  if (!Array.isArray(rows) || !Number.isFinite(range?.min) || !Number.isFinite(range?.max)) {
+    return rows ?? []
+  }
+  const existing = new Map()
+  for (const row of rows) {
+    const year = Number(row?.ano)
+    if (Number.isFinite(year)) {
+      existing.set(year, row)
+    }
+  }
+  const hasDependencyFields = rows.some(
+    (r) => r && ('federal' in r || 'estadual' in r || 'municipal' in r || 'privada' in r)
+  )
+  const result = []
+  for (let year = range.min; year <= range.max; year++) {
+    const row = existing.get(year)
+    if (row) {
+      result.push(row)
+    } else if (hasDependencyFields) {
+      result.push({ ano: year, federal: null, estadual: null, municipal: null, privada: null })
+    } else {
+      result.push({ ano: year, valor: null })
+    }
+  }
+  return result
 }

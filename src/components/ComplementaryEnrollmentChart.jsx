@@ -30,23 +30,24 @@ function shouldShowValueLabel(point, index, points, maxValue) {
 
 export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em creche', unit = 'Matrículas' }) {
   const [activePoint, setActivePoint] = useState(null)
-  const points = useMemo(() => {
+  const rawPoints = useMemo(() => {
     return (series ?? [])
       .map((p) => ({ year: Number(p?.ano), value: Number(p?.valor) }))
-      .filter((p) => Number.isFinite(p.year) && Number.isFinite(p.value))
+      .filter((p) => Number.isFinite(p.year))
       .sort((a, b) => a.year - b.year)
   }, [series])
 
-  if (points.length === 0) return null
+  const points = (rawPoints ?? []).filter((p) => Number.isFinite(p.value))
 
+  const allYears = rawPoints.map((p) => p.year)
   const values = points.map((p) => p.value)
   const minValue = 0
-  const maxValue = Math.max(...values)
+  const maxValue = values.length > 0 ? Math.max(...values) : 0
   const yMax = roundUp(maxValue * 1.12)
   const valueSpan = yMax - minValue || 1
 
-  const minYear = points[0].year
-  const maxYear = points[points.length - 1].year
+  const minYear = allYears.length > 0 ? Math.min(...allYears) : 0
+  const maxYear = allYears.length > 0 ? Math.max(...allYears) : 0
   const yearSpan = Math.max(maxYear - minYear, 1)
 
   const plotWidth = CHART_WIDTH - PADDING.left - PADDING.right
@@ -58,16 +59,35 @@ export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em c
 
   const baselineY = CHART_HEIGHT - PADDING.bottom
 
-  const pathD = points
-    .map((p, i) => `${i === 0 ? 'M' : 'L'}${xScale(p.year).toFixed(1)} ${yScale(p.value).toFixed(1)}`)
-    .join(' ')
+  if (rawPoints.length === 0) return null
+  if (points.length === 0) return null
 
-  const areaD = `${pathD} L${xScale(maxYear).toFixed(1)} ${baselineY.toFixed(1)} L${xScale(minYear).toFixed(1)} ${baselineY.toFixed(1)} Z`
-  const scaledPoints = points.map((point) => ({
-    ...point,
-    x: xScale(point.year),
-    y: yScale(point.value),
-  }))
+  const segments = buildSegments(rawPoints, xScale, yScale)
+
+  const linePaths = segments.map((seg) =>
+    seg
+      .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
+      .join(' ')
+  )
+
+  const areaPaths = segments
+    .filter((seg) => seg.length > 0)
+    .map((seg) => {
+      const first = seg[0]
+      const last = seg[seg.length - 1]
+      const path = seg
+        .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
+        .join(' ')
+      return `${path} L${last.x.toFixed(1)} ${baselineY.toFixed(1)} L${first.x.toFixed(1)} ${baselineY.toFixed(1)} Z`
+    })
+
+  const scaledPoints = rawPoints
+    .filter((p) => Number.isFinite(p.value))
+    .map((point) => ({
+      ...point,
+      x: xScale(point.year),
+      y: yScale(point.value),
+    }))
 
   return (
     <section className="complementary-chart">
@@ -121,8 +141,12 @@ export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em c
             />
           ) : null}
 
-          <path d={areaD} className="complementary-chart__area" />
-          <path d={pathD} className="complementary-chart__line" />
+          {areaPaths.map((d, i) => (
+            <path key={`area-${i}`} d={d} className="complementary-chart__area" />
+          ))}
+          {linePaths.map((d, i) => (
+            <path key={`line-${i}`} d={d} className="complementary-chart__line" />
+          ))}
 
           {scaledPoints.map((p) => (
             <circle
@@ -157,14 +181,15 @@ export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em c
             )
           })}
 
-          {scaledPoints.map((p, i) => {
-            if (!shouldShowYearLabel(i, scaledPoints.length)) return null
-            const anchor = i === 0 ? 'start' : i === scaledPoints.length - 1 ? 'end' : 'middle'
-            const dx = i === 0 ? 6 : i === scaledPoints.length - 1 ? -6 : 0
+          {rawPoints.filter((p) => Number.isFinite(p.year)).map((p, i, arr) => {
+            if (!shouldShowYearLabel(i, arr.length)) return null
+            const x = xScale(p.year)
+            const anchor = i === 0 ? 'start' : i === arr.length - 1 ? 'end' : 'middle'
+            const dx = i === 0 ? 6 : i === arr.length - 1 ? -6 : 0
             return (
               <text
                 key={`label-${p.year}`}
-                x={p.x + dx}
+                x={x + dx}
                 y={CHART_HEIGHT - 18}
                 textAnchor={anchor}
                 className="complementary-chart__x-label"
@@ -193,4 +218,21 @@ export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em c
       </div>
     </section>
   )
+}
+
+function buildSegments(rawPoints, xScale, yScale) {
+  const segs = []
+  let current = []
+  for (const p of rawPoints) {
+    if (!Number.isFinite(p.value)) {
+      if (current.length > 0) {
+        segs.push(current)
+        current = []
+      }
+      continue
+    }
+    current.push({ ...p, x: xScale(p.year), y: yScale(p.value) })
+  }
+  if (current.length > 0) segs.push(current)
+  return segs
 }
