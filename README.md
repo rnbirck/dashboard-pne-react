@@ -21,6 +21,7 @@ npm run build
 npm run lint
 npm run check:units
 npm run list:indicators
+npm run validate:details
 npm run test:e2e
 ```
 
@@ -29,6 +30,7 @@ npm run test:e2e
 - `npm run lint`: valida o codigo com ESLint.
 - `npm run check:units`: verifica coerencia dos `value_mode` em `public/data/indicadores.json`.
 - `npm run list:indicators`: lista indicadores e modos de valor para revisao manual.
+- `npm run validate:details`: valida o contrato basico dos JSONs em `public/data/municipios/*/details/*.json`.
 - `npm run test:e2e`: roda o teste Playwright contra uma instancia local ja ativa.
 
 Para o teste e2e, mantenha o Vite rodando em `localhost:5173`:
