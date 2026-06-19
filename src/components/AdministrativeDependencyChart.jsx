@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 const CHART_WIDTH = 980
 const CHART_HEIGHT = 300
@@ -38,6 +38,7 @@ export function AdministrativeDependencyChart({
   unit = '',
   valueType,
 }) {
+  const [activePoint, setActivePoint] = useState(null)
   const isPercent = valueType === 'percent' || unit === '%'
 
   const activeKeys = useMemo(() => {
@@ -78,11 +79,17 @@ export function AdministrativeDependencyChart({
   const yScale = (value) =>
     PADDING.top + plotHeight - (value / Math.max(maxValue, 1)) * plotHeight
 
+  const clearActive = () => setActivePoint(null)
+  const formatTooltipValue = (value) => {
+    const formatted = formatNumber(value, unit)
+    if (!unit || unit === '%') return formatted
+    return `${formatted} ${unit.toLocaleLowerCase('pt-BR')}`
+  }
+
   return (
     <section className="complementary-chart complementary-chart--dependency">
       <div className="complementary-chart__heading">
         <span className="eyebrow">{title}</span>
-        {unit ? <small>{unit}</small> : null}
       </div>
       <div className="complementary-chart__legend complementary-chart__legend--top">
         {activeKeys.map((dep) => (
@@ -129,16 +136,28 @@ export function AdministrativeDependencyChart({
             0
           </text>
 
+          {activePoint ? (
+            <line
+              className="complementary-chart__hover-line"
+              x1={activePoint.x}
+              x2={activePoint.x}
+              y1={PADDING.top}
+              y2={CHART_HEIGHT - PADDING.bottom}
+            />
+          ) : null}
+
           {isPercent ? (
             <>
               {activeKeys.map((dep) => {
                 const points = rows
                   .filter((row) => row[dep.key] > 0)
                   .map((row) => ({
+                    color: dep.color,
+                    dependency: dep.label,
+                    value: row[dep.key],
                     year: row.year,
                     x: xScale(row.year),
                     y: yScale(row[dep.key]),
-                    value: row[dep.key],
                   }))
                 if (points.length === 0) return null
                 const pathD = points
@@ -146,11 +165,22 @@ export function AdministrativeDependencyChart({
                   .join(' ')
                 return (
                   <g key={dep.key}>
-                    <path d={pathD} fill="none" stroke={dep.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
+                    <path d={pathD} fill="none" stroke={dep.color} strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.84" strokeWidth="2.5" />
                     {points.map((point) => (
-                      <circle key={`${dep.key}-${point.year}`} cx={point.x} cy={point.y} r={3.8} fill={dep.color} stroke="#ffffff" strokeWidth="1.5">
-                        <title>{`${dep.label} ${point.year}: ${formatNumber(point.value, unit)}`}</title>
-                      </circle>
+                      <circle
+                        aria-label={`${point.dependency} ${point.year}: ${formatTooltipValue(point.value)}`}
+                        className={`complementary-chart__dependency-point${activePoint?.dependency === point.dependency && activePoint?.year === point.year ? ' is-active' : ''}`}
+                        cx={point.x}
+                        cy={point.y}
+                        fill={point.color}
+                        key={`${dep.key}-${point.year}`}
+                        onBlur={clearActive}
+                        onFocus={() => setActivePoint(point)}
+                        onMouseEnter={() => setActivePoint(point)}
+                        onMouseLeave={clearActive}
+                        r={activePoint?.dependency === point.dependency && activePoint?.year === point.year ? 5 : 3.8}
+                        tabIndex="0"
+                      />
                     ))}
                   </g>
                 )
@@ -185,19 +215,35 @@ export function AdministrativeDependencyChart({
                     const rawBarHeight = (value / Math.max(maxValue, 1)) * plotHeight
                     const barHeight = Math.max(rawBarHeight, 3)
                     const segmentY = y - barHeight
+                    const point = {
+                      color: dep.color,
+                      dependency: dep.label,
+                      value,
+                      year: row.year,
+                      x: x + barWidth / 2,
+                      y: segmentY + barHeight / 2,
+                    }
+                    const isActive =
+                      activePoint?.dependency === point.dependency &&
+                      activePoint?.year === point.year
                     const segment = (
                       <rect
+                        aria-label={`${dep.label} ${row.year}: ${formatTooltipValue(value)}`}
+                        className={`complementary-chart__bar-segment${isActive ? ' is-active' : ''}`}
+                        fill={dep.color}
+                        height={barHeight}
                         key={dep.key}
+                        onBlur={clearActive}
+                        onFocus={() => setActivePoint(point)}
+                        onMouseEnter={() => setActivePoint(point)}
+                        onMouseLeave={clearActive}
+                        opacity={rawBarHeight < 3 ? 0.72 : 0.86}
+                        rx={3}
+                        tabIndex="0"
+                        width={barWidth}
                         x={x}
                         y={segmentY}
-                        width={barWidth}
-                        height={barHeight}
-                        fill={dep.color}
-                        opacity={rawBarHeight < 3 ? 0.82 : 1}
-                        rx={3}
-                      >
-                        <title>{`${dep.label} ${row.year}: ${formatNumber(value, unit)}`}</title>
-                      </rect>
+                      />
                     )
                     y = segmentY
                     return segment
@@ -217,6 +263,22 @@ export function AdministrativeDependencyChart({
             })
           )}
         </svg>
+        {activePoint ? (
+          <div
+            className="complementary-chart__tooltip"
+            style={{
+              left: `${Math.min(92, Math.max(10, (activePoint.x / CHART_WIDTH) * 100))}%`,
+              top: `${(activePoint.y / CHART_HEIGHT) * 100}%`,
+              transform:
+                activePoint.y < PADDING.top + 38
+                  ? 'translate(-50%, 12px)'
+                  : 'translate(-50%, calc(-100% - 12px))',
+            }}
+          >
+            <strong>{activePoint.year}</strong>
+            <span>{activePoint.dependency}: {formatTooltipValue(activePoint.value)}</span>
+          </div>
+        ) : null}
       </div>
     </section>
   )

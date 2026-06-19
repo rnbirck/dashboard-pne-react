@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 const CHART_WIDTH = 980
 const CHART_HEIGHT = 300
@@ -29,6 +29,7 @@ function shouldShowValueLabel(point, index, points, maxValue) {
 }
 
 export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em creche', unit = 'Matrículas' }) {
+  const [activePoint, setActivePoint] = useState(null)
   const points = useMemo(() => {
     return (series ?? [])
       .map((p) => ({ year: Number(p?.ano), value: Number(p?.valor) }))
@@ -62,15 +63,32 @@ export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em c
     .join(' ')
 
   const areaD = `${pathD} L${xScale(maxYear).toFixed(1)} ${baselineY.toFixed(1)} L${xScale(minYear).toFixed(1)} ${baselineY.toFixed(1)} Z`
+  const scaledPoints = points.map((point) => ({
+    ...point,
+    x: xScale(point.year),
+    y: yScale(point.value),
+  }))
 
   return (
     <section className="complementary-chart">
       <div className="complementary-chart__heading">
         <span className="eyebrow">{title}</span>
-        <small>{unit}</small>
       </div>
       <div className="complementary-chart__canvas">
         <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} role="img" aria-label={`${title}: evolução por ano`}>
+          {[0.25, 0.5, 0.75].map((ratio) => {
+            const y = PADDING.top + plotHeight * ratio
+            return (
+              <line
+                className="complementary-chart__gridline"
+                key={ratio}
+                x1={PADDING.left}
+                x2={CHART_WIDTH - PADDING.right}
+                y1={y}
+                y2={y}
+              />
+            )
+          })}
           <line
             x1={PADDING.left}
             x2={CHART_WIDTH - PADDING.right}
@@ -85,19 +103,6 @@ export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em c
             y2={CHART_HEIGHT - PADDING.bottom}
             className="complementary-chart__axis"
           />
-          {[0.25, 0.5, 0.75].map((ratio) => {
-            const y = PADDING.top + plotHeight * ratio
-            return (
-              <line
-                className="complementary-chart__gridline"
-                key={ratio}
-                x1={PADDING.left}
-                x2={CHART_WIDTH - PADDING.right}
-                y1={y}
-                y2={y}
-              />
-            )
-          })}
 
           <text x={PADDING.left - 10} y={PADDING.top + 6} textAnchor="end" className="complementary-chart__tick">
             {formatNumber(yMax)}
@@ -106,32 +111,45 @@ export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em c
             0
           </text>
 
+          {activePoint ? (
+            <line
+              className="complementary-chart__hover-line"
+              x1={activePoint.x}
+              x2={activePoint.x}
+              y1={PADDING.top}
+              y2={CHART_HEIGHT - PADDING.bottom}
+            />
+          ) : null}
+
           <path d={areaD} className="complementary-chart__area" />
           <path d={pathD} className="complementary-chart__line" />
 
-          {points.map((p) => (
-            <g key={p.year}>
-              <circle
-                cx={xScale(p.year)}
-                cy={yScale(p.value)}
-                r={4}
-                className="complementary-chart__point"
-              />
-              <title>{`${p.year}: ${formatNumber(p.value)}`}</title>
-            </g>
+          {scaledPoints.map((p) => (
+            <circle
+              aria-label={`${p.year}: ${formatNumber(p.value)} ${unit}`}
+              className={`complementary-chart__point${activePoint?.year === p.year ? ' is-active' : ''}`}
+              cx={p.x}
+              cy={p.y}
+              key={p.year}
+              onBlur={() => setActivePoint(null)}
+              onFocus={() => setActivePoint(p)}
+              onMouseEnter={() => setActivePoint(p)}
+              onMouseLeave={() => setActivePoint(null)}
+              r={activePoint?.year === p.year ? 5 : 4}
+              tabIndex="0"
+            />
           ))}
 
-          {points.map((p, i) => {
-            if (!shouldShowValueLabel(p, i, points, maxValue)) return null
-            const x = xScale(p.year)
-            const y = Math.max(yScale(p.value) - 10, PADDING.top + 10)
-            const anchor = i === 0 ? 'start' : i === points.length - 1 ? 'end' : 'middle'
+          {scaledPoints.map((p, i) => {
+            if (!shouldShowValueLabel(p, i, scaledPoints, maxValue)) return null
+            const y = Math.max(p.y - 10, PADDING.top + 10)
+            const anchor = i === 0 ? 'start' : i === scaledPoints.length - 1 ? 'end' : 'middle'
             return (
               <text
                 className="complementary-chart__value-label"
                 key={`value-${p.year}`}
                 textAnchor={anchor}
-                x={x}
+                x={p.x}
                 y={y}
               >
                 {formatNumber(p.value)}
@@ -139,15 +157,14 @@ export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em c
             )
           })}
 
-          {points.map((p, i) => {
-            if (!shouldShowYearLabel(i, points.length)) return null
-            const x = xScale(p.year)
-            const anchor = i === 0 ? 'start' : i === points.length - 1 ? 'end' : 'middle'
-            const dx = i === 0 ? 6 : i === points.length - 1 ? -6 : 0
+          {scaledPoints.map((p, i) => {
+            if (!shouldShowYearLabel(i, scaledPoints.length)) return null
+            const anchor = i === 0 ? 'start' : i === scaledPoints.length - 1 ? 'end' : 'middle'
+            const dx = i === 0 ? 6 : i === scaledPoints.length - 1 ? -6 : 0
             return (
               <text
                 key={`label-${p.year}`}
-                x={x + dx}
+                x={p.x + dx}
                 y={CHART_HEIGHT - 18}
                 textAnchor={anchor}
                 className="complementary-chart__x-label"
@@ -157,6 +174,22 @@ export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em c
             )
           })}
         </svg>
+        {activePoint ? (
+          <div
+            className="complementary-chart__tooltip"
+            style={{
+              left: `${Math.min(92, Math.max(10, (activePoint.x / CHART_WIDTH) * 100))}%`,
+              top: `${(activePoint.y / CHART_HEIGHT) * 100}%`,
+              transform:
+                activePoint.y < PADDING.top + 38
+                  ? 'translate(-50%, 12px)'
+                  : 'translate(-50%, calc(-100% - 12px))',
+            }}
+          >
+            <strong>{activePoint.year}</strong>
+            <span>{formatNumber(activePoint.value)} {unit.toLocaleLowerCase('pt-BR')}</span>
+          </div>
+        ) : null}
       </div>
     </section>
   )
