@@ -1407,7 +1407,7 @@ def build_eja_integrada_educacao_profissional_details(municipio):
         "series_components_by_cycle": series_components_by_cycle,
     }
     if series_by_dependencia is not None:
-        result["series_by_dependencia"] = series_by_dependencia
+        result["series_dependencia"] = series_by_dependencia
 
     return result
 
