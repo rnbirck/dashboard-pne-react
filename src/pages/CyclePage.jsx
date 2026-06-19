@@ -3,13 +3,14 @@ import { CategoryTabs } from '../components/CategoryTabs'
 import { IndicatorDetail, isAvailableIndicator, isComparableIndicator } from '../components/IndicatorDetail'
 import { IndicatorList } from '../components/IndicatorList'
 import { RankingBlock } from '../components/RankingBlock'
+import { PNE_2026_INDICATOR_GOAL_REFS } from '../data/pne2026IndicatorGoalRefs'
 import { buildThematicGroups } from '../data/thematicGroups'
 import { isAccumulativeExpansionIndicator, resolveIndicatorUnit } from '../utils/format'
 import { normalizePopulationPercentResults } from '../utils/indicatorValues'
 
 export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio, title }) {
   const categories = useMemo(
-    () => indicadores?.cycles?.[cycle]?.categories ?? [],
+    () => enrichPne2026GoalRefs(indicadores?.cycles?.[cycle]?.categories ?? [], cycle),
     [indicadores, cycle],
   )
   const thematicGroups = useMemo(
@@ -217,6 +218,20 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
       </section>
     </div>
   )
+}
+
+function enrichPne2026GoalRefs(categories, cycle) {
+  if (cycle !== 'pne_2026_2036') return categories
+
+  return categories.map((category) => ({
+    ...category,
+    items: (category.items ?? []).map((item) => ({
+      ...item,
+      ...(PNE_2026_INDICATOR_GOAL_REFS[item.key]
+        ? { metaRef: PNE_2026_INDICATOR_GOAL_REFS[item.key] }
+        : {}),
+    })),
+  }))
 }
 
 function ManagementMetricCard({ detail, label, tone, value }) {

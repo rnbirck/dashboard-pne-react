@@ -22,6 +22,7 @@ import {
 import { IndicatorComplementaryData } from './IndicatorComplementaryData'
 import { IndicatorHistoryChart } from './IndicatorHistoryChart'
 import { MetricCard } from './MetricCard'
+import { PNE_2026_GOAL_TEXTS } from '../data/pne2026GoalTexts'
 import { StatusBadge } from './StatusBadge'
 
 export const IndicatorDetail = forwardRef(function IndicatorDetail(
@@ -95,6 +96,9 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
   const shouldImproveZeroInterpretation =
     Number.isFinite(Number(goalResult.end_value)) &&
     Number(goalResult.end_value) <= 0
+  const legalGoal = cycle === 'pne_2026_2036' && item.metaRef
+    ? PNE_2026_GOAL_TEXTS[item.metaRef]
+    : null
 
   return (
     <section className="detail-panel" ref={ref}>
@@ -104,6 +108,13 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
           <h3>{getIndicatorTitle(item, result)}</h3>
           {item.sub && <p>{item.sub}</p>}
           {item.desc && <p>{item.desc}</p>}
+          {legalGoal && (
+            <p className="indicator-goal-reference">
+              <strong>Meta {item.metaRef} —</strong>
+              {' '}
+              <span>{legalGoal.displayText}</span>
+            </p>
+          )}
         </div>
         <StatusBadge status={status} tone={tone} />
       </div>
