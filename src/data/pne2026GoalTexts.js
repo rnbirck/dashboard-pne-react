@@ -3,7 +3,8 @@ export const PNE_2026_GOAL_TEXTS = {
     "objective": "Objetivo 1",
     "shortTitle": "Creche",
     "originalText": "Ampliar a oferta de educação infantil para atender 100% (cem por cento) da demanda manifesta por creche e, em nível nacional, atingir, no mínimo, 60% (sessenta por cento) das crianças de até 3 (três) anos ao final da vigência deste Plano Nacional de Educação (PNE).",
-    "displayText": "Ampliar a oferta de educação infantil para atender 100% (cem por cento) da demanda manifesta por creche e, em nível nacional, atingir, no mínimo, 60% (sessenta por cento) das crianças de até 3 (três) anos ao final da vigência deste Plano Nacional de Educação (PNE)."
+    "displayText": "Ampliar a oferta de educação infantil para atender 100% (cem por cento) da demanda manifesta por creche e, em nível nacional, atingir, no mínimo, 60% (sessenta por cento) das crianças de até 3 (três) anos ao final da vigência deste Plano Nacional de Educação (PNE).",
+    "dashboardText": "Acompanhar o atendimento em creche das crianças de 0 a 3 anos no município, tendo como referência a meta de 60%."
   },
   "1.b": {
     "objective": "Objetivo 1",
@@ -15,7 +16,8 @@ export const PNE_2026_GOAL_TEXTS = {
     "objective": "Objetivo 1",
     "shortTitle": "Pré-escola",
     "originalText": "Universalizar, até o segundo ano do período de vigência deste PNE, o acesso à educação infantil na pré-escola, para atender a todas as crianças de 4 (quatro) a 5 (cinco) anos.",
-    "displayText": "Universalizar, até o segundo ano do período de vigência deste PNE, o acesso à educação infantil na pré-escola, para atender a todas as crianças de 4 (quatro) a 5 (cinco) anos."
+    "displayText": "Universalizar, até o segundo ano do período de vigência deste PNE, o acesso à educação infantil na pré-escola, para atender a todas as crianças de 4 (quatro) a 5 (cinco) anos.",
+    "dashboardText": "Acompanhar a universalização da pré-escola para crianças de 4 e 5 anos no município."
   },
   "2.a": {
     "objective": "Objetivo 2",
@@ -51,37 +53,43 @@ export const PNE_2026_GOAL_TEXTS = {
     "objective": "Objetivo 4",
     "shortTitle": "Acesso escolar 6 a 17 anos",
     "originalText": "Universalizar, até o terceiro ano de vigência deste PNE, o acesso à escola para toda a população de 6 (seis) a 17 (dezessete) anos de idade.",
-    "displayText": "Universalizar, até o terceiro ano de vigência deste PNE, o acesso à escola para toda a população de 6 (seis) a 17 (dezessete) anos de idade."
+    "displayText": "Universalizar, até o terceiro ano de vigência deste PNE, o acesso à escola para toda a população de 6 (seis) a 17 (dezessete) anos de idade.",
+    "dashboardText": "Acompanhar o acesso à escola da população de 6 a 17 anos no município."
   },
   "4.b": {
     "objective": "Objetivo 4",
     "shortTitle": "Conclusão do 5º ano na idade regular",
     "originalText": "Garantir que todos os estudantes concluam o quinto ano do ensino fundamental na idade regular.",
-    "displayText": "Garantir que todos os estudantes concluam o quinto ano do ensino fundamental na idade regular."
+    "displayText": "Garantir que todos os estudantes concluam o quinto ano do ensino fundamental na idade regular.",
+    "dashboardText": "Acompanhar a conclusão dos anos iniciais do ensino fundamental na idade regular."
   },
   "4.c": {
     "objective": "Objetivo 4",
     "shortTitle": "Conclusão do 9º ano na idade regular",
     "originalText": "Garantir que pelo menos 95% (noventa e cinco por cento) dos estudantes concluam o nono ano do ensino fundamental na idade regular, de modo a promover a equidade e a atenção à diversidade populacional, considerando, pelo menos, os grupos sociais definidos por raça/cor, sexo, nível socioeconômico, região e localização.",
-    "displayText": "Garantir que pelo menos 95% (noventa e cinco por cento) dos estudantes concluam o nono ano do ensino fundamental na idade regular, de modo a promover a equidade e a atenção à diversidade populacional, considerando, pelo menos, os grupos sociais definidos por raça/cor, sexo, nível socioeconômico, região e localização."
+    "displayText": "Garantir que pelo menos 95% (noventa e cinco por cento) dos estudantes concluam o nono ano do ensino fundamental na idade regular, de modo a promover a equidade e a atenção à diversidade populacional, considerando, pelo menos, os grupos sociais definidos por raça/cor, sexo, nível socioeconômico, região e localização.",
+    "dashboardText": "Acompanhar a conclusão dos anos finais do ensino fundamental na idade regular, tendo como referência a meta de 95%."
   },
   "4.d": {
     "objective": "Objetivo 4",
     "shortTitle": "Conclusão do ensino médio na idade regular",
     "originalText": "Garantir que pelo menos 90% (noventa por cento) dos estudantes concluam o ensino médio na idade regular, de modo a promover a equidade e a atenção à diversidade populacional, considerando, pelo menos, os grupos sociais definidos por raça/cor, sexo, nível socioeconômico, região e localização.",
-    "displayText": "Garantir que pelo menos 90% (noventa por cento) dos estudantes concluam o ensino médio na idade regular, de modo a promover a equidade e a atenção à diversidade populacional, considerando, pelo menos, os grupos sociais definidos por raça/cor, sexo, nível socioeconômico, região e localização."
+    "displayText": "Garantir que pelo menos 90% (noventa por cento) dos estudantes concluam o ensino médio na idade regular, de modo a promover a equidade e a atenção à diversidade populacional, considerando, pelo menos, os grupos sociais definidos por raça/cor, sexo, nível socioeconômico, região e localização.",
+    "dashboardText": "Acompanhar a conclusão do ensino médio na idade regular, tendo como referência a meta de 90%."
   },
   "5.a": {
     "objective": "Objetivo 5",
     "shortTitle": "Aprendizagem nos anos iniciais",
     "originalText": "Assegurar que 100% (cem por cento) dos estudantes, ao término dos anos iniciais do ensino fundamental, alcancem o nível básico de aprendizagem, com pelo menos 70% (setenta por cento) deles no nível adequado de aprendizagem, até o quinto ano de vigência deste PNE, e 90% (noventa por cento) deles no nível adequado de aprendizagem, até o final do decênio.",
-    "displayText": "Assegurar que 100% (cem por cento) dos estudantes, ao término dos anos iniciais do ensino fundamental, alcancem o nível básico de aprendizagem, com pelo menos 70% (setenta por cento) deles no nível adequado de aprendizagem, até o quinto ano de vigência deste PNE, e 90% (noventa por cento) deles no nível adequado de aprendizagem, até o final do decênio."
+    "displayText": "Assegurar que 100% (cem por cento) dos estudantes, ao término dos anos iniciais do ensino fundamental, alcancem o nível básico de aprendizagem, com pelo menos 70% (setenta por cento) deles no nível adequado de aprendizagem, até o quinto ano de vigência deste PNE, e 90% (noventa por cento) deles no nível adequado de aprendizagem, até o final do decênio.",
+    "dashboardText": "Acompanhar o desempenho dos estudantes nos anos iniciais do ensino fundamental."
   },
   "5.b": {
     "objective": "Objetivo 5",
     "shortTitle": "Aprendizagem nos anos finais",
     "originalText": "Assegurar que 100% (cem por cento) dos estudantes, ao término dos anos finais do ensino fundamental, alcancem o nível básico de aprendizagem, com pelo menos 60% (sessenta por cento) deles no nível adequado de aprendizagem, até o quinto ano de vigência deste PNE, e 85% (oitenta e cinco por cento) deles no nível adequado de aprendizagem, até o final do decênio.",
-    "displayText": "Assegurar que 100% (cem por cento) dos estudantes, ao término dos anos finais do ensino fundamental, alcancem o nível básico de aprendizagem, com pelo menos 60% (sessenta por cento) deles no nível adequado de aprendizagem, até o quinto ano de vigência deste PNE, e 85% (oitenta e cinco por cento) deles no nível adequado de aprendizagem, até o final do decênio."
+    "displayText": "Assegurar que 100% (cem por cento) dos estudantes, ao término dos anos finais do ensino fundamental, alcancem o nível básico de aprendizagem, com pelo menos 60% (sessenta por cento) deles no nível adequado de aprendizagem, até o quinto ano de vigência deste PNE, e 85% (oitenta e cinco por cento) deles no nível adequado de aprendizagem, até o final do decênio.",
+    "dashboardText": "Acompanhar o desempenho dos estudantes nos anos finais do ensino fundamental."
   },
   "5.c": {
     "objective": "Objetivo 5",
@@ -93,7 +101,8 @@ export const PNE_2026_GOAL_TEXTS = {
     "objective": "Objetivo 5",
     "shortTitle": "Aprendizagem no ensino médio",
     "originalText": "Assegurar que 100% (cem por cento) dos estudantes, ao término do ensino médio, alcancem o nível básico de aprendizagem, com pelo menos 50% (cinquenta por cento) deles no nível adequado de aprendizagem, até o quinto ano de vigência deste PNE, e 80% (oitenta por cento) deles no nível adequado de aprendizagem, até o final do decênio.",
-    "displayText": "Assegurar que 100% (cem por cento) dos estudantes, ao término do ensino médio, alcancem o nível básico de aprendizagem, com pelo menos 50% (cinquenta por cento) deles no nível adequado de aprendizagem, até o quinto ano de vigência deste PNE, e 80% (oitenta por cento) deles no nível adequado de aprendizagem, até o final do decênio."
+    "displayText": "Assegurar que 100% (cem por cento) dos estudantes, ao término do ensino médio, alcancem o nível básico de aprendizagem, com pelo menos 50% (cinquenta por cento) deles no nível adequado de aprendizagem, até o quinto ano de vigência deste PNE, e 80% (oitenta por cento) deles no nível adequado de aprendizagem, até o final do decênio.",
+    "dashboardText": "Acompanhar o desempenho dos estudantes no ensino médio."
   },
   "5.e": {
     "objective": "Objetivo 5",
@@ -111,13 +120,14 @@ export const PNE_2026_GOAL_TEXTS = {
     "objective": "Objetivo 6",
     "shortTitle": "Tempo integral",
     "originalText": "Garantir a oferta de matrículas em tempo integral, na perspectiva da educação integral, com jornada mínima de 7 (sete) horas diárias ou 35 (trinta e cinco) horas semanais, preferencialmente em turno único, em, no mínimo, 50% (cinquenta por cento) das escolas públicas, de forma a atender, pelo menos, 35% (trinta e cinco por cento) dos estudantes da educação básica até o quinto ano de vigência deste PNE, e em, no mínimo, 65% (sessenta e cinco por cento) das escolas públicas, de forma a atender, pelo menos, 50% (cinquenta por cento) dos estudantes da educação básica até o final da vigência deste PNE.",
-    "displayText": "Garantir a oferta de matrículas em tempo integral, na perspectiva da educação integral, com jornada mínima de 7 (sete) horas diárias ou 35 (trinta e cinco) horas semanais, preferencialmente em turno único, em, no mínimo, 50% (cinquenta por cento) das escolas públicas, de forma a atender, pelo menos, 35% (trinta e cinco por cento) dos estudantes da educação básica até o quinto ano de vigência deste PNE, e em, no mínimo, 65% (sessenta e cinco por cento) das escolas públicas, de forma a atender, pelo menos, 50% (cinquenta por cento) dos estudantes da educação básica até o final da vigência deste PNE."
+    "dashboardText": "Acompanhar a oferta de matrículas em tempo integral na educação básica do município."
   },
   "7.a": {
     "objective": "Objetivo 7",
     "shortTitle": "Conectividade nas escolas",
     "originalText": "Assegurar a conectividade à internet de alta velocidade adequada para uso pedagógico de estudantes e professores, inclusive com redes internas wi-fi, em 50% (cinquenta por cento) das escolas públicas da educação básica até o segundo ano de vigência deste PNE, em 75% (setenta e cinco por cento) ao final do quinto ano, e em todas as escolas públicas da educação básica até o final do decênio.",
-    "displayText": "Assegurar a conectividade à internet de alta velocidade adequada para uso pedagógico de estudantes e professores, inclusive com redes internas wi-fi, em 50% (cinquenta por cento) das escolas públicas da educação básica até o segundo ano de vigência deste PNE, em 75% (setenta e cinco por cento) ao final do quinto ano, e em todas as escolas públicas da educação básica até o final do decênio."
+    "displayText": "Assegurar a conectividade à internet de alta velocidade adequada para uso pedagógico de estudantes e professores, inclusive com redes internas wi-fi, em 50% (cinquenta por cento) das escolas públicas da educação básica até o segundo ano de vigência deste PNE, em 75% (setenta e cinco por cento) ao final do quinto ano, e em todas as escolas públicas da educação básica até o final do decênio.",
+    "dashboardText": "Acompanhar a conectividade das escolas públicas da educação básica para uso pedagógico."
   },
   "7.b": {
     "objective": "Objetivo 7",
@@ -213,19 +223,22 @@ export const PNE_2026_GOAL_TEXTS = {
     "objective": "Objetivo 11",
     "shortTitle": "Alfabetização 15 anos ou mais",
     "originalText": "Elevar a taxa de alfabetização da população com 15 (quinze) anos ou mais para 97% (noventa e sete por cento) até o quinto ano de vigência deste PNE e superar o analfabetismo até o final do decênio.",
-    "displayText": "Elevar a taxa de alfabetização da população com 15 (quinze) anos ou mais para 97% (noventa e sete por cento) até o quinto ano de vigência deste PNE e superar o analfabetismo até o final do decênio."
+    "displayText": "Elevar a taxa de alfabetização da população com 15 (quinze) anos ou mais para 97% (noventa e sete por cento) até o quinto ano de vigência deste PNE e superar o analfabetismo até o final do decênio.",
+    "dashboardText": "Acompanhar a taxa de alfabetização da população de 15 anos ou mais."
   },
   "11.b": {
     "objective": "Objetivo 11",
     "shortTitle": "Conclusão do ensino fundamental 15+",
     "originalText": "Elevar para 85% (oitenta e cinco por cento) o percentual da população com 15 (quinze) anos ou mais que concluiu o ensino fundamental e universalizar essa etapa para a população de 15 (quinze) a 29 (vinte e nove) anos.",
-    "displayText": "Elevar para 85% (oitenta e cinco por cento) o percentual da população com 15 (quinze) anos ou mais que concluiu o ensino fundamental e universalizar essa etapa para a população de 15 (quinze) a 29 (vinte e nove) anos."
+    "displayText": "Elevar para 85% (oitenta e cinco por cento) o percentual da população com 15 (quinze) anos ou mais que concluiu o ensino fundamental e universalizar essa etapa para a população de 15 (quinze) a 29 (vinte e nove) anos.",
+    "dashboardText": "Acompanhar o percentual da população de 15 anos ou mais com ensino fundamental concluído."
   },
   "11.c": {
     "objective": "Objetivo 11",
     "shortTitle": "Conclusão do ensino médio 18+",
     "originalText": "Elevar para 75% (setenta e cinco por cento) o percentual da população com 18 (dezoito) anos ou mais que concluiu o ensino médio e universalizar essa etapa para a população de 18 (dezoito) a 29 (vinte e nove) anos.",
-    "displayText": "Elevar para 75% (setenta e cinco por cento) o percentual da população com 18 (dezoito) anos ou mais que concluiu o ensino médio e universalizar essa etapa para a população de 18 (dezoito) a 29 (vinte e nove) anos."
+    "displayText": "Elevar para 75% (setenta e cinco por cento) o percentual da população com 18 (dezoito) anos ou mais que concluiu o ensino médio e universalizar essa etapa para a população de 18 (dezoito) a 29 (vinte e nove) anos.",
+    "dashboardText": "Acompanhar o percentual da população de 18 anos ou mais com ensino médio concluído."
   },
   "11.d": {
     "objective": "Objetivo 11",
@@ -243,19 +256,22 @@ export const PNE_2026_GOAL_TEXTS = {
     "objective": "Objetivo 12",
     "shortTitle": "Educação profissional técnica de nível médio",
     "originalText": "Expandir as matrículas da educação profissional técnica de nível médio, integrada ou concomitante, de modo a atingir 50% (cinquenta por cento) dos estudantes matriculados no ensino médio, assegurando a qualidade da oferta e a permanência do estudante, observados, no mínimo, 50% (cinquenta por cento) da expansão no segmento público até o final da vigência deste PNE e, no caso da rede federal, pelo menos metade dessa expansão ofertada na forma integrada.",
-    "displayText": "Expandir as matrículas da educação profissional técnica de nível médio, integrada ou concomitante, de modo a atingir 50% (cinquenta por cento) dos estudantes matriculados no ensino médio, assegurando a qualidade da oferta e a permanência do estudante, observados, no mínimo, 50% (cinquenta por cento) da expansão no segmento público até o final da vigência deste PNE e, no caso da rede federal, pelo menos metade dessa expansão ofertada na forma integrada."
+    "displayText": "Expandir as matrículas da educação profissional técnica de nível médio, integrada ou concomitante, de modo a atingir 50% (cinquenta por cento) dos estudantes matriculados no ensino médio, assegurando a qualidade da oferta e a permanência do estudante, observados, no mínimo, 50% (cinquenta por cento) da expansão no segmento público até o final da vigência deste PNE e, no caso da rede federal, pelo menos metade dessa expansão ofertada na forma integrada.",
+    "dashboardText": "Acompanhar a participação da educação profissional técnica de nível médio nas matrículas do ensino médio."
   },
   "12.b": {
     "objective": "Objetivo 12",
     "shortTitle": "Cursos subsequentes",
     "originalText": "Expandir em, no mínimo, 60% (sessenta por cento) as matrículas nos cursos subsequentes, de forma a assegurar a qualidade da oferta e a permanência dos estudantes.",
-    "displayText": "Expandir em, no mínimo, 60% (sessenta por cento) as matrículas nos cursos subsequentes, de forma a assegurar a qualidade da oferta e a permanência dos estudantes."
+    "displayText": "Expandir em, no mínimo, 60% (sessenta por cento) as matrículas nos cursos subsequentes, de forma a assegurar a qualidade da oferta e a permanência dos estudantes.",
+    "dashboardText": "Acompanhar a expansão das matrículas em cursos técnicos subsequentes."
   },
   "12.c": {
     "objective": "Objetivo 12",
     "shortTitle": "EJA articulada à educação profissional",
     "originalText": "Expandir para, no mínimo, 25% (vinte e cinco por cento) as matrículas da educação de jovens e adultos, nos ensinos fundamental e médio, na forma articulada à educação profissional até o quinto ano de vigência deste PNE, alcançando, no mínimo, 50% (cinquenta por cento) até o final de sua vigência.",
-    "displayText": "Expandir para, no mínimo, 25% (vinte e cinco por cento) as matrículas da educação de jovens e adultos, nos ensinos fundamental e médio, na forma articulada à educação profissional até o quinto ano de vigência deste PNE, alcançando, no mínimo, 50% (cinquenta por cento) até o final de sua vigência."
+    "displayText": "Expandir para, no mínimo, 25% (vinte e cinco por cento) as matrículas da educação de jovens e adultos, nos ensinos fundamental e médio, na forma articulada à educação profissional até o quinto ano de vigência deste PNE, alcançando, no mínimo, 50% (cinquenta por cento) até o final de sua vigência.",
+    "dashboardText": "Acompanhar a oferta de EJA articulada à educação profissional."
   },
   "12.d": {
     "objective": "Objetivo 12",
@@ -351,13 +367,15 @@ export const PNE_2026_GOAL_TEXTS = {
     "objective": "Objetivo 17",
     "shortTitle": "Formação específica dos docentes",
     "originalText": "Assegurar, até o quinto ano de vigência deste PNE, que todos os docentes da educação básica possuam formação específica em nível superior, obtida em curso de pedagogia para a educação infantil e os anos iniciais do ensino fundamental, e licenciatura nas áreas do conhecimento, nos componentes curriculares ou disciplinas e nas modalidades em que atuam.",
-    "displayText": "Assegurar, até o quinto ano de vigência deste PNE, que todos os docentes da educação básica possuam formação específica em nível superior, obtida em curso de pedagogia para a educação infantil e os anos iniciais do ensino fundamental, e licenciatura nas áreas do conhecimento, nos componentes curriculares ou disciplinas e nas modalidades em que atuam."
+    "displayText": "Assegurar, até o quinto ano de vigência deste PNE, que todos os docentes da educação básica possuam formação específica em nível superior, obtida em curso de pedagogia para a educação infantil e os anos iniciais do ensino fundamental, e licenciatura nas áreas do conhecimento, nos componentes curriculares ou disciplinas e nas modalidades em que atuam.",
+    "dashboardText": "Acompanhar o percentual de docentes com formação adequada para a etapa ou área em que atuam."
   },
   "17.b": {
     "objective": "Objetivo 17",
     "shortTitle": "Rendimento do magistério",
     "originalText": "Valorizar os profissionais do magistério com nível superior das redes públicas de educação básica, com vistas a equiparar o rendimento médio dos profissionais de cada etapa da educação básica ao dos trabalhadores das demais ocupações com requisito de escolaridade equivalente.",
-    "displayText": "Valorizar os profissionais do magistério com nível superior das redes públicas de educação básica, com vistas a equiparar o rendimento médio dos profissionais de cada etapa da educação básica ao dos trabalhadores das demais ocupações com requisito de escolaridade equivalente."
+    "displayText": "Valorizar os profissionais do magistério com nível superior das redes públicas de educação básica, com vistas a equiparar o rendimento médio dos profissionais de cada etapa da educação básica ao dos trabalhadores das demais ocupações com requisito de escolaridade equivalente.",
+    "dashboardText": "Acompanhar a valorização do magistério por meio do rendimento médio dos profissionais docentes."
   },
   "17.c": {
     "objective": "Objetivo 17",
@@ -369,7 +387,8 @@ export const PNE_2026_GOAL_TEXTS = {
     "objective": "Objetivo 17",
     "shortTitle": "Profissionais sem cargo efetivo",
     "originalText": "Reduzir progressivamente o número de profissionais do magistério sem cargo efetivo a no máximo 30% (trinta por cento) em cada rede pública, em consonância com o que estabelece o art. 206, inciso V, da Constituição Federal, até o final do quinto ano de vigência deste PNE.",
-    "displayText": "Reduzir progressivamente o número de profissionais do magistério sem cargo efetivo a no máximo 30% (trinta por cento) em cada rede pública, em consonância com o que estabelece o art. 206, inciso V, da Constituição Federal, até o final do quinto ano de vigência deste PNE."
+    "displayText": "Reduzir progressivamente o número de profissionais do magistério sem cargo efetivo a no máximo 30% (trinta por cento) em cada rede pública, em consonância com o que estabelece o art. 206, inciso V, da Constituição Federal, até o final do quinto ano de vigência deste PNE.",
+    "dashboardText": "Acompanhar a proporção de profissionais do magistério sem cargo efetivo na rede pública."
   },
   "17.e": {
     "objective": "Objetivo 17",
@@ -381,7 +400,8 @@ export const PNE_2026_GOAL_TEXTS = {
     "objective": "Objetivo 17",
     "shortTitle": "Pós-graduação dos docentes",
     "originalText": "Garantir que 70% (setenta por cento) dos docentes da educação básica concluam cursos de pós-graduação relacionados com a respectiva área de atuação profissional que promovam o aprimoramento da docência, das práticas pedagógicas ou do exercício das demais funções pertinentes ao magistério.",
-    "displayText": "Garantir que 70% (setenta por cento) dos docentes da educação básica concluam cursos de pós-graduação relacionados com a respectiva área de atuação profissional que promovam o aprimoramento da docência, das práticas pedagógicas ou do exercício das demais funções pertinentes ao magistério."
+    "displayText": "Garantir que 70% (setenta por cento) dos docentes da educação básica concluam cursos de pós-graduação relacionados com a respectiva área de atuação profissional que promovam o aprimoramento da docência, das práticas pedagógicas ou do exercício das demais funções pertinentes ao magistério.",
+    "dashboardText": "Acompanhar o percentual de docentes da educação básica com pós-graduação."
   },
   "18.a": {
     "objective": "Objetivo 18",

@@ -1,13 +1,10 @@
 import { forwardRef } from 'react'
 import {
-  buildAccumulativeExpansionInterpretation,
-  cleanInterpretationText,
   floorValueForGoal,
   formatIndicatorValue,
   formatMetaValue,
   getDisplayValue,
   getIndicatorTitle,
-  improveZeroValueInterpretation,
   isAccumulativeExpansionIndicator,
   isIdebIndicator,
   isSingleYearIndicator,
@@ -92,28 +89,36 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
   const metaValue = formatMetaValue(goalResult, unit)
   const distanceValue = roundPpString(getDisplayValue(goalResult.display, 'distance'), ppOptions)
   const showGoalProgress = isComparable && Number.isFinite(Number(goalResult?.meta)) && Number.isFinite(Number(goalResult?.end_value))
-  const useCustomInterpretation = isAccExpansion && Number.isFinite(flooredResult.end_value) && flooredResult.end_value <= 0
-  const shouldImproveZeroInterpretation =
-    Number.isFinite(Number(goalResult.end_value)) &&
-    Number(goalResult.end_value) <= 0
   const legalGoal = cycle === 'pne_2026_2036' && item.metaRef
     ? PNE_2026_GOAL_TEXTS[item.metaRef]
     : null
+  const quickReading = buildQuickReading({
+    atingida: goalResult.atingida,
+    distanceValue,
+    endYear,
+    formattedEnd,
+    isComparable,
+    metaValue,
+    startYear,
+    variation,
+  })
 
   return (
     <section className="detail-panel" ref={ref}>
       <div className="detail-heading">
-        <div>
+        <div className="detail-heading__copy">
           <span className="eyebrow">Indicador selecionado</span>
           <h3>{getIndicatorTitle(item, result)}</h3>
           {item.sub && <p>{item.sub}</p>}
           {item.desc && <p>{item.desc}</p>}
           {legalGoal && (
-            <p className="indicator-goal-reference">
-              <strong>Meta {item.metaRef} —</strong>
-              {' '}
-              <span>{legalGoal.displayText}</span>
-            </p>
+            <div className="indicator-goal-reference">
+              <span>Referência do PNE</span>
+              <p>
+                <strong>Meta {item.metaRef} —</strong>{' '}
+                {legalGoal.dashboardText || legalGoal.displayText || legalGoal.originalText}
+              </p>
+            </div>
           )}
         </div>
         <StatusBadge status={status} tone={tone} />
@@ -123,7 +128,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
         isComparable ? (
           <div className="metric-grid metric-grid--four">
             {hasStartYear && (
-              <MetricCard label={`Valor em ${startYear}`} value={formattedStart} />
+              <MetricCard label={`Valor inicial (${startYear})`} value={formattedStart} />
             )}
             <MetricCard label={result.meta_label ?? 'Meta'} value={metaValue} />
             <MetricCard
@@ -140,7 +145,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
         ) : (
           <div className="metric-grid metric-grid--two">
             {hasStartYear && (
-              <MetricCard label={`Valor em ${startYear}`} value={formattedStart} />
+              <MetricCard label={`Valor inicial (${startYear})`} value={formattedStart} />
             )}
             <MetricCard label="Tipo" value="Informativo" tone="muted" />
           </div>
@@ -149,10 +154,10 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
         isComparable ? (
           <div className="metric-grid">
             {hasStartYear && (
-              <MetricCard label={`Valor em ${startYear}`} value={formattedStart} />
+              <MetricCard label={`Valor inicial (${startYear})`} value={formattedStart} />
             )}
             {hasEndYear && (
-              <MetricCard label={`Valor em ${endYear}`} value={formattedEnd} />
+              <MetricCard label={`Valor atual (${endYear})`} value={formattedEnd} size="large" />
             )}
             <MetricCard label="Variação" value={variation} />
             <MetricCard label={result.meta_label ?? 'Meta'} value={metaValue} />
@@ -165,10 +170,10 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
         ) : (
           <div className="metric-grid metric-grid--four">
             {hasStartYear && (
-              <MetricCard label={`Valor em ${startYear}`} value={formattedStart} />
+              <MetricCard label={`Valor inicial (${startYear})`} value={formattedStart} />
             )}
             {hasEndYear && (
-              <MetricCard label={`Valor em ${endYear}`} value={formattedEnd} />
+              <MetricCard label={`Valor atual (${endYear})`} value={formattedEnd} size="large" />
             )}
             <MetricCard label="Variação" value={variation} />
             <MetricCard label="Tipo" value="Informativo" tone="muted" />
@@ -183,33 +188,11 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
         />
       )}
 
-      {(useCustomInterpretation || result.display?.interpretation) && (
+      {quickReading && (
         <div className="interpretation-box">
-          <span>Interpretação</span>
-          <p>
-            {useCustomInterpretation
-              ? buildAccumulativeExpansionInterpretation({
-                  endYear,
-                  metaValue: goalResult.meta,
-                  metaLabel: result.meta_label,
-                  distance: goalResult.distance,
-                })
-              : shouldImproveZeroInterpretation
-                ? improveZeroValueInterpretation(
-                    cleanInterpretationText(result.display.interpretation, ppOptions),
-                    { isAccumulativeExpansion: isAccExpansion },
-                  )
-                : isComparable
-                  ? buildComparableInterpretation({
-                      endYear,
-                      formattedEnd,
-                      metaValue,
-                      distanceValue,
-                      atingida: result.atingida,
-                    })
-                  : cleanInterpretationText(result.display.interpretation, ppOptions)}
-          </p>
-          {isSingleYear && !useCustomInterpretation && (
+          <span>Leitura rápida</span>
+          <p>{quickReading}</p>
+          {isSingleYear && (
             <small style={{ display: 'block', marginTop: '6px', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
               Há apenas um ano disponível para este indicador.
             </small>
@@ -408,14 +391,87 @@ function getBoundaryYear(result, boundary) {
   return boundary === 'start' ? years[0] : years[years.length - 1]
 }
 
-function buildComparableInterpretation({ endYear, formattedEnd, metaValue, distanceValue, atingida }) {
-  const adverbio = atingida === true ? 'acima' : 'abaixo'
-  return `Em ${endYear}, o município chegou a ${formattedEnd}, ${adverbio} da meta definida (${metaValue}). A distância em relação à meta é de ${distanceValue}.`
-}
-
 function getDistanceTone(result, isComparable) {
   if (!isComparable) return 'muted'
   if (result?.atingida === true) return 'success'
   if (result?.atingida === false) return 'warning'
   return 'muted'
+}
+
+function buildQuickReading({
+  atingida,
+  distanceValue,
+  endYear,
+  formattedEnd,
+  isComparable,
+  metaValue,
+  startYear,
+  variation,
+}) {
+  if (!hasReadableValue(formattedEnd) || !hasReadableYear(endYear)) return ''
+
+  const variationAbs = formatAbsPp(variation)
+  const distanceAbs = formatAbsPp(distanceValue)
+  const hasVariation = hasReadableValue(variationAbs)
+  const hasDistance = hasReadableValue(distanceAbs)
+  const hasStartYear = hasReadableYear(startYear)
+  const hasMeta = hasReadableValue(metaValue)
+  const variationNumber = parseDisplayNumber(variation)
+  const isStable = Number.isFinite(variationNumber) && Math.abs(variationNumber) < 0.5
+
+  if (!isComparable || !hasMeta) {
+    return `Em ${endYear}, o município registra ${formattedEnd}. Este indicador é acompanhado como informação de contexto, sem meta definida para comparação.`
+  }
+
+  if (isStable && hasStartYear && hasVariation) {
+    return `Em ${endYear}, o município registra ${formattedEnd}. O indicador permaneceu próximo ao nível observado em ${startYear}, com variação de ${variationAbs} no período.`
+  }
+
+  if (atingida === true) {
+    const evolution = hasStartYear && hasVariation && Number.isFinite(variationNumber)
+      ? variationNumber >= 0
+        ? ` Em relação a ${startYear}, houve avanço de ${variationAbs}, indicando evolução positiva no período.`
+        : ` Em relação a ${startYear}, houve queda de ${variationAbs}, mas o indicador permanece na referência esperada.`
+      : ''
+    return `Em ${endYear}, o município registra ${formattedEnd}, alcançando a referência de ${metaValue}.${evolution}`
+  }
+
+  if (atingida === false) {
+    const distance = hasDistance
+      ? `, ainda ${distanceAbs} abaixo da referência de ${metaValue}`
+      : `, abaixo da referência de ${metaValue}`
+    const evolution = hasStartYear && hasVariation && Number.isFinite(variationNumber)
+      ? variationNumber >= 0
+        ? ` Apesar do avanço de ${variationAbs} desde ${startYear}, o indicador ainda exige atenção para alcançar a meta.`
+        : ` Houve queda de ${variationAbs} desde ${startYear}, e o indicador exige atenção para se aproximar da referência.`
+      : ' O indicador ainda exige atenção para alcançar a meta.'
+    return `Em ${endYear}, o município registra ${formattedEnd}${distance}.${evolution}`
+  }
+
+  return `Em ${endYear}, o município registra ${formattedEnd}. A referência de comparação é ${metaValue}.`
+}
+
+function hasReadableValue(value) {
+  return value !== null && value !== undefined && value !== '' && value !== '-'
+}
+
+function hasReadableYear(value) {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0
+}
+
+function formatAbsPp(value) {
+  if (!hasReadableValue(value)) return '-'
+  const numeric = parseDisplayNumber(value)
+  if (!Number.isFinite(numeric)) return value
+  const formatted = Math.abs(numeric).toLocaleString('pt-BR', {
+    maximumFractionDigits: 1,
+  })
+  return `${formatted} p.p.`
+}
+
+function parseDisplayNumber(value) {
+  const match = String(value ?? '').match(/[-+]?\d+(?:[,.]\d+)?/)
+  if (!match) return Number.NaN
+  const numeric = Number(match[0].replace(',', '.'))
+  return Number.isFinite(numeric) ? numeric : Number.NaN
 }
