@@ -1039,10 +1039,10 @@ def build_medio_tecnico_details(municipio):
         return None
 
     series_dependencia = _build_column_based_dependency_series(df, municipio, {
-        "publica": "mat_ept_nivel_medio_publica",
         "federal": "mat_ept_nivel_medio_federal",
         "estadual": "mat_ept_nivel_medio_estadual",
         "municipal": "mat_ept_nivel_medio_municipal",
+        "privada": "mat_ept_nivel_medio_privada",
     })
 
     payload = {
@@ -1105,10 +1105,10 @@ def build_medio_tecnico_total_details(municipio):
         return None
 
     series_dependencia = _build_column_based_dependency_series(df, municipio, {
-        "publica": "mat_ept_nivel_medio_publica",
         "federal": "mat_ept_nivel_medio_federal",
         "estadual": "mat_ept_nivel_medio_estadual",
         "municipal": "mat_ept_nivel_medio_municipal",
+        "privada": "mat_ept_nivel_medio_privada",
     })
 
     payload = {
@@ -1200,10 +1200,10 @@ def build_medio_tecnico_participacao_publica_details(municipio):
         return None
 
     series_dependencia = _build_column_based_dependency_series(df, municipio, {
-        "publica": "mat_ept_nivel_medio_publica",
         "federal": "mat_ept_nivel_medio_federal",
         "estadual": "mat_ept_nivel_medio_estadual",
         "municipal": "mat_ept_nivel_medio_municipal",
+        "privada": "mat_ept_nivel_medio_privada",
     })
 
     payload = {
@@ -1269,6 +1269,7 @@ def build_subsequente_expansao_details(municipio):
         "federal": "mat_subsequente_federal",
         "estadual": "mat_subsequente_estadual",
         "municipal": "mat_subsequente_municipal",
+        "privada": "mat_subsequente_privada",
     })
 
     payload = {
