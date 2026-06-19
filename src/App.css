@@ -978,9 +978,9 @@
 
 .cycle-layout {
   display: grid;
-  grid-template-columns: minmax(300px, 340px) minmax(0, 1fr);
-  gap: 14px;
-  align-items: stretch;
+  grid-template-columns: minmax(310px, 350px) minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
   margin-top: 0;
   min-width: 0;
   min-height: var(--pne-workspace-height);
@@ -1089,8 +1089,8 @@
   box-shadow: 0 4px 14px rgba(18, 45, 18, 0.05);
   padding: 12px;
   min-width: 0;
-  height: min(var(--pne-workspace-height), calc(100vh - 132px));
-  max-height: min(var(--pne-workspace-height), calc(100vh - 132px));
+  height: var(--pne-workspace-height);
+  max-height: var(--pne-workspace-height);
   overflow: hidden;
   box-sizing: border-box;
   display: flex;
@@ -3825,7 +3825,7 @@
 }
 
 .complementary-data__panel {
-  min-height: 320px;
+  min-height: 0;
 }
 
 @media (max-width: 520px) {
@@ -3889,7 +3889,7 @@
 .complementary-chart {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .complementary-chart__heading {
@@ -3912,7 +3912,7 @@
 }
 
 .complementary-chart__canvas {
-  padding: 10px 12px;
+  padding: 8px 10px;
   border: 1px solid var(--divider);
   border-radius: 8px;
   background: #ffffff;

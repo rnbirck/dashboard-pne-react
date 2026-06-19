@@ -223,7 +223,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
         </div>
       )}
 
-      <IndicatorComplementaryData cycle={cycle} indicatorKey={item?.key} municipioData={municipioData} />
+      <IndicatorComplementaryData cycle={cycle} indicatorKey={item?.key} municipioData={municipioData} result={result} />
 
       {!hasSeries && !isInformative && (
         <div className="detail-empty-state">

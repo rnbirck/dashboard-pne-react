@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 
-const CHART_WIDTH = 600
+const CHART_WIDTH = 980
 const CHART_HEIGHT = 300
 const PADDING = { top: 28, right: 28, bottom: 58, left: 64 }
 

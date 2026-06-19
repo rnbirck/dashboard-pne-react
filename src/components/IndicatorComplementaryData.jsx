@@ -10,7 +10,7 @@ const percentFormatter = new Intl.NumberFormat('pt-BR', {
   minimumFractionDigits: 0,
 })
 
-export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData }) {
+export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData, result }) {
   const slug = municipioData?.slug
   const fallbackDetails = municipioData?.indicator_details?.[indicatorKey] ?? null
   const [details, setDetails] = useState(null)
@@ -52,13 +52,31 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData 
     }
   }, [slug, indicatorKey, fallbackDetails])
 
+  const cycleRange = useMemo(
+    () => resolveCycleRange(cycle, result, details),
+    [cycle, result, details],
+  )
   const calculationComponents =
     details?.series_components_by_cycle?.[cycle] ?? details?.series_components
-  const hasTotal = Array.isArray(details?.series_total) && details.series_total.length > 0
-  const hasDependencia =
-    Array.isArray(details?.series_dependencia) && details.series_dependencia.length > 0
-  const hasComponents =
-    Array.isArray(calculationComponents) && calculationComponents.length > 0
+  const filteredTotal = useMemo(
+    () => filterRowsByCycle(details?.series_total, cycleRange),
+    [details?.series_total, cycleRange],
+  )
+  const filteredDependencia = useMemo(
+    () => filterRowsByCycle(details?.series_dependencia, cycleRange),
+    [details?.series_dependencia, cycleRange],
+  )
+  const filteredComponents = useMemo(
+    () =>
+      filterRowsByCycle(calculationComponents, cycleRange)
+        .slice()
+        .sort((a, b) => Number(b?.ano) - Number(a?.ano)),
+    [calculationComponents, cycleRange],
+  )
+
+  const hasTotal = filteredTotal.length > 0
+  const hasDependencia = filteredDependencia.length > 0
+  const hasComponents = filteredComponents.length > 0
   const numeratorLabel = details?.calculation?.numerator_label || 'Numerador'
   const denominatorLabel = details?.calculation?.denominator_label || 'Denominador'
 
@@ -73,7 +91,7 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData 
         label: 'Histórico de matrículas',
         content: (
           <ComplementaryEnrollmentChart
-            series={details.series_total}
+            series={filteredTotal}
             title={details.title || 'Matrículas em creche'}
             unit={details.unit || 'Matrículas'}
           />
@@ -87,7 +105,7 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData 
         label: 'Dependência administrativa',
         content: (
           <AdministrativeDependencyChart
-            series={details.series_dependencia}
+            series={filteredDependencia}
             unit={details.dependency_unit || details.unit}
             valueType={details.dependency_value_type}
             title="Por dependência administrativa"
@@ -104,7 +122,7 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData 
           <CalculationComponentsTable
             denominatorLabel={denominatorLabel}
             numeratorLabel={numeratorLabel}
-            rows={calculationComponents}
+            rows={filteredComponents}
           />
         ),
       })
@@ -112,9 +130,11 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData 
 
     return availableOptions
   }, [
-    calculationComponents,
     denominatorLabel,
     details,
+    filteredComponents,
+    filteredDependencia,
+    filteredTotal,
     hasComponents,
     hasDependencia,
     hasTotal,
@@ -220,4 +240,52 @@ function CalculationComponentsTable({ denominatorLabel, numeratorLabel, rows }) 
       </div>
     </div>
   )
+}
+
+function filterRowsByCycle(rows, range) {
+  if (!Array.isArray(rows)) return []
+  return rows.filter((row) => {
+    const year = Number(row?.ano)
+    if (!Number.isFinite(year)) return false
+    if (Number.isFinite(range?.min) && year < range.min) return false
+    if (Number.isFinite(range?.max) && year > range.max) return false
+    return true
+  })
+}
+
+function resolveCycleRange(cycle, result, details) {
+  const resultYears = collectYears(result?.series)
+  const explicitStart = Number(result?.start_year)
+  const detailYears = [
+    ...collectYears(details?.series_total),
+    ...collectYears(details?.series_dependencia),
+    ...collectYears(details?.series_components_by_cycle?.[cycle] ?? details?.series_components),
+  ]
+
+  if (cycle === 'pne_2014_2024') {
+    return {
+      min: Number.isFinite(explicitStart) ? explicitStart : 2014,
+      max: 2024,
+    }
+  }
+
+  if (cycle === 'pne_2026_2036') {
+    const availableYears = resultYears.length ? resultYears : detailYears
+    return {
+      min: availableYears.length ? Math.min(...availableYears) : 2026,
+      max: availableYears.length ? Math.min(Math.max(...availableYears), 2036) : 2036,
+    }
+  }
+
+  const fallbackYears = resultYears.length ? resultYears : detailYears
+  return fallbackYears.length
+    ? { min: Math.min(...fallbackYears), max: Math.max(...fallbackYears) }
+    : { min: Number.NaN, max: Number.NaN }
+}
+
+function collectYears(rows) {
+  if (!Array.isArray(rows)) return []
+  return rows
+    .map((row) => Number(row?.ano))
+    .filter((year) => Number.isFinite(year))
 }
