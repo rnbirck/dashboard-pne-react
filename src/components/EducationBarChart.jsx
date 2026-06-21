@@ -3,12 +3,12 @@ import { isMissing } from '../utils/educationFormatters'
 
 const CHART_WIDTH = 760
 const BAR_GAP = 14
-const BAR_ROW_HEIGHT = 34
-const PADDING = { top: 16, right: 96, bottom: 20, left: 190 }
+const BAR_ROW_HEIGHT = 38
+const PADDING = { top: 18, right: 112, bottom: 26, left: 210 }
 
 export function EducationBarChart({ data, title, color = '#2563eb', formatLabel = (v) => String(v) }) {
   const [activeBar, setActiveBar] = useState(null)
-  const chart = useMemo(() => buildBars(data), [data])
+  const chart = useMemo(() => buildBars(data, formatLabel), [data, formatLabel])
 
   if (!chart || chart.bars.length === 0) {
     return (
@@ -64,14 +64,14 @@ export function EducationBarChart({ data, title, color = '#2563eb', formatLabel 
   )
 }
 
-function buildBars(data) {
+function buildBars(data, formatLabel) {
   if (!Array.isArray(data) || data.length === 0) return null
   const filtered = data
-    .filter((d) => !isMissing(d.value) && Number(d.value) > 0)
+    .filter((d) => !isMissing(d.value) && Number(d.value) >= 0)
     .sort((a, b) => Number(b.value) - Number(a.value))
   if (filtered.length === 0) return null
 
-  const maxVal = Math.max(...filtered.map((d) => Number(d.value)))
+  const maxVal = Math.max(...filtered.map((d) => Number(d.value)), 1)
   const plotW = CHART_WIDTH - PADDING.left - PADDING.right
   const bars = filtered.map((d, i) => {
     const value = Number(d.value)
@@ -80,7 +80,7 @@ function buildBars(data) {
       width: (value / maxVal) * plotW,
       category: shortenLabel(d.label),
       fullCategory: d.label,
-      label: value.toLocaleString('pt-BR', { maximumFractionDigits: 0 }),
+      label: formatLabel(value),
       rawValue: value,
     }
   })
