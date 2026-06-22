@@ -1,16 +1,16 @@
 import { RioGrandeDoSulMap } from '../components/RioGrandeDoSulMap'
 
 const DIRETRIZES = [
-  { num: '1', title: 'Planejamento estratégico' },
-  { num: '2', title: 'Intersetorialidade' },
-  { num: '3', title: 'Desenvolvimento integral' },
-  { num: '4', title: 'Pactuação federativa' },
-  { num: '5', title: 'Equilíbrio dos recursos' },
-  { num: '6', title: 'Liberdade' },
-  { num: '7', title: 'Qualidade e equidade' },
-  { num: '8', title: 'Uso de evidências' },
-  { num: '9', title: 'Monitoramento e avaliação' },
-  { num: '10', title: 'Promoção de direitos' },
+  { num: '1', title: 'Planejamento estratégico', description: 'Organização das metas e prioridades.' },
+  { num: '2', title: 'Intersetorialidade', description: 'Articulação entre políticas públicas.' },
+  { num: '3', title: 'Desenvolvimento integral', description: 'Aprendizagem, permanência e bem-estar.' },
+  { num: '4', title: 'Pactuação federativa', description: 'Colaboração entre União, Estado e municípios.' },
+  { num: '5', title: 'Equilíbrio dos recursos', description: 'Uso mais justo e eficiente do financiamento.' },
+  { num: '6', title: 'Liberdade', description: 'Respeito à pluralidade e à autonomia.' },
+  { num: '7', title: 'Qualidade e equidade', description: 'Acesso com aprendizagem para todos.' },
+  { num: '8', title: 'Uso de evidências', description: 'Decisões orientadas por dados oficiais.' },
+  { num: '9', title: 'Monitoramento e avaliação', description: 'Acompanhamento contínuo das metas.' },
+  { num: '10', title: 'Promoção de direitos', description: 'Inclusão, cidadania e diversidade.' },
 ]
 
 export function Home({ selectedMunicipio, onNavigate }) {
@@ -21,9 +21,12 @@ export function Home({ selectedMunicipio, onNavigate }) {
       <section className="home-hero">
         <article className="hero-intro">
           <div className="hero-copy">
-            <h1>Painel municipal de educação</h1>
+            <h1>
+              <span>Painel municipal</span>
+              <span>de educação</span>
+            </h1>
             <p>
-              Consulte indicadores, metas e diagnóstico territorial do município selecionado,
+              Acompanhe indicadores, metas e o diagnóstico territorial do município selecionado,
               organizados por ciclo do Plano Nacional de Educação.
             </p>
           </div>
@@ -46,6 +49,7 @@ export function Home({ selectedMunicipio, onNavigate }) {
           <div className="context-actions" aria-label="Atalhos do painel">
             <ModuleLink icon={<CalendarIcon />} label="PNE 2014–2024" onClick={() => onNavigate?.('pne2014')} />
             <ModuleLink icon={<CalendarIcon />} label="PNE 2026–2036" onClick={() => onNavigate?.('pne2026')} />
+            <ModuleLink icon={<BarsIcon />} label="Indicadores da Educação" onClick={() => onNavigate?.('educacao')} />
             <ModuleLink icon={<DocumentIcon />} label="Diagnóstico" onClick={() => onNavigate?.('diagnostico')} />
           </div>
         </aside>
@@ -56,18 +60,18 @@ export function Home({ selectedMunicipio, onNavigate }) {
         <div className="feature-grid">
           <FeatureCard
             icon={<BarsIcon />}
-            title="Indicadores por ciclo"
-            text="Explore os indicadores organizados por ciclo do PNE."
+            title="Indicadores"
+            text="Explore matrículas, rede escolar, docentes, fluxo, aprendizagem e oferta técnica do município."
           />
           <FeatureCard
             icon={<TargetIcon />}
             title="Metas e estratégias"
-            text="Consulte as metas e estratégias do Plano Nacional de Educação."
+            text="Consulte metas, estratégias e referências dos ciclos do Plano Nacional de Educação."
           />
           <FeatureCard
             icon={<InstitutionIcon />}
             title="Diagnóstico municipal"
-            text="Acesse o diagnóstico territorial com informações e análises do município."
+            text="Acesse análises territoriais para compreender desafios e oportunidades do município."
           />
         </div>
       </section>
@@ -76,7 +80,12 @@ export function Home({ selectedMunicipio, onNavigate }) {
         <h2>10 diretrizes do novo PNE</h2>
         <div className="diretrizes-grid">
           {DIRETRIZES.map((diretriz) => (
-            <DiretrizCard key={diretriz.num} num={diretriz.num} title={diretriz.title} />
+            <DiretrizCard
+              key={diretriz.num}
+              num={diretriz.num}
+              title={diretriz.title}
+              description={diretriz.description}
+            />
           ))}
         </div>
       </section>
@@ -84,6 +93,12 @@ export function Home({ selectedMunicipio, onNavigate }) {
       <section className="home-section home-section--compact">
         <h2>Módulos do painel</h2>
         <div className="module-grid">
+          <ModuleCard
+            icon={<BarsIcon />}
+            title="Indicadores da Educação"
+            text="Explore dados educacionais do município por tema e série histórica."
+            onClick={() => onNavigate?.('educacao')}
+          />
           <ModuleCard
             icon={<CalendarIcon />}
             title="PNE 2014–2024"
@@ -108,11 +123,14 @@ export function Home({ selectedMunicipio, onNavigate }) {
   )
 }
 
-function DiretrizCard({ num, title }) {
+function DiretrizCard({ num, title, description }) {
   return (
     <article className="diretriz-card">
       <span className="diretriz-num">{num}</span>
-      <h3>{title}</h3>
+      <div>
+        <h3>{title}</h3>
+        <p>{description}</p>
+      </div>
     </article>
   )
 }

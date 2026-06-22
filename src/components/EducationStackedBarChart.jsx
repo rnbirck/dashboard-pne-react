@@ -100,9 +100,10 @@ function buildStackedChart(data, categories) {
           .filter(([, value]) => !isMissing(value)),
       )
       const total = Object.values(values).reduce((sum, value) => sum + Number(value), 0)
-      return { year: Number(row.year), values, total }
+      const hasValue = Object.values(values).some((value) => !isMissing(value))
+      return { year: Number(row.year), values, total, hasValue }
     })
-    .filter((row) => Number.isFinite(row.year) && row.total > 0)
+    .filter((row) => Number.isFinite(row.year) && row.hasValue)
     .sort((a, b) => a.year - b.year)
 
   if (!normalizedRows.length) return null

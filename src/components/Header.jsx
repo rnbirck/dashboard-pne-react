@@ -4,7 +4,7 @@ const NAV_ITEMS = [
   { key: 'home', label: 'Início', icon: HomeIcon },
   { key: 'pne2014', label: 'PNE 2014-2024', icon: CalendarIcon },
   { key: 'pne2026', label: 'PNE 2026-2036', icon: CalendarIcon },
-  { key: 'educacao', label: 'Educação', icon: EducationIcon },
+  { key: 'educacao', label: 'Indicadores', icon: EducationIcon },
   { key: 'diagnostico', label: 'Diagnóstico', icon: DocumentIcon },
 ]
 

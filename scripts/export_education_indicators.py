@@ -1127,10 +1127,10 @@ def _campos_indisponiveis_aprendizagem(d):
 # ── Bloco: Oferta Tecnica ────────────────────────────────────────────────
 
 
-def montar_bloco_oferta(df, id_mun):
+def montar_bloco_oferta(df, id_mun, df_faixa_etaria=None):
     d = df[df["id_municipio"] == id_mun].copy()
     if d.empty:
-        return _bloco_vazio("oferta_tecnica", ["modalidade", "dependencia"], AVISOS_OFERTA)
+        return _bloco_vazio("oferta_tecnica", ["modalidade", "dependencia", "faixa_etaria"], AVISOS_OFERTA)
 
     total = d[d["dependencia"] == "total"].copy()
     por_modalidade = {}
@@ -1159,6 +1159,18 @@ def montar_bloco_oferta(df, id_mun):
         "por_rede": detalhamento_oferta(d, ["dependencia"], {"dependencia": deps_rede}),
         "por_modalidade_rede": detalhamento_oferta(d, ["modalidade", "dependencia"], {"dependencia": deps_rede}),
     }
+    if df_faixa_etaria is not None and not df_faixa_etaria.empty:
+        faixa = df_faixa_etaria[
+            (df_faixa_etaria["id_municipio"] == id_mun)
+            & (df_faixa_etaria["etapa_ensino"] == "profissional")
+        ].copy()
+        if not faixa.empty:
+            detalhamentos["por_faixa_etaria"] = detalhamento_faixa_etaria(faixa, ["faixa_etaria"])
+            if "secao_sinopse" in faixa.columns:
+                detalhamentos["por_secao_faixa_etaria"] = detalhamento_faixa_etaria(
+                    faixa,
+                    ["secao_sinopse", "faixa_etaria"],
+                )
 
     return {
         "series": {
@@ -1168,7 +1180,7 @@ def montar_bloco_oferta(df, id_mun):
         "detalhamentos": detalhamentos,
         "ultimo_ano": ultimo_ano,
         "resumo_ultimo_ano": resumo,
-        "dimensoes_disponiveis": ["modalidade", "dependencia"],
+        "dimensoes_disponiveis": ["modalidade", "dependencia", "faixa_etaria"],
         "campos_indisponiveis": [],
         "avisos": AVISOS_OFERTA,
     }
@@ -1228,7 +1240,11 @@ def exportar_municipios(mun_rs, dfs_views):
             "turmas_docentes": montar_bloco_turmas(dfs_views["turmas"], id_mun),
             "fluxo": montar_bloco_fluxo(dfs_views["fluxo"], id_mun),
             "aprendizagem": montar_bloco_aprendizagem(dfs_views["aprendizagem"], id_mun),
-            "oferta_tecnica": montar_bloco_oferta(dfs_views["oferta"], id_mun),
+            "oferta_tecnica": montar_bloco_oferta(
+                dfs_views["oferta"],
+                id_mun,
+                dfs_views.get("matriculas_faixa_etaria"),
+            ),
         }
 
         dados = {
@@ -1595,6 +1611,44 @@ def validar_jsons(gerados_mun):
             else:
                 ultimo_str = str(ultimo)
             print(f"    {bloco}: ultimo_ano={ultimo_str}, resumo={str(resumo)[:80]}")
+
+    # 8. Reconciliacao da oferta tecnica
+    print("\n8. Reconciliacao Oferta tecnica (redes = total):")
+    divergencias = []
+    redes_detalhadas = {"federal", "estadual", "municipal", "privada"}
+    for f in SAIDA_MUN.glob("*.json"):
+        with open(f, encoding="utf-8") as fh:
+            dados = json.load(fh)
+        oferta = dados.get("blocos", {}).get("oferta_tecnica", {})
+        total_por_ano = {
+            int(p["ano"]): limpar_null(p.get("valor"))
+            for p in oferta.get("series", {}).get("total", [])
+        }
+        rede_por_ano = defaultdict(int)
+        for row in oferta.get("detalhamentos", {}).get("por_rede", []):
+            if row.get("dependencia") not in redes_detalhadas:
+                continue
+            valor = limpar_null(row.get("matriculas", row.get("valor")))
+            if valor is not None:
+                rede_por_ano[int(row["ano"])] += valor
+        for ano, total in total_por_ano.items():
+            if total is None:
+                continue
+            soma_redes = rede_por_ano.get(ano, 0)
+            if ri(total) != ri(soma_redes):
+                divergencias.append(
+                    (dados["id_municipio"], dados["municipio"], ano, ri(total), ri(soma_redes))
+                )
+                if len(divergencias) >= 10:
+                    break
+        if len(divergencias) >= 10:
+            break
+    if divergencias:
+        print("  DIVERGENCIAS encontradas (primeiras 10):")
+        for id_mun, nome, ano, total, soma_redes in divergencias:
+            print(f"    {id_mun} {nome} {ano}: total={total}, redes={soma_redes}")
+        raise ValueError("Oferta tecnica por rede nao reconcilia com a serie principal.")
+    print("  OK - soma das redes detalhadas fecha com a serie principal.")
 
 
 # ── Main ─────────────────────────────────────────────────────────────────

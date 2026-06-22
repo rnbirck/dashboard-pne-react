@@ -57,6 +57,7 @@ const LOCATION_COLORS = {
 
 const STAGE_FILTER_ORDER = ['total', 'infantil', 'fundamental', 'fundamental_anos_iniciais', 'fundamental_anos_finais', 'medio', 'eja', 'profissional']
 const FUNDAMENTAL_FAIXA_STAGES = ['fundamental_anos_iniciais', 'fundamental_anos_finais']
+const CATEGORY_COMPARISON_COLORS = ['#0f766e', '#2563eb', '#f59e0b', '#7c3aed', '#0891b2', '#db2777', '#65a30d', '#9333ea']
 
 export function EducacaoPage({ selectedMunicipio }) {
   const eduIndexState = useAsyncData(() => loadEducationMunicipiosIndex(), [])
@@ -373,10 +374,13 @@ function sortDetailItems(items) {
 }
 
 function detailTabPriority(item) {
+  if (Number.isFinite(item.tabPriority)) return item.tabPriority
   const label = getDetailTabLabel(item)
   if (label === 'Por rede') return 1
   if (label === 'Por localização') return 2
   if (label === 'Por faixa etária') return 3
+  if (label === 'Por modalidade') return 4
+  if (label === 'Evolução') return 5
   return 10
 }
 
@@ -411,6 +415,9 @@ function ExploreItem({ item }) {
   }
   if (item.type === 'age-range') {
     return <AgeRangeDetail key={item.key} item={item} />
+  }
+  if (item.type === 'modality-range') {
+    return <ModalityDetail key={item.key} item={item} />
   }
   if (item.type === 'line') {
     return item.series.length >= 2
@@ -451,12 +458,14 @@ function AgeRangeDetail({ item }) {
   const period = historySeries.length
     ? `${historySeries[0].ano}-${historySeries[historySeries.length - 1].ano}`
     : ''
+  const comparisonTitlePrefix = item.comparisonTitlePrefix ?? 'Matrículas por faixa etária'
+  const historyStageLabel = item.historyStageLabel ?? activeStageLabel
   const comparisonTitle = comparisonYears.length
-    ? `Matrículas por faixa etária — ${activeStageLabel} — ${formatYearList(comparisonYears)}`
-    : `Matrículas por faixa etária — ${activeStageLabel} — comparação entre anos`
+    ? `${comparisonTitlePrefix} — ${activeStageLabel} — ${formatYearList(comparisonYears)}`
+    : `${comparisonTitlePrefix} — ${activeStageLabel} — comparação entre anos`
   const historyTitle = period
-    ? `Histórico — ${activeStageLabel} — ${activeFaixa} — ${period}`
-    : `Histórico — ${activeStageLabel} — ${activeFaixa}`
+    ? `Histórico — ${historyStageLabel} — ${activeFaixa} — ${period}`
+    : `Histórico — ${historyStageLabel} — ${activeFaixa}`
 
   if (!comparisonRows.length || !ageCategories.length) {
     return <div className="education-chart-empty"><p>Não há dados suficientes para exibir o gráfico.</p></div>
@@ -551,15 +560,25 @@ function AgeRangeComparisonChart({ categories, data, years, title, formatLabel }
               {row.bars.map((bar) => (
                 <g key={`${row.year}-${bar.key}`}>
                   {!isMissing(bar.value) ? (
-                    <rect
-                      x={bar.x}
-                      y={bar.y}
-                      width={bar.width}
-                      height={bar.height}
-                      fill={bar.color}
-                      fillOpacity="0.86"
-                      rx="3"
-                    />
+                    <>
+                      <rect
+                        x={bar.x}
+                        y={bar.y}
+                        width={bar.width}
+                        height={bar.height}
+                        fill={bar.color}
+                        fillOpacity="0.86"
+                        rx="3"
+                      />
+                      <text
+                        x={bar.labelX}
+                        y={bar.labelY}
+                        textAnchor="middle"
+                        className="chart-bar-value"
+                      >
+                        {bar.label}
+                      </text>
+                    </>
                   ) : null}
                 </g>
               ))}
@@ -568,6 +587,79 @@ function AgeRangeComparisonChart({ categories, data, years, title, formatLabel }
           ))}
         </svg>
       </div>
+    </div>
+  )
+}
+
+function ModalityDetail({ item }) {
+  const modalidadeOptions = modalityOptions(item.rows)
+  const [viewMode, setViewMode] = useState('comparison')
+  const [selectedModalidade, setSelectedModalidade] = useState('')
+  const activeModalidade = modalidadeOptions.some((option) => option.key === selectedModalidade)
+    ? selectedModalidade
+    : modalidadeOptions[0]?.key
+  const comparisonYears = comparisonYearsForRows(item.rows)
+  const comparisonRows = categoryComparisonRows(item.rows, comparisonYears, modalidadeOptions, 'modalidade')
+  const categories = modalidadeOptions.map((option, index) => ({
+    key: option.key,
+    label: option.label,
+    color: CATEGORY_COMPARISON_COLORS[index % CATEGORY_COMPARISON_COLORS.length],
+  }))
+  const historySeries = categoryHistorySeries(item.rows, activeModalidade, 'modalidade')
+  const period = historySeries.length
+    ? `${historySeries[0].ano}-${historySeries[historySeries.length - 1].ano}`
+    : ''
+  const comparisonTitle = comparisonYears.length
+    ? `Matrículas por modalidade — ${formatYearList(comparisonYears)}`
+    : 'Matrículas por modalidade — comparação entre anos'
+  const historyTitle = period
+    ? `Histórico — ${modLabel(activeModalidade)} — ${period}`
+    : `Histórico — ${modLabel(activeModalidade)}`
+
+  if (!comparisonRows.length || !categories.length) {
+    return <div className="education-chart-empty"><p>Não há dados suficientes para exibir o gráfico.</p></div>
+  }
+
+  return (
+    <div className="educacao-age-detail">
+      <div className="educacao-age-detail__controls">
+        <label className="educacao-age-detail__control">
+          <span>Visualização</span>
+          <select value={viewMode} onChange={(event) => setViewMode(event.target.value)}>
+            <option value="comparison">Comparação por ano</option>
+            <option value="history">Histórico de uma modalidade</option>
+          </select>
+        </label>
+        {viewMode === 'history' ? (
+          <label className="educacao-age-detail__control">
+            <span>Modalidade</span>
+            <select value={activeModalidade ?? ''} onChange={(event) => setSelectedModalidade(event.target.value)}>
+              {modalidadeOptions.map((option) => (
+                <option key={option.key} value={option.key}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+      </div>
+
+      {viewMode === 'comparison' ? (
+        <AgeRangeComparisonChart
+          categories={categories}
+          data={comparisonRows}
+          formatLabel={item.formatLabel}
+          title={comparisonTitle}
+          years={comparisonYears}
+        />
+      ) : (
+        <EducationLineChart
+          color={item.historyColor}
+          formatLabel={item.formatLabel}
+          scaleType="count"
+          series={historySeries}
+          showPointLabels
+          title={historyTitle}
+        />
+      )}
     </div>
   )
 }
@@ -709,17 +801,9 @@ function buildOfertaIndicators(oferta) {
   const resumo = oferta.resumo_ultimo_ano ?? {}
   const latestYear = oferta.ultimo_ano
   const explore = buildOfertaExplore(oferta)
-  const items = [
+  return [
     createIndicator({ key: 'oferta-total', label: 'Matrículas em educação técnica/profissional', description: 'Total de matrículas em oferta técnica/profissional.', themeKey: 'oferta', themeLabel: 'Oferta técnica/profissional', themeShortLabel: 'Oferta', categories: [FILTER_KEYS.profissional], stageLabel: 'Educação Profissional', series: normalizeYearSeries(series.total), currentValue: resumo.total_matriculas_tecnicas, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Oferta técnica', explore, notices: oferta.avisos ?? [] }),
   ]
-
-  Object.entries(series.por_modalidade ?? {}).forEach(([key, modalitySeries]) => {
-    const normalized = normalizeYearSeries(modalitySeries)
-    if (!normalized.length) return
-    items.push(createIndicator({ key: `oferta-${key}`, label: `Matrículas - ${modLabel(key)}`, description: `Matrículas técnicas na modalidade ${modLabel(key)}.`, themeKey: 'oferta', themeLabel: 'Oferta técnica/profissional', themeShortLabel: 'Oferta', categories: [FILTER_KEYS.profissional], stageLabel: 'Educação Profissional', series: normalized, currentValue: normalized.at(-1)?.valor, currentYear: normalized.at(-1)?.ano ?? latestYear, formatType: 'number', mainCutLabel: modLabel(key), explore, notices: oferta.avisos ?? [] }))
-  })
-
-  return items
 }
 
 function createIndicator(config) {
@@ -808,6 +892,9 @@ function hasExploreData(item) {
     return Array.isArray(item.series) && item.series.length >= 2
   }
   if (item.type === 'age-range') {
+    return Array.isArray(item.rows) && item.rows.some((row) => !isMissing(detailRowValue(row, 'matriculas')))
+  }
+  if (item.type === 'modality-range') {
     return Array.isArray(item.rows) && item.rows.some((row) => !isMissing(detailRowValue(row, 'matriculas')))
   }
   if (item.type === 'table') {
@@ -1176,20 +1263,50 @@ function ageRangeComparisonRows(rows, years, faixas) {
 }
 
 function ageRangeCategoryDefinitions(faixas) {
-  const palette = ['#0f766e', '#2563eb', '#f59e0b', '#7c3aed', '#0891b2', '#db2777', '#65a30d', '#9333ea']
   return faixas.map((faixa, index) => ({
     key: faixa,
     label: faixa,
-    color: palette[index % palette.length],
+    color: CATEGORY_COMPARISON_COLORS[index % CATEGORY_COMPARISON_COLORS.length],
   }))
+}
+
+function modalityOptions(rows) {
+  return [...new Set((Array.isArray(rows) ? rows : [])
+    .map((row) => row?.modalidade)
+    .filter((modalidade) => !isMissing(modalidade)))]
+    .sort((a, b) => modLabel(a).localeCompare(modLabel(b), 'pt-BR'))
+    .map((key) => ({ key, label: modLabel(key) }))
+}
+
+function categoryComparisonRows(rows, years, options, field) {
+  return years.map((year) => {
+    const values = {}
+    options.forEach((option) => {
+      const row = rows.find((item) => item?.[field] === option.key && Number(item?.ano) === year)
+      const value = row ? detailRowValue(row, 'matriculas') : null
+      if (!isMissing(value)) values[option.key] = value
+    })
+    return { year, values }
+  }).filter((row) => Object.values(row.values).some((value) => !isMissing(value)))
+}
+
+function categoryHistorySeries(rows, key, field) {
+  return (Array.isArray(rows) ? rows : [])
+    .filter((row) => row?.[field] === key)
+    .map((row) => ({
+      ano: Number(row.ano),
+      valor: detailRowValue(row, 'matriculas'),
+    }))
+    .filter((row) => Number.isFinite(row.ano) && !isMissing(row.valor))
+    .sort((a, b) => a.ano - b.ano)
 }
 
 function buildAgeRangeComparisonChart(data, categories, years, formatLabel) {
   if (!Array.isArray(data) || !data.length || !Array.isArray(categories) || !categories.length || !Array.isArray(years) || !years.length) return null
 
-  const width = 860
-  const height = 340
-  const padding = { top: 26, right: 32, bottom: 50, left: 78 }
+  const width = 960
+  const height = 430
+  const padding = { top: 44, right: 36, bottom: 58, left: 78 }
   const visibleCategories = categories.filter((category) => (
     data.some((row) => !isMissing(row.values?.[category.key]))
   ))
@@ -1203,9 +1320,9 @@ function buildAgeRangeComparisonChart(data, categories, years, formatLabel) {
   const plotW = width - padding.left - padding.right
   const plotH = height - padding.top - padding.bottom
   const slotWidth = plotW / years.length
-  const groupWidth = Math.min(slotWidth * 0.76, 150)
-  const gap = visibleCategories.length > 4 ? 2 : 4
-  const barWidth = Math.max(5, Math.min(18, (groupWidth - gap * (visibleCategories.length - 1)) / visibleCategories.length))
+  const groupWidth = Math.min(slotWidth * 0.88, 240)
+  const gap = visibleCategories.length > 4 ? 4 : 7
+  const barWidth = Math.max(8, Math.min(30, (groupWidth - gap * (visibleCategories.length - 1)) / visibleCategories.length))
   const yScale = (value) => padding.top + ((domainMax - value) / domainMax) * plotH
 
   const rows = data.map((row, rowIndex) => {
@@ -1218,6 +1335,7 @@ function buildAgeRangeComparisonChart(data, categories, years, formatLabel) {
         const value = row.values?.[category.key]
         const numeric = Number(value)
         const y = !isMissing(value) ? yScale(numeric) : yScale(0)
+        const height = !isMissing(value) ? Math.max(1, yScale(0) - y) : 0
         return {
           key: category.key,
           color: category.color,
@@ -1225,8 +1343,10 @@ function buildAgeRangeComparisonChart(data, categories, years, formatLabel) {
           x: xBase + categoryIndex * (barWidth + gap),
           y,
           width: barWidth,
-          height: !isMissing(value) ? Math.max(1, yScale(0) - y) : 0,
+          height,
           label: isMissing(value) ? EM : formatLabel(value),
+          labelX: xBase + categoryIndex * (barWidth + gap) + barWidth / 2,
+          labelY: Math.max(padding.top + 12, y - 7),
         }
       }),
     }
@@ -1452,15 +1572,46 @@ function buildAprendizagemExplore(aprend, metric) {
 }
 
 function buildOfertaExplore(oferta) {
-  const series = oferta.series ?? {}
   const detalhamentos = oferta.detalhamentos ?? {}
-  const modalidadeRows = detailRowsToLatestRows(detalhamentos.por_modalidade, 'modalidade', modLabel, 'matriculas')
-  const redeRows = detailRowsToLatestRows(detalhamentos.por_rede, 'dependencia', depLabel, 'matriculas')
+  const redeRows = detalhamentos.por_rede ?? []
+  const redeKeys = dependencyKeysFromDetailRows(redeRows, 'matriculas')
+  const modalidadeRows = detalhamentos.por_modalidade ?? []
+  const faixaRows = detalhamentos.por_faixa_etaria ?? []
+  const redeTitle = redeKeys.length === 1 && redeKeys[0] === 'publica'
+    ? 'Matrículas técnicas por rede — histórico (recorte disponível: Pública)'
+    : 'Matrículas técnicas por rede — histórico'
   return [
-    { key: 'oferta-total', type: 'line', title: 'Evolução das matrículas técnicas', series: normalizeYearSeries(series.total), color: '#7c3aed', formatLabel: formatNumber, scaleType: 'count' },
-    { key: 'oferta-mod', type: 'bar', title: titleWithYear('Matrículas por modalidade', modalidadeRows), color: '#7c3aed', formatLabel: formatNumber, data: modalidadeRows },
-    { key: 'oferta-rede', type: 'bar', title: titleWithYear('Matrículas por rede', redeRows), color: '#2563eb', formatLabel: formatNumber, data: redeRows },
-  ]
+    redeKeys.length ? {
+      key: 'oferta-rede',
+      type: 'stacked',
+      title: redeTitle,
+      categories: categoryDefinitions(redeKeys, depLabel, DEPENDENCY_COLORS),
+      data: detailRowsToStackedRows(redeRows, 'dependencia', redeKeys, 'matriculas'),
+      formatLabel: formatNumber,
+      tabPriority: 1,
+    } : null,
+    {
+      key: 'oferta-mod',
+      type: 'modality-range',
+      title: 'Matrículas por modalidade',
+      rows: modalidadeRows,
+      historyColor: '#7c3aed',
+      formatLabel: formatNumber,
+      tabPriority: 2,
+    },
+    {
+      key: 'oferta-faixa',
+      type: 'age-range',
+      title: 'Matrículas técnicas por faixa etária',
+      rows: faixaRows,
+      stageLabel: 'Educação técnica/profissional',
+      historyStageLabel: 'Educação técnica/profissional',
+      comparisonTitlePrefix: 'Matrículas técnicas por faixa etária',
+      historyColor: '#2563eb',
+      formatLabel: formatNumber,
+      tabPriority: 3,
+    },
+  ].filter(Boolean)
 }
 
 function valueSeries(series, key) {
