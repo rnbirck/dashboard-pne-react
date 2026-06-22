@@ -328,7 +328,7 @@ function applyStageOption(indicator, option) {
 }
 
 function EducationIndicatorBreakdown({ indicator }) {
-  const detailItems = indicator.explore ?? []
+  const detailItems = sortDetailItems(indicator.explore ?? [])
   const [selectedDetailKey, setSelectedDetailKey] = useState('')
   const activeItem = detailItems.find((item) => item.key === selectedDetailKey) ?? detailItems[0] ?? null
   const hasTabs = detailItems.length > 1
@@ -368,8 +368,21 @@ function EducationIndicatorBreakdown({ indicator }) {
   )
 }
 
+function sortDetailItems(items) {
+  return [...items].sort((a, b) => detailTabPriority(a) - detailTabPriority(b))
+}
+
+function detailTabPriority(item) {
+  const label = getDetailTabLabel(item)
+  if (label === 'Por rede') return 1
+  if (label === 'Por localização') return 2
+  if (label === 'Por faixa etária') return 3
+  return 10
+}
+
 function getDetailTabLabel(item) {
   const title = String(item.title ?? '').toLocaleLowerCase('pt-BR')
+  if (item.type === 'age-range') return 'Por faixa etária'
   if (title.includes('faixa et')) return 'Por faixa etária'
   if (title.includes('etapa')) return 'Por etapa'
   if (title.includes('localiza')) return 'Por localização'
@@ -394,7 +407,10 @@ function ExploreItem({ item }) {
   }
 
   if (item.type === 'bar') {
-    return <EducationBarChart color={item.color} data={item.data} formatLabel={item.formatLabel} title={item.title} />
+    return <EducationBarChart color={item.color} data={item.data} formatLabel={item.formatLabel} preserveOrder={item.preserveOrder} title={item.title} />
+  }
+  if (item.type === 'age-range') {
+    return <AgeRangeDetail key={item.key} item={item} />
   }
   if (item.type === 'line') {
     return item.series.length >= 2
@@ -410,6 +426,150 @@ function ExploreItem({ item }) {
     )
   }
   return null
+}
+
+function AgeRangeDetail({ item }) {
+  const stageOptions = item.stageOptions ?? []
+  const defaultStage = stageOptions[0]?.key ?? null
+  const [viewMode, setViewMode] = useState('comparison')
+  const [selectedStageKey, setSelectedStageKey] = useState(defaultStage ?? '')
+  const activeStageKey = stageOptions.some((stage) => stage.key === selectedStageKey)
+    ? selectedStageKey
+    : defaultStage
+  const activeStage = stageOptions.find((stage) => stage.key === activeStageKey) ?? null
+  const activeStageLabel = activeStage?.label ?? item.stageLabel
+  const scopedRows = activeStageKey
+    ? item.rows.filter((row) => row[activeStage?.field ?? 'etapa_ensino'] === activeStageKey)
+    : item.rows
+  const faixaOptions = ageRangeOptions(scopedRows)
+  const [selectedFaixa, setSelectedFaixa] = useState('')
+  const activeFaixa = faixaOptions.includes(selectedFaixa) ? selectedFaixa : faixaOptions[0]
+  const comparisonYears = comparisonYearsForRows(scopedRows)
+  const comparisonRows = ageRangeComparisonRows(scopedRows, comparisonYears, faixaOptions)
+  const ageCategories = ageRangeCategoryDefinitions(faixaOptions)
+  const historySeries = ageRangeHistorySeries(scopedRows, activeFaixa)
+  const period = historySeries.length
+    ? `${historySeries[0].ano}-${historySeries[historySeries.length - 1].ano}`
+    : ''
+  const comparisonTitle = comparisonYears.length
+    ? `Matrículas por faixa etária — ${activeStageLabel} — ${formatYearList(comparisonYears)}`
+    : `Matrículas por faixa etária — ${activeStageLabel} — comparação entre anos`
+  const historyTitle = period
+    ? `Histórico — ${activeStageLabel} — ${activeFaixa} — ${period}`
+    : `Histórico — ${activeStageLabel} — ${activeFaixa}`
+
+  if (!comparisonRows.length || !ageCategories.length) {
+    return <div className="education-chart-empty"><p>Não há dados suficientes para exibir o gráfico.</p></div>
+  }
+
+  return (
+    <div className="educacao-age-detail">
+      <div className="educacao-age-detail__controls">
+        <label className="educacao-age-detail__control">
+          <span>Visualização</span>
+          <select value={viewMode} onChange={(event) => setViewMode(event.target.value)}>
+            <option value="comparison">Comparação por ano</option>
+            <option value="history">Histórico de uma faixa</option>
+          </select>
+        </label>
+        {stageOptions.length ? (
+          <label className="educacao-age-detail__control">
+            <span>Etapa</span>
+            <select value={activeStageKey ?? ''} onChange={(event) => setSelectedStageKey(event.target.value)}>
+              {stageOptions.map((stage) => (
+                <option key={stage.key} value={stage.key}>{stage.label}</option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        {viewMode === 'history' ? (
+          <label className="educacao-age-detail__control">
+            <span>Faixa etária</span>
+            <select value={activeFaixa ?? ''} onChange={(event) => setSelectedFaixa(event.target.value)}>
+              {faixaOptions.map((faixa) => (
+                <option key={faixa} value={faixa}>{faixa}</option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+      </div>
+
+      {viewMode === 'comparison' ? (
+        <AgeRangeComparisonChart
+          categories={ageCategories}
+          data={comparisonRows}
+          formatLabel={item.formatLabel}
+          title={comparisonTitle}
+          years={comparisonYears}
+        />
+      ) : (
+        <EducationLineChart
+          color={item.historyColor}
+          formatLabel={item.formatLabel}
+          scaleType="count"
+          series={historySeries}
+          showPointLabels
+          title={historyTitle}
+        />
+      )}
+    </div>
+  )
+}
+
+function AgeRangeComparisonChart({ categories, data, years, title, formatLabel }) {
+  const chart = buildAgeRangeComparisonChart(data, categories, years, formatLabel)
+
+  if (!chart || !chart.rows.length || !chart.categories.length) {
+    return <div className="education-chart-empty"><p>Não há dados suficientes para exibir o gráfico.</p></div>
+  }
+
+  return (
+    <div className="education-chart education-age-comparison-chart">
+      <h4 className="education-chart__title">{title}</h4>
+      <div className="education-stacked-legend">
+        {chart.categories.map((category) => (
+          <span key={category.key}>
+            <i style={{ background: category.color }} />
+            {category.label}
+          </span>
+        ))}
+      </div>
+      <div className="education-chart__canvas">
+        <svg viewBox={`0 0 ${chart.width} ${chart.height}`} role="img" aria-label={title}>
+          <g className="chart-grid">
+            {chart.yTicks.map((tick, i) => (
+              <g key={`y-${i}`}>
+                <line x1={chart.padding.left} x2={chart.width - chart.padding.right} y1={tick.y} y2={tick.y} stroke="#e8ede4" strokeWidth="1" />
+                <text x={chart.padding.left - 10} y={tick.y + 4} textAnchor="end" className="chart-axis-label">{tick.label}</text>
+              </g>
+            ))}
+          </g>
+          <line x1={chart.padding.left} x2={chart.width - chart.padding.right} y1={chart.height - chart.padding.bottom} y2={chart.height - chart.padding.bottom} stroke="#c4ccc0" strokeWidth="1" />
+          <line x1={chart.padding.left} x2={chart.padding.left} y1={chart.padding.top} y2={chart.height - chart.padding.bottom} stroke="#c4ccc0" strokeWidth="1" />
+          {chart.rows.map((row) => (
+            <g key={row.year}>
+              {row.bars.map((bar) => (
+                <g key={`${row.year}-${bar.key}`}>
+                  {!isMissing(bar.value) ? (
+                    <rect
+                      x={bar.x}
+                      y={bar.y}
+                      width={bar.width}
+                      height={bar.height}
+                      fill={bar.color}
+                      fillOpacity="0.86"
+                      rx="3"
+                    />
+                  ) : null}
+                </g>
+              ))}
+              <text x={row.x + row.width / 2} y={chart.height - 18} textAnchor="middle" className="chart-x-label">{row.year}</text>
+            </g>
+          ))}
+        </svg>
+      </div>
+    </div>
+  )
 }
 
 function buildEducationModel(blocos) {
@@ -647,6 +807,9 @@ function hasExploreData(item) {
   if (item.type === 'line') {
     return Array.isArray(item.series) && item.series.length >= 2
   }
+  if (item.type === 'age-range') {
+    return Array.isArray(item.rows) && item.rows.some((row) => !isMissing(detailRowValue(row, 'matriculas')))
+  }
   if (item.type === 'table') {
     return Array.isArray(item.rows) && item.rows.length > 0
   }
@@ -844,30 +1007,40 @@ function buildMatriculasExplore(mat, cut = { cutKey: 'total', cutLabel: 'Total d
 
 function buildMatriculasFaixaEtariaItem(detalhamentos, cut) {
   const fonte = detalhamentos.por_etapa_faixa_etaria ?? []
+  const fonteSecao = detalhamentos.por_etapa_secao_faixa_etaria ?? []
   let rows = []
-  let labelFn = (row) => row.faixa_etaria
-  let sortFn = (row) => faixaEtariaSortValue(row.faixa_etaria)
+  let stageLabel = cut.cutLabel
+  let stageOptions = []
 
-  if (cut.stageKey === 'fundamental') {
+  if (cut.stageKey === 'infantil') {
+    rows = detailRowsFor(fonteSecao, { etapa_ensino: 'infantil' })
+      .filter((row) => ['creche', 'pre_escola'].includes(row?.secao_sinopse))
+    stageLabel = 'Creche'
+    stageOptions = [
+      { key: 'creche', label: 'Creche', field: 'secao_sinopse' },
+      { key: 'pre_escola', label: 'Pré-escola', field: 'secao_sinopse' },
+    ].filter((option) => rows.some((row) => row.secao_sinopse === option.key))
+  } else if (cut.stageKey === 'fundamental') {
     rows = fonte.filter((row) => FUNDAMENTAL_FAIXA_STAGES.includes(row?.etapa_ensino))
-    labelFn = (row) => `${etapaLabel(row.etapa_ensino)} - ${row.faixa_etaria}`
-    sortFn = (row) => {
-      const stageIndex = FUNDAMENTAL_FAIXA_STAGES.indexOf(row?.etapa_ensino)
-      return (stageIndex < 0 ? 9 : stageIndex) * 100 + faixaEtariaSortValue(row.faixa_etaria)
-    }
+    stageLabel = etapaLabel(FUNDAMENTAL_FAIXA_STAGES[0])
+    stageOptions = FUNDAMENTAL_FAIXA_STAGES
+      .filter((stageKey) => rows.some((row) => row.etapa_ensino === stageKey))
+      .map((stageKey) => ({ key: stageKey, label: etapaLabel(stageKey), field: 'etapa_ensino' }))
   } else if (cut.stageKey) {
     rows = detailRowsFor(fonte, { etapa_ensino: cut.stageKey })
   }
 
-  const data = detailRowsToLatestRowsByLabel(rows, labelFn, 'matriculas', sortFn)
-  if (!data.length) return null
+  if (!ageRangeLatestRows(rows).length) return null
 
   return {
     key: `mat-${cut.stageKey}-faixa-etaria`,
-    type: 'bar',
-    title: titleWithYear(`Matrículas por faixa etária — ${cut.cutLabel}`, data),
+    type: 'age-range',
+    title: 'Matrículas por faixa etária',
     color: '#0f766e',
-    data,
+    historyColor: '#2563eb',
+    rows,
+    stageLabel,
+    stageOptions,
     formatLabel: formatNumber,
   }
 }
@@ -962,6 +1135,138 @@ function detailRowsToLatestRows(rows, dimension, labelFn, valueKey = 'valor') {
 
   return [...latestByKey.entries()]
     .map(([key, point]) => ({ label: labelFn(key), value: point.value, year: point.ano }))
+}
+
+function ageRangeOptions(rows) {
+  return [...new Set((Array.isArray(rows) ? rows : [])
+    .map((row) => row?.faixa_etaria)
+    .filter((faixa) => !isMissing(faixa)))]
+    .sort((a, b) => faixaEtariaSortValue(a) - faixaEtariaSortValue(b))
+}
+
+function ageRangeLatestRows(rows) {
+  return detailRowsToLatestRowsByLabel(
+    rows,
+    (row) => row.faixa_etaria,
+    'matriculas',
+    (row) => faixaEtariaSortValue(row.faixa_etaria),
+  )
+}
+
+function comparisonYearsForRows(rows) {
+  const years = [...new Set((Array.isArray(rows) ? rows : [])
+    .map((row) => Number(row?.ano))
+    .filter((year) => Number.isFinite(year)))]
+    .sort((a, b) => a - b)
+  if (years.length <= 3) return years
+  const middleIndex = Math.floor((years.length - 1) / 2)
+  return [...new Set([years[0], years[middleIndex], years[years.length - 1]])]
+}
+
+function ageRangeComparisonRows(rows, years, faixas) {
+  return years.map((year) => {
+    const values = {}
+    faixas.forEach((faixa) => {
+      const row = rows.find((item) => item?.faixa_etaria === faixa && Number(item?.ano) === year)
+      const value = row ? detailRowValue(row, 'matriculas') : null
+      if (!isMissing(value)) values[faixa] = value
+    })
+    return { year, values }
+  }).filter((row) => Object.values(row.values).some((value) => !isMissing(value)))
+}
+
+function ageRangeCategoryDefinitions(faixas) {
+  const palette = ['#0f766e', '#2563eb', '#f59e0b', '#7c3aed', '#0891b2', '#db2777', '#65a30d', '#9333ea']
+  return faixas.map((faixa, index) => ({
+    key: faixa,
+    label: faixa,
+    color: palette[index % palette.length],
+  }))
+}
+
+function buildAgeRangeComparisonChart(data, categories, years, formatLabel) {
+  if (!Array.isArray(data) || !data.length || !Array.isArray(categories) || !categories.length || !Array.isArray(years) || !years.length) return null
+
+  const width = 860
+  const height = 340
+  const padding = { top: 26, right: 32, bottom: 50, left: 78 }
+  const visibleCategories = categories.filter((category) => (
+    data.some((row) => !isMissing(row.values?.[category.key]))
+  ))
+  if (!visibleCategories.length) return null
+
+  const values = data.flatMap((row) => visibleCategories.map((category) => row.values?.[category.key]))
+    .filter((value) => !isMissing(value))
+    .map((value) => Number(value))
+  const maxVal = Math.max(...values, 1)
+  const domainMax = niceChartMax(maxVal)
+  const plotW = width - padding.left - padding.right
+  const plotH = height - padding.top - padding.bottom
+  const slotWidth = plotW / years.length
+  const groupWidth = Math.min(slotWidth * 0.76, 150)
+  const gap = visibleCategories.length > 4 ? 2 : 4
+  const barWidth = Math.max(5, Math.min(18, (groupWidth - gap * (visibleCategories.length - 1)) / visibleCategories.length))
+  const yScale = (value) => padding.top + ((domainMax - value) / domainMax) * plotH
+
+  const rows = data.map((row, rowIndex) => {
+    const xBase = padding.left + rowIndex * slotWidth + (slotWidth - groupWidth) / 2
+    return {
+      year: row.year,
+      x: xBase,
+      width: groupWidth,
+      bars: visibleCategories.map((category, categoryIndex) => {
+        const value = row.values?.[category.key]
+        const numeric = Number(value)
+        const y = !isMissing(value) ? yScale(numeric) : yScale(0)
+        return {
+          key: category.key,
+          color: category.color,
+          value,
+          x: xBase + categoryIndex * (barWidth + gap),
+          y,
+          width: barWidth,
+          height: !isMissing(value) ? Math.max(1, yScale(0) - y) : 0,
+          label: isMissing(value) ? EM : formatLabel(value),
+        }
+      }),
+    }
+  })
+
+  const yTicksRaw = [0, domainMax * 0.2, domainMax * 0.4, domainMax * 0.6, domainMax * 0.8, domainMax]
+  const yTicks = yTicksRaw.map((value) => ({
+    label: Math.round(value).toLocaleString('pt-BR'),
+    y: yScale(value),
+  }))
+
+  return { categories: visibleCategories, height, padding, rows, width, yTicks }
+}
+
+function niceChartMax(value) {
+  if (!Number.isFinite(value) || value <= 0) return 1
+  const power = 10 ** Math.floor(Math.log10(value))
+  const scaled = value / power
+  if (scaled <= 1) return power
+  if (scaled <= 2) return 2 * power
+  if (scaled <= 5) return 5 * power
+  return 10 * power
+}
+
+function ageRangeHistorySeries(rows, faixaEtaria) {
+  return (Array.isArray(rows) ? rows : [])
+    .filter((row) => row?.faixa_etaria === faixaEtaria)
+    .map((row) => ({
+      ano: Number(row.ano),
+      valor: detailRowValue(row, 'matriculas'),
+    }))
+    .filter((row) => Number.isFinite(row.ano) && !isMissing(row.valor))
+    .sort((a, b) => a.ano - b.ano)
+}
+
+function formatYearList(years) {
+  if (!years.length) return ''
+  if (years.length === 1) return String(years[0])
+  if (years.length === 2) return `${years[0]} e ${years[1]}`
+  return `${years.slice(0, -1).join(', ')} e ${years.at(-1)}`
 }
 
 function detailRowsToLatestRowsByLabel(rows, labelFn, valueKey = 'valor', sortFn = null) {

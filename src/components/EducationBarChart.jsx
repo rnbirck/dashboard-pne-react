@@ -6,9 +6,18 @@ const BAR_GAP = 12
 const BAR_ROW_HEIGHT = 36
 const PADDING = { top: 18, right: 120, bottom: 28, left: 220 }
 
-export function EducationBarChart({ data, title, color = '#2563eb', formatLabel = (v) => String(v) }) {
+export function EducationBarChart({
+  data,
+  title,
+  color = '#2563eb',
+  formatLabel = (v) => String(v),
+  preserveOrder = false,
+}) {
   const [activeBar, setActiveBar] = useState(null)
-  const chart = useMemo(() => buildBars(data, formatLabel), [data, formatLabel])
+  const chart = useMemo(
+    () => buildBars(data, formatLabel, preserveOrder),
+    [data, formatLabel, preserveOrder],
+  )
 
   if (!chart || chart.bars.length === 0) {
     return (
@@ -70,11 +79,13 @@ export function EducationBarChart({ data, title, color = '#2563eb', formatLabel 
   )
 }
 
-function buildBars(data, formatLabel) {
+function buildBars(data, formatLabel, preserveOrder) {
   if (!Array.isArray(data) || data.length === 0) return null
-  const filtered = data
+  const filteredData = data
     .filter((d) => !isMissing(d.value) && Number(d.value) >= 0)
-    .sort((a, b) => Number(b.value) - Number(a.value))
+  const filtered = preserveOrder
+    ? filteredData
+    : filteredData.sort((a, b) => Number(b.value) - Number(a.value))
   if (filtered.length === 0) return null
 
   const maxVal = Math.max(...filtered.map((d) => Number(d.value)), 1)
