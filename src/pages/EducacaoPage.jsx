@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { CategoryTabs } from '../components/CategoryTabs'
 import { EducationBarChart } from '../components/EducationBarChart'
 import { EducationLineChart } from '../components/EducationLineChart'
@@ -16,7 +16,6 @@ import {
   formatPercent,
   formatRatio,
   formatValue,
-  formatYear,
   isMissing,
   locLabel,
   modLabel,
@@ -44,17 +43,19 @@ const CATEGORY_LABELS = {
 }
 
 const DEPENDENCY_COLORS = {
+  publica: '#0f766e',
   federal: '#2563eb',
   estadual: '#16a34a',
   municipal: '#f59e0b',
   privada: '#7c3aed',
-  publica: '#16713a',
 }
 
 const LOCATION_COLORS = {
   urbana: '#16713a',
   rural: '#2563eb',
 }
+
+const STAGE_FILTER_ORDER = ['total', 'infantil', 'fundamental', 'fundamental_anos_iniciais', 'fundamental_anos_finais', 'medio', 'eja', 'profissional']
 
 export function EducacaoPage({ selectedMunicipio }) {
   const eduIndexState = useAsyncData(() => loadEducationMunicipiosIndex(), [])
@@ -221,7 +222,9 @@ function EducationIndicatorList({ items, selectedIndicator, onSelectIndicator })
         >
           <span className="indicator-row__label">{item.label}</span>
           <span className="indicator-row__badges">
-            <StatusBadge className="indicator-status" displayStatus={item.statusLabel} status={item.statusLabel} tone={item.statusTone} />
+            {item.statusLabel !== 'Com dados' ? (
+              <StatusBadge className="indicator-status" displayStatus={item.statusLabel} status={item.statusLabel} tone={item.statusTone} />
+            ) : null}
             <span className="indicator-stage-badge">{item.categoryLabel}</span>
           </span>
         </button>
@@ -231,6 +234,12 @@ function EducationIndicatorList({ items, selectedIndicator, onSelectIndicator })
 }
 
 function EducationIndicatorDetail({ indicator }) {
+  const [selectedStageKey, setSelectedStageKey] = useState('')
+
+  useEffect(() => {
+    setSelectedStageKey('')
+  }, [indicator?.key])
+
   if (!indicator) {
     return (
       <section className="detail-panel empty-panel">
@@ -239,7 +248,11 @@ function EducationIndicatorDetail({ indicator }) {
     )
   }
 
-  const hasMainSeries = indicator.series.length >= 2
+  const stageOptions = indicator.stageFilterOptions ?? []
+  const selectedStageOption = stageOptions.find((option) => option.key === selectedStageKey) ?? stageOptions[0] ?? null
+  const displayIndicator = applyStageOption(indicator, selectedStageOption)
+  const hasMainSeries = displayIndicator.series.length >= 2
+  const showStageFilter = stageOptions.length > 1
 
   return (
     <section className="detail-panel educacao-detail-panel">
@@ -252,11 +265,10 @@ function EducationIndicatorDetail({ indicator }) {
         <StatusBadge status={indicator.statusLabel} tone={indicator.statusTone} />
       </div>
 
-      <div className="metric-grid metric-grid--four">
+      <div className="metric-grid metric-grid--three">
         <MetricCard label="Valor inicial" value={indicator.initialDisplay} detail={indicator.initialYear ? `Ano ${indicator.initialYear}` : null} />
         <MetricCard label="Valor atual" value={indicator.currentDisplay} detail={indicator.currentYear ? `Ano ${indicator.currentYear}` : null} size="large" />
         <MetricCard label="Variação" value={indicator.variationDisplay} tone={indicator.variationTone} />
-        <MetricCard label="Recorte principal" value={indicator.mainCutLabel} detail={indicator.currentYear ? `Último ano: ${indicator.currentYear}` : 'Sem ano disponível'} />
       </div>
 
       <div className="interpretation-box">
@@ -266,17 +278,29 @@ function EducationIndicatorDetail({ indicator }) {
 
       <div className="indicator-chart-card educacao-main-chart-card">
         <div className="education-chart-heading">
-          <span>Evolução do indicador</span>
-          <p>{indicator.label} · {indicator.mainCutLabel}</p>
+          <div>
+            <span>Evolução do indicador</span>
+            <p>{displayIndicator.label} · Recorte: {displayIndicator.mainCutLabel}</p>
+          </div>
+          {showStageFilter ? (
+            <label className="education-stage-filter">
+              <span>Etapa exibida</span>
+              <select value={selectedStageOption?.key ?? ''} onChange={(event) => setSelectedStageKey(event.target.value)}>
+                {stageOptions.map((option) => (
+                  <option key={option.key} value={option.key}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+          ) : null}
         </div>
         {hasMainSeries ? (
           <EducationLineChart
-            color={indicator.chartColor}
-            formatLabel={indicator.formatValue}
-            scaleType={indicator.scaleType}
-            series={indicator.series}
-            showPointLabels={indicator.showPointLabels}
-            title={indicator.label}
+            color={displayIndicator.chartColor}
+            formatLabel={displayIndicator.formatValue}
+            scaleType={displayIndicator.scaleType}
+            series={displayIndicator.series}
+            showPointLabels={displayIndicator.showPointLabels}
+            title={null}
           />
         ) : (
           <div className="detail-empty-state">
@@ -285,9 +309,21 @@ function EducationIndicatorDetail({ indicator }) {
         )}
       </div>
 
-      <EducationIndicatorBreakdown indicator={indicator} />
+      <EducationIndicatorBreakdown indicator={displayIndicator} />
     </section>
   )
+}
+
+function applyStageOption(indicator, option) {
+  if (!indicator || !option) return indicator
+  return {
+    ...indicator,
+    explore: filterRenderableExplore(option.explore ?? indicator.explore),
+    mainCutLabel: option.mainCutLabel ?? indicator.mainCutLabel,
+    scaleType: option.scaleType ?? indicator.scaleType,
+    series: normalizeYearSeries(option.series ?? indicator.series),
+    showPointLabels: option.showPointLabels ?? indicator.showPointLabels,
+  }
 }
 
 function EducationIndicatorBreakdown({ indicator }) {
@@ -327,12 +363,6 @@ function EducationIndicatorBreakdown({ indicator }) {
           <p>Não há detalhamento adicional disponível para este indicador.</p>
         </div>
       )}
-
-      {indicator.notices.length ? (
-        <div className="education-notice">
-          {indicator.notices.map((notice, index) => <p key={index}>{notice}</p>)}
-        </div>
-      ) : null}
     </section>
   )
 }
@@ -340,8 +370,8 @@ function EducationIndicatorBreakdown({ indicator }) {
 function getDetailTabLabel(item) {
   const title = String(item.title ?? '').toLocaleLowerCase('pt-BR')
   if (title.includes('etapa')) return 'Por etapa'
-  if (title.includes('rede') || title.includes('depend')) return 'Por rede'
   if (title.includes('localiza')) return 'Por localização'
+  if (title.includes('rede') || title.includes('depend')) return 'Por rede'
   if (title.includes('modalidade')) return 'Por modalidade'
   if (title.includes('infraestrutura')) return 'Infraestrutura'
   if (title.includes('evolu')) return 'Evolução'
@@ -437,19 +467,18 @@ function buildMatriculasIndicators(mat) {
   const resumo = mat.resumo_ultimo_ano ?? {}
   const byEtapa = resumo.por_etapa ?? {}
   const latestYear = mat.ultimo_ano
-  const explore = buildMatriculasExplore(mat)
 
   return [
-    createIndicator({ key: 'mat-total', label: 'Total de matrículas', description: 'Total de matrículas registradas na educação básica do município.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.todos], isGeral: true, series: normalizeYearSeries(series.total), currentValue: resumo.total_matriculas, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Total do município', explore }),
-    createIndicator({ key: 'mat-infantil', label: 'Matrículas na educação infantil', description: 'Matrículas registradas na educação infantil.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.infantil], stageLabel: 'Educação Infantil', series: normalizeYearSeries(series.por_etapa?.infantil), currentValue: byEtapa.infantil, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Educação Infantil', explore }),
-    createIndicator({ key: 'mat-fundamental', label: 'Matrículas no ensino fundamental', description: 'Matrículas registradas no ensino fundamental.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.fundamental], stageLabel: 'Ensino Fundamental', series: normalizeYearSeries(series.por_etapa?.fundamental), currentValue: byEtapa.fundamental, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Ensino Fundamental', explore }),
-    createIndicator({ key: 'mat-medio', label: 'Matrículas no ensino médio', description: 'Matrículas registradas no ensino médio.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.medio], stageLabel: 'Ensino Médio', series: normalizeYearSeries(series.por_etapa?.medio), currentValue: byEtapa.medio, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Ensino Médio', explore }),
-    createIndicator({ key: 'mat-eja', label: 'Matrículas na EJA', description: 'Matrículas registradas na educação de jovens e adultos.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.eja], stageLabel: 'EJA', series: normalizeYearSeries(series.por_etapa?.eja), currentValue: byEtapa.eja, currentYear: latestYear, formatType: 'number', mainCutLabel: 'EJA', explore }),
-    createIndicator({ key: 'mat-profissional', label: 'Matrículas na educação profissional', description: 'Matrículas registradas na educação profissional/técnica.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.profissional], stageLabel: 'Educação Profissional', series: normalizeYearSeries(series.por_etapa?.profissional), currentValue: byEtapa.profissional, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Educação Profissional', explore }),
-    createIndicator({ key: 'mat-integral', label: 'Matrículas em tempo integral', description: 'Percentual total de matrículas em tempo integral no município.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.todos], isGeral: true, series: valueSeries(series.integral, 'percentual'), currentValue: resumo.percentual_integral, currentYear: latestYear, formatType: 'percent', mainCutLabel: 'Tempo integral no total do município', explore }),
-    createIndicator({ key: 'mat-rural', label: 'Matrículas em zona rural', description: 'Matrículas vinculadas à localização rural.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.todos], isGeral: true, series: normalizeYearSeries(series.por_localizacao?.rural), currentValue: resumo.matriculas_rural, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Zona rural', explore }),
-    createIndicator({ key: 'mat-publica', label: 'Matrículas na rede pública', description: 'Matrículas na rede pública municipal, estadual e federal.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.todos], isGeral: true, series: normalizeYearSeries(series.por_dependencia?.publica), currentValue: resumo.matriculas_publica, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Rede pública', explore }),
-    createIndicator({ key: 'mat-privada', label: 'Matrículas na rede privada', description: 'Matrículas na rede privada.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.todos], isGeral: true, series: normalizeYearSeries(series.por_dependencia?.privada), currentValue: resumo.matriculas_privada, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Rede privada', explore }),
+    createIndicator({ key: 'mat-total', label: 'Total de matrículas', description: 'Total de matrículas registradas na educação básica do município.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.todos], isGeral: true, series: normalizeYearSeries(series.total), currentValue: resumo.total_matriculas, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Total do município', explore: buildMatriculasExplore(mat, { cutKey: 'total', cutLabel: 'Total do município' }), stageFilterOptions: buildMatriculasStageOptions(mat) }),
+    createIndicator({ key: 'mat-infantil', label: 'Matrículas na educação infantil', description: 'Matrículas registradas na educação infantil.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.infantil], stageLabel: 'Educação Infantil', series: normalizeYearSeries(series.por_etapa?.infantil), currentValue: byEtapa.infantil, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Educação Infantil', explore: buildMatriculasExplore(mat, { cutKey: 'infantil', cutLabel: 'Educação Infantil', stageKey: 'infantil' }) }),
+    createIndicator({ key: 'mat-fundamental', label: 'Matrículas no ensino fundamental', description: 'Matrículas registradas no ensino fundamental.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.fundamental], stageLabel: 'Ensino Fundamental', series: normalizeYearSeries(series.por_etapa?.fundamental), currentValue: byEtapa.fundamental, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Ensino Fundamental', explore: buildMatriculasExplore(mat, { cutKey: 'fundamental', cutLabel: 'Ensino Fundamental', stageKey: 'fundamental' }) }),
+    createIndicator({ key: 'mat-medio', label: 'Matrículas no ensino médio', description: 'Matrículas registradas no ensino médio.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.medio], stageLabel: 'Ensino Médio', series: normalizeYearSeries(series.por_etapa?.medio), currentValue: byEtapa.medio, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Ensino Médio', explore: buildMatriculasExplore(mat, { cutKey: 'medio', cutLabel: 'Ensino Médio', stageKey: 'medio' }) }),
+    createIndicator({ key: 'mat-eja', label: 'Matrículas na EJA', description: 'Matrículas registradas na educação de jovens e adultos.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.eja], stageLabel: 'EJA', series: normalizeYearSeries(series.por_etapa?.eja), currentValue: byEtapa.eja, currentYear: latestYear, formatType: 'number', mainCutLabel: 'EJA', explore: buildMatriculasExplore(mat, { cutKey: 'eja', cutLabel: 'EJA', stageKey: 'eja' }) }),
+    createIndicator({ key: 'mat-profissional', label: 'Matrículas na educação profissional', description: 'Matrículas registradas na educação profissional/técnica.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.profissional], stageLabel: 'Educação Profissional', series: normalizeYearSeries(series.por_etapa?.profissional), currentValue: byEtapa.profissional, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Educação Profissional', explore: buildMatriculasExplore(mat, { cutKey: 'profissional', cutLabel: 'Educação Profissional', stageKey: 'profissional' }) }),
+    createIndicator({ key: 'mat-integral', label: 'Matrículas em tempo integral', description: 'Percentual total de matrículas em tempo integral no município.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.todos], isGeral: true, series: valueSeries(series.integral, 'percentual'), currentValue: resumo.percentual_integral, currentYear: latestYear, formatType: 'percent', mainCutLabel: 'Tempo integral no total do município', explore: [] }),
+    createIndicator({ key: 'mat-rural', label: 'Matrículas em zona rural', description: 'Matrículas vinculadas à localização rural.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.todos], isGeral: true, series: normalizeYearSeries(series.por_localizacao?.rural), currentValue: resumo.matriculas_rural, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Zona rural', explore: buildMatriculasExplore(mat, { cutKey: 'rural', cutLabel: 'Zona rural', locationKey: 'rural' }) }),
+    createIndicator({ key: 'mat-publica', label: 'Matrículas na rede pública', description: 'Matrículas na rede pública municipal, estadual e federal.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.todos], isGeral: true, series: normalizeYearSeries(series.por_dependencia?.publica), currentValue: resumo.matriculas_publica, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Rede pública', explore: buildMatriculasExplore(mat, { cutKey: 'publica', cutLabel: 'Rede pública', dependencyKey: 'publica' }) }),
+    createIndicator({ key: 'mat-privada', label: 'Matrículas na rede privada', description: 'Matrículas na rede privada.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.todos], isGeral: true, series: normalizeYearSeries(series.por_dependencia?.privada), currentValue: resumo.matriculas_privada, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Rede privada', explore: buildMatriculasExplore(mat, { cutKey: 'privada', cutLabel: 'Rede privada', dependencyKey: 'privada' }) }),
   ]
 }
 
@@ -457,16 +486,15 @@ function buildRedeIndicators(rede) {
   const series = rede.series ?? {}
   const resumo = rede.resumo_ultimo_ano ?? {}
   const latestYear = rede.ultimo_ano
-  const explore = buildRedeExplore(rede)
-  const base = { themeKey: 'rede', themeLabel: 'Rede escolar', themeShortLabel: 'Rede', categories: [FILTER_KEYS.todos], isGeral: true, currentYear: latestYear, explore }
+  const base = { themeKey: 'rede', themeLabel: 'Rede escolar', themeShortLabel: 'Rede', categories: [FILTER_KEYS.todos], isGeral: true, currentYear: latestYear }
   return [
-    createIndicator({ ...base, key: 'rede-total', label: 'Total de escolas', description: 'Total de escolas registradas no município.', series: normalizeYearSeries(series.total), currentValue: resumo.total_escolas, formatType: 'number', mainCutLabel: 'Total do município' }),
-    createIndicator({ ...base, key: 'rede-urbana', label: 'Escolas urbanas', description: 'Escolas localizadas em área urbana.', series: normalizeYearSeries(series.por_localizacao?.urbana), currentValue: resumo.escolas_urbana, formatType: 'number', mainCutLabel: 'Urbana' }),
-    createIndicator({ ...base, key: 'rede-rural', label: 'Escolas rurais', description: 'Escolas localizadas em área rural.', series: normalizeYearSeries(series.por_localizacao?.rural), currentValue: resumo.escolas_rural, formatType: 'number', mainCutLabel: 'Rural' }),
-    createIndicator({ ...base, key: 'rede-publica', label: 'Escolas públicas', description: 'Escolas da rede pública.', series: normalizeYearSeries(series.por_dependencia?.publica), currentValue: resumo.escolas_publica, formatType: 'number', mainCutLabel: 'Rede pública' }),
-    createIndicator({ ...base, key: 'rede-privada', label: 'Escolas privadas', description: 'Escolas da rede privada.', series: normalizeYearSeries(series.por_dependencia?.privada), currentValue: resumo.escolas_privada, formatType: 'number', mainCutLabel: 'Rede privada' }),
-    createIndicator({ ...base, key: 'rede-internet', label: 'Escolas com internet', description: 'Percentual de escolas com acesso à internet.', series: valueSeries(series.internet, 'perc_internet'), currentValue: resumo.perc_internet, formatType: 'percent', mainCutLabel: 'Infraestrutura' }),
-    createIndicator({ ...base, key: 'rede-banda-larga', label: 'Escolas com banda larga', description: 'Percentual de escolas com banda larga.', series: valueSeries(series.internet, 'perc_banda_larga'), currentValue: resumo.perc_banda_larga, formatType: 'percent', mainCutLabel: 'Infraestrutura' }),
+    createIndicator({ ...base, key: 'rede-total', label: 'Total de escolas', description: 'Total de escolas registradas no município.', series: normalizeYearSeries(series.total), currentValue: resumo.total_escolas, formatType: 'number', mainCutLabel: 'Total do município', explore: buildRedeExplore(rede, { cutKey: 'total', cutLabel: 'Total do município' }) }),
+    createIndicator({ ...base, key: 'rede-urbana', label: 'Escolas urbanas', description: 'Escolas localizadas em área urbana.', series: normalizeYearSeries(series.por_localizacao?.urbana), currentValue: resumo.escolas_urbana, formatType: 'number', mainCutLabel: 'Urbana', explore: buildRedeExplore(rede, { cutKey: 'urbana', cutLabel: 'Urbana', locationKey: 'urbana' }) }),
+    createIndicator({ ...base, key: 'rede-rural', label: 'Escolas rurais', description: 'Escolas localizadas em área rural.', series: normalizeYearSeries(series.por_localizacao?.rural), currentValue: resumo.escolas_rural, formatType: 'number', mainCutLabel: 'Rural', explore: buildRedeExplore(rede, { cutKey: 'rural', cutLabel: 'Rural', locationKey: 'rural' }) }),
+    createIndicator({ ...base, key: 'rede-publica', label: 'Escolas públicas', description: 'Escolas da rede pública.', series: normalizeYearSeries(series.por_dependencia?.publica), currentValue: resumo.escolas_publica, formatType: 'number', mainCutLabel: 'Rede pública', explore: buildRedeExplore(rede, { cutKey: 'publica', cutLabel: 'Rede pública', dependencyKey: 'publica' }) }),
+    createIndicator({ ...base, key: 'rede-privada', label: 'Escolas privadas', description: 'Escolas da rede privada.', series: normalizeYearSeries(series.por_dependencia?.privada), currentValue: resumo.escolas_privada, formatType: 'number', mainCutLabel: 'Rede privada', explore: buildRedeExplore(rede, { cutKey: 'privada', cutLabel: 'Rede privada', dependencyKey: 'privada' }) }),
+    createIndicator({ ...base, key: 'rede-internet', label: 'Escolas com internet', description: 'Percentual de escolas com acesso à internet.', series: valueSeries(series.internet, 'perc_internet'), currentValue: resumo.perc_internet, formatType: 'percent', mainCutLabel: 'Infraestrutura', explore: buildRedeExplore(rede, { cutKey: 'internet', cutLabel: 'Infraestrutura', metricKey: 'perc_internet', metricFormat: formatPercent }) }),
+    createIndicator({ ...base, key: 'rede-banda-larga', label: 'Escolas com banda larga', description: 'Percentual de escolas com banda larga.', series: valueSeries(series.internet, 'perc_banda_larga'), currentValue: resumo.perc_banda_larga, formatType: 'percent', mainCutLabel: 'Infraestrutura', explore: buildRedeExplore(rede, { cutKey: 'banda', cutLabel: 'Infraestrutura', metricKey: 'perc_banda_larga', metricFormat: formatPercent }) }),
   ]
 }
 
@@ -474,13 +502,12 @@ function buildTurmasIndicators(turmas) {
   const series = turmas.series ?? {}
   const resumo = turmas.resumo_ultimo_ano ?? {}
   const latestYear = turmas.ultimo_ano
-  const explore = buildTurmasExplore(turmas)
-  const base = { themeKey: 'turmas', themeLabel: 'Turmas e docentes', themeShortLabel: 'Turmas', categories: [FILTER_KEYS.todos], isGeral: true, currentYear: latestYear, explore, notices: turmas.avisos ?? [] }
+  const base = { themeKey: 'turmas', themeLabel: 'Turmas e docentes', themeShortLabel: 'Turmas', categories: [FILTER_KEYS.todos], isGeral: true, currentYear: latestYear, notices: turmas.avisos ?? [] }
   return [
-    createIndicator({ ...base, key: 'turmas-total', label: 'Total de turmas', description: 'Total de turmas registradas.', series: valueSeries(series.total, 'turmas'), currentValue: resumo.turmas, formatType: 'number', mainCutLabel: 'Total do município' }),
-    createIndicator({ ...base, key: 'docentes-total', label: 'Total de docentes', description: 'Total de docentes registrados.', series: valueSeries(series.total, 'docentes'), currentValue: resumo.docentes, formatType: 'number', mainCutLabel: 'Docentes' }),
-    createIndicator({ ...base, key: 'alunos-turma', label: 'Alunos por turma', description: 'Média de alunos por turma.', series: valueSeries(series.total, 'alunos_por_turma'), currentValue: resumo.alunos_por_turma, formatType: 'ratio', mainCutLabel: 'Relação aluno/turma' }),
-    createIndicator({ ...base, key: 'alunos-docente', label: 'Alunos por docente', description: 'Média de alunos por docente.', series: valueSeries(series.total, 'alunos_por_docente'), currentValue: resumo.alunos_por_docente, formatType: 'ratio', mainCutLabel: 'Relação aluno/docente' }),
+    createIndicator({ ...base, key: 'turmas-total', label: 'Total de turmas', description: 'Total de turmas registradas.', series: valueSeries(series.total, 'turmas'), currentValue: resumo.turmas, formatType: 'number', mainCutLabel: 'Total do município', explore: buildTurmasExplore(turmas, { cutLabel: 'Total do município', metricKey: 'turmas', formatLabel: formatNumber }), stageFilterOptions: buildTurmasStageOptions(turmas, { metricKey: 'turmas', formatLabel: formatNumber }) }),
+    createIndicator({ ...base, key: 'docentes-total', label: 'Total de docentes', description: 'Total de docentes registrados.', series: valueSeries(series.total, 'docentes'), currentValue: resumo.docentes, formatType: 'number', mainCutLabel: 'Docentes', explore: buildTurmasExplore(turmas, { cutLabel: 'Total do município', metricKey: 'docentes', formatLabel: formatNumber }), stageFilterOptions: buildTurmasStageOptions(turmas, { metricKey: 'docentes', formatLabel: formatNumber }) }),
+    createIndicator({ ...base, key: 'alunos-turma', label: 'Alunos por turma', description: 'Média de alunos por turma.', series: valueSeries(series.total, 'alunos_por_turma'), currentValue: resumo.alunos_por_turma, formatType: 'ratio', mainCutLabel: 'Relação aluno/turma', explore: buildTurmasExplore(turmas, { cutLabel: 'Total do município', metricKey: 'alunos_por_turma', formatLabel: formatRatio }), stageFilterOptions: buildTurmasStageOptions(turmas, { metricKey: 'alunos_por_turma', formatLabel: formatRatio }) }),
+    createIndicator({ ...base, key: 'alunos-docente', label: 'Alunos por docente', description: 'Média de alunos por docente.', series: valueSeries(series.total, 'alunos_por_docente'), currentValue: resumo.alunos_por_docente, formatType: 'ratio', mainCutLabel: 'Relação aluno/docente', explore: buildTurmasExplore(turmas, { cutLabel: 'Total do município', metricKey: 'alunos_por_docente', formatLabel: formatRatio }), stageFilterOptions: buildTurmasStageOptions(turmas, { metricKey: 'alunos_por_docente', formatLabel: formatRatio }) }),
   ]
 }
 
@@ -489,13 +516,14 @@ function buildFluxoIndicators(fluxo) {
   const resumo = fluxo.resumo_ultimo_ano ?? {}
   const latestYear = fluxo.ultimo_ano
   const defaultSeries = series.por_etapa?.fundamental ?? []
-  const explore = buildFluxoExplore(fluxo)
-  const base = { themeKey: 'fluxo', themeLabel: 'Fluxo escolar', themeShortLabel: 'Fluxo', categories: [FILTER_KEYS.fundamental], stageLabel: 'Ensino Fundamental', currentYear: latestYear, formatType: 'percent', explore, notices: fluxo.avisos ?? [] }
+  const medioSeries = series.por_etapa?.medio ?? []
+  const base = { themeKey: 'fluxo', themeLabel: 'Fluxo escolar', themeShortLabel: 'Fluxo', categories: [FILTER_KEYS.fundamental], stageLabel: 'Ensino Fundamental', currentYear: latestYear, formatType: 'percent', notices: fluxo.avisos ?? [] }
   return [
-    createIndicator({ ...base, key: 'fluxo-aprovacao', label: 'Taxa de aprovação', description: 'Percentual de aprovação no fluxo escolar.', series: valueSeries(defaultSeries, 'taxa_aprovacao'), currentValue: resumo.taxa_aprovacao, mainCutLabel: 'Ensino Fundamental' }),
-    createIndicator({ ...base, key: 'fluxo-reprovacao', label: 'Taxa de reprovação', description: 'Percentual de reprovação no fluxo escolar.', series: valueSeries(defaultSeries, 'taxa_reprovacao'), currentValue: resumo.taxa_reprovacao, mainCutLabel: 'Ensino Fundamental' }),
-    createIndicator({ ...base, key: 'fluxo-abandono', label: 'Taxa de abandono', description: 'Percentual de abandono no fluxo escolar.', series: valueSeries(defaultSeries, 'taxa_abandono'), currentValue: resumo.taxa_abandono, mainCutLabel: 'Ensino Fundamental' }),
-    createIndicator({ ...base, key: 'fluxo-distorcao', label: 'Distorção idade-série', description: 'Percentual de estudantes com distorção idade-série.', series: valueSeries(defaultSeries, 'taxa_distorcao'), currentValue: resumo.taxa_distorcao, mainCutLabel: 'Ensino Fundamental' }),
+    createIndicator({ ...base, key: 'fluxo-aprovacao', label: 'Taxa de aprovação', description: 'Percentual de aprovação no fluxo escolar.', series: valueSeries(defaultSeries, 'taxa_aprovacao'), currentValue: resumo.taxa_aprovacao, mainCutLabel: 'Ensino Fundamental', explore: buildFluxoExplore(fluxo, { cutLabel: 'Ensino Fundamental', stageKey: 'fundamental', metricKey: 'taxa_aprovacao' }), stageFilterOptions: buildFluxoStageOptions(fluxo, { metricKey: 'taxa_aprovacao' }) }),
+    createIndicator({ ...base, key: 'fluxo-aprovacao-medio', label: 'Taxa de aprovação no ensino médio', description: 'Percentual de aprovação no ensino médio.', series: valueSeries(medioSeries, 'taxa_aprovacao'), currentValue: latestValue(medioSeries, 'taxa_aprovacao'), mainCutLabel: 'Ensino Médio', stageLabel: 'Ensino Médio', categories: [FILTER_KEYS.medio], explore: buildFluxoExplore(fluxo, { cutLabel: 'Ensino Médio', stageKey: 'medio', metricKey: 'taxa_aprovacao' }) }),
+    createIndicator({ ...base, key: 'fluxo-reprovacao', label: 'Taxa de reprovação', description: 'Percentual de reprovação no fluxo escolar.', series: valueSeries(defaultSeries, 'taxa_reprovacao'), currentValue: resumo.taxa_reprovacao, mainCutLabel: 'Ensino Fundamental', explore: buildFluxoExplore(fluxo, { cutLabel: 'Ensino Fundamental', stageKey: 'fundamental', metricKey: 'taxa_reprovacao' }), stageFilterOptions: buildFluxoStageOptions(fluxo, { metricKey: 'taxa_reprovacao' }) }),
+    createIndicator({ ...base, key: 'fluxo-abandono', label: 'Taxa de abandono', description: 'Percentual de abandono no fluxo escolar.', series: valueSeries(defaultSeries, 'taxa_abandono'), currentValue: resumo.taxa_abandono, mainCutLabel: 'Ensino Fundamental', explore: buildFluxoExplore(fluxo, { cutLabel: 'Ensino Fundamental', stageKey: 'fundamental', metricKey: 'taxa_abandono' }), stageFilterOptions: buildFluxoStageOptions(fluxo, { metricKey: 'taxa_abandono' }) }),
+    createIndicator({ ...base, key: 'fluxo-distorcao', label: 'Distorção idade-série', description: 'Percentual de estudantes com distorção idade-série.', series: valueSeries(defaultSeries, 'taxa_distorcao'), currentValue: resumo.taxa_distorcao, mainCutLabel: 'Ensino Fundamental', explore: buildFluxoExplore(fluxo, { cutLabel: 'Ensino Fundamental', stageKey: 'fundamental', metricKey: 'taxa_distorcao', noLocation: true }), stageFilterOptions: buildFluxoStageOptions(fluxo, { metricKey: 'taxa_distorcao', noLocation: true }) }),
   ]
 }
 
@@ -504,14 +532,13 @@ function buildAprendizagemIndicators(aprend) {
   const resumo = aprend.resumo_ultimo_ano ?? {}
   const preferredIdeb = getPreferredIdeb(resumo)
   const preferredSeries = preferredIdeb?.etapa ? series.ideb?.[preferredIdeb.etapa] : []
-  const explore = buildAprendizagemExplore(aprend)
-  const base = { themeKey: 'aprendizagem', themeLabel: 'Aprendizagem', themeShortLabel: 'Aprendizagem', categories: [FILTER_KEYS.todos], isGeral: true, currentYear: preferredIdeb?.ano ?? aprend.ultimo_ano?.ideb, explore, notices: aprend.avisos ?? [] }
+  const base = { themeKey: 'aprendizagem', themeLabel: 'Aprendizagem', themeShortLabel: 'Aprendizagem', categories: [FILTER_KEYS.todos], isGeral: true, currentYear: preferredIdeb?.ano ?? aprend.ultimo_ano?.ideb, notices: aprend.avisos ?? [] }
   return [
-    createIndicator({ ...base, key: 'apr-ideb', label: 'IDEB', description: 'Último IDEB disponível para o recorte principal.', series: valueSeries(preferredSeries, 'ideb'), currentValue: preferredIdeb?.ideb, formatType: 'value', mainCutLabel: preferredIdeb ? etapaLabel(preferredIdeb.etapa) : 'IDEB' }),
-    createIndicator({ ...base, key: 'apr-saeb-lp', label: 'SAEB Língua Portuguesa', description: 'Resultado de Língua Portuguesa no SAEB.', series: valueSeries(preferredSeries, 'saeb_lp'), currentValue: latestValue(preferredSeries, 'saeb_lp'), formatType: 'value', mainCutLabel: preferredIdeb ? etapaLabel(preferredIdeb.etapa) : 'SAEB LP' }),
-    createIndicator({ ...base, key: 'apr-saeb-mt', label: 'SAEB Matemática', description: 'Resultado de Matemática no SAEB.', series: valueSeries(preferredSeries, 'saeb_mt'), currentValue: latestValue(preferredSeries, 'saeb_mt'), formatType: 'value', mainCutLabel: preferredIdeb ? etapaLabel(preferredIdeb.etapa) : 'SAEB MT' }),
-    createIndicator({ ...base, key: 'apr-alfabetizacao', label: 'Alfabetização', description: 'Taxa de alfabetização disponível para os anos recentes.', categories: [FILTER_KEYS.fundamental], isGeral: false, stageLabel: 'Ensino Fundamental', series: valueSeries(series.alfabetizacao, 'taxa_alfabetizacao'), currentValue: resumo.taxa_alfabetizacao, currentYear: aprend.ultimo_ano?.alfabetizacao, formatType: 'percent', mainCutLabel: 'Alfabetização' }),
-    createIndicator({ ...base, key: 'apr-inse', label: 'INSE', description: 'Média do indicador de nível socioeconômico.', series: valueSeries(series.inse, 'media_inse'), currentValue: resumo.media_inse, currentYear: aprend.ultimo_ano?.inse, formatType: 'value', mainCutLabel: 'Nível socioeconômico' }),
+    createIndicator({ ...base, key: 'apr-ideb', label: 'IDEB', description: 'Último IDEB disponível para o recorte principal.', series: valueSeries(preferredSeries, 'ideb'), currentValue: preferredIdeb?.ideb, formatType: 'value', mainCutLabel: preferredIdeb ? etapaLabel(preferredIdeb.etapa) : 'IDEB', explore: buildAprendizagemExplore(aprend, { metricKey: 'ideb', metricLabel: 'IDEB', formatLabel: formatValue }), stageFilterOptions: buildAprendizagemStageOptions(aprend, { metricKey: 'ideb', metricLabel: 'IDEB', formatLabel: formatValue }) }),
+    createIndicator({ ...base, key: 'apr-saeb-lp', label: 'SAEB Língua Portuguesa', description: 'Resultado de Língua Portuguesa no SAEB.', series: valueSeries(preferredSeries, 'saeb_lp'), currentValue: latestValue(preferredSeries, 'saeb_lp'), formatType: 'value', mainCutLabel: preferredIdeb ? etapaLabel(preferredIdeb.etapa) : 'SAEB LP', explore: buildAprendizagemExplore(aprend, { metricKey: 'saeb_lp', metricLabel: 'SAEB LP', formatLabel: formatValue }), stageFilterOptions: buildAprendizagemStageOptions(aprend, { metricKey: 'saeb_lp', metricLabel: 'SAEB LP', formatLabel: formatValue }) }),
+    createIndicator({ ...base, key: 'apr-saeb-mt', label: 'SAEB Matemática', description: 'Resultado de Matemática no SAEB.', series: valueSeries(preferredSeries, 'saeb_mt'), currentValue: latestValue(preferredSeries, 'saeb_mt'), formatType: 'value', mainCutLabel: preferredIdeb ? etapaLabel(preferredIdeb.etapa) : 'SAEB MT', explore: buildAprendizagemExplore(aprend, { metricKey: 'saeb_mt', metricLabel: 'SAEB Matemática', formatLabel: formatValue }), stageFilterOptions: buildAprendizagemStageOptions(aprend, { metricKey: 'saeb_mt', metricLabel: 'SAEB Matemática', formatLabel: formatValue }) }),
+    createIndicator({ ...base, key: 'apr-alfabetizacao', label: 'Alfabetização', description: 'Taxa de alfabetização disponível para os anos recentes.', categories: [FILTER_KEYS.fundamental], isGeral: false, stageLabel: 'Ensino Fundamental', series: valueSeries(series.alfabetizacao, 'taxa_alfabetizacao'), currentValue: resumo.taxa_alfabetizacao, currentYear: aprend.ultimo_ano?.alfabetizacao, formatType: 'percent', mainCutLabel: 'Alfabetização', explore: buildAprendizagemExplore(aprend, { metricKey: 'taxa_alfabetizacao', metricLabel: 'Alfabetização', formatLabel: formatPercent }) }),
+    createIndicator({ ...base, key: 'apr-inse', label: 'INSE', description: 'Média do indicador de nível socioeconômico.', series: valueSeries(series.inse, 'media_inse'), currentValue: resumo.media_inse, currentYear: aprend.ultimo_ano?.inse, formatType: 'value', mainCutLabel: 'Nível socioeconômico', explore: buildAprendizagemExplore(aprend, { metricKey: 'media_inse', metricLabel: 'INSE', formatLabel: formatValue }) }),
   ]
 }
 
@@ -565,6 +592,8 @@ function createIndicator(config) {
     initialDisplay: formatValueForType(initialValue),
     initialYear,
     notices: config.notices ?? [],
+    explore: filterRenderableExplore(config.explore),
+    stageFilterOptions: filterStageFilterOptions(config.stageFilterOptions),
     quickReading: buildQuickReading({ currentDisplay: formatValueForType(currentValue), currentValue, currentYear, formatType: config.formatType, initialValue, initialYear, label: config.label, variation }),
     scaleType: config.scaleType ?? inferScaleType(config),
     statusLabel: status.label,
@@ -586,66 +615,444 @@ function getCategoryLabel(categories) {
   return categories.map((category) => CATEGORY_LABELS[category] ?? category).join(', ')
 }
 
-function buildMatriculasExplore(mat) {
+function filterRenderableExplore(explore) {
+  if (!Array.isArray(explore)) return []
+  return explore.filter((item) => hasExploreData(item))
+}
+
+function filterStageFilterOptions(options) {
+  if (!Array.isArray(options)) return []
+  return options
+    .map((option) => ({
+      ...option,
+      explore: filterRenderableExplore(option.explore),
+      series: normalizeYearSeries(option.series),
+    }))
+    .filter((option) => option.series.length >= 2)
+}
+
+function hasExploreData(item) {
+  if (!item) return false
+  if (item.type === 'stacked') {
+    return Array.isArray(item.categories)
+      && item.categories.length > 0
+      && Array.isArray(item.data)
+      && item.data.some((row) => Object.values(row.values ?? {}).some((value) => !isMissing(value)))
+  }
+  if (item.type === 'bar') {
+    return Array.isArray(item.data) && item.data.some((row) => !isMissing(row.value))
+  }
+  if (item.type === 'line') {
+    return Array.isArray(item.series) && item.series.length >= 2
+  }
+  if (item.type === 'table') {
+    return Array.isArray(item.rows) && item.rows.length > 0
+  }
+  return true
+}
+
+function buildMatriculasStageOptions(mat) {
+  const series = mat.series ?? {}
+  const options = [
+    makeStageOption({
+      key: 'total',
+      label: 'Total',
+      mainCutLabel: 'Total do município',
+      series: series.total,
+      explore: buildMatriculasExplore(mat, { cutKey: 'total', cutLabel: 'Total do município' }),
+    }),
+    ...orderedStageKeys(series.por_etapa).map((key) => makeStageOption({
+      key,
+      label: etapaLabel(key),
+      mainCutLabel: etapaLabel(key),
+      series: series.por_etapa?.[key],
+      explore: buildMatriculasExplore(mat, { cutKey: key, cutLabel: etapaLabel(key), stageKey: key }),
+    })),
+  ]
+  return options.filter(Boolean)
+}
+
+function buildTurmasStageOptions(turmas, metric) {
+  const series = turmas.series ?? {}
+  const options = [
+    makeStageOption({
+      key: 'total',
+      label: 'Total',
+      mainCutLabel: 'Total do município',
+      series: valueSeries(series.total, metric.metricKey),
+      explore: buildTurmasExplore(turmas, { ...metric, cutLabel: 'Total do município' }),
+    }),
+    ...orderedStageKeys(series.por_etapa, metric.metricKey).map((key) => makeStageOption({
+      key,
+      label: etapaLabel(key),
+      mainCutLabel: etapaLabel(key),
+      series: valueSeries(series.por_etapa?.[key], metric.metricKey),
+      explore: buildTurmasExplore(turmas, { ...metric, cutLabel: etapaLabel(key), stageKey: key }),
+    })),
+  ]
+  return options.filter(Boolean)
+}
+
+function buildFluxoStageOptions(fluxo, metric) {
+  const series = fluxo.series ?? {}
+  return orderedStageKeys(series.por_etapa, metric.metricKey)
+    .map((key) => makeStageOption({
+      key,
+      label: etapaLabel(key),
+      mainCutLabel: etapaLabel(key),
+      series: valueSeries(series.por_etapa?.[key], metric.metricKey),
+      explore: buildFluxoExplore(fluxo, { ...metric, cutLabel: etapaLabel(key), stageKey: key }),
+    }))
+    .filter(Boolean)
+}
+
+function buildAprendizagemStageOptions(aprend, metric) {
+  const stageSeries = aprendizStageSeries(aprend, metric.metricKey)
+  const preferredStage = getPreferredIdeb(aprend.resumo_ultimo_ano ?? {})?.etapa
+  return orderPreferredStageFirst(orderedStageKeys(stageSeries, metric.metricKey), preferredStage)
+    .map((key) => makeStageOption({
+      key,
+      label: etapaLabel(key),
+      mainCutLabel: etapaLabel(key),
+      series: valueSeries(stageSeries?.[key], metric.metricKey),
+      explore: buildAprendizagemExplore(aprend, { ...metric, stageKey: key, cutLabel: etapaLabel(key) }),
+    }))
+    .filter(Boolean)
+}
+
+function makeStageOption(option) {
+  const series = normalizeYearSeries(option.series)
+  if (series.length < 2) return null
+  return { ...option, series }
+}
+
+function orderedStageKeys(source, valueKey = 'valor') {
+  const keys = Object.keys(source ?? {}).filter((key) => hasSeriesData(source?.[key], valueKey))
+  return STAGE_FILTER_ORDER.filter((key) => key !== 'total' && keys.includes(key))
+}
+
+function orderPreferredStageFirst(keys, preferredStage) {
+  if (!preferredStage || !keys.includes(preferredStage)) return keys
+  return [preferredStage, ...keys.filter((key) => key !== preferredStage)]
+}
+
+function aprendizStageSeries(aprend, metricKey) {
+  const series = aprend.series ?? {}
+  if (metricKey === 'taxa_alfabetizacao') return { fundamental: series.alfabetizacao }
+  if (metricKey === 'media_inse') return series.inse_por_etapa ?? {}
+  return series.ideb ?? {}
+}
+
+function buildMatriculasExplore(mat, cut = { cutKey: 'total', cutLabel: 'Total do município' }) {
   const series = mat.series ?? {}
   const resumo = mat.resumo_ultimo_ano ?? {}
+  const detalhamentos = mat.detalhamentos ?? {}
   const dependencyKeys = dependencyCategoryKeys(series.por_dependencia)
-  return [
-    { key: 'mat-etapa', type: 'bar', title: 'Composição por etapa', color: '#16713a', data: entriesToRows(resumo.por_etapa, etapaLabel), formatLabel: formatNumber },
-    { key: 'mat-dep', type: 'stacked', title: 'Composição por rede', categories: categoryDefinitions(dependencyKeys, depLabel, DEPENDENCY_COLORS), data: seriesMapToStackedRows(series.por_dependencia, dependencyKeys), formatLabel: formatNumber },
-    { key: 'mat-loc', type: 'stacked', title: 'Composição por localização', categories: categoryDefinitions(['urbana', 'rural'], locLabel, LOCATION_COLORS), data: seriesMapToStackedRows(series.por_localizacao, ['urbana', 'rural']), formatLabel: formatNumber },
-  ]
+  const titleSuffix = ` — ${cut.cutLabel}`
+  const latestYear = mat.ultimo_ano ? ` — ${mat.ultimo_ano}` : ''
+
+  if (cut.cutKey === 'total') {
+    return [
+      { key: 'mat-etapa', type: 'bar', title: `Composição por etapa${latestYear}${titleSuffix}`, color: '#16713a', data: entriesToRows(resumo.por_etapa, etapaLabel), formatLabel: formatNumber },
+      { key: 'mat-dep', type: 'stacked', title: `Composição por rede${titleSuffix}`, categories: categoryDefinitions(dependencyKeys, depLabel, DEPENDENCY_COLORS), data: seriesMapToStackedRows(series.por_dependencia, dependencyKeys), formatLabel: formatNumber },
+      { key: 'mat-loc', type: 'stacked', title: `Composição por localização${titleSuffix}`, categories: categoryDefinitions(['urbana', 'rural'], locLabel, LOCATION_COLORS), data: seriesMapToStackedRows(series.por_localizacao, ['urbana', 'rural']), formatLabel: formatNumber },
+    ]
+  }
+
+  if (cut.stageKey) {
+    const etapaItems = []
+    if (cut.stageKey === 'fundamental') {
+      etapaItems.push({
+        key: 'mat-fundamental-subetapas',
+        type: 'bar',
+        title: `Composição por etapa${latestYear}${titleSuffix}`,
+        color: '#16713a',
+        data: entriesToRows({
+          fundamental_anos_iniciais: resumo.por_etapa?.fundamental_anos_iniciais,
+          fundamental_anos_finais: resumo.por_etapa?.fundamental_anos_finais,
+        }, etapaLabel),
+        formatLabel: formatNumber,
+      })
+    }
+
+    const stageDependencyRows = detailRowsFor(detalhamentos.por_etapa_rede, { etapa_ensino: cut.stageKey })
+    const stageDependencyKeys = dependencyKeysFromDetailRows(stageDependencyRows)
+    const stageLocationRows = detailRowsFor(detalhamentos.por_etapa_localizacao, { etapa_ensino: cut.stageKey })
+    const stageLocationKeys = detailKeys(stageLocationRows, 'localizacao', ['urbana', 'rural'])
+
+    return [
+      ...etapaItems,
+      {
+        key: `mat-${cut.stageKey}-dep`,
+        type: 'stacked',
+        title: `Composição por rede${titleSuffix}`,
+        categories: categoryDefinitions(stageDependencyKeys, depLabel, DEPENDENCY_COLORS),
+        data: detailRowsToStackedRows(stageDependencyRows, 'dependencia', stageDependencyKeys),
+        formatLabel: formatNumber,
+      },
+      {
+        key: `mat-${cut.stageKey}-loc`,
+        type: 'stacked',
+        title: `Composição por localização${titleSuffix}`,
+        categories: categoryDefinitions(stageLocationKeys, locLabel, LOCATION_COLORS),
+        data: detailRowsToStackedRows(stageLocationRows, 'localizacao', stageLocationKeys),
+        formatLabel: formatNumber,
+      },
+    ]
+  }
+
+  if (cut.locationKey) {
+    const etapaRows = detailRowsFor(detalhamentos.por_etapa_localizacao, { localizacao: cut.locationKey })
+    const dependencyRows = detailRowsFor(detalhamentos.por_rede_localizacao, { localizacao: cut.locationKey })
+    const locationDependencyKeys = dependencyKeysFromDetailRows(dependencyRows)
+    return [
+      { key: `mat-${cut.locationKey}-etapa`, type: 'bar', title: titleWithYear(`Composição por etapa${titleSuffix}`, detailRowsToLatestRows(etapaRows, 'etapa_ensino', etapaLabel)), color: '#16713a', data: detailRowsToLatestRows(etapaRows, 'etapa_ensino', etapaLabel), formatLabel: formatNumber },
+      {
+        key: `mat-${cut.locationKey}-dep`,
+        type: 'stacked',
+        title: `Composição por rede${titleSuffix}`,
+        categories: categoryDefinitions(locationDependencyKeys, depLabel, DEPENDENCY_COLORS),
+        data: detailRowsToStackedRows(dependencyRows, 'dependencia', locationDependencyKeys),
+        formatLabel: formatNumber,
+      },
+    ]
+  }
+
+  if (cut.dependencyKey) {
+    const etapaRows = detailRowsFor(detalhamentos.por_etapa_rede, { dependencia: cut.dependencyKey })
+    const locationRows = detailRowsFor(detalhamentos.por_rede_localizacao, { dependencia: cut.dependencyKey })
+    const dependencyLocationKeys = detailKeys(locationRows, 'localizacao', ['urbana', 'rural'])
+    return [
+      { key: `mat-${cut.dependencyKey}-etapa`, type: 'bar', title: titleWithYear(`Composição por etapa${titleSuffix}`, detailRowsToLatestRows(etapaRows, 'etapa_ensino', etapaLabel)), color: '#16713a', data: detailRowsToLatestRows(etapaRows, 'etapa_ensino', etapaLabel), formatLabel: formatNumber },
+      {
+        key: `mat-${cut.dependencyKey}-loc`,
+        type: 'stacked',
+        title: `Composição por localização${titleSuffix}`,
+        categories: categoryDefinitions(dependencyLocationKeys, locLabel, LOCATION_COLORS),
+        data: detailRowsToStackedRows(locationRows, 'localizacao', dependencyLocationKeys),
+        formatLabel: formatNumber,
+      },
+    ]
+  }
+
+  return []
 }
 
-function buildRedeExplore(rede) {
+function detailRowsFor(rows, filters) {
+  if (!Array.isArray(rows)) return []
+  return rows.filter((row) => (
+    Object.entries(filters).every(([field, value]) => row?.[field] === value)
+  ))
+}
+
+function detailKeys(rows, field, preferredOrder, valueKey = 'valor') {
+  const keys = new Set()
+  rows.forEach((row) => {
+    if (!isMissing(row?.[field]) && !isMissing(detailRowValue(row, valueKey))) keys.add(row[field])
+  })
+  return preferredOrder.filter((key) => keys.has(key))
+}
+
+function dependencyKeysFromDetailRows(rows, valueKey = 'valor') {
+  const detailed = detailKeys(rows, 'dependencia', ['federal', 'estadual', 'municipal', 'privada'], valueKey)
+  if (detailed.length) return detailed
+  return detailKeys(rows, 'dependencia', ['publica', 'privada'], valueKey)
+}
+
+function detailRowsToStackedRows(rows, dimension, keys, valueKey = 'valor') {
+  const years = new Set()
+  rows.forEach((row) => {
+    if (!isMissing(row?.ano) && keys.includes(row?.[dimension]) && !isMissing(detailRowValue(row, valueKey))) {
+      years.add(Number(row.ano))
+    }
+  })
+
+  return [...years].sort((a, b) => a - b).map((year) => {
+    const values = {}
+    keys.forEach((key) => {
+      const point = rows.find((row) => Number(row.ano) === year && row[dimension] === key)
+      const value = detailRowValue(point, valueKey)
+      if (!isMissing(value)) values[key] = value
+    })
+    return { year, values }
+  })
+}
+
+function detailRowsToLatestRows(rows, dimension, labelFn, valueKey = 'valor') {
+  const latestByKey = new Map()
+  rows.forEach((row) => {
+    const key = row?.[dimension]
+    const value = detailRowValue(row, valueKey)
+    if (isMissing(key) || isMissing(row?.ano) || isMissing(value)) return
+    const current = latestByKey.get(key)
+    if (!current || Number(row.ano) > Number(current.ano)) {
+      latestByKey.set(key, { ano: Number(row.ano), value })
+    }
+  })
+
+  return [...latestByKey.entries()]
+    .map(([key, point]) => ({ label: labelFn(key), value: point.value, year: point.ano }))
+}
+
+function latestYearFromRows(rows) {
+  const years = (Array.isArray(rows) ? rows : [])
+    .map((row) => Number(row?.year ?? row?.ano))
+    .filter((year) => Number.isFinite(year))
+  return years.length ? Math.max(...years) : null
+}
+
+function titleWithYear(title, rows) {
+  const year = latestYearFromRows(rows)
+  return year ? `${title} — ${year}` : title
+}
+
+function detailRowValue(row, valueKey = 'valor') {
+  return detailMetricValue(row, valueKey)
+}
+
+function detailMetricValue(row, valueKey = 'valor') {
+  if (!row) return null
+  return isMissing(row[valueKey]) ? row.valor : row[valueKey]
+}
+
+function buildRedeExplore(rede, cut = { cutKey: 'total', cutLabel: 'Total do município' }) {
   const series = rede.series ?? {}
   const resumo = rede.resumo_ultimo_ano ?? {}
+  const detalhamentos = rede.detalhamentos ?? {}
   const dependencyKeys = dependencyCategoryKeys(series.por_dependencia)
+  const titleSuffix = ` — ${cut.cutLabel}`
+
+  if (cut.metricKey) {
+    const depRows = detailRowsToLatestRows(detalhamentos.infraestrutura_por_rede, 'dependencia', depLabel, cut.metricKey)
+    const locRows = detailRowsToLatestRows(detalhamentos.infraestrutura_por_localizacao, 'localizacao', locLabel, cut.metricKey)
+    return [
+      { key: 'rede-infra-dep', type: 'bar', title: titleWithYear(`Infraestrutura por rede${titleSuffix}`, depRows), color: '#16713a', formatLabel: cut.metricFormat, data: depRows },
+      { key: 'rede-infra-loc', type: 'bar', title: titleWithYear(`Infraestrutura por localização${titleSuffix}`, locRows), color: '#2563eb', formatLabel: cut.metricFormat, data: locRows },
+    ]
+  }
+
+  if (cut.locationKey) {
+    const rows = detailRowsFor(detalhamentos.por_rede_localizacao, { localizacao: cut.locationKey })
+    const keys = dependencyKeysFromDetailRows(rows, 'escolas')
+    return [
+      { key: `rede-${cut.locationKey}-dep`, type: 'stacked', title: `Composição por rede${titleSuffix}`, categories: categoryDefinitions(keys, depLabel, DEPENDENCY_COLORS), data: detailRowsToStackedRows(rows, 'dependencia', keys, 'escolas'), formatLabel: formatNumber },
+    ]
+  }
+
+  if (cut.dependencyKey) {
+    const rows = detailRowsFor(detalhamentos.por_rede_localizacao, { dependencia: cut.dependencyKey })
+    const keys = detailKeys(rows, 'localizacao', ['urbana', 'rural'], 'escolas')
+    return [
+      { key: `rede-${cut.dependencyKey}-loc`, type: 'stacked', title: `Composição por localização${titleSuffix}`, categories: categoryDefinitions(keys, locLabel, LOCATION_COLORS), data: detailRowsToStackedRows(rows, 'localizacao', keys, 'escolas'), formatLabel: formatNumber },
+    ]
+  }
+
+  const infraRows = [{ label: 'Com internet', value: resumo.perc_internet, year: rede.ultimo_ano }, { label: 'Com banda larga', value: resumo.perc_banda_larga, year: rede.ultimo_ano }]
   return [
-    { key: 'rede-dep', type: 'stacked', title: 'Composição por rede', categories: categoryDefinitions(dependencyKeys, depLabel, DEPENDENCY_COLORS), data: seriesMapToStackedRows(series.por_dependencia, dependencyKeys), formatLabel: formatNumber },
-    { key: 'rede-loc', type: 'stacked', title: 'Composição por localização', categories: categoryDefinitions(['urbana', 'rural'], locLabel, LOCATION_COLORS), data: seriesMapToStackedRows(series.por_localizacao, ['urbana', 'rural']), formatLabel: formatNumber },
-    { key: 'rede-infra', type: 'bar', title: 'Infraestrutura disponível', color: '#16713a', formatLabel: formatPercent, data: [{ label: 'Com internet', value: resumo.perc_internet }, { label: 'Com banda larga', value: resumo.perc_banda_larga }] },
+    { key: 'rede-dep', type: 'stacked', title: `Composição por rede${titleSuffix}`, categories: categoryDefinitions(dependencyKeys, depLabel, DEPENDENCY_COLORS), data: seriesMapToStackedRows(series.por_dependencia, dependencyKeys), formatLabel: formatNumber },
+    { key: 'rede-loc', type: 'stacked', title: `Composição por localização${titleSuffix}`, categories: categoryDefinitions(['urbana', 'rural'], locLabel, LOCATION_COLORS), data: seriesMapToStackedRows(series.por_localizacao, ['urbana', 'rural']), formatLabel: formatNumber },
+    { key: 'rede-infra', type: 'bar', title: titleWithYear(`Infraestrutura disponível${titleSuffix}`, infraRows), color: '#16713a', formatLabel: formatPercent, data: infraRows },
   ]
 }
 
-function buildTurmasExplore(turmas) {
-  const series = turmas.series ?? {}
-  const resumo = turmas.resumo_ultimo_ano ?? {}
+function buildTurmasExplore(turmas, cut = { cutLabel: 'Total do município', metricKey: 'turmas', formatLabel: formatNumber }) {
+  const detalhamentos = turmas.detalhamentos ?? {}
+  const isCountMetric = ['turmas', 'docentes', 'matriculas'].includes(cut.metricKey)
+  const titleBase = turmasMetricLabel(cut.metricKey)
+  const titleSuffix = ` — ${cut.cutLabel}`
+
+  if (cut.stageKey) {
+    const dependencyRows = detailRowsFor(detalhamentos.por_etapa_rede, { etapa_ensino: cut.stageKey })
+    const locationRows = detailRowsFor(detalhamentos.por_etapa_localizacao, { etapa_ensino: cut.stageKey })
+    const dependencyKeys = dependencyKeysFromDetailRows(dependencyRows, cut.metricKey)
+    const locationKeys = detailKeys(locationRows, 'localizacao', ['urbana', 'rural'], cut.metricKey)
+    if (isCountMetric) {
+      return [
+        { key: `turmas-${cut.stageKey}-rede`, type: 'stacked', title: `${titleBase} por rede${titleSuffix}`, categories: categoryDefinitions(dependencyKeys, depLabel, DEPENDENCY_COLORS), data: detailRowsToStackedRows(dependencyRows, 'dependencia', dependencyKeys, cut.metricKey), formatLabel: cut.formatLabel },
+        { key: `turmas-${cut.stageKey}-localizacao`, type: 'stacked', title: `${titleBase} por localização${titleSuffix}`, categories: categoryDefinitions(locationKeys, locLabel, LOCATION_COLORS), data: detailRowsToStackedRows(locationRows, 'localizacao', locationKeys, cut.metricKey), formatLabel: cut.formatLabel },
+      ]
+    }
+    const dependencyLatest = detailRowsToLatestRows(dependencyRows, 'dependencia', depLabel, cut.metricKey)
+    const locationLatest = detailRowsToLatestRows(locationRows, 'localizacao', locLabel, cut.metricKey)
+    return [
+      { key: `turmas-${cut.stageKey}-rede`, type: 'bar', title: titleWithYear(`${titleBase} por rede${titleSuffix}`, dependencyLatest), color: '#2563eb', formatLabel: cut.formatLabel, data: dependencyLatest },
+      { key: `turmas-${cut.stageKey}-localizacao`, type: 'bar', title: titleWithYear(`${titleBase} por localização${titleSuffix}`, locationLatest), color: '#7c3aed', formatLabel: cut.formatLabel, data: locationLatest },
+    ]
+  }
+
+  const etapaRows = detailRowsToLatestRows(detalhamentos.por_etapa, 'etapa_ensino', etapaLabel, cut.metricKey)
+  const dependencyKeys = dependencyKeysFromDetailRows(detalhamentos.por_rede, cut.metricKey)
+  const locationKeys = detailKeys(detalhamentos.por_localizacao, 'localizacao', ['urbana', 'rural'], cut.metricKey)
+  const dependencyLatest = detailRowsToLatestRows(detalhamentos.por_rede, 'dependencia', depLabel, cut.metricKey)
+  const locationLatest = detailRowsToLatestRows(detalhamentos.por_localizacao, 'localizacao', locLabel, cut.metricKey)
+
+  if (isCountMetric) {
+    return [
+      { key: 'turmas-etapa', type: 'bar', title: titleWithYear(`${titleBase} por etapa${titleSuffix}`, etapaRows), color: '#16713a', formatLabel: cut.formatLabel, data: etapaRows },
+      { key: 'turmas-rede', type: 'stacked', title: `${titleBase} por rede${titleSuffix}`, categories: categoryDefinitions(dependencyKeys, depLabel, DEPENDENCY_COLORS), data: detailRowsToStackedRows(detalhamentos.por_rede, 'dependencia', dependencyKeys, cut.metricKey), formatLabel: cut.formatLabel },
+      { key: 'turmas-localizacao', type: 'stacked', title: `${titleBase} por localização${titleSuffix}`, categories: categoryDefinitions(locationKeys, locLabel, LOCATION_COLORS), data: detailRowsToStackedRows(detalhamentos.por_localizacao, 'localizacao', locationKeys, cut.metricKey), formatLabel: cut.formatLabel },
+    ]
+  }
+
   return [
-    { key: 'turmas-etapa', type: 'bar', title: 'Turmas por etapa', color: '#16713a', formatLabel: formatNumber, data: latestRowsByValueKey(series.por_etapa, etapaLabel, 'turmas') },
-    { key: 'turmas-relacoes', type: 'bar', title: 'Relações de atendimento', color: '#2563eb', formatLabel: formatRatio, data: [{ label: 'Alunos por turma', value: resumo.alunos_por_turma }, { label: 'Alunos por docente', value: resumo.alunos_por_docente }] },
+    { key: 'turmas-etapa', type: 'bar', title: titleWithYear(`${titleBase} por etapa${titleSuffix}`, etapaRows), color: '#16713a', formatLabel: cut.formatLabel, data: etapaRows },
+    { key: 'turmas-rede', type: 'bar', title: titleWithYear(`${titleBase} por rede${titleSuffix}`, dependencyLatest), color: '#2563eb', formatLabel: cut.formatLabel, data: dependencyLatest },
+    { key: 'turmas-localizacao', type: 'bar', title: titleWithYear(`${titleBase} por localização${titleSuffix}`, locationLatest), color: '#7c3aed', formatLabel: cut.formatLabel, data: locationLatest },
   ]
 }
 
-function buildFluxoExplore(fluxo) {
-  const series = fluxo.series ?? {}
-  const resumo = fluxo.resumo_ultimo_ano ?? {}
+function turmasMetricLabel(metricKey) {
+  if (metricKey === 'docentes') return 'Docentes'
+  if (metricKey === 'alunos_por_turma') return 'Alunos por turma'
+  if (metricKey === 'alunos_por_docente') return 'Alunos por docente'
+  return 'Turmas'
+}
+
+function buildFluxoExplore(fluxo, cut = { cutLabel: 'Ensino Fundamental', stageKey: 'fundamental', metricKey: 'taxa_aprovacao' }) {
+  const detalhamentos = fluxo.detalhamentos ?? {}
+  const stageRows = detailRowsFor(detalhamentos.por_etapa_rede, { etapa_ensino: cut.stageKey })
+  const locationRows = detailRowsFor(detalhamentos.por_etapa_localizacao, { etapa_ensino: cut.stageKey })
+  const locKeys = detailKeys(locationRows, 'localizacao', ['urbana', 'rural'], cut.metricKey)
+  const titleSuffix = ` — ${cut.cutLabel}`
+  const dependencyLatest = detailRowsToLatestRows(stageRows, 'dependencia', depLabel, cut.metricKey)
+  const items = [
+    { key: 'fluxo-dep', type: 'bar', title: titleWithYear(`Taxa por rede${titleSuffix}`, dependencyLatest), color: '#2563eb', formatLabel: formatPercent, data: dependencyLatest },
+  ]
+  if (!cut.noLocation) {
+    const locationLatest = detailRowsToLatestRows(locationRows.filter((row) => locKeys.includes(row.localizacao)), 'localizacao', locLabel, cut.metricKey)
+    items.push({ key: 'fluxo-loc', type: 'bar', title: titleWithYear(`Taxa por localização${titleSuffix}`, locationLatest), color: '#7c3aed', formatLabel: formatPercent, data: locationLatest })
+  }
   return [
-    { key: 'fluxo-etapa', type: 'bar', title: 'Aprovação por etapa', color: '#16713a', formatLabel: formatPercent, data: latestRowsByValueKey(series.por_etapa, etapaLabel, 'taxa_aprovacao') },
-    { key: 'fluxo-dep', type: 'bar', title: 'Aprovação por rede', color: '#2563eb', formatLabel: formatPercent, data: latestRowsByValueKey(pickDependencySeries(series.por_dependencia), depLabel, 'taxa_aprovacao') },
-    { key: 'fluxo-taxas', type: 'bar', title: 'Reprovação, abandono e distorção', color: '#d84b21', formatLabel: formatPercent, data: [{ label: 'Reprovação', value: resumo.taxa_reprovacao }, { label: 'Abandono', value: resumo.taxa_abandono }, { label: 'Distorção idade-série', value: resumo.taxa_distorcao }] },
+    ...items,
   ]
 }
 
-function buildAprendizagemExplore(aprend) {
-  const series = aprend.series ?? {}
-  const resumo = aprend.resumo_ultimo_ano ?? {}
-  const idebRows = Object.entries(resumo).filter(([key]) => key.startsWith('ideb_')).map(([key, value]) => {
-    const etapa = key.replace('ideb_', '')
-    return { label: `${etapaLabel(etapa)} (${formatYear(resumo[`ano_ideb_${etapa}`])})`, value }
-  })
+function buildAprendizagemExplore(aprend, metric) {
+  const detalhamentos = aprend.detalhamentos ?? {}
+  if (metric.stageKey) {
+    const dependencyRows = detailRowsFor(detalhamentos.por_etapa_rede, { etapa_ensino: metric.stageKey })
+    const dependencyLatest = detailRowsToLatestRows(dependencyRows, 'dependencia', depLabel, metric.metricKey)
+    return [
+      { key: `apr-${metric.metricKey}-${metric.stageKey}-rede`, type: 'bar', title: titleWithYear(`${metric.metricLabel} por rede — ${metric.cutLabel}`, dependencyLatest), data: dependencyLatest, color: '#2563eb', formatLabel: metric.formatLabel },
+    ]
+  }
+  const etapaRows = detailRowsToLatestRows(detalhamentos.por_etapa, 'etapa_ensino', etapaLabel, metric.metricKey)
+  const redeRows = detailRowsToLatestRows(detalhamentos.por_rede, 'dependencia', depLabel, metric.metricKey)
   return [
-    { key: 'apr-ideb-bar', type: 'bar', title: 'IDEB por etapa', data: idebRows, color: '#16713a', formatLabel: formatValue },
-    { key: 'apr-alf', type: 'line', title: 'Alfabetização', series: valueSeries(series.alfabetizacao, 'taxa_alfabetizacao'), color: '#2563eb', formatLabel: formatPercent, scaleType: 'percent' },
-    { key: 'apr-inse', type: 'line', title: 'INSE', series: valueSeries(series.inse, 'media_inse'), color: '#7c3aed', formatLabel: formatValue, scaleType: 'inse' },
+    { key: `apr-${metric.metricKey}-etapa`, type: 'bar', title: titleWithYear(`${metric.metricLabel} por etapa`, etapaRows), data: etapaRows, color: '#16713a', formatLabel: metric.formatLabel },
+    { key: `apr-${metric.metricKey}-rede`, type: 'bar', title: titleWithYear(`${metric.metricLabel} por rede`, redeRows), data: redeRows, color: '#2563eb', formatLabel: metric.formatLabel },
   ]
 }
 
 function buildOfertaExplore(oferta) {
   const series = oferta.series ?? {}
+  const detalhamentos = oferta.detalhamentos ?? {}
+  const modalidadeRows = detailRowsToLatestRows(detalhamentos.por_modalidade, 'modalidade', modLabel, 'matriculas')
+  const redeRows = detailRowsToLatestRows(detalhamentos.por_rede, 'dependencia', depLabel, 'matriculas')
   return [
     { key: 'oferta-total', type: 'line', title: 'Evolução das matrículas técnicas', series: normalizeYearSeries(series.total), color: '#7c3aed', formatLabel: formatNumber, scaleType: 'count' },
-    { key: 'oferta-mod', type: 'bar', title: 'Matrículas por modalidade', color: '#7c3aed', formatLabel: formatNumber, data: latestRows(series.por_modalidade, modLabel) },
+    { key: 'oferta-mod', type: 'bar', title: titleWithYear('Matrículas por modalidade', modalidadeRows), color: '#7c3aed', formatLabel: formatNumber, data: modalidadeRows },
+    { key: 'oferta-rede', type: 'bar', title: titleWithYear('Matrículas por rede', redeRows), color: '#2563eb', formatLabel: formatNumber, data: redeRows },
   ]
 }
 
@@ -661,27 +1068,15 @@ function entriesToRows(source, labelFn) {
   return Object.entries(source ?? {}).map(([key, value]) => ({ label: labelFn(key), value })).filter((row) => !isMissing(row.value))
 }
 
-function latestRows(source, labelFn) {
-  return Object.entries(source ?? {}).map(([key, series]) => ({ label: labelFn(key), value: normalizeYearSeries(series).at(-1)?.valor ?? null })).filter((row) => !isMissing(row.value))
-}
-
-function latestRowsByValueKey(source, labelFn, valueKey) {
-  return Object.entries(source ?? {}).map(([key, series]) => ({ label: labelFn(key), value: valueSeries(series, valueKey).at(-1)?.valor ?? null })).filter((row) => !isMissing(row.value))
-}
-
 function dependencyCategoryKeys(source) {
-  const detailed = ['federal', 'estadual', 'municipal'].filter((key) => hasSeriesData(source?.[key]))
-  const keys = detailed.length ? [...detailed, 'privada'] : ['publica', 'privada']
-  return keys.filter((key) => hasSeriesData(source?.[key]))
-}
-
-function pickDependencySeries(source) {
-  const keys = dependencyCategoryKeys(source)
-  return Object.fromEntries(keys.map((key) => [key, source?.[key]]).filter(([, value]) => value))
+  const detailedKeys = ['federal', 'estadual', 'municipal', 'privada']
+    .filter((key) => hasSeriesData(source?.[key]))
+  if (detailedKeys.length) return detailedKeys
+  return ['publica', 'privada'].filter((key) => hasSeriesData(source?.[key]))
 }
 
 function hasSeriesData(series, valueKey = 'valor') {
-  return normalizeYearSeries(series).some((point) => !isMissing(point[valueKey]))
+  return normalizeYearSeries(series, valueKey).some((point) => !isMissing(point[valueKey]))
 }
 
 function categoryDefinitions(keys, labelFn, colors) {

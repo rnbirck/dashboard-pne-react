@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
 import { isMissing } from '../utils/educationFormatters'
 
-const CHART_WIDTH = 760
-const BAR_GAP = 14
-const BAR_ROW_HEIGHT = 38
-const PADDING = { top: 18, right: 112, bottom: 26, left: 210 }
+const CHART_WIDTH = 820
+const BAR_GAP = 12
+const BAR_ROW_HEIGHT = 36
+const PADDING = { top: 18, right: 120, bottom: 28, left: 220 }
 
 export function EducationBarChart({ data, title, color = '#2563eb', formatLabel = (v) => String(v) }) {
   const [activeBar, setActiveBar] = useState(null)
@@ -42,9 +42,9 @@ export function EducationBarChart({ data, title, color = '#2563eb', formatLabel 
                 width={bar.width}
                 height={BAR_ROW_HEIGHT - BAR_GAP}
                 fill={color}
-                fillOpacity={activeBar === i ? '1' : '0.85'}
+                fillOpacity={activeBar?.index === i ? '1' : '0.86'}
                 rx="4"
-                onMouseEnter={() => setActiveBar(i)}
+                onMouseEnter={() => setActiveBar(bar)}
                 onMouseLeave={() => setActiveBar(null)}
                 style={{ cursor: 'pointer', transition: 'fill-opacity 0.12s' }}
               />
@@ -53,10 +53,16 @@ export function EducationBarChart({ data, title, color = '#2563eb', formatLabel 
           ))}
           <line x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={chartHeight - PADDING.bottom} y2={chartHeight - PADDING.bottom} stroke="#c4ccc0" strokeWidth="1" />
         </svg>
-        {activeBar !== null && chart.bars[activeBar] && (
-          <div className="education-chart__tooltip education-chart__tooltip--bar">
-            <strong>{chart.bars[activeBar].fullCategory}</strong>
-            <span>{formatLabel(chart.bars[activeBar].rawValue)}</span>
+        {activeBar && (
+          <div
+            className="education-chart__tooltip education-chart__tooltip--bar"
+            style={{
+              left: `${Math.min(88, Math.max(18, ((PADDING.left + activeBar.width) / CHART_WIDTH) * 100))}%`,
+              top: `${Math.min(82, Math.max(14, ((activeBar.y + 8) / chartHeight) * 100))}%`,
+            }}
+          >
+            <strong>{activeBar.fullCategory}</strong>
+            <span>{formatLabel(activeBar.rawValue)}</span>
           </div>
         )}
       </div>
@@ -76,6 +82,7 @@ function buildBars(data, formatLabel) {
   const bars = filtered.map((d, i) => {
     const value = Number(d.value)
     return {
+      index: i,
       y: PADDING.top + i * BAR_ROW_HEIGHT,
       width: (value / maxVal) * plotW,
       category: shortenLabel(d.label),
@@ -93,6 +100,6 @@ function buildBars(data, formatLabel) {
 }
 
 function shortenLabel(label) {
-  if (!label || label.length <= 28) return label
-  return `${label.slice(0, 25)}...`
+  if (!label || label.length <= 34) return label
+  return `${label.slice(0, 31)}...`
 }

@@ -88,6 +88,195 @@ def serie_anual(df, coluna_valor, coluna_extra=None):
     return pontos
 
 
+def detalhamento_matriculas(df, dimensoes, filtros=None):
+    """Constroi linhas longas de matriculas por ano e dimensoes.
+
+    Mantem null como null, zero como zero e recalcula percentual_integral a
+    partir dos totais agregados quando matriculas_integral estiver disponivel.
+    """
+    filtros = filtros or {}
+    sub = df.copy()
+    for coluna, valores in filtros.items():
+        if valores is None:
+            continue
+        if not isinstance(valores, (list, tuple, set)):
+            valores = [valores]
+        sub = sub[sub[coluna].isin(valores)]
+
+    if sub.empty:
+        return []
+
+    group_cols = ["ano", *dimensoes]
+    agregados = (
+        sub.groupby(group_cols, dropna=False)[["matriculas", "matriculas_integral"]]
+        .sum(min_count=1)
+        .reset_index()
+        .sort_values(group_cols)
+    )
+
+    linhas = []
+    for _, r in agregados.iterrows():
+        matriculas = limpar_null(r["matriculas"])
+        if matriculas is None:
+            continue
+        integral = limpar_null(r["matriculas_integral"])
+        linha = {
+            "ano": int(r["ano"]),
+            "valor": ri(matriculas),
+            "matriculas": ri(matriculas),
+        }
+        for dimensao in dimensoes:
+            linha[dimensao] = r[dimensao]
+        if integral is not None:
+            linha["matriculas_integral"] = ri(integral)
+            linha["percentual_integral"] = r1(integral / matriculas * 100) if matriculas > 0 else None
+        linhas.append(linha)
+
+    return linhas
+
+
+def detalhamento_rede_escolar(df, dimensoes, filtros=None):
+    filtros = filtros or {}
+    sub = df.copy()
+    for coluna, valores in filtros.items():
+        if not isinstance(valores, (list, tuple, set)):
+            valores = [valores]
+        sub = sub[sub[coluna].isin(valores)]
+    if sub.empty:
+        return []
+
+    linhas = []
+    for _, r in sub.sort_values(["ano", *dimensoes]).iterrows():
+        escolas = limpar_null(r.get("escolas"))
+        if escolas is None:
+            continue
+        linha = {
+            "ano": int(r["ano"]),
+            "valor": ri(escolas),
+            "escolas": ri(escolas),
+            "perc_internet": r1(limpar_null(r.get("perc_internet"))),
+            "perc_banda_larga": r1(limpar_null(r.get("perc_banda_larga"))),
+        }
+        for dimensao in dimensoes:
+            linha[dimensao] = r[dimensao]
+        linhas.append(linha)
+    return linhas
+
+
+def detalhamento_turmas(df, dimensoes, filtros=None):
+    filtros = filtros or {}
+    sub = df.copy()
+    for coluna, valores in filtros.items():
+        if not isinstance(valores, (list, tuple, set)):
+            valores = [valores]
+        sub = sub[sub[coluna].isin(valores)]
+    if sub.empty:
+        return []
+
+    group_cols = ["ano", *dimensoes]
+    agregados = (
+        sub.groupby(group_cols, dropna=False)[["turmas", "docentes", "matriculas"]]
+        .sum(min_count=1)
+        .reset_index()
+        .sort_values(group_cols)
+    )
+    linhas = []
+    for _, r in agregados.iterrows():
+        turmas = limpar_null(r.get("turmas"))
+        docentes = limpar_null(r.get("docentes"))
+        matriculas = limpar_null(r.get("matriculas"))
+        if turmas is None and docentes is None and matriculas is None:
+            continue
+        linha = {
+            "ano": int(r["ano"]),
+            "valor": ri(turmas) if turmas is not None else None,
+            "turmas": ri(turmas),
+            "docentes": ri(docentes),
+            "matriculas": ri(matriculas),
+            "alunos_por_turma": r1(matriculas / turmas) if matriculas is not None and turmas and turmas > 0 else None,
+            "alunos_por_docente": r1(matriculas / docentes) if matriculas is not None and docentes and docentes > 0 else None,
+        }
+        for dimensao in dimensoes:
+            linha[dimensao] = r[dimensao]
+        linhas.append(linha)
+    return linhas
+
+
+def detalhamento_fluxo(df, dimensoes, filtros=None, incluir_distorcao=True):
+    filtros = filtros or {}
+    sub = df.copy()
+    for coluna, valores in filtros.items():
+        if not isinstance(valores, (list, tuple, set)):
+            valores = [valores]
+        sub = sub[sub[coluna].isin(valores)]
+    if sub.empty:
+        return []
+
+    linhas = []
+    for _, r in sub.sort_values(["ano", *dimensoes]).iterrows():
+        linha = {"ano": int(r["ano"])}
+        for dimensao in dimensoes:
+            linha[dimensao] = r[dimensao]
+        for col in ["taxa_aprovacao", "taxa_reprovacao", "taxa_abandono"]:
+            linha[col] = r1(limpar_null(r.get(col)))
+        linha["valor"] = linha["taxa_aprovacao"]
+        if incluir_distorcao:
+            linha["taxa_distorcao"] = r1(limpar_null(r.get("taxa_distorcao")))
+        if any(not limpar_null(linha.get(col)) is None for col in ["taxa_aprovacao", "taxa_reprovacao", "taxa_abandono", "taxa_distorcao"]):
+            linhas.append(linha)
+    return linhas
+
+
+def detalhamento_aprendizagem(df, dimensoes, filtros=None):
+    filtros = filtros or {}
+    sub = df.copy()
+    for coluna, valores in filtros.items():
+        if not isinstance(valores, (list, tuple, set)):
+            valores = [valores]
+        sub = sub[sub[coluna].isin(valores)]
+    if sub.empty:
+        return []
+
+    linhas = []
+    for _, r in sub.sort_values(["ano", *dimensoes]).iterrows():
+        linha = {"ano": int(r["ano"])}
+        for dimensao in dimensoes:
+            linha[dimensao] = r[dimensao]
+        for col in ["ideb", "saeb_lp", "saeb_mt", "taxa_alfabetizacao", "media_inse"]:
+            linha[col] = r1(limpar_null(r.get(col)))
+        linha["qtd_alunos_inse"] = ri(limpar_null(r.get("qtd_alunos_inse")))
+        if any(not limpar_null(linha.get(col)) is None for col in ["ideb", "saeb_lp", "saeb_mt", "taxa_alfabetizacao", "media_inse"]):
+            linhas.append(linha)
+    return linhas
+
+
+def detalhamento_oferta(df, dimensoes, filtros=None):
+    filtros = filtros or {}
+    sub = df.copy()
+    for coluna, valores in filtros.items():
+        if not isinstance(valores, (list, tuple, set)):
+            valores = [valores]
+        sub = sub[sub[coluna].isin(valores)]
+    if sub.empty:
+        return []
+
+    linhas = []
+    for _, r in sub.sort_values(["ano", *dimensoes]).iterrows():
+        matriculas = limpar_null(r.get("matriculas"))
+        if matriculas is None:
+            continue
+        linha = {
+            "ano": int(r["ano"]),
+            "valor": ri(matriculas),
+            "matriculas": ri(matriculas),
+            "perc_modalidade": r1(limpar_null(r.get("perc_modalidade"))),
+        }
+        for dimensao in dimensoes:
+            linha[dimensao] = r[dimensao]
+        linhas.append(linha)
+    return linhas
+
+
 def safe_json_dump(data, path):
     """Escreve JSON garantindo que nao haja NaN/Infinity."""
     def clean(obj):
@@ -266,6 +455,41 @@ def montar_bloco_matriculas(df, id_mun):
         perc = r1(inte / mat * 100) if mat and mat > 0 else None
         serie_integral.append({"ano": int(r["ano"]), "valor": ri(inte), "percentual": perc})
 
+    deps_rede = ["publica", "privada", "estadual", "municipal", "federal"]
+    locs = ["urbana", "rural"]
+    detalhamentos = {
+        "por_etapa": detalhamento_matriculas(
+            d,
+            ["etapa_ensino"],
+            {"dependencia": "total", "localizacao": "total"},
+        ),
+        "por_rede": detalhamento_matriculas(
+            d,
+            ["dependencia"],
+            {"dependencia": deps_rede, "localizacao": "total"},
+        ),
+        "por_localizacao": detalhamento_matriculas(
+            d,
+            ["localizacao"],
+            {"dependencia": "total", "localizacao": locs},
+        ),
+        "por_etapa_rede": detalhamento_matriculas(
+            d,
+            ["etapa_ensino", "dependencia"],
+            {"dependencia": deps_rede, "localizacao": "total"},
+        ),
+        "por_etapa_localizacao": detalhamento_matriculas(
+            d,
+            ["etapa_ensino", "localizacao"],
+            {"dependencia": "total", "localizacao": locs},
+        ),
+        "por_rede_localizacao": detalhamento_matriculas(
+            d,
+            ["dependencia", "localizacao"],
+            {"dependencia": deps_rede, "localizacao": locs},
+        ),
+    }
+
     # Ultimo ano
     ultimo_ano = int(total["ano"].max()) if not total.empty else None
     resumo = _resumo_matriculas(d, ultimo_ano)
@@ -278,6 +502,7 @@ def montar_bloco_matriculas(df, id_mun):
             "por_localizacao": por_loc,
             "integral": serie_integral,
         },
+        "detalhamentos": detalhamentos,
         "ultimo_ano": ultimo_ano,
         "resumo_ultimo_ano": resumo,
         "dimensoes_disponiveis": ["etapa_ensino", "dependencia", "localizacao"],
@@ -380,6 +605,16 @@ def montar_bloco_rede(df, id_mun):
         if serie:
             por_loc[loc] = serie
 
+    deps_rede = ["publica", "privada", "estadual", "municipal", "federal"]
+    locs = ["urbana", "rural"]
+    detalhamentos = {
+        "por_rede": detalhamento_rede_escolar(d, ["dependencia"], {"dependencia": deps_rede, "localizacao": "total"}),
+        "por_localizacao": detalhamento_rede_escolar(d, ["localizacao"], {"dependencia": "total", "localizacao": locs}),
+        "por_rede_localizacao": detalhamento_rede_escolar(d, ["dependencia", "localizacao"], {"dependencia": deps_rede, "localizacao": locs}),
+        "infraestrutura_por_rede": detalhamento_rede_escolar(d, ["dependencia"], {"dependencia": deps_rede, "localizacao": "total"}),
+        "infraestrutura_por_localizacao": detalhamento_rede_escolar(d, ["localizacao"], {"dependencia": "total", "localizacao": locs}),
+    }
+
     # Internet
     serie_internet = [
         {
@@ -401,6 +636,7 @@ def montar_bloco_rede(df, id_mun):
             "por_localizacao": por_loc,
             "internet": serie_internet,
         },
+        "detalhamentos": detalhamentos,
         "ultimo_ano": ultimo_ano,
         "resumo_ultimo_ano": resumo,
         "dimensoes_disponiveis": ["dependencia", "localizacao"],
@@ -484,6 +720,17 @@ def montar_bloco_turmas(df, id_mun):
         if serie:
             por_etapa[etapa] = serie
 
+    deps_rede = ["publica", "privada", "estadual", "municipal", "federal"]
+    locs = ["urbana", "rural"]
+    detalhamentos = {
+        "por_etapa": detalhamento_turmas(d, ["etapa_ensino"], {"dependencia": "total", "localizacao": "total"}),
+        "por_rede": detalhamento_turmas(d, ["dependencia"], {"dependencia": deps_rede, "localizacao": "total"}),
+        "por_localizacao": detalhamento_turmas(d, ["localizacao"], {"dependencia": "total", "localizacao": locs}),
+        "por_etapa_rede": detalhamento_turmas(d, ["etapa_ensino", "dependencia"], {"dependencia": deps_rede, "localizacao": "total"}),
+        "por_etapa_localizacao": detalhamento_turmas(d, ["etapa_ensino", "localizacao"], {"dependencia": "total", "localizacao": locs}),
+        "por_rede_localizacao": detalhamento_turmas(d, ["dependencia", "localizacao"], {"dependencia": deps_rede, "localizacao": locs}),
+    }
+
     ultimo_ano = int(total["ano"].max()) if not total.empty else None
     resumo = _resumo_turmas(total, ultimo_ano)
 
@@ -492,6 +739,7 @@ def montar_bloco_turmas(df, id_mun):
             "total": serie_total,
             "por_etapa": por_etapa,
         },
+        "detalhamentos": detalhamentos,
         "ultimo_ano": ultimo_ano,
         "resumo_ultimo_ano": resumo,
         "dimensoes_disponiveis": ["etapa_ensino", "dependencia", "localizacao"],
@@ -568,6 +816,16 @@ def montar_bloco_fluxo(df, id_mun):
         if serie:
             por_dep[dep] = serie
 
+    deps_rede = ["publica", "privada", "estadual", "municipal", "federal"]
+    locs = ["urbana", "rural"]
+    detalhamentos = {
+        "por_etapa": detalhamento_fluxo(d, ["etapa_ensino"], {"dependencia": "total", "localizacao": "total"}),
+        "por_rede": detalhamento_fluxo(d, ["dependencia"], {"etapa_ensino": "fundamental", "dependencia": deps_rede, "localizacao": "total"}),
+        "por_localizacao": detalhamento_fluxo(d, ["localizacao"], {"etapa_ensino": "fundamental", "dependencia": "total", "localizacao": locs}, incluir_distorcao=False),
+        "por_etapa_rede": detalhamento_fluxo(d, ["etapa_ensino", "dependencia"], {"dependencia": deps_rede, "localizacao": "total"}),
+        "por_etapa_localizacao": detalhamento_fluxo(d, ["etapa_ensino", "localizacao"], {"dependencia": "total", "localizacao": locs}, incluir_distorcao=False),
+    }
+
     ultimo_ano = int(d["ano"].max())
     resumo = _resumo_fluxo(d, ultimo_ano)
 
@@ -576,6 +834,7 @@ def montar_bloco_fluxo(df, id_mun):
             "por_etapa": por_etapa,
             "por_dependencia": por_dep,
         },
+        "detalhamentos": detalhamentos,
         "ultimo_ano": ultimo_ano,
         "resumo_ultimo_ano": resumo,
         "dimensoes_disponiveis": ["etapa_ensino", "dependencia", "localizacao"],
@@ -674,6 +933,12 @@ def montar_bloco_aprendizagem(df, id_mun):
     ultimo_inse = serie_inse[-1]["ano"] if serie_inse else None
 
     resumo = _resumo_aprendizagem(ideb, serie_alf, serie_inse)
+    deps_rede = ["total", "publica", "privada", "estadual", "municipal", "federal"]
+    detalhamentos = {
+        "por_etapa": detalhamento_aprendizagem(d, ["etapa_ensino"], {"dependencia": ["total", "publica"]}),
+        "por_rede": detalhamento_aprendizagem(d, ["dependencia"], {"dependencia": deps_rede}),
+        "por_etapa_rede": detalhamento_aprendizagem(d, ["etapa_ensino", "dependencia"], {"dependencia": deps_rede}),
+    }
 
     return {
         "series": {
@@ -681,6 +946,7 @@ def montar_bloco_aprendizagem(df, id_mun):
             "alfabetizacao": serie_alf,
             "inse": serie_inse,
         },
+        "detalhamentos": detalhamentos,
         "ultimo_ano": {
             "ideb": ultimo_ideb,
             "alfabetizacao": ultimo_alf,
@@ -753,12 +1019,19 @@ def montar_bloco_oferta(df, id_mun):
 
     ultimo_ano = int(total["ano"].max()) if not total.empty else None
     resumo = _resumo_oferta(total, ultimo_ano)
+    deps_rede = ["total", "publica", "privada", "estadual", "municipal", "federal"]
+    detalhamentos = {
+        "por_modalidade": detalhamento_oferta(total, ["modalidade"]),
+        "por_rede": detalhamento_oferta(d, ["dependencia"], {"dependencia": deps_rede}),
+        "por_modalidade_rede": detalhamento_oferta(d, ["modalidade", "dependencia"], {"dependencia": deps_rede}),
+    }
 
     return {
         "series": {
             "total": serie_total_list,
             "por_modalidade": por_modalidade,
         },
+        "detalhamentos": detalhamentos,
         "ultimo_ano": ultimo_ano,
         "resumo_ultimo_ano": resumo,
         "dimensoes_disponiveis": ["modalidade", "dependencia"],

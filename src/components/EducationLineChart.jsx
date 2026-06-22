@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react'
 import { isMissing, normalizeYearSeries } from '../utils/educationFormatters'
 
 const CHART_WIDTH = 760
-const CHART_HEIGHT = 260
-const PADDING = { top: 20, right: 24, bottom: 36, left: 56 }
+const CHART_HEIGHT = 300
+const PADDING = { top: 34, right: 36, bottom: 42, left: 62 }
 
 export function EducationLineChart({
   series,
@@ -50,12 +50,12 @@ export function EducationLineChart({
                 onMouseLeave={() => setActivePoint(null)}
                 style={{ cursor: 'pointer' }}
               />
-              {showPointLabels ? (
+              {showPointLabels && point.showLabel ? (
                 <text
                   x={point.x}
-                  y={point.y < PADDING.top + 18 ? point.y + 18 : point.y - 8}
+                  y={point.y < PADDING.top + 18 ? point.y + 18 : point.y - 10}
                   textAnchor="middle"
-                  className="chart-point-label"
+                  className={point.isLast ? 'chart-point-label is-last' : 'chart-point-label'}
                 >
                   {formatLabel(point.value)}
                 </text>
@@ -92,13 +92,33 @@ function buildChart(series, scaleType) {
   const plotH = CHART_HEIGHT - PADDING.top - PADDING.bottom
   const xScale = (year) => PADDING.left + ((year - minYear) / yearRange) * plotW
   const yScale = (val) => PADDING.top + ((domain.max - val) / (domain.max - domain.min || 1)) * plotH
-  const scaled = points.map((p) => ({ ...p, x: xScale(p.year), y: yScale(p.value) }))
+  const minValue = Math.min(...values)
+  const maxValue = Math.max(...values)
+  const firstYear = points[0].year
+  const lastYear = points[points.length - 1].year
+  const scaled = points.map((p) => ({
+    ...p,
+    x: xScale(p.year),
+    y: yScale(p.value),
+    isLast: p.year === lastYear,
+    showLabel: shouldShowPointLabel(p, points.length, { firstYear, lastYear, minValue, maxValue }),
+  }))
   const linePath = scaled.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
   const baselineY = yScale(domain.min)
   const areaPath = `${linePath} L${scaled[scaled.length - 1].x.toFixed(1)} ${baselineY.toFixed(1)} L${scaled[0].x.toFixed(1)} ${baselineY.toFixed(1)} Z`
   const yTicksRaw = [domain.min, domain.min + range * 0.25, domain.min + range * 0.5, domain.min + range * 0.75, domain.max]
   const yTicks = yTicksRaw.map((val) => ({ label: formatAxisTick(val, scaleType), y: yScale(val) }))
   return { points: scaled, linePath, areaPath, yTicks }
+}
+
+function shouldShowPointLabel(point, pointCount, { firstYear, lastYear, minValue, maxValue }) {
+  if (pointCount <= 7) return true
+  return (
+    point.year === firstYear ||
+    point.year === lastYear ||
+    point.value === minValue ||
+    point.value === maxValue
+  )
 }
 
 function getYAxisDomain(values, scaleType) {

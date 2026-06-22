@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
 import { isMissing } from '../utils/educationFormatters'
 
-const CHART_WIDTH = 760
-const CHART_HEIGHT = 380
-const PADDING = { top: 28, right: 32, bottom: 52, left: 72 }
+const CHART_WIDTH = 820
+const CHART_HEIGHT = 340
+const PADDING = { top: 26, right: 32, bottom: 50, left: 78 }
 const BAR_GAP = 8
 
 export function EducationStackedBarChart({
@@ -26,7 +26,7 @@ export function EducationStackedBarChart({
   return (
     <div className="education-chart education-chart--stacked">
       {title && <h4 className="education-chart__title">{title}</h4>}
-      <div className="education-stacked-legend" aria-hidden="true">
+      <div className="education-stacked-legend">
         {chart.categories.map((category) => (
           <span key={category.key}>
             <i style={{ background: category.color }} />
@@ -63,7 +63,7 @@ export function EducationStackedBarChart({
                   style={{ cursor: 'pointer', transition: 'fill-opacity 0.12s' }}
                 />
               ))}
-              <text x={row.x + row.width / 2} y={CHART_HEIGHT - 16} textAnchor="middle" className="chart-x-label">{row.year}</text>
+              <text x={row.x + row.width / 2} y={CHART_HEIGHT - 18} textAnchor="middle" className="chart-x-label">{row.year}</text>
             </g>
           ))}
         </svg>
@@ -71,7 +71,7 @@ export function EducationStackedBarChart({
           <div
             className="education-chart__tooltip education-chart__tooltip--bar"
             style={{
-              left: `${Math.min(90, Math.max(10, (activeSegment.x / CHART_WIDTH) * 100))}%`,
+              left: `${Math.min(88, Math.max(12, ((activeSegment.x + activeSegment.width / 2) / CHART_WIDTH) * 100))}%`,
               top: `${Math.min(82, Math.max(12, (activeSegment.y / CHART_HEIGHT) * 100))}%`,
             }}
           >
@@ -112,7 +112,7 @@ function buildStackedChart(data, categories) {
   const plotW = CHART_WIDTH - PADDING.left - PADDING.right
   const plotH = CHART_HEIGHT - PADDING.top - PADDING.bottom
   const slotWidth = plotW / normalizedRows.length
-  const barWidth = Math.max(26, Math.min(58, slotWidth * 0.58 - BAR_GAP))
+  const barWidth = Math.max(24, Math.min(54, slotWidth * 0.62 - BAR_GAP))
   const yScale = (value) => PADDING.top + ((domainMax - value) / domainMax) * plotH
 
   const rows = normalizedRows.map((row, rowIndex) => {
@@ -139,7 +139,7 @@ function buildStackedChart(data, categories) {
     return { year: row.year, x, width: barWidth, segments }
   })
 
-  const yTicksRaw = [0, domainMax * 0.25, domainMax * 0.5, domainMax * 0.75, domainMax]
+  const yTicksRaw = [0, domainMax * 0.2, domainMax * 0.4, domainMax * 0.6, domainMax * 0.8, domainMax]
   const yTicks = yTicksRaw.map((value) => ({
     label: Math.round(value).toLocaleString('pt-BR'),
     y: yScale(value),

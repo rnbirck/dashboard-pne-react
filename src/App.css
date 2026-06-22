@@ -1500,6 +1500,10 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.metric-grid--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .metric-grid--two {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -4772,8 +4776,8 @@
 }
 
 .educacao-detail-panel {
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 12px;
+  padding: 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: #ffffff;
@@ -4782,7 +4786,7 @@
 
 .educacao-detail-panel .detail-heading {
   gap: 16px;
-  padding-bottom: 10px;
+  padding-bottom: 12px;
 }
 
 .educacao-detail-panel .detail-heading h3 {
@@ -4792,6 +4796,10 @@
 .educacao-detail-panel .detail-heading p {
   font-size: 0.81rem;
   line-height: 1.44;
+}
+
+.educacao-detail-panel .detail-heading .status-badge {
+  margin-top: 4px;
 }
 
 .educacao-detail-panel .metric-grid {
@@ -4814,9 +4822,10 @@
 }
 
 .educacao-detail-panel .interpretation-box {
-  padding: 10px 12px;
+  padding: 11px 13px;
   border-color: rgba(47, 113, 60, 0.14);
   background: #f7fbf5;
+  box-shadow: inset 3px 0 0 rgba(47, 113, 60, 0.36);
 }
 
 .educacao-detail-panel .detail-panel__summary {
@@ -4848,13 +4857,45 @@
   color: var(--text-muted);
   font-size: 0.78rem;
   line-height: 1.35;
-  text-align: right;
+  text-align: left;
+}
+
+.education-stage-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 6px 8px;
+  border: 1px solid rgba(47, 113, 60, 0.16);
+  border-radius: 8px;
+  background: #f8fbf6;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.education-stage-filter span {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.education-stage-filter select {
+  min-width: 150px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 5px 26px 5px 8px;
+  background: #ffffff;
+  color: var(--text-strong);
+  font: inherit;
+  cursor: pointer;
 }
 
 .educacao-main-chart-card {
-  min-height: 360px;
+  min-height: 380px;
   gap: 12px;
-  padding: 12px;
+  padding: 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: #ffffff;
@@ -4863,12 +4904,12 @@
 
 .educacao-explore {
   display: grid;
-  gap: 10px;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: #ffffff;
-  box-shadow: 0 2px 8px rgba(18, 45, 18, 0.04);
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(47, 113, 60, 0.18);
+  border-radius: var(--radius-md);
+  background: #fbfdf9;
+  box-shadow: 0 4px 14px rgba(18, 45, 18, 0.05);
 }
 
 .educacao-explore__heading {
@@ -4953,34 +4994,49 @@
 
 .educacao-main-chart-card .education-chart,
 .educacao-explore .education-chart {
-  min-height: 340px;
+  min-height: 300px;
   margin: 0;
-  padding: 14px;
+  padding: 12px;
   overflow-x: auto;
 }
 
+.educacao-main-chart-card .education-chart {
+  min-height: 304px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.educacao-main-chart-card .education-chart svg {
+  max-height: 320px;
+}
+
 .educacao-explore .education-chart svg {
-  max-height: 340px;
+  max-height: 320px;
 }
 
 .education-chart--stacked {
-  min-height: 420px;
+  min-height: 330px;
 }
 
 .education-chart--stacked .education-chart__canvas {
-  min-height: 340px;
+  min-height: 260px;
   max-height: none;
 }
 
 .educacao-explore .education-chart--stacked svg {
-  max-height: 360px;
+  min-width: 760px;
+  max-height: 340px;
 }
 
 .education-stacked-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px 12px;
-  margin: 0 0 12px;
+  gap: 8px 14px;
+  margin: 0 0 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--divider);
 }
 
 .education-stacked-legend span {
@@ -5050,7 +5106,7 @@
 
 .educacao-chart--bar svg,
 .education-chart--bar svg {
-  min-width: 620px;
+  min-width: 720px;
   max-height: 330px;
 }
 
@@ -5141,6 +5197,16 @@
     text-align: left;
   }
 
+  .education-stage-filter {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .education-stage-filter select {
+    min-width: 0;
+    flex: 1;
+  }
+
   .education-chart-grid {
     grid-template-columns: 1fr;
   }
@@ -5167,8 +5233,11 @@
   }
 
   .educacao-explore .education-chart--bar svg {
-    width: 100%;
-    min-width: 0;
+    min-width: 640px;
+  }
+
+  .educacao-explore .education-chart--stacked svg {
+    min-width: 700px;
   }
 
   .educacao-explore .chart-axis-label,
