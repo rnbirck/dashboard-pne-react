@@ -56,6 +56,7 @@ const LOCATION_COLORS = {
 }
 
 const STAGE_FILTER_ORDER = ['total', 'infantil', 'fundamental', 'fundamental_anos_iniciais', 'fundamental_anos_finais', 'medio', 'eja', 'profissional']
+const FUNDAMENTAL_FAIXA_STAGES = ['fundamental_anos_iniciais', 'fundamental_anos_finais']
 
 export function EducacaoPage({ selectedMunicipio }) {
   const eduIndexState = useAsyncData(() => loadEducationMunicipiosIndex(), [])
@@ -369,6 +370,7 @@ function EducationIndicatorBreakdown({ indicator }) {
 
 function getDetailTabLabel(item) {
   const title = String(item.title ?? '').toLocaleLowerCase('pt-BR')
+  if (title.includes('faixa et')) return 'Por faixa etária'
   if (title.includes('etapa')) return 'Por etapa'
   if (title.includes('localiza')) return 'Por localização'
   if (title.includes('rede') || title.includes('depend')) return 'Por rede'
@@ -475,7 +477,7 @@ function buildMatriculasIndicators(mat) {
     createIndicator({ key: 'mat-medio', label: 'Matrículas no ensino médio', description: 'Matrículas registradas no ensino médio.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.medio], stageLabel: 'Ensino Médio', series: normalizeYearSeries(series.por_etapa?.medio), currentValue: byEtapa.medio, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Ensino Médio', explore: buildMatriculasExplore(mat, { cutKey: 'medio', cutLabel: 'Ensino Médio', stageKey: 'medio' }) }),
     createIndicator({ key: 'mat-eja', label: 'Matrículas na EJA', description: 'Matrículas registradas na educação de jovens e adultos.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.eja], stageLabel: 'EJA', series: normalizeYearSeries(series.por_etapa?.eja), currentValue: byEtapa.eja, currentYear: latestYear, formatType: 'number', mainCutLabel: 'EJA', explore: buildMatriculasExplore(mat, { cutKey: 'eja', cutLabel: 'EJA', stageKey: 'eja' }) }),
     createIndicator({ key: 'mat-profissional', label: 'Matrículas na educação profissional', description: 'Matrículas registradas na educação profissional/técnica.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.profissional], stageLabel: 'Educação Profissional', series: normalizeYearSeries(series.por_etapa?.profissional), currentValue: byEtapa.profissional, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Educação Profissional', explore: buildMatriculasExplore(mat, { cutKey: 'profissional', cutLabel: 'Educação Profissional', stageKey: 'profissional' }) }),
-    createIndicator({ key: 'mat-integral', label: 'Matrículas em tempo integral', description: 'Percentual total de matrículas em tempo integral no município.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.todos], isGeral: true, series: valueSeries(series.integral, 'percentual'), currentValue: resumo.percentual_integral, currentYear: latestYear, formatType: 'percent', mainCutLabel: 'Tempo integral no total do município', explore: [] }),
+    createIndicator({ key: 'mat-integral', label: 'Matrículas em tempo integral', description: 'Percentual total de matrículas em tempo integral no município.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.todos], isGeral: true, series: valueSeries(series.integral, 'percentual'), currentValue: resumo.percentual_integral, currentYear: latestYear, formatType: 'percent', mainCutLabel: 'Tempo integral no total do município', explore: buildMatriculasIntegralExplore(mat) }),
     createIndicator({ key: 'mat-rural', label: 'Matrículas em zona rural', description: 'Matrículas vinculadas à localização rural.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.todos], isGeral: true, series: normalizeYearSeries(series.por_localizacao?.rural), currentValue: resumo.matriculas_rural, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Zona rural', explore: buildMatriculasExplore(mat, { cutKey: 'rural', cutLabel: 'Zona rural', locationKey: 'rural' }) }),
     createIndicator({ key: 'mat-publica', label: 'Matrículas na rede pública', description: 'Matrículas na rede pública municipal, estadual e federal.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.todos], isGeral: true, series: normalizeYearSeries(series.por_dependencia?.publica), currentValue: resumo.matriculas_publica, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Rede pública', explore: buildMatriculasExplore(mat, { cutKey: 'publica', cutLabel: 'Rede pública', dependencyKey: 'publica' }) }),
     createIndicator({ key: 'mat-privada', label: 'Matrículas na rede privada', description: 'Matrículas na rede privada.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.todos], isGeral: true, series: normalizeYearSeries(series.por_dependencia?.privada), currentValue: resumo.matriculas_privada, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Rede privada', explore: buildMatriculasExplore(mat, { cutKey: 'privada', cutLabel: 'Rede privada', dependencyKey: 'privada' }) }),
@@ -779,9 +781,11 @@ function buildMatriculasExplore(mat, cut = { cutKey: 'total', cutLabel: 'Total d
     const stageDependencyKeys = dependencyKeysFromDetailRows(stageDependencyRows)
     const stageLocationRows = detailRowsFor(detalhamentos.por_etapa_localizacao, { etapa_ensino: cut.stageKey })
     const stageLocationKeys = detailKeys(stageLocationRows, 'localizacao', ['urbana', 'rural'])
+    const faixaEtariaItem = buildMatriculasFaixaEtariaItem(detalhamentos, cut)
 
     return [
       ...etapaItems,
+      ...(faixaEtariaItem ? [faixaEtariaItem] : []),
       {
         key: `mat-${cut.stageKey}-dep`,
         type: 'stacked',
@@ -838,6 +842,72 @@ function buildMatriculasExplore(mat, cut = { cutKey: 'total', cutLabel: 'Total d
   return []
 }
 
+function buildMatriculasFaixaEtariaItem(detalhamentos, cut) {
+  const fonte = detalhamentos.por_etapa_faixa_etaria ?? []
+  let rows = []
+  let labelFn = (row) => row.faixa_etaria
+  let sortFn = (row) => faixaEtariaSortValue(row.faixa_etaria)
+
+  if (cut.stageKey === 'fundamental') {
+    rows = fonte.filter((row) => FUNDAMENTAL_FAIXA_STAGES.includes(row?.etapa_ensino))
+    labelFn = (row) => `${etapaLabel(row.etapa_ensino)} - ${row.faixa_etaria}`
+    sortFn = (row) => {
+      const stageIndex = FUNDAMENTAL_FAIXA_STAGES.indexOf(row?.etapa_ensino)
+      return (stageIndex < 0 ? 9 : stageIndex) * 100 + faixaEtariaSortValue(row.faixa_etaria)
+    }
+  } else if (cut.stageKey) {
+    rows = detailRowsFor(fonte, { etapa_ensino: cut.stageKey })
+  }
+
+  const data = detailRowsToLatestRowsByLabel(rows, labelFn, 'matriculas', sortFn)
+  if (!data.length) return null
+
+  return {
+    key: `mat-${cut.stageKey}-faixa-etaria`,
+    type: 'bar',
+    title: titleWithYear(`Matrículas por faixa etária — ${cut.cutLabel}`, data),
+    color: '#0f766e',
+    data,
+    formatLabel: formatNumber,
+  }
+}
+
+function buildMatriculasIntegralExplore(mat) {
+  const detalhamentos = mat.detalhamentos ?? {}
+  const etapaRows = detailRowsToLatestRows(detalhamentos.tempo_integral_por_etapa, 'etapa_ensino', etapaLabel, 'matriculas_integral')
+  const dependencyRows = detalhamentos.tempo_integral_por_rede ?? []
+  const dependencyKeys = dependencyKeysFromDetailRows(dependencyRows, 'matriculas_integral')
+  const locationRows = detalhamentos.tempo_integral_por_localizacao ?? []
+  const locationKeys = detailKeys(locationRows, 'localizacao', ['urbana', 'rural'], 'matriculas_integral')
+
+  return [
+    {
+      key: 'mat-integral-etapa',
+      type: 'bar',
+      title: titleWithYear('Matrículas em tempo integral por etapa', etapaRows),
+      color: '#16713a',
+      data: etapaRows,
+      formatLabel: formatNumber,
+    },
+    {
+      key: 'mat-integral-rede',
+      type: 'stacked',
+      title: 'Matrículas em tempo integral por rede — histórico',
+      categories: categoryDefinitions(dependencyKeys, depLabel, DEPENDENCY_COLORS),
+      data: detailRowsToStackedRows(dependencyRows, 'dependencia', dependencyKeys, 'matriculas_integral'),
+      formatLabel: formatNumber,
+    },
+    {
+      key: 'mat-integral-localizacao',
+      type: 'stacked',
+      title: 'Matrículas em tempo integral por localização — histórico',
+      categories: categoryDefinitions(locationKeys, locLabel, LOCATION_COLORS),
+      data: detailRowsToStackedRows(locationRows, 'localizacao', locationKeys, 'matriculas_integral'),
+      formatLabel: formatNumber,
+    },
+  ]
+}
+
 function detailRowsFor(rows, filters) {
   if (!Array.isArray(rows)) return []
   return rows.filter((row) => (
@@ -892,6 +962,38 @@ function detailRowsToLatestRows(rows, dimension, labelFn, valueKey = 'valor') {
 
   return [...latestByKey.entries()]
     .map(([key, point]) => ({ label: labelFn(key), value: point.value, year: point.ano }))
+}
+
+function detailRowsToLatestRowsByLabel(rows, labelFn, valueKey = 'valor', sortFn = null) {
+  const latestByLabel = new Map()
+  rows.forEach((row) => {
+    const label = labelFn(row)
+    const value = detailRowValue(row, valueKey)
+    if (isMissing(label) || isMissing(row?.ano) || isMissing(value)) return
+    const current = latestByLabel.get(label)
+    if (!current || Number(row.ano) > Number(current.ano)) {
+      latestByLabel.set(label, {
+        ano: Number(row.ano),
+        sortKey: typeof sortFn === 'function' ? sortFn(row) : null,
+        value,
+      })
+    }
+  })
+
+  return [...latestByLabel.entries()]
+    .map(([label, point]) => ({ label, value: point.value, year: point.ano, sortKey: point.sortKey }))
+    .sort((a, b) => {
+      if (Number.isFinite(a.sortKey) && Number.isFinite(b.sortKey)) return a.sortKey - b.sortKey
+      return String(a.label).localeCompare(String(b.label), 'pt-BR')
+    })
+}
+
+function faixaEtariaSortValue(label) {
+  const text = String(label ?? '').toLocaleLowerCase('pt-BR')
+  if (text.includes('menos')) return -1
+  const match = text.match(/\d+/)
+  const base = match ? Number(match[0]) : 999
+  return text.includes('mais') ? base + 0.5 : base
 }
 
 function latestYearFromRows(rows) {

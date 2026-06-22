@@ -135,6 +135,95 @@ def detalhamento_matriculas(df, dimensoes, filtros=None):
     return linhas
 
 
+def detalhamento_faixa_etaria(df, dimensoes, filtros=None):
+    """Constroi recortes de matriculas por faixa etaria.
+
+    As linhas ja chegam segmentadas por etapa e faixa etaria na Sinopse.
+    Agregacoes sao apenas somas de matriculas, mantendo null como null.
+    """
+    filtros = filtros or {}
+    sub = df.copy()
+    for coluna, valores in filtros.items():
+        if valores is None:
+            continue
+        if not isinstance(valores, (list, tuple, set)):
+            valores = [valores]
+        sub = sub[sub[coluna].isin(valores)]
+
+    if sub.empty:
+        return []
+
+    group_cols = ["ano", *dimensoes]
+    agregados = (
+        sub.groupby(group_cols, dropna=False)["matriculas"]
+        .sum(min_count=1)
+        .reset_index()
+        .sort_values(group_cols)
+    )
+
+    linhas = []
+    for _, r in agregados.iterrows():
+        matriculas = limpar_null(r["matriculas"])
+        if matriculas is None:
+            continue
+        linha = {
+            "ano": int(r["ano"]),
+            "valor": ri(matriculas),
+            "matriculas": ri(matriculas),
+        }
+        for dimensao in dimensoes:
+            linha[dimensao] = r[dimensao]
+        linhas.append(linha)
+
+    return linhas
+
+
+def detalhamento_tempo_integral(df, dimensoes, filtros=None):
+    """Constroi recortes de matriculas em tempo integral.
+
+    Usa matriculas_integral como valor principal e recalcula o percentual a
+    partir de somas agregadas: soma(integral) / soma(matriculas) * 100.
+    """
+    filtros = filtros or {}
+    sub = df.copy()
+    for coluna, valores in filtros.items():
+        if valores is None:
+            continue
+        if not isinstance(valores, (list, tuple, set)):
+            valores = [valores]
+        sub = sub[sub[coluna].isin(valores)]
+
+    if sub.empty:
+        return []
+
+    group_cols = ["ano", *dimensoes]
+    agregados = (
+        sub.groupby(group_cols, dropna=False)[["matriculas", "matriculas_integral"]]
+        .sum(min_count=1)
+        .reset_index()
+        .sort_values(group_cols)
+    )
+
+    linhas = []
+    for _, r in agregados.iterrows():
+        integral = limpar_null(r["matriculas_integral"])
+        if integral is None:
+            continue
+        matriculas = limpar_null(r["matriculas"])
+        linha = {
+            "ano": int(r["ano"]),
+            "valor": ri(integral),
+            "matriculas_integral": ri(integral),
+            "matriculas_total": ri(matriculas),
+            "percentual_integral": r1(integral / matriculas * 100) if matriculas and matriculas > 0 else None,
+        }
+        for dimensao in dimensoes:
+            linha[dimensao] = r[dimensao]
+        linhas.append(linha)
+
+    return linhas
+
+
 def detalhamento_rede_escolar(df, dimensoes, filtros=None):
     filtros = filtros or {}
     sub = df.copy()
@@ -307,7 +396,8 @@ def safe_json_dump(data, path):
 FONTES = [
     {"nome": "INEP - Censo Escolar", "tabelas": ["censo", "censo_escolas"]},
     {"nome": "INEP - Sinopse Estatistica do Censo Escolar", "tabelas": [
-        "docentes_pos_graduacao", "ept_nivel_medio", "eja_integrada_educacao_profissional"
+        "matriculas_faixa_etaria", "docentes_pos_graduacao",
+        "ept_nivel_medio", "eja_integrada_educacao_profissional"
     ]},
     {"nome": "INEP - Taxas de Rendimento Escolar", "tabelas": ["rendimento_escolar"]},
     {"nome": "INEP - Distorcao Idade-Serie", "tabelas": ["distorcao_idade_serie"]},
@@ -374,7 +464,7 @@ def carregar_view(view, rs_ids=None):
 # ── Bloco: Matriculas ────────────────────────────────────────────────────
 
 
-def montar_bloco_matriculas(df, id_mun):
+def montar_bloco_matriculas(df, id_mun, df_faixa_etaria=None):
     """Constroi o bloco de matriculas para um municipio."""
     d = df[df["id_municipio"] == id_mun].copy()
     if d.empty:
@@ -488,7 +578,49 @@ def montar_bloco_matriculas(df, id_mun):
             ["dependencia", "localizacao"],
             {"dependencia": deps_rede, "localizacao": locs},
         ),
+        "tempo_integral_por_etapa": detalhamento_tempo_integral(
+            d,
+            ["etapa_ensino"],
+            {"dependencia": "total", "localizacao": "total"},
+        ),
+        "tempo_integral_por_rede": detalhamento_tempo_integral(
+            d,
+            ["dependencia"],
+            {"dependencia": deps_rede, "localizacao": "total"},
+        ),
+        "tempo_integral_por_localizacao": detalhamento_tempo_integral(
+            d,
+            ["localizacao"],
+            {"dependencia": "total", "localizacao": locs},
+        ),
+        "tempo_integral_por_etapa_rede": detalhamento_tempo_integral(
+            d,
+            ["etapa_ensino", "dependencia"],
+            {"dependencia": deps_rede, "localizacao": "total"},
+        ),
+        "tempo_integral_por_etapa_localizacao": detalhamento_tempo_integral(
+            d,
+            ["etapa_ensino", "localizacao"],
+            {"dependencia": "total", "localizacao": locs},
+        ),
     }
+
+    if df_faixa_etaria is not None:
+        f = df_faixa_etaria[df_faixa_etaria["id_municipio"] == id_mun].copy()
+        if not f.empty:
+            detalhamentos["por_faixa_etaria"] = detalhamento_faixa_etaria(
+                f,
+                ["faixa_etaria"],
+            )
+            detalhamentos["por_etapa_faixa_etaria"] = detalhamento_faixa_etaria(
+                f,
+                ["etapa_ensino", "faixa_etaria"],
+            )
+            if "secao_sinopse" in f.columns:
+                detalhamentos["por_etapa_secao_faixa_etaria"] = detalhamento_faixa_etaria(
+                    f,
+                    ["etapa_ensino", "secao_sinopse", "faixa_etaria"],
+                )
 
     # Ultimo ano
     ultimo_ano = int(total["ano"].max()) if not total.empty else None
@@ -505,7 +637,9 @@ def montar_bloco_matriculas(df, id_mun):
         "detalhamentos": detalhamentos,
         "ultimo_ano": ultimo_ano,
         "resumo_ultimo_ano": resumo,
-        "dimensoes_disponiveis": ["etapa_ensino", "dependencia", "localizacao"],
+        "dimensoes_disponiveis": [
+            "etapa_ensino", "dependencia", "localizacao", "faixa_etaria"
+        ],
         "campos_indisponiveis": _campos_indisponiveis_matriculas(d, ultimo_ano),
     }
 
@@ -1085,7 +1219,11 @@ def exportar_municipios(mun_rs, dfs_views):
         nome = mun["municipio"]
 
         blocos = {
-            "matriculas": montar_bloco_matriculas(dfs_views["matriculas"], id_mun),
+            "matriculas": montar_bloco_matriculas(
+                dfs_views["matriculas"],
+                id_mun,
+                dfs_views.get("matriculas_faixa_etaria"),
+            ),
             "rede_escolar": montar_bloco_rede(dfs_views["rede_escolar"], id_mun),
             "turmas_docentes": montar_bloco_turmas(dfs_views["turmas"], id_mun),
             "fluxo": montar_bloco_fluxo(dfs_views["fluxo"], id_mun),
@@ -1479,6 +1617,13 @@ def main():
     print("  vw_educacao_matriculas...", end=" ")
     dfs["matriculas"] = carregar_view("vw_educacao_matriculas", rs_ids)
     print(f"{len(dfs['matriculas'])} rows")
+
+    print("  vw_educacao_matriculas_faixa_etaria...", end=" ")
+    dfs["matriculas_faixa_etaria"] = carregar_view(
+        "vw_educacao_matriculas_faixa_etaria",
+        rs_ids,
+    )
+    print(f"{len(dfs['matriculas_faixa_etaria'])} rows")
 
     print("  vw_educacao_rede_escolar...", end=" ")
     dfs["rede_escolar"] = carregar_view("vw_educacao_rede_escolar", rs_ids)
