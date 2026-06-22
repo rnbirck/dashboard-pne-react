@@ -188,7 +188,6 @@ def build_municipio_payload(payloads: dict[str, dict], municipio: str, slug: str
             "rankings": extract_rankings(payloads["pne_2026_2036_rankings"], municipio),
             "diagnostico": extract_diagnostico(payloads["diagnostico"], municipio),
         },
-        "indicator_details": extract_indicator_details(payloads["indicator_details"], municipio),
     }
 
 
@@ -287,14 +286,12 @@ def main() -> int:
                 stats,
                 expected_paths,
             )
-            for indicator_key, detail_payload in municipio_payload.get("indicator_details", {}).items():
-                if detail_payload:
-                    write_json(
-                        OUTPUT_DIR / "municipios" / slug / "details" / f"{indicator_key}.json",
-                        detail_payload,
-                        stats,
-                        expected_paths,
-                    )
+            write_json(
+                OUTPUT_DIR / "municipios" / slug / "details.json",
+                extract_indicator_details(payloads["indicator_details"], municipio),
+                stats,
+                expected_paths,
+            )
         except Exception as exc:  # noqa: BLE001 - keep processing other municipalities.
             errors.append({"municipio": municipio, "slug": slug, "erro": str(exc)})
             print(f"[partition] ERRO em {municipio}: {exc}")

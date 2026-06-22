@@ -48,8 +48,14 @@ export function loadMunicipioData(slug) {
   return loadJson(`/data/municipios/${slug}/index.json`)
 }
 
+export function loadMunicipioDetails(slug) {
+  if (!slug) return Promise.resolve({})
+  return loadJson(`/data/municipios/${slug}/details.json`).catch(() => ({}))
+}
+
 export function loadIndicatorDetail(slug, indicatorKey) {
-  return loadJson(`/data/municipios/${slug}/details/${indicatorKey}.json`)
+  if (!indicatorKey) return Promise.resolve(null)
+  return loadMunicipioDetails(slug).then((details) => details?.[indicatorKey] ?? null)
 }
 
 export function primeMunicipioCache(slug, data) {

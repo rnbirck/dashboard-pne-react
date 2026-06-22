@@ -1,4 +1,4 @@
-import { forwardRef } from 'react'
+import { forwardRef, useEffect, useState } from 'react'
 import {
   floorValueForGoal,
   formatIndicatorValue,
@@ -19,6 +19,7 @@ import {
 import { IndicatorComplementaryData } from './IndicatorComplementaryData'
 import { IndicatorHistoryChart } from './IndicatorHistoryChart'
 import { isDemographicCensusIndicator, buildDisplayIndicatorSeries } from '../utils/indicatorSeries'
+import { loadIndicatorDetail } from '../data/staticData'
 import { MetricCard } from './MetricCard'
 import { PNE_2026_GOAL_TEXTS } from '../data/pne2026GoalTexts'
 import { PNE_2014_GOAL_TEXTS } from '../data/pne2014GoalTexts'
@@ -28,6 +29,40 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
   { cycle, item, municipioData, result },
   ref,
 ) {
+  const [loadedDetails, setLoadedDetails] = useState(null)
+  const fallbackDetails = municipioData?.indicator_details?.[item?.key] ?? null
+  const details = loadedDetails ?? fallbackDetails
+
+  useEffect(() => {
+    let isMounted = true
+    const slug = municipioData?.slug
+    const indicatorKey = item?.key
+
+    setLoadedDetails(null)
+
+    if (!slug || !indicatorKey) {
+      return () => {
+        isMounted = false
+      }
+    }
+
+    loadIndicatorDetail(slug, indicatorKey)
+      .then((data) => {
+        if (isMounted) {
+          setLoadedDetails(data)
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setLoadedDetails(null)
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [municipioData?.slug, item?.key])
+
   if (!item) {
     return (
       <section className="detail-panel empty-panel" ref={ref}>
@@ -45,7 +80,6 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
   }
 
   const cycleMinYear = cycle === 'pne_2014_2024' ? 2014 : null
-  const details = municipioData?.indicator_details?.[item?.key]
   const isCensusIndicator = isDemographicCensusIndicator({ indicatorKey: item?.key, item, details })
   const displaySeries = buildDisplayIndicatorSeries({ cycle, result, details, item, indicatorKey: item?.key })
   const effectiveCycleMinYear = isCensusIndicator ? null : cycleMinYear

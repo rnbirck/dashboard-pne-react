@@ -11,7 +11,7 @@ from typing import Any
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_DETAILS_GLOB = "municipios/*/details/*.json"
+DEFAULT_DETAILS_GLOB = "municipios/*/details.json"
 
 ALLOWED_TOP_LEVEL_FIELDS = {
     "calculation",
@@ -176,7 +176,7 @@ def validate_components_by_cycle(
 
 
 def validate_series_dependencia(
-    value: Any, *, path: Path, problems: list[Problem]
+    value: Any, *, path: Path, problems: list[Problem], detail_key: str
 ) -> None:
     if not isinstance(value, list):
         add_problem(problems, "ERROR", path, "series_dependencia must be a list.")
@@ -243,7 +243,7 @@ def validate_series_dependencia(
         )
 
     if mixes_publica_with_breakdown:
-        if path.stem in ALLOWED_PUBLICA_MIXED_DETAIL_KEYS:
+        if detail_key in ALLOWED_PUBLICA_MIXED_DETAIL_KEYS:
             add_problem(
                 problems,
                 "WARNING",
@@ -261,26 +261,27 @@ def validate_series_dependencia(
             )
 
 
-def validate_detail_file(path: Path, problems: list[Problem]) -> bool:
-    try:
-        with path.open("r", encoding="utf-8") as file:
-            payload = json.load(file)
-    except json.JSONDecodeError as exc:
-        add_problem(problems, "ERROR", path, f"invalid JSON: {exc}")
-        return False
-    except OSError as exc:
-        add_problem(problems, "ERROR", path, f"could not read file: {exc}")
-        return False
-
+def validate_detail_payload(
+    payload: Any,
+    *,
+    path: Path,
+    problems: list[Problem],
+    detail_key: str,
+) -> bool:
     if not isinstance(payload, dict):
-        add_problem(problems, "ERROR", path, "top-level payload must be an object.")
+        add_problem(problems, "ERROR", path, f"{detail_key} payload must be an object.")
         return True
 
     for field_path in walk_fields(payload):
         field_name = field_path.rsplit(".", 1)[-1]
         field_name = field_name.split("[", 1)[0]
         if field_name in FORBIDDEN_FIELDS:
-            add_problem(problems, "ERROR", path, f"forbidden field found: {field_path}.")
+            add_problem(
+                problems,
+                "ERROR",
+                path,
+                f"{detail_key}: forbidden field found: {field_path}.",
+            )
 
     unknown_fields = sorted(set(payload) - ALLOWED_TOP_LEVEL_FIELDS)
     if unknown_fields:
@@ -288,12 +289,15 @@ def validate_detail_file(path: Path, problems: list[Problem]) -> bool:
             problems,
             "WARNING",
             path,
-            f"unknown top-level fields: {', '.join(unknown_fields)}.",
+            f"{detail_key}: unknown top-level fields: {', '.join(unknown_fields)}.",
         )
 
     if "series_dependencia" in payload:
         validate_series_dependencia(
-            payload["series_dependencia"], path=path, problems=problems
+            payload["series_dependencia"],
+            path=path,
+            problems=problems,
+            detail_key=detail_key,
         )
 
     if "series_components" in payload:
@@ -318,6 +322,34 @@ def validate_detail_file(path: Path, problems: list[Problem]) -> bool:
         )
 
     return True
+
+
+def validate_detail_file(path: Path, problems: list[Problem]) -> int:
+    try:
+        with path.open("r", encoding="utf-8") as file:
+            payload = json.load(file)
+    except json.JSONDecodeError as exc:
+        add_problem(problems, "ERROR", path, f"invalid JSON: {exc}")
+        return 0
+    except OSError as exc:
+        add_problem(problems, "ERROR", path, f"could not read file: {exc}")
+        return 0
+
+    if not isinstance(payload, dict):
+        add_problem(problems, "ERROR", path, "top-level payload must be an object.")
+        return 0
+
+    total_details = 0
+    for indicator_key, detail_payload in payload.items():
+        total_details += 1
+        validate_detail_payload(
+            detail_payload,
+            path=path,
+            problems=problems,
+            detail_key=str(indicator_key),
+        )
+
+    return total_details
 
 
 def print_summary(total_files: int, problems: list[Problem], max_problems: int) -> None:
@@ -355,8 +387,7 @@ def main() -> int:
 
     total_files = 0
     for path in detail_files:
-        total_files += 1
-        validate_detail_file(path, problems)
+        total_files += validate_detail_file(path, problems)
 
     print_summary(total_files, problems, args.max_problems)
     return 1 if any(problem.severity == "ERROR" for problem in problems) else 0
