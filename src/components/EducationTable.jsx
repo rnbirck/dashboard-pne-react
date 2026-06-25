@@ -11,7 +11,7 @@ export function EducationTable({ columns, rows, emptyMessage = 'Sem dados dispon
         <thead>
           <tr>
             {columns.map((col) => (
-              <th key={col.key}>{col.label}</th>
+              <th key={col.key} className={col.className || ''}>{col.label}</th>
             ))}
           </tr>
         </thead>
@@ -21,7 +21,7 @@ export function EducationTable({ columns, rows, emptyMessage = 'Sem dados dispon
               {columns.map((col) => {
                 const raw = row[col.key]
                 const display = isMissing(raw) ? '\u2014' : col.format ? col.format(raw) : String(raw)
-                return <td key={col.key}>{display}</td>
+                return <td key={col.key} className={col.className || ''}>{display}</td>
               })}
             </tr>
           ))}

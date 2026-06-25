@@ -253,7 +253,7 @@ export function EducacaoPage({ initialTheme, onConsumeInitialTheme, municipioDat
                   onSelectIndicator={setSelectedIndicatorKey}
                 />
               </aside>
-              <EducationIndicatorDetail indicator={activeIndicator} />
+              <EducationIndicatorDetail indicator={activeIndicator} blocos={dados.blocos} />
             </div>
           </>
         ) : (
@@ -316,7 +316,7 @@ function EducationIndicatorList({ items, selectedIndicator, onSelectIndicator })
   )
 }
 
-function EducationIndicatorDetail({ indicator }) {
+function EducationIndicatorDetail({ indicator, blocos }) {
   const [selectedStageKey, setSelectedStageKey] = useState('')
 
   useEffect(() => {
@@ -329,6 +329,11 @@ function EducationIndicatorDetail({ indicator }) {
         <p>Selecione um indicador para ver os detalhes.</p>
       </section>
     )
+  }
+
+  // Painel proprio para infraestrutura (sem grafico, com cards + tabela)
+  if (indicator.key === 'rede-infraestrutura') {
+    return <InfraDetailPanel indicator={indicator} blocos={blocos} />
   }
 
   const stageOptions = indicator.stageFilterOptions ?? []
@@ -393,6 +398,237 @@ function EducationIndicatorDetail({ indicator }) {
       </div>
 
       <EducationIndicatorBreakdown indicator={displayIndicator} />
+    </section>
+  )
+}
+
+const INFRA_EVOLUTION_KEYS = [
+  'salas_climatizadas', 'salas_acessiveis',
+  'internet', 'internet_alunos', 'internet_aprendizagem',
+  'banda_larga', 'rede_wireless', 'comp_portatil_aluno', 'tablet_aluno',
+]
+
+function InfraBar({ value }) {
+  const pct = !isMissing(value) ? Math.min(Math.max(Number(value), 0), 100) : 0
+  return (
+    <span className="infra-bar">
+      <span className="infra-bar__fill" style={{ width: `${pct}%` }} />
+    </span>
+  )
+}
+
+const DEP_LABELS = {
+  total: 'Total',
+  publica: 'Pública',
+  municipal: 'Municipal',
+  estadual: 'Estadual',
+  privada: 'Privada',
+  federal: 'Federal',
+}
+
+function extractDepData(por_rede, dep) {
+  const rows = por_rede.filter((r) => r.dependencia === dep)
+  if (!rows.length) return { resumo: {}, series: {}, ultimoAno: null }
+  const anos = [...new Set(rows.map((r) => r.ano))].sort((a, b) => a - b)
+  const ultimoAno = anos[anos.length - 1]
+
+  // Build resumo: latest year values for all perc_* columns
+  const latest = rows.find((r) => r.ano === ultimoAno) || rows[rows.length - 1]
+  const allMetricKeys = new Set()
+  const resumo = {}
+  for (const r of rows) {
+    for (const k of Object.keys(r)) {
+      if (k.startsWith('perc_')) allMetricKeys.add(k)
+    }
+  }
+  for (const pk of allMetricKeys) {
+    const v = latest[pk]
+    if (!isMissing(v)) resumo[pk] = v
+  }
+
+  // Build series: per metric key from perc_* columns
+  const series = {}
+  for (const pk of allMetricKeys) {
+    const pts = rows
+      .filter((r) => !isMissing(r[pk]))
+      .map((r) => ({ ano: r.ano, valor: r[pk] }))
+      .sort((a, b) => a.ano - b.ano)
+    if (pts.length) series[pk.replace('perc_', '')] = pts
+  }
+
+  return { resumo, series, ultimoAno }
+}
+
+function InfraDetailPanel({ indicator, blocos }) {
+  const redeBloco = blocos?.rede_escolar ?? {}
+  const infra = redeBloco.infraestrutura ?? {}
+  const infraResumo = infra.resumo_ultimo_ano ?? {}
+  const infraSeries = infra.series ?? {}
+  const grupos = infra.grupos ?? null
+  const ultimoAno = infra.ultimo_ano
+  const por_rede = infra.por_rede ?? []
+
+  // ── Filtro por rede ──────────────────────────────────────────────────
+  const availableDeps = ['total', ...new Set((por_rede || []).map((r) => r.dependencia).filter(Boolean))]
+  const [selectedDep, setSelectedDep] = useState('total')
+  // Reset to total when municipality changes
+  useEffect(() => { setSelectedDep('total') }, [blocos?.rede_escolar])
+
+  const isFiltered = selectedDep !== 'total'
+  const depData = isFiltered ? extractDepData(por_rede, selectedDep) : null
+  const activeResumo = depData ? depData.resumo : infraResumo
+  const activeSeries = depData ? depData.series : infraSeries
+  const activeUltimoAno = depData ? depData.ultimoAno : ultimoAno
+  const hasDepSeries = isFiltered && depData && Object.keys(depData.series).length > 0
+
+  const GROUP_ORDER = ['ambiente_escolar', 'conectividade', 'rede_e_dispositivos']
+
+  // ── Grupos com metricas ──────────────────────────────────────────────
+  const cardGroups = []
+  if (grupos) {
+    for (const gk of GROUP_ORDER) {
+      const grupo = grupos[gk]
+      if (!grupo) continue
+      const metrics = (grupo.metricas ?? [])
+        .map((mk) => {
+          const val = isFiltered ? activeResumo[`perc_${mk}`] : activeResumo[mk]
+          return {
+            key: mk,
+            label: INFRA_METRIC_LABELS[mk] ?? mk,
+            value: val,
+            year: activeUltimoAno,
+            isSala: mk.startsWith('salas_'),
+          }
+        })
+        .filter((m) => !isMissing(m.value))
+      if (metrics.length) {
+        cardGroups.push({ groupKey: gk, groupLabel: grupo.label, metrics })
+      }
+    }
+  }
+
+  // ── Tabela de evolucao ──────────────────────────────────────────────
+  const sourceSeries = isFiltered && hasDepSeries ? depData.series : infraSeries
+  const tableLabel = isFiltered && !hasDepSeries ? 'total do município' : (DEP_LABELS[selectedDep] || selectedDep).toLowerCase()
+
+  const yearSet = new Set()
+  for (const mk of INFRA_EVOLUTION_KEYS) {
+    for (const pt of sourceSeries[mk] ?? []) {
+      if (!isMissing(pt.valor)) yearSet.add(pt.ano)
+    }
+  }
+  let years = [...yearSet].sort((a, b) => a - b)
+  const minTableYear = 2019
+  years = years.filter((y) => y >= minTableYear)
+  if (!years.length) years = [...yearSet].sort((a, b) => a - b)
+
+  const evolutionColumns = [
+    { key: 'indicador', label: 'Indicador' },
+    ...years.map((y) => ({
+      key: String(y),
+      label: String(y),
+      format: formatPercent,
+      className: y === Math.max(...years) ? 'col-latest' : '',
+    })),
+  ]
+  const evolutionRows = INFRA_EVOLUTION_KEYS
+    .map((mk) => {
+      const serie = sourceSeries[mk] ?? []
+      const yearMap = {}
+      for (const pt of serie) {
+        if (!isMissing(pt.valor)) yearMap[String(pt.ano)] = pt.valor
+      }
+      const row = { indicador: INFRA_METRIC_LABELS[mk] ?? mk }
+      for (const y of years) {
+        row[String(y)] = yearMap[String(y)] ?? null
+      }
+      return row
+    })
+    .filter((row) => years.some((y) => row[String(y)] !== null))
+
+  // ── Render ───────────────────────────────────────────────────────────
+  return (
+    <section className="detail-panel educacao-detail-panel">
+      <div className="detail-heading">
+        <div className="detail-heading__copy">
+          <span className="eyebrow">Indicador selecionado</span>
+          <h3>{indicator.label}</h3>
+          <p>Condições de conectividade, tecnologia e ambiente físico das escolas.</p>
+        </div>
+        <StatusBadge status={indicator.statusLabel} tone={indicator.statusTone} />
+      </div>
+
+      <div className="infra-panorama-card">
+        <span className="infra-panorama-title">
+          Panorama da infraestrutura escolar{activeUltimoAno ? ` — ${activeUltimoAno}` : ''}
+        </span>
+
+        {availableDeps.length > 1 && (
+          <div className="infra-dep-band">
+            <div className="infra-dep-band__head">
+              <span className="infra-dep-band__title">Rede exibida</span>
+              <span className="infra-dep-band__hint">
+                Os indicadores abaixo são recalculados conforme a rede selecionada.
+              </span>
+            </div>
+            <div className="infra-dep-band__pills">
+              {availableDeps.map((dep) => (
+                <button
+                  key={dep}
+                  type="button"
+                  className={`infra-dep-pill${dep === selectedDep ? ' is-active' : ''}`}
+                  onClick={() => setSelectedDep(dep)}
+                >
+                  {DEP_LABELS[dep] || dep}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="infra-panorama-grid">
+          {cardGroups.map((g) => {
+            const refText = g.groupKey === 'ambiente_escolar' ? '% de salas' : '% de escolas'
+            const isFirst = g.groupKey === 'ambiente_escolar'
+            return (
+              <div key={g.groupKey} className={`infra-panel-group${isFirst ? ' is-primary' : ''}`}>
+                <div className="infra-panel-group__head">
+                  <span className="infra-panel-group__title">{g.groupLabel}</span>
+                  <span className="infra-panel-group__ref">{refText}</span>
+                </div>
+                <div className="infra-panel-group__body">
+                  {g.metrics.map((m) => (
+                    <div key={m.key} className="infra-row">
+                      <span className="infra-row__label">{m.label}</span>
+                      <div className="infra-row__meta">
+                        <span className="infra-row__value">{formatPercent(m.value)}</span>
+                        <span className="infra-row__bar">
+                          <InfraBar value={m.value} />
+                        </span>
+                        <span className="infra-row__year">{m.year}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {evolutionRows.length > 0 && years.length > 0 ? (
+        <div className="indicator-chart-card infra-evolution-table-wrap">
+          <div className="education-chart-heading">
+            <div>
+              <span>Evolução dos principais indicadores de infraestrutura</span>
+              <p>Percentual por ano — {tableLabel}</p>
+            </div>
+          </div>
+          <div className="infra-table-scroll">
+            <EducationTable columns={evolutionColumns} rows={evolutionRows} />
+          </div>
+        </div>
+      ) : null}
     </section>
   )
 }
@@ -523,6 +759,7 @@ function ExploreItem({ item }) {
       <div className="educacao-explore-table">
         <h4>{item.title}</h4>
         <EducationTable columns={item.columns} rows={item.rows} />
+        {noteEl}
       </div>
     )
   }
@@ -1636,81 +1873,98 @@ function buildRedeExplore(rede, cut = { cutKey: 'total', cutLabel: 'Total do mun
   ]
 }
 
+const INFRA_METRIC_LABELS = {
+  internet: 'Escolas com internet',
+  internet_alunos: 'Internet disponível para alunos',
+  internet_aprendizagem: 'Internet usada na aprendizagem',
+  internet_comunidade: 'Internet aberta à comunidade',
+  banda_larga: 'Internet banda larga',
+  acesso_internet_computador: 'Acesso à internet por computador',
+  acesso_internet_disp_pessoais: 'Acesso à internet por dispositivos pessoais',
+  rede_local: 'Rede local de computadores',
+  rede_wireless: 'Rede local sem fio',
+  desktop_aluno: 'Computadores de mesa para alunos',
+  comp_portatil_aluno: 'Computadores portáteis para alunos',
+  tablet_aluno: 'Tablets para alunos',
+  salas_climatizadas: 'Salas de aula climatizadas',
+  salas_acessiveis: 'Salas de aula com acessibilidade',
+}
+
 function buildRedeInfraExplore(rede) {
-  const resumo = rede.resumo_ultimo_ano ?? {}
+  const infra = rede.infraestrutura ?? {}
   const detalhamentos = rede.detalhamentos ?? {}
-  const ultimoAno = rede.ultimo_ano
 
-  const resumoRows = [
-    { label: 'Com internet', value: resumo.perc_internet, year: ultimoAno },
-    { label: 'Com banda larga', value: resumo.perc_banda_larga, year: ultimoAno },
-  ].filter((row) => !isMissing(row.value))
-
-  const internetPorRede = detailRowsToLatestRows(
-    detalhamentos.infraestrutura_por_rede, 'dependencia', depLabel, 'perc_internet'
-  )
-  const internetPorLoc = detailRowsToLatestRows(
-    detalhamentos.infraestrutura_por_localizacao, 'localizacao', locLabel, 'perc_internet'
-  )
-  const bandaPorRede = detailRowsToLatestRows(
-    detalhamentos.infraestrutura_por_rede, 'dependencia', depLabel, 'perc_banda_larga'
-  )
-  const bandaPorLoc = detailRowsToLatestRows(
-    detalhamentos.infraestrutura_por_localizacao, 'localizacao', locLabel, 'perc_banda_larga'
+  const infraPorRede = infra.por_rede ?? detalhamentos.infraestrutura_por_rede ?? []
+  const redeTab = buildInfraDimensionTab(
+    infraPorRede, 'dependencia', depLabel,
+    'rede-infra-por-rede', 'Indicadores de infraestrutura por dependência administrativa',
+    'Por rede', 0,
   )
 
-  return [
-    resumoRows.length ? {
-      key: 'rede-infra-resumo',
-      type: 'bar',
-      title: titleWithYear('Infraestrutura disponível', resumoRows),
-      color: '#16713a',
-      formatLabel: formatPercent,
-      data: resumoRows,
-      tabLabel: 'Infraestrutura',
-      tabPriority: 0,
-    } : null,
-    internetPorRede.length ? {
-      key: 'rede-infra-internet-rede',
-      type: 'bar',
-      title: titleWithYear('Internet por dependência administrativa', internetPorRede),
-      color: '#2563eb',
-      formatLabel: formatPercent,
-      data: internetPorRede,
-      tabLabel: 'Internet por rede',
-      tabPriority: 1,
-    } : null,
-    internetPorLoc.length ? {
-      key: 'rede-infra-internet-loc',
-      type: 'bar',
-      title: titleWithYear('Internet por localização', internetPorLoc),
-      color: '#16713a',
-      formatLabel: formatPercent,
-      data: internetPorLoc,
-      tabLabel: 'Internet por localização',
-      tabPriority: 2,
-    } : null,
-    bandaPorRede.length ? {
-      key: 'rede-infra-banda-rede',
-      type: 'bar',
-      title: titleWithYear('Banda larga por dependência administrativa', bandaPorRede),
-      color: '#7c3aed',
-      formatLabel: formatPercent,
-      data: bandaPorRede,
-      tabLabel: 'Banda larga por rede',
-      tabPriority: 3,
-    } : null,
-    bandaPorLoc.length ? {
-      key: 'rede-infra-banda-loc',
-      type: 'bar',
-      title: titleWithYear('Banda larga por localização', bandaPorLoc),
-      color: '#dc2626',
-      formatLabel: formatPercent,
-      data: bandaPorLoc,
-      tabLabel: 'Banda larga por localização',
-      tabPriority: 4,
-    } : null,
-  ].filter(Boolean)
+  const infraPorLoc = infra.por_localizacao ?? detalhamentos.infraestrutura_por_localizacao ?? []
+  const locTab = buildInfraDimensionTab(
+    infraPorLoc, 'localizacao', locLabel,
+    'rede-infra-por-localizacao', 'Indicadores de infraestrutura por localização',
+    'Por localização', 1,
+  )
+
+  return [redeTab, locTab].filter(Boolean)
+}
+
+function buildInfraDimensionTab(rawRows, dimKey, dimLabelFn, itemKey, title, tabLabel, tabPriority) {
+  if (!Array.isArray(rawRows) || !rawRows.length) return null
+
+  const dims = [...new Set(rawRows.map((r) => r[dimKey]).filter(Boolean))]
+  if (!dims.length) return null
+
+  // Metricas disponiveis: tentar as mais comuns primeiro
+  const metricCandidates = ['perc_internet', 'perc_banda_larga', 'perc_rede_local',
+    'perc_rede_wireless', 'perc_desktop_aluno', 'perc_comp_portatil_aluno',
+    'perc_tablet_aluno', 'perc_internet_alunos', 'perc_internet_aprendizagem',
+    'perc_internet_comunidade', 'perc_acesso_internet_computador',
+    'perc_acesso_internet_disp_pessoais', 'perc_salas_climatizadas', 'perc_salas_acessiveis']
+  const availableMetrics = metricCandidates.filter((mk) =>
+    rawRows.some((r) => !isMissing(r[mk]))
+  )
+  if (!availableMetrics.length) return null
+
+  const metricLabels = {
+    perc_internet: 'Internet', perc_banda_larga: 'Banda larga',
+    perc_rede_local: 'Rede local', perc_rede_wireless: 'Rede sem fio',
+    perc_desktop_aluno: 'Desktop', perc_comp_portatil_aluno: 'Portátil',
+    perc_tablet_aluno: 'Tablet', perc_internet_alunos: 'Internet (alunos)',
+    perc_internet_aprendizagem: 'Internet (aprendizagem)',
+    perc_internet_comunidade: 'Internet (comunidade)',
+    perc_acesso_internet_computador: 'Acesso por computador',
+    perc_acesso_internet_disp_pessoais: 'Acesso por disp. pessoais',
+    perc_salas_climatizadas: 'Salas climatizadas',
+    perc_salas_acessiveis: 'Salas acessíveis',
+  }
+
+  const columns = [
+    { key: 'dimensao', label: dimKey === 'dependencia' ? 'Rede' : 'Localização' },
+    ...availableMetrics.map((mk) => ({ key: mk, label: metricLabels[mk] ?? mk, format: formatPercent })),
+  ]
+
+  const rows = dims.map((dim) => {
+    const dimRows = rawRows.filter((r) => r[dimKey] === dim)
+    const latest = dimRows.reduce((a, b) => Number(a.ano) > Number(b.ano) ? a : b, dimRows[0])
+    const row = { dimensao: dimLabelFn(dim) }
+    for (const mk of availableMetrics) {
+      row[mk] = !isMissing(latest[mk]) ? latest[mk] : null
+    }
+    return row
+  })
+
+  return {
+    key: itemKey,
+    type: 'table',
+    title,
+    tabLabel,
+    tabPriority,
+    columns,
+    rows,
+  }
 }
 
 function buildTurmasExplore(turmas, cut = { cutLabel: 'Total do município', metricKey: 'turmas', formatLabel: formatNumber }) {

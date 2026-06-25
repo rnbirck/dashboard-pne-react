@@ -11,15 +11,45 @@ Estrutura de saida:
   public/data/educacao/regioes/{slug}.json     (1 por regiao SENAI)
 """
 
+import argparse
 import json
 import math
 import re
 import sys
+import time
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
+
+# ── Logging ────────────────────────────────────────────────────────────────
+
+_START_TIME = time.time()
+
+
+def log(msg, end="\n"):
+    ts = datetime.now().strftime("%H:%M:%S")
+    elapsed = time.time() - _START_TIME
+    if elapsed < 60:
+        print(f"[{ts} +{elapsed:.1f}s] {msg}", end=end, flush=True)
+    else:
+        print(f"[{ts} +{elapsed/60:.1f}min] {msg}", end=end, flush=True)
+
+
+class Timer:
+    def __init__(self, label):
+        self.label = label
+
+    def __enter__(self):
+        self.start = time.time()
+        log(f"Iniciando {self.label}...")
+        return self
+
+    def __exit__(self, *args):
+        elapsed = time.time() - self.start
+        log(f"{self.label} concluido em {elapsed:.2f}s")
+
 
 # ── Caminhos ─────────────────────────────────────────────────────────────
 
@@ -389,7 +419,10 @@ def detalhamento_oferta(df, dimensoes, filtros=None):
 
 
 def safe_json_dump(data, path):
-    """Escreve JSON garantindo que nao haja NaN/Infinity."""
+    """Escreve JSON com validacao e escrita atomica via arquivo temporario.
+
+    Remove o temporario em caso de erro para nunca deixar lixo.
+    """
     def clean(obj):
         if obj is None:
             return None
@@ -409,8 +442,18 @@ def safe_json_dump(data, path):
 
     data = clean(data)
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
+    temp_path = path.with_suffix(".tmp")
+    try:
+        with open(temp_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
+        # Validar serializacao antes de substituir
+        with open(temp_path, encoding="utf-8") as f:
+            json.load(f)
+        temp_path.replace(path)
+    except Exception:
+        if temp_path.exists():
+            temp_path.unlink()
+        raise
 
 
 # ── Mapeamento de métricas de infraestrutura ────────────────────────────
@@ -432,6 +475,51 @@ INFRA_METRICAS = [
     ("salas_climatizadas", "qt_salas_utiliza_climatizadas", "perc_salas_climatizadas"),
     ("salas_acessiveis", "qt_salas_utilizadas_acessiveis", "perc_salas_acessiveis"),
 ]
+
+# ── Ano de inicio por metrica de infra ───────────────────────────────────
+# Espelha os ``start_year`` definidos no pipeline PNE 2026-2036
+# (data_pipeline/src/views/pne_2026_2036.py). Metrica sem entrada aqui
+# herda o padrao (primeiro ano disponivel na view).
+INFRA_START_YEARS = {
+    "internet": 2014,
+    "internet_alunos": 2019,
+    "internet_aprendizagem": 2019,
+    "internet_comunidade": 2019,
+    "acesso_internet_computador": 2019,
+    "acesso_internet_disp_pessoais": 2019,
+    "banda_larga": 2014,
+    "rede_local": 2019,
+    "rede_wireless": 2019,
+    "desktop_aluno": 2019,
+    "comp_portatil_aluno": 2019,
+    "tablet_aluno": 2019,
+    "salas_climatizadas": 2019,
+    "salas_acessiveis": 2019,
+}
+
+# ── Grupos de infraestrutura ─────────────────────────────────────────────
+# Organiza as metricas de INFRA_METRICAS em grupos visuais para o front.
+GRUPOS_INFRA = {
+    "conectividade": {
+        "label": "Conectividade",
+        "metricas": [
+            "internet", "internet_alunos", "internet_aprendizagem",
+            "internet_comunidade", "banda_larga",
+        ],
+    },
+    "rede_e_dispositivos": {
+        "label": "Rede e dispositivos",
+        "metricas": [
+            "acesso_internet_computador", "acesso_internet_disp_pessoais",
+            "rede_local", "rede_wireless",
+            "desktop_aluno", "comp_portatil_aluno", "tablet_aluno",
+        ],
+    },
+    "ambiente_escolar": {
+        "label": "Ambiente escolar",
+        "metricas": ["salas_climatizadas", "salas_acessiveis"],
+    },
+}
 
 # ── Fontes e avisos globais ──────────────────────────────────────────────
 
@@ -896,33 +984,84 @@ def _resumo_rede(d, ano):
 
 
 def _extrair_infra_por_linha(row):
-    """Extrai todas as métricas de infraestrutura de uma linha do DataFrame."""
+    """Extrai todas as métricas de infraestrutura de uma linha do DataFrame.
+
+    Prefere as colunas de percentual pre-computadas pela view (perc_col).
+    Quando a view nao as possui (fallback para views antigas), calcula
+    a partir das colunas de contagem (count_col) usando o denominador
+    correto: ``escolas`` para metricas de escola, ``qt_salas_utilizadas``
+    para metricas de salas.
+
+    Regra de ausencia:
+      * ``None`` = dado nao disponivel (coluna ausente ou sem observacao)
+      * ``0``    = dado real igual a zero (apenas quando a fonte confirma)
+    """
     escolas = limpar_null(row.get("escolas"))
     if escolas is None or escolas <= 0:
         return {}
     dados = {"escolas": int(escolas)}
     for key, count_col, perc_col in INFRA_METRICAS:
-        if key == "rede_wireless":
-            c1 = limpar_null(row.get("escolas_com_rede_local_wireless"))
-            c2 = limpar_null(row.get("escolas_com_rede_local_cabo_wireless"))
-            count = (c1 or 0) + (c2 or 0)
-            dados[perc_col] = r1(count / escolas * 100) if count > 0 else 0.0
-        else:
-            count = limpar_null(row.get(count_col))
-            if count is not None:
-                dados[perc_col] = r1(count / escolas * 100) if count > 0 else 0.0
+        # 1. Tentar percentual pre-computado pela view
+        perc_raw = row.get(perc_col)
+        if perc_raw is not None:
+            p = limpar_null(perc_raw)
+            if p is not None:
+                dados[perc_col] = r1(p)
+            continue
+
+        # 2. Fallback: calcular a partir das colunas de contagem
+        #    (so executa se a view nao tiver o percentual pre-computado)
+        count = _count_from_row(row, key, count_col)
+        if count is None:
+            continue
+
+        # Denominador correto por tipo de metrica
+        denom = escolas
+        if key.startswith("salas_"):
+            denom_raw = row.get("qt_salas_utilizadas")
+            if denom_raw is not None:
+                denom = limpar_null(denom_raw)
+            if denom is None or denom <= 0:
+                continue
+
+        if denom is not None and denom > 0:
+            dados[perc_col] = r1(count / denom * 100) if count > 0 else 0.0
     return dados
 
 
+def _count_from_row(row, key, count_col):
+    """Extrai a contagem de uma linha, preservando ``None`` para ausencia."""
+    if key == "rede_wireless":
+        c1_raw = row.get("escolas_com_rede_local_wireless")
+        c2_raw = row.get("escolas_com_rede_local_cabo_wireless")
+        if c1_raw is None or c2_raw is None:
+            return None
+        c1 = limpar_null(c1_raw)
+        c2 = limpar_null(c2_raw)
+        if c1 is None and c2 is None:
+            return None
+        return (c1 or 0) + (c2 or 0)
+    count = limpar_null(row.get(count_col))
+    return count
+
+
 def _serie_infra_metricas(total_df):
-    """Constrói séries temporais para cada métrica de infraestrutura."""
+    """Constrói séries temporais para cada métrica de infraestrutura.
+
+    Respeita ``INFRA_START_YEARS`` para nao exibir 0% artificial em anos
+    anteriores ao inicio da coleta da metrica no Censo Escolar.
+    """
     metricas = {}
     for key, _, perc_col in INFRA_METRICAS:
+        start = INFRA_START_YEARS.get(key, 0)
         serie = []
         for _, r in total_df.iterrows():
+            ano = int(r["ano"])
+            if ano < start:
+                continue
             extraido = _extrair_infra_por_linha(r)
             if perc_col in extraido:
-                serie.append({"ano": int(r["ano"]), "valor": extraido[perc_col]})
+                serie.append({"ano": ano, "valor": extraido[perc_col]})
         if serie:
             metricas[key] = serie
     return metricas
@@ -1002,6 +1141,7 @@ def montar_bloco_infraestrutura(df, id_mun):
         "resumo_ultimo_ano": resumo,
         "por_rede": por_rede,
         "por_localizacao": por_localizacao,
+        "grupos": GRUPOS_INFRA,
     }
 
 
@@ -1424,60 +1564,76 @@ def _bloco_vazio(nome, dimensoes, avisos=None):
 # ── Exportacao municipal ─────────────────────────────────────────────────
 
 
-def exportar_municipios(mun_rs, dfs_views):
-    """Gera um JSON por municipio RS."""
-    print(f"\nExportando {len(mun_rs)} municipios...")
+def exportar_municipios(mun_rs, dfs_views, progress_every=0):
+    """Gera um JSON por municipio RS com tratamento de erro e progresso."""
+    log(f"Exportando {len(mun_rs)} municipios...")
     gerados = 0
+    falhas = []
+    arquivos_escritos = []
     tamanhos = []
 
-    for _, mun in mun_rs.iterrows():
+    for idx, (_, mun) in enumerate(mun_rs.iterrows(), 1):
         id_mun = mun["id_municipio"]
         nome = mun["municipio"]
 
-        blocos = {
-            "matriculas": montar_bloco_matriculas(
-                dfs_views["matriculas"],
-                id_mun,
-                dfs_views.get("matriculas_faixa_etaria"),
-            ),
-            "rede_escolar": montar_bloco_rede(
-                dfs_views["rede_escolar"], id_mun,
-                dfs_views.get("rede_escolar_etapa"),
-            ),
-            "turmas_docentes": montar_bloco_turmas(dfs_views["turmas"], id_mun),
-            "fluxo": montar_bloco_fluxo(dfs_views["fluxo"], id_mun),
-            "aprendizagem": montar_bloco_aprendizagem(dfs_views["aprendizagem"], id_mun),
-            "oferta_tecnica": montar_bloco_oferta(
-                dfs_views["oferta"],
-                id_mun,
-                dfs_views.get("matriculas_faixa_etaria"),
-            ),
-        }
+        try:
+            blocos = {
+                "matriculas": montar_bloco_matriculas(
+                    dfs_views["matriculas"],
+                    id_mun,
+                    dfs_views.get("matriculas_faixa_etaria"),
+                ),
+                "rede_escolar": montar_bloco_rede(
+                    dfs_views["rede_escolar"], id_mun,
+                    dfs_views.get("rede_escolar_etapa"),
+                ),
+                "turmas_docentes": montar_bloco_turmas(dfs_views["turmas"], id_mun),
+                "fluxo": montar_bloco_fluxo(dfs_views["fluxo"], id_mun),
+                "aprendizagem": montar_bloco_aprendizagem(dfs_views["aprendizagem"], id_mun),
+                "oferta_tecnica": montar_bloco_oferta(
+                    dfs_views["oferta"],
+                    id_mun,
+                    dfs_views.get("matriculas_faixa_etaria"),
+                ),
+            }
 
-        dados = {
-            "id_municipio": id_mun,
-            "municipio": nome,
-            "updated_at": DATA_EXPORTACAO,
-            "fontes": FONTES,
-            "avisos": AVISOS_GLOBAIS,
-            "blocos": blocos,
-        }
+            dados = {
+                "id_municipio": id_mun,
+                "municipio": nome,
+                "updated_at": DATA_EXPORTACAO,
+                "fontes": FONTES,
+                "avisos": AVISOS_GLOBAIS,
+                "blocos": blocos,
+            }
 
-        path = SAIDA_MUN / f"{id_mun}.json"
-        safe_json_dump(dados, path)
-        gerados += 1
-        tamanho = path.stat().st_size
-        tamanhos.append((id_mun, nome, tamanho))
+            path = SAIDA_MUN / f"{id_mun}.json"
+            safe_json_dump(dados, path)
+            gerados += 1
+            tamanho = path.stat().st_size
+            tamanhos.append((id_mun, nome, tamanho))
+            arquivos_escritos.append(str(path.relative_to(PROJETO)))
+
+            if progress_every and idx % progress_every == 0:
+                log(f"Progresso: {idx}/{len(mun_rs)} municipios ({gerados} OK, {len(falhas)} falhas)")
+        except Exception as e:
+            log(f"ERRO ao exportar {id_mun} ({nome}): {e}")
+            falhas.append((id_mun, nome, str(e)))
 
     # Top 5 maiores
-    tamanhos.sort(key=lambda x: x[2], reverse=True)
-    print(f"  {gerados} arquivos gerados.")
-    print(f"  5 maiores arquivos:")
-    for id_mun, nome, tam in tamanhos[:5]:
-        print(f"    {id_mun} {nome:<25} {tam / 1024:.1f} KB")
-    print(f"  Tamanho medio: {sum(t[2] for t in tamanhos) / len(tamanhos) / 1024:.1f} KB")
+    if tamanhos:
+        tamanhos.sort(key=lambda x: x[2], reverse=True)
+        log(f"{gerados} arquivos gerados.")
+        log(f"5 maiores arquivos:")
+        for id_mun, nome, tam in tamanhos[:5]:
+            log(f"  {id_mun} {nome:<25} {tam / 1024:.1f} KB")
+        log(f"Tamanho medio: {sum(t[2] for t in tamanhos) / len(tamanhos) / 1024:.1f} KB")
 
-    return gerados, tamanhos
+    if falhas:
+        log(f"Falhas: {len(falhas)} municipios com erro:")
+        for id_mun, nome, err in falhas:
+            log(f"  {id_mun} {nome}: {err}")
+
+    return gerados, falhas, arquivos_escritos, tamanhos
 
 
 # ── Exportacao regional ──────────────────────────────────────────────────
@@ -1862,53 +2018,88 @@ def validar_jsons(gerados_mun):
 
 
 def main():
-    print("Exportador de Indicadores da Educacao")
-    print(f"Data: {DATA_EXPORTACAO}")
-    print(f"Saida: {SAIDA}")
-    print()
+    parser = argparse.ArgumentParser(
+        description="Exportador de Indicadores da Educacao",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "Exemplos:\n"
+            "  %(prog)s                                       # exporta tudo\n"
+            "  %(prog)s --limit 3                             # primeiros 3 municipios\n"
+            "  %(prog)s --municipios 4300109,Alegria          # municipios especificos\n"
+            "  %(prog)s --skip-regioes                        # pula regioes\n"
+            "  %(prog)s --progress-every 10                   # log a cada 10\n"
+            "  %(prog)s --diagnostic                          # modo diagnostico\n"
+        ),
+    )
+    parser.add_argument("--limit", type=int, default=None,
+                        help="Limitar a N municipios (para testes)")
+    parser.add_argument("--municipios", type=str, default=None,
+                        help="Lista separada por virgula de IDs ou nomes de municipios")
+    parser.add_argument("--skip-regioes", action="store_true",
+                        help="Pular exportacao regional (nao afeta o comportamento padrao)")
+    parser.add_argument("--progress-every", type=int, default=0,
+                        help="Exibir progresso a cada N municipios")
+    parser.add_argument("--diagnostic", action="store_true",
+                        help="Modo diagnostico com logs detalhados")
+    args = parser.parse_args()
+
+    log("=" * 60)
+    log("Exportador de Indicadores da Educacao")
+    log(f"Data: {DATA_EXPORTACAO}")
+    log(f"Saida: {SAIDA}")
+    if args.diagnostic:
+        log("MODO DIAGNOSTICO ativado")
+    if args.limit:
+        log(f"LIMIT: {args.limit} municipios")
+    if args.municipios:
+        log(f"MUNICIPIOS filter: {args.municipios}")
+    if args.skip_regioes:
+        log("SKIP REGIOES: exportacao regional desativada")
+    if args.progress_every:
+        log(f"PROGRESS EVERY: {args.progress_every}")
+    log("")
+
+    eh_parcial = bool(args.limit or args.municipios)
 
     # 1. Carregar municipios RS
-    mun_rs = carregar_municipios_rs()
+    with Timer("carregar_municipios_rs"):
+        mun_rs = carregar_municipios_rs()
     rs_ids = mun_rs["id_municipio"].tolist()
-    print(f"Municipios RS: {len(rs_ids)}")
+    log(f"Municipios RS carregados: {len(rs_ids)}")
+
+    # Filtrar municipios se especificado via --municipios
+    if args.municipios:
+        termos = [m.strip() for m in args.municipios.split(",")]
+        # Tenta separar por ID exato ou nome exato
+        mask = mun_rs["id_municipio"].isin(termos) | mun_rs["municipio"].isin(termos)
+        mun_rs = mun_rs[mask].copy()
+        log(f"Filtro --municipios: {len(mun_rs)} municipios selecionados")
+        if mun_rs.empty:
+            log("AVISO: nenhum municipio encontrado com o filtro especificado")
+
+    # Aplicar --limit
+    if args.limit and len(mun_rs) > args.limit:
+        mun_rs = mun_rs.head(args.limit).copy()
+        log(f"Limit --limit {args.limit}: {len(mun_rs)} municipios")
 
     # 2. Carregar views
-    print("\nCarregando views...")
+    log("Carregando views...")
+    views = [
+        ("vw_educacao_matriculas", "matriculas"),
+        ("vw_educacao_matriculas_faixa_etaria", "matriculas_faixa_etaria"),
+        ("vw_educacao_rede_escolar", "rede_escolar"),
+        ("vw_educacao_rede_escolar_etapa", "rede_escolar_etapa"),
+        ("vw_educacao_turmas_docentes", "turmas"),
+        ("vw_educacao_fluxo", "fluxo"),
+        ("vw_educacao_aprendizagem", "aprendizagem"),
+        ("vw_educacao_oferta_tecnica", "oferta"),
+    ]
     dfs = {}
-    print("  vw_educacao_matriculas...", end=" ")
-    dfs["matriculas"] = carregar_view("vw_educacao_matriculas", rs_ids)
-    print(f"{len(dfs['matriculas'])} rows")
-
-    print("  vw_educacao_matriculas_faixa_etaria...", end=" ")
-    dfs["matriculas_faixa_etaria"] = carregar_view(
-        "vw_educacao_matriculas_faixa_etaria",
-        rs_ids,
-    )
-    print(f"{len(dfs['matriculas_faixa_etaria'])} rows")
-
-    print("  vw_educacao_rede_escolar...", end=" ")
-    dfs["rede_escolar"] = carregar_view("vw_educacao_rede_escolar", rs_ids)
-    print(f"{len(dfs['rede_escolar'])} rows")
-
-    print("  vw_educacao_rede_escolar_etapa...", end=" ")
-    dfs["rede_escolar_etapa"] = carregar_view("vw_educacao_rede_escolar_etapa", rs_ids)
-    print(f"{len(dfs['rede_escolar_etapa'])} rows")
-
-    print("  vw_educacao_turmas_docentes...", end=" ")
-    dfs["turmas"] = carregar_view("vw_educacao_turmas_docentes", rs_ids)
-    print(f"{len(dfs['turmas'])} rows")
-
-    print("  vw_educacao_fluxo...", end=" ")
-    dfs["fluxo"] = carregar_view("vw_educacao_fluxo", rs_ids)
-    print(f"{len(dfs['fluxo'])} rows")
-
-    print("  vw_educacao_aprendizagem (filtrar RS)...", end=" ")
-    dfs["aprendizagem"] = carregar_view("vw_educacao_aprendizagem", rs_ids)
-    print(f"{len(dfs['aprendizagem'])} rows")
-
-    print("  vw_educacao_oferta_tecnica...", end=" ")
-    dfs["oferta"] = carregar_view("vw_educacao_oferta_tecnica", rs_ids)
-    print(f"{len(dfs['oferta'])} rows")
+    for view_name, key in views:
+        with Timer(f"Carregar {view_name}"):
+            df = carregar_view(view_name, rs_ids)
+            dfs[key] = df
+        log(f"  {view_name}: {len(df)} linhas")
 
     # 3. Anos por bloco
     anos_por_bloco = {}
@@ -1916,19 +2107,61 @@ def main():
         if not df.empty and "ano" in df.columns:
             anos_por_bloco[nome] = sorted(df["ano"].unique().tolist())
 
+    if args.diagnostic:
+        log(f"Anos disponiveis por view: {anos_por_bloco}")
+
     # 4. Exportar municipios
-    gerados_mun, tamanhos = exportar_municipios(mun_rs, dfs)
+    gerados_mun, falhas_mun, arquivos_escritos, tamanhos = exportar_municipios(
+        mun_rs, dfs, args.progress_every,
+    )
+    log(f"Municipios exportados com sucesso: {gerados_mun}")
+    if falhas_mun:
+        log(f"Falhas: {len(falhas_mun)} municipios com erro")
+        for id_mun, nome, err in falhas_mun:
+            log(f"  {id_mun} ({nome}): {err}")
 
-    # 5. Gerar municipios_index.json
-    gerar_municipios_index(mun_rs)
+    # Em modo parcial, nao regerar indices globais (evitar inconsistencia)
+    if eh_parcial:
+        log("Exportacao parcial detectada — pulando geracao de indices globais e validacao.")
+        log("Os JSONs individuais foram escritos, mas index.json e municipios_index.json")
+        log("nao foram atualizados para evitar inconsistencia com dados completos.")
+    else:
+        # 5. Gerar municipios_index.json
+        with Timer("Gerar municipios_index.json"):
+            gerar_municipios_index(mun_rs)
 
-    # 6. Gerar index
-    gerar_index(mun_rs, anos_por_bloco, gerados_mun)
+        # 6. Gerar index
+        with Timer("Gerar index.json"):
+            gerar_index(mun_rs, anos_por_bloco, gerados_mun)
 
-    # 7. Validar
-    validar_jsons(gerados_mun)
+        # 7. Validar
+        validar_jsons(gerados_mun)
 
-    print(f"\nConcluido! {gerados_mun} municipios + municipios_index.json + index.json")
+    # 8. Resumo final
+    log("")
+    log("=" * 60)
+    log("RESUMO FINAL")
+    log("=" * 60)
+    log(f"Municipios exportados: {gerados_mun}")
+    if falhas_mun:
+        log(f"Falhas: {len(falhas_mun)}")
+    log(f"Arquivos escritos: {len(arquivos_escritos)}")
+    elapsed = time.time() - _START_TIME
+    log(f"Tempo total: {elapsed:.1f}s")
+    if falhas_mun:
+        log(f"AVISOS: {len(falhas_mun)} municipios com erro — ver detalhes acima")
+    # Nota sobre export parcial por bloco (ex: --only infraestrutura)
+    log("Nota: export parcial por bloco (futuro --only) exige cuidado para evitar")
+    log("inconsistencia entre blocos — prefira export completo.")
+
+    if args.diagnostic:
+        log("")
+        log(f"Arquivos gerados neste ciclo ({len(arquivos_escritos)}):")
+        for arq in arquivos_escritos:
+            log(f"  {arq}")
+
+    log("")
+    log(f"Concluido! {gerados_mun} municipios + index.json + municipios_index.json")
 
 
 if __name__ == "__main__":
