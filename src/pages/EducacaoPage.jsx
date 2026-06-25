@@ -60,9 +60,8 @@ const LOCATION_COLORS = {
 const STAGE_FILTER_ORDER = ['total', 'infantil', 'fundamental', 'fundamental_anos_iniciais', 'fundamental_anos_finais', 'medio', 'eja', 'profissional']
 const FUNDAMENTAL_FAIXA_STAGES = ['fundamental_anos_iniciais', 'fundamental_anos_finais']
 const CATEGORY_COMPARISON_COLORS = ['#0f766e', '#2563eb', '#f59e0b', '#7c3aed', '#0891b2', '#db2777', '#65a30d', '#9333ea']
-const VALID_THEME_KEYS = ['matriculas', 'rede', 'turmas', 'fluxo', 'aprendizagem', 'oferta']
 
-export function EducacaoPage({ initialTheme, onConsumeInitialTheme, municipioData, selectedMunicipio }) {
+export function EducacaoPage({ municipioData, selectedMunicipio }) {
   const eduIndexState = useAsyncData(() => loadEducationMunicipiosIndex(), [])
   const eduMunMap = useMemo(() => {
     const list = eduIndexState.data?.municipios ?? []
@@ -74,29 +73,10 @@ export function EducacaoPage({ initialTheme, onConsumeInitialTheme, municipioDat
     return loadEducationMunicipio(selectedId)
   }, [selectedId])
 
-  const [selectedScope, setSelectedScope] = useState(initialTheme === 'fundeb' ? 'fundeb' : 'panorama')
-  const [selectedThemeKey, setSelectedThemeKey] = useState(
-    initialTheme && VALID_THEME_KEYS.includes(initialTheme) ? initialTheme : 'matriculas'
-  )
+  const [selectedScope, setSelectedScope] = useState('panorama')
+  const [selectedThemeKey, setSelectedThemeKey] = useState('matriculas')
   const [selectedIndicatorKey, setSelectedIndicatorKey] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-
-  useEffect(() => {
-    if (initialTheme) {
-      if (initialTheme === 'fundeb') {
-        setSelectedScope('fundeb')
-      } else if (VALID_THEME_KEYS.includes(initialTheme)) {
-        setSelectedScope('panorama')
-        setSelectedThemeKey(initialTheme)
-      } else {
-        setSelectedScope('panorama')
-        setSelectedThemeKey('matriculas')
-      }
-      setSelectedIndicatorKey('')
-      setSearchQuery('')
-      onConsumeInitialTheme?.()
-    }
-  }, [initialTheme, onConsumeInitialTheme])
 
   if (!selectedMunicipio) {
     return (
@@ -477,7 +457,6 @@ function InfraDetailPanel({ indicator, blocos }) {
   const isFiltered = selectedDep !== 'total'
   const depData = isFiltered ? extractDepData(por_rede, selectedDep) : null
   const activeResumo = depData ? depData.resumo : infraResumo
-  const activeSeries = depData ? depData.series : infraSeries
   const activeUltimoAno = depData ? depData.ultimoAno : ultimoAno
   const hasDepSeries = isFiltered && depData && Object.keys(depData.series).length > 0
 
