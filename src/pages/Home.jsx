@@ -13,7 +13,7 @@ const DIRETRIZES = [
   { num: '10', title: 'Promoção de direitos', description: 'Inclusão, cidadania e diversidade.' },
 ]
 
-export function Home({ selectedMunicipio, onNavigate }) {
+export function Home({ onNavigate, onNavigateFundeb, selectedMunicipio }) {
   const municipioLabel = selectedMunicipio || 'Selecione um município'
 
   return (
@@ -50,6 +50,7 @@ export function Home({ selectedMunicipio, onNavigate }) {
             <ModuleLink icon={<CalendarIcon />} label="PNE 2014–2024" onClick={() => onNavigate?.('pne2014')} />
             <ModuleLink icon={<CalendarIcon />} label="PNE 2026–2036" onClick={() => onNavigate?.('pne2026')} />
             <ModuleLink icon={<BarsIcon />} label="Indicadores da Educação" onClick={() => onNavigate?.('educacao')} />
+            <ModuleLink icon={<DollarIcon />} label="FUNDEB" onClick={() => onNavigateFundeb?.()} />
             <ModuleLink icon={<DocumentIcon />} label="Diagnóstico" onClick={() => onNavigate?.('diagnostico')} />
           </div>
         </aside>
@@ -61,7 +62,7 @@ export function Home({ selectedMunicipio, onNavigate }) {
           <FeatureCard
             icon={<BarsIcon />}
             title="Indicadores"
-            text="Explore matrículas, rede escolar, docentes, fluxo, aprendizagem e oferta técnica do município."
+            text="Explore matrículas, escolas, docentes, fluxo, aprendizagem e oferta técnica do município."
           />
           <FeatureCard
             icon={<TargetIcon />}
@@ -116,6 +117,12 @@ export function Home({ selectedMunicipio, onNavigate }) {
             title="Diagnóstico"
             text="Acesse o diagnóstico territorial com informações e análises do município."
             onClick={() => onNavigate?.('diagnostico')}
+          />
+          <ModuleCard
+            icon={<DollarIcon />}
+            title="FUNDEB"
+            text="Acesse o painel FUNDEB para consultar receitas, aplicações e indicadores do fundo."
+            onClick={() => onNavigateFundeb?.()}
           />
         </div>
       </section>
@@ -221,6 +228,15 @@ function DocumentIcon() {
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M7 3h7l4 4v14H7z" />
       <path d="M14 3v5h5M9.5 13h5M9.5 17h5" />
+    </svg>
+  )
+}
+
+function DollarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v10M9.5 10.5c0-1.5 1.5-2 2.5-2s2.5.5 2.5 2-1 1.5-2.5 2-2.5 1-2.5 2 1 1.5 2.5 1.5 2.5-.5 2.5-1.5" />
     </svg>
   )
 }

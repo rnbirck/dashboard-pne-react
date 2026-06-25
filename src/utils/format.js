@@ -113,9 +113,9 @@ export function resolveIndicatorUnit(item, result) {
 }
 
 export function formatIndicatorValue(value, unit) {
-  if (value === null || value === undefined || value === '') return '-'
+  if (value === null || value === undefined || value === '') return '—'
   const numeric = Number(value)
-  if (!Number.isFinite(numeric)) return String(value)
+  if (!Number.isFinite(numeric)) return '—'
 
   if (unit === 'index') {
     return numeric.toLocaleString('pt-BR', { maximumFractionDigits: 1 })
@@ -127,6 +127,14 @@ export function formatIndicatorValue(value, unit) {
 
   if (unit === 'count') {
     return numeric.toLocaleString('pt-BR', { maximumFractionDigits: 0 })
+  }
+
+  if (unit === 'currency') {
+    return numeric.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      maximumFractionDigits: 2,
+    })
   }
 
   // percent — sempre inteiro

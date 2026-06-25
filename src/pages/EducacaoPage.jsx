@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CategoryTabs } from '../components/CategoryTabs'
+import { FundebPanel } from '../components/FundebPanel'
+import { FUNDEB_INDICATORS } from '../data/fundebIndicators'
 import { EducationBarChart } from '../components/EducationBarChart'
 import { EducationLineChart } from '../components/EducationLineChart'
 import { EducationStackedBarChart } from '../components/EducationStackedBarChart'
@@ -58,8 +60,9 @@ const LOCATION_COLORS = {
 const STAGE_FILTER_ORDER = ['total', 'infantil', 'fundamental', 'fundamental_anos_iniciais', 'fundamental_anos_finais', 'medio', 'eja', 'profissional']
 const FUNDAMENTAL_FAIXA_STAGES = ['fundamental_anos_iniciais', 'fundamental_anos_finais']
 const CATEGORY_COMPARISON_COLORS = ['#0f766e', '#2563eb', '#f59e0b', '#7c3aed', '#0891b2', '#db2777', '#65a30d', '#9333ea']
+const VALID_THEME_KEYS = ['matriculas', 'rede', 'turmas', 'fluxo', 'aprendizagem', 'oferta']
 
-export function EducacaoPage({ selectedMunicipio }) {
+export function EducacaoPage({ initialTheme, onConsumeInitialTheme, municipioData, selectedMunicipio }) {
   const eduIndexState = useAsyncData(() => loadEducationMunicipiosIndex(), [])
   const eduMunMap = useMemo(() => {
     const list = eduIndexState.data?.municipios ?? []
@@ -71,9 +74,29 @@ export function EducacaoPage({ selectedMunicipio }) {
     return loadEducationMunicipio(selectedId)
   }, [selectedId])
 
-  const [selectedThemeKey, setSelectedThemeKey] = useState('matriculas')
+  const [selectedScope, setSelectedScope] = useState(initialTheme === 'fundeb' ? 'fundeb' : 'panorama')
+  const [selectedThemeKey, setSelectedThemeKey] = useState(
+    initialTheme && VALID_THEME_KEYS.includes(initialTheme) ? initialTheme : 'matriculas'
+  )
   const [selectedIndicatorKey, setSelectedIndicatorKey] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
+
+  useEffect(() => {
+    if (initialTheme) {
+      if (initialTheme === 'fundeb') {
+        setSelectedScope('fundeb')
+      } else if (VALID_THEME_KEYS.includes(initialTheme)) {
+        setSelectedScope('panorama')
+        setSelectedThemeKey(initialTheme)
+      } else {
+        setSelectedScope('panorama')
+        setSelectedThemeKey('matriculas')
+      }
+      setSelectedIndicatorKey('')
+      setSearchQuery('')
+      onConsumeInitialTheme?.()
+    }
+  }, [initialTheme, onConsumeInitialTheme])
 
   if (!selectedMunicipio) {
     return (
@@ -82,7 +105,7 @@ export function EducacaoPage({ selectedMunicipio }) {
           <div>
             <span className="eyebrow">Indicadores da Educação</span>
             <h1>Indicadores da Educação</h1>
-            <p>Matrículas, rede escolar, docentes, fluxo, aprendizagem e oferta técnica do município.</p>
+            <p>Matrículas, escolas, docentes, fluxo, aprendizagem e oferta técnica do município.</p>
           </div>
         </section>
         <section className="empty-state">
@@ -128,60 +151,118 @@ export function EducacaoPage({ selectedMunicipio }) {
     setSearchQuery('')
   }
 
+  function handleScopeSelect(scope) {
+    if (scope === selectedScope) return
+    setSelectedScope(scope)
+    setSelectedIndicatorKey('')
+    setSearchQuery('')
+    if (scope === 'panorama') {
+      const validKeys = model.themes.map((t) => t.key)
+      if (!validKeys.includes(selectedThemeKey)) {
+        setSelectedThemeKey('matriculas')
+      }
+    }
+  }
+
+  const panoramaCount = model.themes.reduce((sum, t) => sum + t.items.length, 0)
+
   return (
     <div className="page-stack educacao-page">
       <section className="page-card educacao-hero">
         <div>
           <span className="eyebrow">Indicadores da Educação</span>
           <h1>Indicadores da Educação</h1>
-          <p>Matrículas, rede escolar, docentes, fluxo, aprendizagem e oferta técnica do município.</p>
+          <p>Matrículas, escolas, docentes, fluxo, aprendizagem e oferta técnica do município.</p>
           <p>Município em foco: <strong>{selectedMunicipio}</strong></p>
         </div>
       </section>
 
-      <EducationOverviewCards overview={model.overview} />
+      <section className="educacao-scope-selector">
+        <span className="eyebrow educacao-scope-selector__heading">Escolha o bloco de indicadores</span>
+        <p className="educacao-scope-selector__subtitle">Alterne entre os indicadores gerais da educação e os dados financeiros do FUNDEB.</p>
+        <div className="educacao-scope-selector__grid">
+          <button
+            className={'educacao-scope-card' + (selectedScope === 'panorama' ? ' is-active' : '')}
+            type="button"
+            aria-pressed={selectedScope === 'panorama'}
+            onClick={() => handleScopeSelect('panorama')}
+          >
+            <span className="educacao-scope-card__title">Panorama Educacional</span>
+            <span className="educacao-scope-card__description">
+              Matrículas, escolas, turmas, fluxo, aprendizagem e oferta técnica.
+            </span>
+            <span className="educacao-scope-card__footer">
+              <span className="educacao-scope-card__count">{panoramaCount} indicadores</span>
+            </span>
+          </button>
+          <button
+            className={'educacao-scope-card' + (selectedScope === 'fundeb' ? ' is-active' : '')}
+            type="button"
+            aria-pressed={selectedScope === 'fundeb'}
+            onClick={() => handleScopeSelect('fundeb')}
+          >
+            <span className="educacao-scope-card__title">FUNDEB</span>
+            <span className="educacao-scope-card__description">
+              Receitas, despesas, remuneração e saldos do fundo.
+            </span>
+            <span className="educacao-scope-card__footer">
+              <span className="educacao-scope-card__count">{FUNDEB_INDICATORS.length} indicadores</span>
+            </span>
+          </button>
+        </div>
+      </section>
+
+      {selectedScope === 'panorama' && <EducationOverviewCards overview={model.overview} />}
 
       <section className="cycle-workspace educacao-workspace">
-        <div className="cycle-category-bar">
-          <span className="eyebrow">Temas de análise</span>
-          <div className="cycle-category-bar__controls">
-            <CategoryTabs
-              ariaLabel="Temas da educação"
-              categories={themes}
-              selectedCategory={selectedTheme?.key}
-              onSelectCategory={handleThemeSelect}
-            />
-          </div>
-        </div>
-
-        <div className="cycle-layout educacao-analysis-layout">
-          <aside className="indicator-sidebar">
-            <div className="indicator-sidebar__heading">
-              <h3>Indicadores</h3>
-              <span>{filteredItems.length}</span>
+        {selectedScope === 'panorama' ? (
+          <>
+            <div className="cycle-category-bar">
+              <span className="eyebrow">Temas de análise</span>
+              <div className="cycle-category-bar__controls">
+                <CategoryTabs
+                  ariaLabel="Temas da educação"
+                  categories={themes}
+                  selectedCategory={selectedTheme?.key}
+                  onSelectCategory={handleThemeSelect}
+                />
+              </div>
             </div>
-            <label className="indicator-search">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="11" cy="11" r="6.5" />
-                <path d="m16 16 4 4" />
-              </svg>
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Buscar indicador..."
-                aria-label="Buscar indicador"
-              />
-            </label>
-            <EducationIndicatorList
-              items={filteredItems}
-              selectedIndicator={activeIndicator?.key}
-              onSelectIndicator={setSelectedIndicatorKey}
-            />
-          </aside>
-
-          <EducationIndicatorDetail indicator={activeIndicator} />
-        </div>
+            <div className="cycle-layout educacao-analysis-layout">
+              <aside className="indicator-sidebar">
+                <div className="indicator-sidebar__heading">
+                  <h3>Indicadores</h3>
+                  <span>{filteredItems.length}</span>
+                </div>
+                <label className="indicator-search">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="11" cy="11" r="6.5" />
+                    <path d="m16 16 4 4" />
+                  </svg>
+                  <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Buscar indicador..."
+                    aria-label="Buscar indicador"
+                  />
+                </label>
+                <EducationIndicatorList
+                  items={filteredItems}
+                  selectedIndicator={activeIndicator?.key}
+                  onSelectIndicator={setSelectedIndicatorKey}
+                />
+              </aside>
+              <EducationIndicatorDetail indicator={activeIndicator} />
+            </div>
+          </>
+        ) : (
+          <FundebPanel
+            municipioData={municipioData}
+            selectedMunicipio={selectedMunicipio}
+            embedded={true}
+          />
+        )}
       </section>
     </div>
   )
@@ -378,13 +459,16 @@ function detailTabPriority(item) {
   const label = getDetailTabLabel(item)
   if (label === 'Por rede') return 1
   if (label === 'Por localização') return 2
-  if (label === 'Por faixa etária') return 3
-  if (label === 'Por modalidade') return 4
-  if (label === 'Evolução') return 5
+  if (label === 'Por etapa') return 3
+  if (label === 'Por faixa etária') return 4
+  if (label === 'Por modalidade') return 5
+  if (label === 'Evolução') return 6
+  if (label === 'Infraestrutura') return 7
   return 10
 }
 
 function getDetailTabLabel(item) {
+  if (item.tabLabel) return item.tabLabel
   const title = String(item.title ?? '').toLocaleLowerCase('pt-BR')
   if (item.type === 'age-range') return 'Por faixa etária'
   if (title.includes('faixa et')) return 'Por faixa etária'
@@ -399,19 +483,29 @@ function getDetailTabLabel(item) {
 }
 
 function ExploreItem({ item }) {
+  const noteEl = item.note ? <p className="educacao-explore__note">{item.note}</p> : null
+
   if (item.type === 'stacked') {
     return (
-      <EducationStackedBarChart
-        categories={item.categories}
-        data={item.data}
-        formatLabel={item.formatLabel}
-        title={item.title}
-      />
+      <>
+        <EducationStackedBarChart
+          categories={item.categories}
+          data={item.data}
+          formatLabel={item.formatLabel}
+          title={item.title}
+        />
+        {noteEl}
+      </>
     )
   }
 
   if (item.type === 'bar') {
-    return <EducationBarChart color={item.color} data={item.data} formatLabel={item.formatLabel} preserveOrder={item.preserveOrder} title={item.title} />
+    return (
+      <>
+        <EducationBarChart color={item.color} data={item.data} formatLabel={item.formatLabel} preserveOrder={item.preserveOrder} title={item.title} />
+        {noteEl}
+      </>
+    )
   }
   if (item.type === 'age-range') {
     return <AgeRangeDetail key={item.key} item={item} />
@@ -690,7 +784,7 @@ function buildEducationModel(blocos) {
 
   const themes = [
     makeTheme('matriculas', 'Matrículas e atendimento', 'Matrículas', items),
-    makeTheme('rede', 'Rede escolar', 'Rede', items),
+    makeTheme('rede', 'Escolas', 'Escolas', items),
     makeTheme('turmas', 'Turmas e docentes', 'Turmas', items),
     makeTheme('fluxo', 'Fluxo escolar', 'Fluxo', items),
     makeTheme('aprendizagem', 'Aprendizagem', 'Aprendizagem', items),
@@ -739,16 +833,39 @@ function buildMatriculasIndicators(mat) {
 function buildRedeIndicators(rede) {
   const series = rede.series ?? {}
   const resumo = rede.resumo_ultimo_ano ?? {}
+  const porEtapa = resumo.por_etapa ?? {}
   const latestYear = rede.ultimo_ano
-  const base = { themeKey: 'rede', themeLabel: 'Rede escolar', themeShortLabel: 'Rede', categories: [FILTER_KEYS.todos], isGeral: true, currentYear: latestYear }
+  const stageOrder = ['infantil', 'fundamental', 'medio', 'eja', 'profissional']
+  const base = { themeKey: 'rede', themeLabel: 'Escolas', themeShortLabel: 'Escolas', categories: [FILTER_KEYS.todos], isGeral: true, currentYear: latestYear }
+
+  const etapaIndicators = stageOrder.map((stageKey) => createIndicator({
+    ...base,
+    key: `rede-${stageKey}`,
+    label: etapaLabel(stageKey),
+    description: `Escolas que ofertam ${etapaLabel(stageKey).toLowerCase()}.`,
+    categories: [FILTER_KEYS.todos],
+    isGeral: true,
+    series: normalizeYearSeries(series.por_etapa?.[stageKey]),
+    currentValue: porEtapa[stageKey],
+    formatType: 'number',
+    mainCutLabel: etapaLabel(stageKey),
+    explore: buildRedeExplore(rede, { cutKey: stageKey, cutLabel: etapaLabel(stageKey), stageKey }),
+  }))
+
   return [
     createIndicator({ ...base, key: 'rede-total', label: 'Total de escolas', description: 'Total de escolas registradas no município.', series: normalizeYearSeries(series.total), currentValue: resumo.total_escolas, formatType: 'number', mainCutLabel: 'Total do município', explore: buildRedeExplore(rede, { cutKey: 'total', cutLabel: 'Total do município' }) }),
-    createIndicator({ ...base, key: 'rede-urbana', label: 'Escolas urbanas', description: 'Escolas localizadas em área urbana.', series: normalizeYearSeries(series.por_localizacao?.urbana), currentValue: resumo.escolas_urbana, formatType: 'number', mainCutLabel: 'Urbana', explore: buildRedeExplore(rede, { cutKey: 'urbana', cutLabel: 'Urbana', locationKey: 'urbana' }) }),
-    createIndicator({ ...base, key: 'rede-rural', label: 'Escolas rurais', description: 'Escolas localizadas em área rural.', series: normalizeYearSeries(series.por_localizacao?.rural), currentValue: resumo.escolas_rural, formatType: 'number', mainCutLabel: 'Rural', explore: buildRedeExplore(rede, { cutKey: 'rural', cutLabel: 'Rural', locationKey: 'rural' }) }),
-    createIndicator({ ...base, key: 'rede-publica', label: 'Escolas públicas', description: 'Escolas da rede pública.', series: normalizeYearSeries(series.por_dependencia?.publica), currentValue: resumo.escolas_publica, formatType: 'number', mainCutLabel: 'Rede pública', explore: buildRedeExplore(rede, { cutKey: 'publica', cutLabel: 'Rede pública', dependencyKey: 'publica' }) }),
-    createIndicator({ ...base, key: 'rede-privada', label: 'Escolas privadas', description: 'Escolas da rede privada.', series: normalizeYearSeries(series.por_dependencia?.privada), currentValue: resumo.escolas_privada, formatType: 'number', mainCutLabel: 'Rede privada', explore: buildRedeExplore(rede, { cutKey: 'privada', cutLabel: 'Rede privada', dependencyKey: 'privada' }) }),
-    createIndicator({ ...base, key: 'rede-internet', label: 'Escolas com internet', description: 'Percentual de escolas com acesso à internet.', series: valueSeries(series.internet, 'perc_internet'), currentValue: resumo.perc_internet, formatType: 'percent', mainCutLabel: 'Infraestrutura', explore: buildRedeExplore(rede, { cutKey: 'internet', cutLabel: 'Infraestrutura', metricKey: 'perc_internet', metricFormat: formatPercent }) }),
-    createIndicator({ ...base, key: 'rede-banda-larga', label: 'Escolas com banda larga', description: 'Percentual de escolas com banda larga.', series: valueSeries(series.internet, 'perc_banda_larga'), currentValue: resumo.perc_banda_larga, formatType: 'percent', mainCutLabel: 'Infraestrutura', explore: buildRedeExplore(rede, { cutKey: 'banda', cutLabel: 'Infraestrutura', metricKey: 'perc_banda_larga', metricFormat: formatPercent }) }),
+    ...etapaIndicators,
+    createIndicator({
+      ...base,
+      key: 'rede-infraestrutura',
+      label: 'Infraestrutura',
+      description: 'Acesso à internet e banda larga nas escolas.',
+      series: valueSeries(series.internet, 'perc_internet'),
+      currentValue: resumo.perc_internet,
+      formatType: 'percent',
+      mainCutLabel: 'Escolas com internet',
+      explore: buildRedeInfraExplore(rede),
+    }),
   ]
 }
 
@@ -1449,6 +1566,31 @@ function buildRedeExplore(rede, cut = { cutKey: 'total', cutLabel: 'Total do mun
   const dependencyKeys = dependencyCategoryKeys(series.por_dependencia)
   const titleSuffix = ` — ${cut.cutLabel}`
 
+  if (cut.stageKey) {
+    const dependencyRows = detailRowsFor(detalhamentos.por_etapa_rede, { etapa_ensino: cut.stageKey })
+    const locationRows = detailRowsFor(detalhamentos.por_etapa_localizacao, { etapa_ensino: cut.stageKey })
+    const dependencyKeys = dependencyKeysFromDetailRows(dependencyRows, 'escolas')
+    const locationKeys = detailKeys(locationRows, 'localizacao', ['urbana', 'rural'], 'escolas')
+    return [
+      {
+        key: `rede-${cut.stageKey}-dep`,
+        type: 'stacked',
+        title: `Escolas por rede${titleSuffix}`,
+        categories: categoryDefinitions(dependencyKeys, depLabel, DEPENDENCY_COLORS),
+        data: detailRowsToStackedRows(dependencyRows, 'dependencia', dependencyKeys, 'escolas'),
+        formatLabel: formatNumber,
+      },
+      {
+        key: `rede-${cut.stageKey}-loc`,
+        type: 'stacked',
+        title: `Escolas por localização${titleSuffix}`,
+        categories: categoryDefinitions(locationKeys, locLabel, LOCATION_COLORS),
+        data: detailRowsToStackedRows(locationRows, 'localizacao', locationKeys, 'escolas'),
+        formatLabel: formatNumber,
+      },
+    ]
+  }
+
   if (cut.metricKey) {
     const depRows = detailRowsToLatestRows(detalhamentos.infraestrutura_por_rede, 'dependencia', depLabel, cut.metricKey)
     const locRows = detailRowsToLatestRows(detalhamentos.infraestrutura_por_localizacao, 'localizacao', locLabel, cut.metricKey)
@@ -1474,12 +1616,101 @@ function buildRedeExplore(rede, cut = { cutKey: 'total', cutLabel: 'Total do mun
     ]
   }
 
-  const infraRows = [{ label: 'Com internet', value: resumo.perc_internet, year: rede.ultimo_ano }, { label: 'Com banda larga', value: resumo.perc_banda_larga, year: rede.ultimo_ano }]
+  const etapaRows = detailRowsToLatestRows(detalhamentos.por_etapa, 'etapa_ensino', etapaLabel, 'escolas')
+  const etapaFallback = !etapaRows.length && resumo.por_etapa ? entriesToRows(resumo.por_etapa, etapaLabel) : []
+  const etapaData = etapaRows.length ? etapaRows : etapaFallback
+  const etapaItem = etapaData.length ? {
+    key: 'rede-etapa',
+    type: 'bar',
+    title: titleWithYear(`Escolas por etapa de ensino${titleSuffix}`, etapaRows),
+    color: '#16713a',
+    formatLabel: formatNumber,
+    data: etapaData,
+    note: 'Uma mesma escola pode ofertar mais de uma etapa; por isso, a soma por etapa pode ser maior que o total de escolas.',
+  } : null
+
   return [
+    ...(etapaItem ? [etapaItem] : []),
     { key: 'rede-dep', type: 'stacked', title: `Composição por rede${titleSuffix}`, categories: categoryDefinitions(dependencyKeys, depLabel, DEPENDENCY_COLORS), data: seriesMapToStackedRows(series.por_dependencia, dependencyKeys), formatLabel: formatNumber },
     { key: 'rede-loc', type: 'stacked', title: `Composição por localização${titleSuffix}`, categories: categoryDefinitions(['urbana', 'rural'], locLabel, LOCATION_COLORS), data: seriesMapToStackedRows(series.por_localizacao, ['urbana', 'rural']), formatLabel: formatNumber },
-    { key: 'rede-infra', type: 'bar', title: titleWithYear(`Infraestrutura disponível${titleSuffix}`, infraRows), color: '#16713a', formatLabel: formatPercent, data: infraRows },
   ]
+}
+
+function buildRedeInfraExplore(rede) {
+  const resumo = rede.resumo_ultimo_ano ?? {}
+  const detalhamentos = rede.detalhamentos ?? {}
+  const ultimoAno = rede.ultimo_ano
+
+  const resumoRows = [
+    { label: 'Com internet', value: resumo.perc_internet, year: ultimoAno },
+    { label: 'Com banda larga', value: resumo.perc_banda_larga, year: ultimoAno },
+  ].filter((row) => !isMissing(row.value))
+
+  const internetPorRede = detailRowsToLatestRows(
+    detalhamentos.infraestrutura_por_rede, 'dependencia', depLabel, 'perc_internet'
+  )
+  const internetPorLoc = detailRowsToLatestRows(
+    detalhamentos.infraestrutura_por_localizacao, 'localizacao', locLabel, 'perc_internet'
+  )
+  const bandaPorRede = detailRowsToLatestRows(
+    detalhamentos.infraestrutura_por_rede, 'dependencia', depLabel, 'perc_banda_larga'
+  )
+  const bandaPorLoc = detailRowsToLatestRows(
+    detalhamentos.infraestrutura_por_localizacao, 'localizacao', locLabel, 'perc_banda_larga'
+  )
+
+  return [
+    resumoRows.length ? {
+      key: 'rede-infra-resumo',
+      type: 'bar',
+      title: titleWithYear('Infraestrutura disponível', resumoRows),
+      color: '#16713a',
+      formatLabel: formatPercent,
+      data: resumoRows,
+      tabLabel: 'Infraestrutura',
+      tabPriority: 0,
+    } : null,
+    internetPorRede.length ? {
+      key: 'rede-infra-internet-rede',
+      type: 'bar',
+      title: titleWithYear('Internet por dependência administrativa', internetPorRede),
+      color: '#2563eb',
+      formatLabel: formatPercent,
+      data: internetPorRede,
+      tabLabel: 'Internet por rede',
+      tabPriority: 1,
+    } : null,
+    internetPorLoc.length ? {
+      key: 'rede-infra-internet-loc',
+      type: 'bar',
+      title: titleWithYear('Internet por localização', internetPorLoc),
+      color: '#16713a',
+      formatLabel: formatPercent,
+      data: internetPorLoc,
+      tabLabel: 'Internet por localização',
+      tabPriority: 2,
+    } : null,
+    bandaPorRede.length ? {
+      key: 'rede-infra-banda-rede',
+      type: 'bar',
+      title: titleWithYear('Banda larga por dependência administrativa', bandaPorRede),
+      color: '#7c3aed',
+      formatLabel: formatPercent,
+      data: bandaPorRede,
+      tabLabel: 'Banda larga por rede',
+      tabPriority: 3,
+    } : null,
+    bandaPorLoc.length ? {
+      key: 'rede-infra-banda-loc',
+      type: 'bar',
+      title: titleWithYear('Banda larga por localização', bandaPorLoc),
+      color: '#dc2626',
+      formatLabel: formatPercent,
+      data: bandaPorLoc,
+      tabLabel: 'Banda larga por localização',
+      tabPriority: 4,
+    } : null,
+  ].filter(Boolean)
 }
 
 function buildTurmasExplore(turmas, cut = { cutLabel: 'Total do município', metricKey: 'turmas', formatLabel: formatNumber }) {
@@ -1515,14 +1746,14 @@ function buildTurmasExplore(turmas, cut = { cutLabel: 'Total do município', met
 
   if (isCountMetric) {
     return [
-      { key: 'turmas-etapa', type: 'bar', title: titleWithYear(`${titleBase} por etapa${titleSuffix}`, etapaRows), color: '#16713a', formatLabel: cut.formatLabel, data: etapaRows },
+      { key: 'turmas-etapa', type: 'bar', title: titleWithYear(`${titleBase} por etapa de ensino${titleSuffix}`, etapaRows), color: '#16713a', formatLabel: cut.formatLabel, data: etapaRows },
       { key: 'turmas-rede', type: 'stacked', title: `${titleBase} por rede${titleSuffix}`, categories: categoryDefinitions(dependencyKeys, depLabel, DEPENDENCY_COLORS), data: detailRowsToStackedRows(detalhamentos.por_rede, 'dependencia', dependencyKeys, cut.metricKey), formatLabel: cut.formatLabel },
       { key: 'turmas-localizacao', type: 'stacked', title: `${titleBase} por localização${titleSuffix}`, categories: categoryDefinitions(locationKeys, locLabel, LOCATION_COLORS), data: detailRowsToStackedRows(detalhamentos.por_localizacao, 'localizacao', locationKeys, cut.metricKey), formatLabel: cut.formatLabel },
     ]
   }
 
   return [
-    { key: 'turmas-etapa', type: 'bar', title: titleWithYear(`${titleBase} por etapa${titleSuffix}`, etapaRows), color: '#16713a', formatLabel: cut.formatLabel, data: etapaRows },
+    { key: 'turmas-etapa', type: 'bar', title: titleWithYear(`${titleBase} por etapa de ensino${titleSuffix}`, etapaRows), color: '#16713a', formatLabel: cut.formatLabel, data: etapaRows },
     { key: 'turmas-rede', type: 'bar', title: titleWithYear(`${titleBase} por rede${titleSuffix}`, dependencyLatest), color: '#2563eb', formatLabel: cut.formatLabel, data: dependencyLatest },
     { key: 'turmas-localizacao', type: 'bar', title: titleWithYear(`${titleBase} por localização${titleSuffix}`, locationLatest), color: '#7c3aed', formatLabel: cut.formatLabel, data: locationLatest },
   ]

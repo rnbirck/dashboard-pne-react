@@ -635,6 +635,64 @@ def _export_diagnostics(
     }
 
 
+def _export_fundeb_data(
+    municipios: list[str],
+    errors: list[dict[str, Any]],
+) -> dict[str, Any]:
+    from src.data_loader import load_fundeb_data
+    from src.views import fundeb_export
+
+    exported = 0
+    municipio_payloads: dict[str, Any] = {}
+
+    print("\nProcessando FUNDEB...")
+    try:
+        fundeb_df = load_fundeb_data()
+    except Exception as exc:  # noqa: BLE001
+        errors.append({"stage": "load_fundeb_data", "error": str(exc)})
+        return {
+            "generated_at": _generated_at(),
+            "total_municipios": len(municipios),
+            "municipios_exportados": 0,
+            "municipios": {},
+        }
+
+    if "municipio" not in fundeb_df.columns:
+        errors.append({"stage": "load_fundeb_data", "error": "Coluna 'municipio' ausente."})
+        return {
+            "generated_at": _generated_at(),
+            "total_municipios": len(municipios),
+            "municipios_exportados": 0,
+            "municipios": {},
+        }
+
+    fundeb_df["municipio"] = fundeb_df["municipio"].astype(str).str.strip()
+
+    for index, municipio in enumerate(municipios, start=1):
+        print(f"  [{index}/{len(municipios)}] {municipio}")
+        try:
+            data = fundeb_export.extract_fundeb_for_municipio(municipio, fundeb_df)
+            municipio_payloads[municipio] = {"fundeb": data} if data is not None else {"fundeb": None}
+            if data is not None:
+                exported += 1
+        except Exception as exc:  # noqa: BLE001
+            errors.append(
+                {
+                    "stage": "fundeb",
+                    "municipio": municipio,
+                    "error": str(exc),
+                }
+            )
+            municipio_payloads[municipio] = {"fundeb": None}
+
+    return {
+        "generated_at": _generated_at(),
+        "total_municipios": len(municipios),
+        "municipios_exportados": exported,
+        "municipios": municipio_payloads,
+    }
+
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Exporta dados finais do dashboard Dash para JSON estático."
@@ -711,10 +769,11 @@ def main() -> int:
     if stale_error_file.exists():
         stale_error_file.unlink()
 
-    # Import app first so Dash pages are registered in the same way as runtime.
+    # Dash pages call dash.register_page() at import time, so the Dash app must
+    # exist before importing view modules used by the static exporter.
     import app as _dash_app  # noqa: F401
-    from src.data_loader import load_municipios
-    from src.views import diagnostico, pne_2014_2024, pne_2026_2036, pne_shared
+    from src.data_loader import load_fundeb_data, load_municipios
+    from src.views import diagnostico, fundeb_export, pne_2014_2024, pne_2026_2036, pne_shared
 
     if args.check_connection:
         return _check_connection(load_municipios)
@@ -816,6 +875,14 @@ def main() -> int:
     indicator_details_path = EXPORT_DIR / "indicator_details_por_municipio.json"
     _write_json(indicator_details_path, indicator_details_payload)
     generated_files.append(indicator_details_path)
+
+    fundeb_payload = _export_fundeb_data(
+        municipios=municipios,
+        errors=errors,
+    )
+    fundeb_path = EXPORT_DIR / "fundeb_por_municipio.json"
+    _write_json(fundeb_path, fundeb_payload)
+    generated_files.append(fundeb_path)
 
     if args.include_derived:
         for cycle_key, cycle_module in cycle_modules.items():

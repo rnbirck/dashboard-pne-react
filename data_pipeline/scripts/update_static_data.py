@@ -135,8 +135,12 @@ def sync_partitioned_to_public(results: list[StepResult]) -> None:
         else:
             updated += 1
 
+    preserved_roots = {(PUBLIC_DATA_DIR / "educacao").resolve()}
+
     for target in iter_files(PUBLIC_DATA_DIR):
         if target.suffix.lower() != ".json":
+            continue
+        if any(root in target.resolve().parents for root in preserved_roots):
             continue
         if target.resolve() not in expected_targets:
             target.unlink()

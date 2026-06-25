@@ -252,6 +252,28 @@ def detalhamento_rede_escolar(df, dimensoes, filtros=None):
     return linhas
 
 
+def detalhamento_escolas_etapa(df, dimensoes, filtros=None):
+    """Detalhamento de escolas por etapa sem campos de infraestrutura."""
+    filtros = filtros or {}
+    sub = df.copy()
+    for coluna, valores in filtros.items():
+        if not isinstance(valores, (list, tuple, set)):
+            valores = [valores]
+        sub = sub[sub[coluna].isin(valores)]
+    if sub.empty:
+        return []
+    linhas = []
+    for _, r in sub.sort_values(["ano", *dimensoes]).iterrows():
+        escolas = limpar_null(r.get("escolas"))
+        if escolas is None:
+            continue
+        linha = {"ano": int(r["ano"]), "valor": ri(escolas), "escolas": ri(escolas)}
+        for dimensao in dimensoes:
+            linha[dimensao] = r[dimensao]
+        linhas.append(linha)
+    return linhas
+
+
 def detalhamento_turmas(df, dimensoes, filtros=None):
     filtros = filtros or {}
     sub = df.copy()
@@ -390,6 +412,26 @@ def safe_json_dump(data, path):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
 
+
+# ── Mapeamento de métricas de infraestrutura ────────────────────────────
+# Cada tupla: (key_export, coluna_count_sql, coluna_percentual_export)
+# Usa os mesmos campos do censo escolar usados no PNE 2026-2036.
+INFRA_METRICAS = [
+    ("internet", "escolas_com_internet", "perc_internet"),
+    ("internet_alunos", "escolas_com_internet_alunos", "perc_internet_alunos"),
+    ("internet_aprendizagem", "escolas_com_internet_aprendizagem", "perc_internet_aprendizagem"),
+    ("internet_comunidade", "escolas_com_internet_comunidade", "perc_internet_comunidade"),
+    ("acesso_internet_computador", "escolas_com_acesso_internet_computador", "perc_acesso_internet_computador"),
+    ("acesso_internet_disp_pessoais", "escolas_com_acesso_internet_disp_pessoais", "perc_acesso_internet_disp_pessoais"),
+    ("banda_larga", "escolas_com_banda_larga", "perc_banda_larga"),
+    ("rede_local", "escolas_com_rede_local", "perc_rede_local"),
+    ("rede_wireless", None, "perc_rede_wireless"),
+    ("desktop_aluno", "escolas_com_desktop_aluno", "perc_desktop_aluno"),
+    ("comp_portatil_aluno", "escolas_com_comp_portatil_aluno", "perc_comp_portatil_aluno"),
+    ("tablet_aluno", "escolas_com_tablet_aluno", "perc_tablet_aluno"),
+    ("salas_climatizadas", "qt_salas_utiliza_climatizadas", "perc_salas_climatizadas"),
+    ("salas_acessiveis", "qt_salas_utilizadas_acessiveis", "perc_salas_acessiveis"),
+]
 
 # ── Fontes e avisos globais ──────────────────────────────────────────────
 
@@ -705,7 +747,7 @@ def _campos_indisponiveis_matriculas(d, ano):
 # ── Bloco: Rede Escolar ──────────────────────────────────────────────────
 
 
-def montar_bloco_rede(df, id_mun):
+def montar_bloco_rede(df, id_mun, df_etapa=None):
     d = df[df["id_municipio"] == id_mun].copy()
     if d.empty:
         return _bloco_vazio("rede_escolar", ["dependencia", "localizacao"])
@@ -763,7 +805,44 @@ def montar_bloco_rede(df, id_mun):
     ultimo_ano = int(total["ano"].max()) if not total.empty else None
     resumo = _resumo_rede(d, ultimo_ano)
 
-    return {
+    # ── Escolas por etapa de ensino ──
+    por_etapa_series = {}
+    por_etapa_resumo = {}
+    detalhamentos_etapa = {}
+
+    if df_etapa is not None:
+        de = df_etapa[df_etapa["id_municipio"] == id_mun].copy()
+        if not de.empty:
+            for etapa in sorted(de["etapa_ensino"].unique()):
+                sub = de[
+                    (de["etapa_ensino"] == etapa)
+                    & (de["dependencia"] == "total")
+                    & (de["localizacao"] == "total")
+                ].sort_values("ano")
+                serie = [
+                    {"ano": int(r["ano"]), "valor": ri(r["escolas"])}
+                    for _, r in sub.iterrows() if limpar_null(r["escolas"]) is not None
+                ]
+                if serie:
+                    por_etapa_series[etapa] = serie
+                    por_etapa_resumo[etapa] = serie[-1]["valor"]
+
+            detalhamentos_etapa = {
+                "por_etapa": detalhamento_escolas_etapa(
+                    de, ["etapa_ensino"],
+                    {"dependencia": "total", "localizacao": "total"},
+                ),
+                "por_etapa_rede": detalhamento_escolas_etapa(
+                    de, ["etapa_ensino", "dependencia"],
+                    {"dependencia": deps_rede, "localizacao": "total"},
+                ),
+                "por_etapa_localizacao": detalhamento_escolas_etapa(
+                    de, ["etapa_ensino", "localizacao"],
+                    {"dependencia": "total", "localizacao": locs},
+                ),
+            }
+
+    bloco = {
         "series": {
             "total": serie_total,
             "por_dependencia": por_dep,
@@ -776,6 +855,18 @@ def montar_bloco_rede(df, id_mun):
         "dimensoes_disponiveis": ["dependencia", "localizacao"],
         "campos_indisponiveis": [],
     }
+
+    infra = montar_bloco_infraestrutura(df, id_mun)
+    if infra is not None:
+        bloco["infraestrutura"] = infra
+
+    if por_etapa_series:
+        bloco["series"]["por_etapa"] = por_etapa_series
+        bloco["resumo_ultimo_ano"]["por_etapa"] = por_etapa_resumo
+        bloco["detalhamentos"].update(detalhamentos_etapa)
+        bloco["dimensoes_disponiveis"].append("etapa_ensino")
+
+    return bloco
 
 
 def _resumo_rede(d, ano):
@@ -798,6 +889,119 @@ def _resumo_rede(d, ano):
         "escolas_privada": ri(limpar_null(privada.iloc[0] if len(privada) else None)),
         "perc_internet": r1(limpar_null(row["perc_internet"])),
         "perc_banda_larga": r1(limpar_null(row["perc_banda_larga"])),
+    }
+
+
+# ── Bloco: Infraestrutura Escolar ────────────────────────────────────────
+
+
+def _extrair_infra_por_linha(row):
+    """Extrai todas as métricas de infraestrutura de uma linha do DataFrame."""
+    escolas = limpar_null(row.get("escolas"))
+    if escolas is None or escolas <= 0:
+        return {}
+    dados = {"escolas": int(escolas)}
+    for key, count_col, perc_col in INFRA_METRICAS:
+        if key == "rede_wireless":
+            c1 = limpar_null(row.get("escolas_com_rede_local_wireless"))
+            c2 = limpar_null(row.get("escolas_com_rede_local_cabo_wireless"))
+            count = (c1 or 0) + (c2 or 0)
+            dados[perc_col] = r1(count / escolas * 100) if count > 0 else 0.0
+        else:
+            count = limpar_null(row.get(count_col))
+            if count is not None:
+                dados[perc_col] = r1(count / escolas * 100) if count > 0 else 0.0
+    return dados
+
+
+def _serie_infra_metricas(total_df):
+    """Constrói séries temporais para cada métrica de infraestrutura."""
+    metricas = {}
+    for key, _, perc_col in INFRA_METRICAS:
+        serie = []
+        for _, r in total_df.iterrows():
+            extraido = _extrair_infra_por_linha(r)
+            if perc_col in extraido:
+                serie.append({"ano": int(r["ano"]), "valor": extraido[perc_col]})
+        if serie:
+            metricas[key] = serie
+    return metricas
+
+
+def _resumo_infra(d_ano):
+    """Extrai o resumo do último ano para todas as métricas de infraestrutura."""
+    if d_ano.empty:
+        return {}
+    row = d_ano.iloc[0]
+    resumo = {}
+    extraido = _extrair_infra_por_linha(row)
+    for key, _, perc_col in INFRA_METRICAS:
+        if perc_col in extraido:
+            resumo[key] = extraido[perc_col]
+    return resumo
+
+
+def detalhamento_infraestrutura(df, dimensoes, filtros=None):
+    """Detalhamento de infraestrutura por dimensão (rede/localização)."""
+    filtros = filtros or {}
+    sub = df.copy()
+    for coluna, valores in filtros.items():
+        if not isinstance(valores, (list, tuple, set)):
+            valores = [valores]
+        sub = sub[sub[coluna].isin(valores)]
+    if sub.empty:
+        return []
+
+    linhas = []
+    for _, r in sub.sort_values(["ano", *dimensoes]).iterrows():
+        escolas = limpar_null(r.get("escolas"))
+        if escolas is None:
+            continue
+        linha = {"ano": int(r["ano"]), "escolas": ri(escolas)}
+        extraido = _extrair_infra_por_linha(r)
+        linha.update(extraido)
+        for dimensao in dimensoes:
+            linha[dimensao] = r[dimensao]
+        if len(linha) > 2 + len(dimensoes):
+            linhas.append(linha)
+    return linhas
+
+
+def montar_bloco_infraestrutura(df, id_mun):
+    """Constroi o bloco de infraestrutura para um municipio."""
+    d = df[df["id_municipio"] == id_mun].copy()
+    if d.empty:
+        return None
+
+    total = d[(d["dependencia"] == "total") & (d["localizacao"] == "total")].sort_values("ano")
+    if total.empty:
+        return None
+
+    series = _serie_infra_metricas(total)
+
+    deps_rede = ["publica", "privada", "estadual", "municipal", "federal"]
+    locs = ["urbana", "rural"]
+
+    por_rede = detalhamento_infraestrutura(
+        d, ["dependencia"], {"dependencia": deps_rede, "localizacao": "total"}
+    )
+    por_localizacao = detalhamento_infraestrutura(
+        d, ["localizacao"], {"dependencia": "total", "localizacao": locs}
+    )
+
+    ultimo_ano = int(total["ano"].max()) if not total.empty else None
+    d_ano = total[total["ano"] == ultimo_ano] if ultimo_ano else pd.DataFrame()
+    resumo = _resumo_infra(d_ano)
+
+    if not series and not resumo:
+        return None
+
+    return {
+        "series": series,
+        "ultimo_ano": ultimo_ano,
+        "resumo_ultimo_ano": resumo,
+        "por_rede": por_rede,
+        "por_localizacao": por_localizacao,
     }
 
 
@@ -1236,7 +1440,10 @@ def exportar_municipios(mun_rs, dfs_views):
                 id_mun,
                 dfs_views.get("matriculas_faixa_etaria"),
             ),
-            "rede_escolar": montar_bloco_rede(dfs_views["rede_escolar"], id_mun),
+            "rede_escolar": montar_bloco_rede(
+                dfs_views["rede_escolar"], id_mun,
+                dfs_views.get("rede_escolar_etapa"),
+            ),
             "turmas_docentes": montar_bloco_turmas(dfs_views["turmas"], id_mun),
             "fluxo": montar_bloco_fluxo(dfs_views["fluxo"], id_mun),
             "aprendizagem": montar_bloco_aprendizagem(dfs_views["aprendizagem"], id_mun),
@@ -1682,6 +1889,10 @@ def main():
     print("  vw_educacao_rede_escolar...", end=" ")
     dfs["rede_escolar"] = carregar_view("vw_educacao_rede_escolar", rs_ids)
     print(f"{len(dfs['rede_escolar'])} rows")
+
+    print("  vw_educacao_rede_escolar_etapa...", end=" ")
+    dfs["rede_escolar_etapa"] = carregar_view("vw_educacao_rede_escolar_etapa", rs_ids)
+    print(f"{len(dfs['rede_escolar_etapa'])} rows")
 
     print("  vw_educacao_turmas_docentes...", end=" ")
     dfs["turmas"] = carregar_view("vw_educacao_turmas_docentes", rs_ids)

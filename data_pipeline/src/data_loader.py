@@ -1,5 +1,6 @@
 from src.data.repository import (
     clear_data_cache,
+    fetch_raw_table,
     fetch_table,
     load_atendimento_overview_data,
     get_data_cache_ttl_seconds,
@@ -165,6 +166,10 @@ def load_pne_2014_2024_metricas_data():
     return load_dataset("pne_2014_2024_metricas_data")
 
 
+def load_fundeb_data():
+    return fetch_raw_table("siope_fundeb_municipio_dashboard")
+
+
 def load_pne_2026_2036_metricas_data():
     return load_dataset("pne_2026_2036_metricas_data")
 
@@ -175,6 +180,7 @@ __all__ = [
     "load_atendimento_overview_data",
     "get_data_cache_ttl_seconds",
     "get_supabase_client",
+    "load_fundeb_data",
     "load_municipios",
     "load_basico_15_17_data",
     "load_basico_6_17_data",

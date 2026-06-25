@@ -156,6 +156,9 @@ def load_aggregate_payloads() -> dict[str, dict]:
     payloads["indicator_details"] = load_json(
         SOURCE_DIR / "indicator_details_por_municipio.json"
     )
+    payloads["fundeb"] = load_optional_json(
+        SOURCE_DIR / "fundeb_por_municipio.json"
+    )
     return payloads
 
 
@@ -175,8 +178,36 @@ def extract_indicator_details(payload: dict, municipio: str) -> dict:
     return payload.get("municipios", {}).get(municipio, {}).get("indicator_details", {})
 
 
-def build_municipio_payload(payloads: dict[str, dict], municipio: str, slug: str) -> dict:
-    return {
+def extract_fundeb(payload: dict, municipio: str) -> dict | None:
+    return payload.get("municipios", {}).get(municipio, {}).get("fundeb")
+
+
+def extract_fundeb_id(payload: dict, municipio: str) -> str | None:
+    fundeb_data = extract_fundeb(payload, municipio)
+    if not fundeb_data:
+        return None
+
+    resumo_id = fundeb_data.get("resumo_ultimo_ano", {}).get("id_municipio")
+    if resumo_id:
+        return str(resumo_id)
+
+    for row in fundeb_data.get("historico", []):
+        row_id = row.get("id_municipio")
+        if row_id:
+            return str(row_id)
+
+    return None
+
+
+def build_municipio_payload(
+    payloads: dict[str, dict],
+    municipio: str,
+    slug: str,
+    id_municipio: str | None = None,
+) -> dict:
+    fundeb_data = extract_fundeb(payloads["fundeb"], municipio)
+    payload = {
+        "id_municipio": id_municipio,
         "municipio": municipio,
         "slug": slug,
         "pne_2014_2024": {
@@ -189,6 +220,9 @@ def build_municipio_payload(payloads: dict[str, dict], municipio: str, slug: str
             "diagnostico": extract_diagnostico(payloads["diagnostico"], municipio),
         },
     }
+    if fundeb_data is not None:
+        payload.setdefault("blocos", {})["fundeb"] = fundeb_data
+    return payload
 
 
 def format_size(bytes_count: int) -> str:
@@ -236,6 +270,10 @@ def main() -> int:
     payloads = load_aggregate_payloads()
     municipios = payloads["municipios"].get("municipios", [])
     slug_map = unique_slugs(municipios)
+    id_map = {
+        municipio: extract_fundeb_id(payloads["fundeb"], municipio)
+        for municipio in municipios
+    }
     stats = {"created": 0, "updated": 0, "preserved": 0, "removed": 0}
     expected_paths: set[Path] = set()
 
@@ -258,8 +296,14 @@ def main() -> int:
     index_items = [
         {
             "nome": municipio,
+            "id_municipio": id_map.get(municipio),
             "slug": slug_map[municipio],
             "path": f"/data/municipios/{slug_map[municipio]}/index.json",
+            "id_path": (
+                f"/data/municipios/{id_map[municipio]}/index.json"
+                if id_map.get(municipio)
+                else None
+            ),
         }
         for municipio in municipios
     ]
@@ -277,9 +321,15 @@ def main() -> int:
     errors: list[dict[str, str]] = []
     for position, municipio in enumerate(municipios, start=1):
         slug = slug_map[municipio]
+        id_municipio = id_map.get(municipio)
         print(f"[partition] {position}/{len(municipios)} {municipio} -> {slug}")
         try:
-            municipio_payload = build_municipio_payload(payloads, municipio, slug)
+            municipio_payload = build_municipio_payload(
+                payloads,
+                municipio,
+                slug,
+                id_municipio,
+            )
             write_json(
                 OUTPUT_DIR / "municipios" / slug / "index.json",
                 municipio_payload,
@@ -292,6 +342,19 @@ def main() -> int:
                 stats,
                 expected_paths,
             )
+            if id_municipio and id_municipio != slug:
+                write_json(
+                    OUTPUT_DIR / "municipios" / id_municipio / "index.json",
+                    municipio_payload,
+                    stats,
+                    expected_paths,
+                )
+                write_json(
+                    OUTPUT_DIR / "municipios" / id_municipio / "details.json",
+                    extract_indicator_details(payloads["indicator_details"], municipio),
+                    stats,
+                    expected_paths,
+                )
         except Exception as exc:  # noqa: BLE001 - keep processing other municipalities.
             errors.append({"municipio": municipio, "slug": slug, "erro": str(exc)})
             print(f"[partition] ERRO em {municipio}: {exc}")

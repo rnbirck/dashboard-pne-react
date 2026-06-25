@@ -12,7 +12,7 @@ export function CategoryTabs({ categories, selectedCategory, onSelectCategory, a
           onClick={() => onSelectCategory(category.key)}
         >
           <span>{category.shortLabel ?? category.label}</span>
-          <span className="category-tab__count">{category.items?.length ?? 0}</span>
+          <span className="category-tab__count">{category.count ?? category.items?.length ?? 0}</span>
         </button>
       ))}
     </div>

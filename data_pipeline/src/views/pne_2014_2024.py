@@ -1622,7 +1622,6 @@ layout = html.Div(
                     style={"display": "none"},
                 ),
             ],
-            target_components={"pne2014-results-store": "data"},
             type="circle",
         ),
     ],

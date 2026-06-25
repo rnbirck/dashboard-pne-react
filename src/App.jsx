@@ -14,6 +14,7 @@ import {
 import { CyclePage } from './pages/CyclePage'
 import { Diagnostico } from './pages/Diagnostico'
 import { EducacaoPage } from './pages/EducacaoPage'
+import { FundebPage } from './pages/FundebPage'
 import { MunicipalitySelector } from './components/MunicipalitySelector'
 import { Home } from './pages/Home'
 import { useAsyncData } from './utils/useAsyncData'
@@ -104,6 +105,14 @@ function PageContent({
   onNavigate,
 }) {
   const { selectedMunicipio, setSelectedMunicipio } = useMunicipality()
+  const [initialEducationTheme, setInitialEducationTheme] = useState()
+
+  function handlePageNavigate(page, educationTheme) {
+    if (educationTheme) {
+      setInitialEducationTheme(educationTheme)
+    }
+    onNavigate(page)
+  }
 
   const selectedMunicipioEntry = useMemo(
     () => municipiosIndex.find((item) => item.nome === selectedMunicipio) ?? null,
@@ -129,6 +138,7 @@ function PageContent({
     return (
       <Home
         onNavigate={onNavigate}
+        onNavigateFundeb={() => handlePageNavigate('educacao', 'fundeb')}
         selectedMunicipio={selectedMunicipio}
       />
     )
@@ -194,6 +204,18 @@ function PageContent({
   if (activePage === 'educacao') {
     return (
       <EducacaoPage
+        initialTheme={initialEducationTheme}
+        onConsumeInitialTheme={() => setInitialEducationTheme(null)}
+        municipioData={municipioData}
+        selectedMunicipio={selectedMunicipio}
+      />
+    )
+  }
+
+  if (activePage === 'fundeb') {
+    return (
+      <FundebPage
+        municipioData={municipioData}
         selectedMunicipio={selectedMunicipio}
       />
     )

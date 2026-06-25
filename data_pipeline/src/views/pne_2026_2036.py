@@ -2522,7 +2522,6 @@ layout = html.Div(
                     style={"display": "none"},
                 ),
             ],
-            target_components={"pne2026-results-store": "data"},
             type="circle",
         ),
     ],

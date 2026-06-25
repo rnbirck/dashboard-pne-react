@@ -280,6 +280,7 @@ LOCAL_QUERY_FILES_BY_TABLE: dict[str, str] = {
     "pne_infraestrutura_escolar_por_dependencia": "infraestrutura_escolar_por_dependencia.sql",
     "pne_2014_2024_metricas": "pne_2014_2024_metricas.sql",
     "pne_2026_2036_metricas": "pne_2026_2036_metricas.sql",
+    "siope_fundeb_municipio_dashboard": "fundeb.sql",
 }
 
 
@@ -652,6 +653,13 @@ def _load_atendimento_overview_cached(cache_bucket: int) -> pd.DataFrame:
 
 def fetch_table(table_name: str) -> pd.DataFrame:
     return _get_table_frame(table_name).copy()
+
+
+def fetch_raw_table(table_name: str) -> pd.DataFrame:
+    backend = get_data_backend()
+    if backend == "supabase":
+        return _get_table_frame(table_name).copy()
+    return _read_local_query_table(table_name).copy()
 
 
 def load_dataset(dataset_name: str) -> pd.DataFrame:

@@ -16,14 +16,20 @@ const PADDING = { bottom: 44, left: 64, right: 68, top: 38 }
 
 export function IndicatorHistoryChart({
   endYear,
+  formatDataLabel: formatDataLabelProp,
+  formatYAxis: formatYAxisProp,
   item,
+  labelMode,
   meta,
+  missingLabel = '—',
   result,
   series,
   showMetaLine = true,
+  showMissingPoints,
   startYear,
   title = 'Histórico do indicador',
   unit: unitProp,
+  yTickCount,
   floorNegativeValues = false,
 }) {
   const [activePoint, setActivePoint] = useState(null)
@@ -34,17 +40,24 @@ export function IndicatorHistoryChart({
     () =>
       buildChartModel({
         endYear,
+        formatDataLabel: formatDataLabelProp,
+        formatYAxis: formatYAxisProp,
+        labelMode,
         meta,
+        missingLabel,
         resolvedUnit,
         series,
         showMetaLine,
+        showMissingPoints,
         startYear,
+        yTickCount,
         floorNegativeValues,
       }),
-    [endYear, meta, resolvedUnit, series, showMetaLine, startYear, floorNegativeValues],
+    [endYear, formatDataLabelProp, formatYAxisProp, labelMode, meta, missingLabel, resolvedUnit, series, showMetaLine, showMissingPoints, startYear, yTickCount, floorNegativeValues],
   )
 
-  if (chart.points.length < 2) {
+  const validCount = chart.points.filter(p => p.valid !== false).length
+  if (validCount < 2 && !showMissingPoints) {
     return null
   }
 
@@ -83,7 +96,7 @@ export function IndicatorHistoryChart({
                   y2={tick.y}
                 />
                 <text x={PADDING.left - 12} y={tick.y + 4}>
-                  {chart.formatValue(tick.value)}
+                  {chart.formatYAxis ? chart.formatYAxis(tick.value) : chart.formatValue(tick.value)}
                 </text>
               </g>
             ))}
@@ -144,7 +157,7 @@ export function IndicatorHistoryChart({
           </g>
 
           <g className="chart-points">
-            {chart.points.map((point) => (
+            {chart.points.filter(p => p.valid !== false).map((point) => (
               <circle
                 cx={point.x}
                 cy={point.y}
@@ -161,6 +174,16 @@ export function IndicatorHistoryChart({
             ))}
           </g>
 
+          {showMissingPoints && chart.missingPointLabels && (
+            <g className="chart-missing-labels">
+              {chart.missingPointLabels.map((label) => (
+                <text key={label.year} x={label.x} y={label.y} textAnchor="middle" className="chart-missing-label">
+                  {missingLabel}
+                </text>
+              ))}
+            </g>
+          )}
+
           <g className="chart-data-labels">
             {chart.dataLabels.map((label) => (
               <text
@@ -176,7 +199,7 @@ export function IndicatorHistoryChart({
                       : 'chart-point-label'
                 }
               >
-                {label.isMeta ? `Meta ${chart.formatValue(label.value)}` : chart.formatValue(label.value)}
+                {label.isMeta ? `Meta ${chart.formatValue(label.value)}` : (chart.formatDataLabel ? chart.formatDataLabel(label.value) : chart.formatValue(label.value))}
               </text>
             ))}
           </g>
@@ -216,7 +239,7 @@ export function IndicatorHistoryChart({
             }}
           >
             <strong>{activePoint.year}</strong>
-            <span>{chart.formatValue(activePoint.value)}</span>
+            <span>{activePoint.valid === false ? missingLabel : chart.formatValue(activePoint.value)}</span>
           </div>
         )}
       </div>
@@ -226,29 +249,41 @@ export function IndicatorHistoryChart({
 
 function buildChartModel({
   endYear,
+  formatDataLabel,
+  formatYAxis,
+  labelMode,
   meta,
+  missingLabel,
   resolvedUnit,
   series,
   showMetaLine,
+  showMissingPoints,
   startYear,
+  yTickCount,
   floorNegativeValues = false,
 }) {
-  const points = normalizeSeries(series, floorNegativeValues)
+  const rawPoints = normalizeSeries(series, floorNegativeValues, showMissingPoints)
+  const validPoints = rawPoints.filter((p) => p.valid !== false)
+  const points = showMissingPoints ? rawPoints : validPoints
   const rawMetaValue =
     meta === null || meta === undefined || meta === '' ? Number.NaN : Number(meta)
   const metaValue = Number.isFinite(rawMetaValue) ? rawMetaValue : null
 
-  if (points.length < 2) {
+  if (validPoints.length < 2) {
+    const chartHeight = showMetaLine ? CHART_HEIGHT_NORMAL : CHART_HEIGHT_INFORMATIVE
     return {
+      formatDataLabel,
       formatValue: (value) => formatIndicatorValue(value, resolvedUnit),
+      formatYAxis,
       hasNegativeValues: false,
-      height: showMetaLine ? CHART_HEIGHT_NORMAL : CHART_HEIGHT_INFORMATIVE,
+      height: chartHeight,
       isInformative: !showMetaLine,
+      missingPointLabels: showMissingPoints ? computeMissingLabels(points, chartHeight, missingLabel) : undefined,
       points,
     }
   }
 
-  const values = points.map((point) => point.value)
+  const values = validPoints.map((point) => point.value)
   const hasNegativeValues = values.some((value) => value < 0)
   const chartHeight = hasNegativeValues
     ? CHART_HEIGHT_NEGATIVE
@@ -265,9 +300,9 @@ function buildChartModel({
     isIndex,
     isYears,
   })
-  const years = points.map((point) => point.year)
-  const minYear = Math.min(...years)
-  const maxYear = Math.max(...years)
+  const allYears = points.map((point) => point.year)
+  const minYear = Math.min(...allYears)
+  const maxYear = Math.max(...allYears)
   const plotWidth = CHART_WIDTH - PADDING.left - PADDING.right
   const plotHeight = chartHeight - PADDING.top - PADDING.bottom
 
@@ -283,17 +318,21 @@ function buildChartModel({
   const scaledPoints = points.map((point) => ({
     ...point,
     x: xScale(point.year),
-    y: yScale(point.value),
+    y: point.valid !== false ? yScale(point.value) : PADDING.top + plotHeight / 2,
   }))
-  const linePath = scaledPoints
-    .map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
-    .join(' ')
-  const last = scaledPoints[scaledPoints.length - 1]
-  const first = scaledPoints[0]
+  const scaledValidPoints = scaledPoints.filter((p) => p.valid !== false)
+  const linePath = showMissingPoints
+    ? buildBrokenLinePath(scaledPoints)
+    : scaledPoints
+        .map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
+        .join(' ')
+  const last = scaledValidPoints[scaledValidPoints.length - 1]
+  const first = scaledValidPoints[0]
+  const hasGaps = showMissingPoints && scaledPoints.some((p) => p.valid === false)
   const zeroY = domain.min < 0 && domain.max > 0
     ? yScale(0)
     : chartHeight - PADDING.bottom
-  const areaPath = hasNegativeValues
+  const areaPath = hasNegativeValues || hasGaps
     ? null
     : `${linePath} L${last.x.toFixed(1)} ${zeroY.toFixed(1)} L${first.x.toFixed(1)} ${zeroY.toFixed(1)} Z`
 
@@ -304,9 +343,19 @@ function buildChartModel({
       : isYears
         ? stableYearsTicks(domain) ?? [domain.min, domain.max]
         : stableAbsoluteTicks(domain) ?? [domain.min, domain.max]
-  const yTicks = yTicksRaw
+  let yTicks = yTicksRaw
     .filter((value) => value >= domain.min - 0.0001 && value <= domain.max + 0.0001)
     .map((value) => ({ value, y: yScale(value) }))
+
+  if (yTickCount && yTicks.length > yTickCount) {
+    const step = (yTicks.length - 1) / (yTickCount - 1)
+    const thinned = []
+    for (let i = 0; i < yTickCount; i++) {
+      const idx = Math.round(i * step)
+      thinned.push(yTicks[idx])
+    }
+    yTicks = thinned
+  }
 
   const shouldShowMeta = showMetaLine && metaValue !== null && Number.isFinite(metaValue)
   let metaLine = null
@@ -338,36 +387,89 @@ function buildChartModel({
     .map((year) => ({ year, x: xScale(year) }))
 
   const formatValue = (value) => formatIndicatorValue(value, resolvedUnit)
-  const dataLabels = computeDataLabels(scaledPoints, metaLine, formatValue, chartHeight)
+  const formatLabel = formatDataLabel || formatValue
+  const labelsForCompute = labelMode === 'all' ? scaledValidPoints : scaledPoints
+  const dataLabels = computeDataLabels(labelsForCompute, metaLine, formatLabel, chartHeight, labelMode)
+
+  const missingPointLabels = showMissingPoints
+    ? scaledPoints.filter((p) => p.valid === false).map((p) => ({ year: p.year, x: p.x, y: chartHeight - PADDING.bottom + 18 }))
+    : undefined
 
   return {
     areaPath,
     dataLabels,
+    formatDataLabel,
     formatValue,
+    formatYAxis,
     hasNegativeValues,
     height: chartHeight,
     isInformative: !showMetaLine,
     linePath,
     metaLine,
+    missingPointLabels,
     points: scaledPoints,
-    xTicks: pickYearTicks(scaledPoints),
+    xTicks: showMissingPoints ? pickAllYearTicks(scaledPoints) : pickYearTicks(scaledPoints),
     yTicks,
     yearMarkers,
     zeroLine,
   }
 }
 
-function normalizeSeries(series = [], floorNegativeValues = false) {
+function normalizeSeries(series = [], floorNegativeValues = false, showMissingPoints = false) {
   return series
     .map((point) => {
+      const isMissing = showMissingPoints && (point?.valor === null || point?.valor === undefined)
       const rawValue = Number(point?.valor)
+      const valid = !isMissing && Number.isFinite(rawValue) && Number.isFinite(Number(point?.ano))
       return {
-        value: floorNegativeValues && rawValue < 0 ? 0 : rawValue,
+        value: isMissing ? null : (floorNegativeValues && rawValue < 0 ? 0 : rawValue),
         year: Number(point?.ano),
+        valid,
+        missing: isMissing,
       }
     })
-    .filter((point) => Number.isFinite(point.year) && Number.isFinite(point.value))
+    .filter((point) => {
+      if (showMissingPoints) return Number.isFinite(point.year)
+      return Number.isFinite(point.year) && point.valid
+    })
     .sort((a, b) => a.year - b.year)
+}
+
+function buildBrokenLinePath(scaledPoints) {
+  let path = ''
+  let inSegment = false
+  for (const p of scaledPoints) {
+    if (p.valid === false) {
+      inSegment = false
+      continue
+    }
+    if (!inSegment) {
+      path += `${path ? ' ' : ''}M${p.x.toFixed(1)} ${p.y.toFixed(1)}`
+      inSegment = true
+    } else {
+      path += ` L${p.x.toFixed(1)} ${p.y.toFixed(1)}`
+    }
+  }
+  return path
+}
+
+function pickAllYearTicks(points) {
+  const seen = new Set()
+  const result = []
+  for (const p of points) {
+    if (!seen.has(p.year)) {
+      seen.add(p.year)
+      result.push(p)
+    }
+  }
+  return result
+}
+
+function computeMissingLabels(points, chartHeight) {
+  const y = chartHeight - 18
+  return points
+    .filter((p) => p.valid === false)
+    .map((p) => ({ year: p.year, x: p.x, y }))
 }
 
 function pickYearTicks(points) {
@@ -378,7 +480,7 @@ function pickYearTicks(points) {
   return [first, middle, last]
 }
 
-function computeDataLabels(points, metaLine, formatValue, chartHeight) {
+function computeDataLabels(points, metaLine, formatValue, chartHeight, labelMode) {
   if (points.length === 0) return []
 
   const plotLeft = PADDING.left
@@ -410,7 +512,7 @@ function computeDataLabels(points, metaLine, formatValue, chartHeight) {
   })
 
   // 2. Demais pontos
-  if (points.length <= 6) {
+  if (points.length <= 6 || labelMode === 'all') {
     for (let i = 0; i < points.length - 1; i++) {
       const p = points[i]
       candidates.push({
