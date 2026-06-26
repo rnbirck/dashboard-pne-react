@@ -4,6 +4,7 @@ import { loadIndicatorDetail } from '../data/staticData'
 import { isDemographicCensusIndicator } from '../utils/indicatorSeries'
 import { AdministrativeDependencyChart } from './AdministrativeDependencyChart'
 import { ComplementaryEnrollmentChart } from './ComplementaryEnrollmentChart'
+import { IndicatorProjectionPanel } from './IndicatorProjectionPanel'
 
 const numberFormatter = new Intl.NumberFormat('pt-BR')
 const percentFormatter = new Intl.NumberFormat('pt-BR', {
@@ -35,7 +36,6 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
       }
     }
 
-    setDetails(null)
     loadIndicatorDetail(slug, indicatorKey)
       .then((data) => {
         if (isMounted) {
@@ -97,51 +97,62 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
   const numeratorLabel = details?.calculation?.numerator_label || 'Numerador'
   const denominatorLabel = details?.calculation?.denominator_label || 'Denominador'
 
-  const options = useMemo(() => {
-    if (!details) return []
+  const projection = municipioData?.[cycle]?.projecoes?.[indicatorKey]
+  const hasProjection = cycle === 'pne_2026_2036' && projection?.available === true
 
+  const options = useMemo(() => {
     const availableOptions = []
 
-    if (hasTotal) {
-      availableOptions.push({
-        key: 'enrollment-history',
-        label: isCensusIndicator ? 'Histórico' : 'Histórico de matrículas',
-        content: (
-          <ComplementaryEnrollmentChart
-            series={filteredTotal}
-            title={details.title || 'Matrículas em creche'}
-            unit={details.unit || 'Matrículas'}
-          />
-        ),
-      })
+    if (details) {
+      if (hasTotal) {
+        availableOptions.push({
+          key: 'enrollment-history',
+          label: isCensusIndicator ? 'Histórico' : 'Histórico de matrículas',
+          content: (
+            <ComplementaryEnrollmentChart
+              series={filteredTotal}
+              title={details.title || 'Matrículas em creche'}
+              unit={details.unit || 'Matrículas'}
+            />
+          ),
+        })
+      }
+
+      if (hasDependencia) {
+        availableOptions.push({
+          key: 'administrative-dependency',
+          label: 'Dependência administrativa',
+          content: (
+            <AdministrativeDependencyChart
+              series={filteredDependencia}
+              unit={details.dependency_unit || details.unit}
+              valueType={details.dependency_value_type}
+              title="Por dependência administrativa"
+            />
+          ),
+        })
+      }
+
+      if (hasComponents) {
+        availableOptions.push({
+          key: 'calculation-numbers',
+          label: 'Números usados no cálculo',
+          content: (
+            <CalculationComponentsTable
+              denominatorLabel={denominatorLabel}
+              numeratorLabel={numeratorLabel}
+              rows={filteredComponents}
+            />
+          ),
+        })
+      }
     }
 
-    if (hasDependencia) {
+    if (hasProjection) {
       availableOptions.push({
-        key: 'administrative-dependency',
-        label: 'Dependência administrativa',
-        content: (
-          <AdministrativeDependencyChart
-            series={filteredDependencia}
-            unit={details.dependency_unit || details.unit}
-            valueType={details.dependency_value_type}
-            title="Por dependência administrativa"
-          />
-        ),
-      })
-    }
-
-    if (hasComponents) {
-      availableOptions.push({
-        key: 'calculation-numbers',
-        label: 'Números usados no cálculo',
-        content: (
-          <CalculationComponentsTable
-            denominatorLabel={denominatorLabel}
-            numeratorLabel={numeratorLabel}
-            rows={filteredComponents}
-          />
-        ),
+        key: 'trend-projection',
+        label: 'Projeção tendencial',
+        content: <IndicatorProjectionPanel projection={projection} />,
       })
     }
 
@@ -157,6 +168,8 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
     hasTotal,
     isCensusIndicator,
     numeratorLabel,
+    hasProjection,
+    projection,
   ])
 
   useEffect(() => {
@@ -164,7 +177,7 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
     setActiveTab(options[0]?.key ?? '')
   }, [indicatorKey, options])
 
-  if (!details || options.length === 0) {
+  if (options.length === 0) {
     return null
   }
 

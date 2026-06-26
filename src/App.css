@@ -3940,6 +3940,18 @@
   .complementary-data__chips {
     display: none;
   }
+
+  .complementary-data__tabs {
+    border-radius: 12px;
+    padding: 6px;
+    gap: 6px;
+  }
+
+  .complementary-data__tab {
+    padding: 6px 10px;
+    font-size: 0.74rem;
+    min-height: 30px;
+  }
 }
 
 .complementary-components {
@@ -4169,6 +4181,119 @@
 .complementary-chart__tooltip span {
   color: var(--text);
   font-weight: 700;
+}
+
+/* =========================
+   Projeção tendencial
+   ========================= */
+.complementary-projection {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+}
+
+.complementary-projection__header h5 {
+  margin: 0 0 8px;
+  color: var(--text-strong);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.complementary-projection__method {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  font-weight: 500;
+  max-width: none;
+  width: 100%;
+}
+
+.complementary-projection__cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .complementary-projection__cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .complementary-projection__cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.complementary-projection__card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  min-height: 76px;
+  padding: 14px 16px;
+  border: 1px solid #e4e9f1;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.complementary-projection__card-label {
+  color: #94a3b8;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.complementary-projection__card-value {
+  color: #0f172a;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.complementary-projection__value--positive {
+  color: #16713a;
+}
+
+.complementary-projection__value--negative {
+  color: #d0312d;
+}
+
+.complementary-projection__reading {
+  padding: 10px 14px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.complementary-projection__reading p {
+  margin: 0;
+  color: #1e40af;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.projection-line {
+  fill: none;
+  stroke: #2563eb;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.projection-line--dashed {
+  stroke-dasharray: 6 4;
+  stroke: #2563eb;
+  stroke-width: 2.5;
+  opacity: 0.85;
+}
+
+.projection-area {
+  fill: rgba(37, 99, 235, 0.07);
 }
 
 /* =========================

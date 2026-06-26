@@ -25,6 +25,10 @@ def _generated_at() -> str:
     return datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
 
 
+def _safe_timestamp() -> str:
+    return datetime.now(timezone.utc).astimezone().strftime("%Y%m%d_%H%M%S")
+
+
 def _is_nullish(value: Any) -> bool:
     if value is None:
         return True
@@ -693,6 +697,37 @@ def _export_fundeb_data(
     }
 
 
+def _export_projections(
+    *,
+    municipios: list[str],
+    municipio_ids: dict[str, str] | None,
+    errors: list[dict[str, Any]],
+) -> dict[str, Any]:
+    from src.views.pne_2026_projections import build_all_projections
+
+    print("\nProcessando projeções tendenciais...")
+    try:
+        projections = build_all_projections(municipios)
+    except Exception as exc:
+        errors.append({"stage": "projections", "error": str(exc), "traceback": traceback.format_exc(limit=6)})
+        return {
+            "generated_at": _generated_at(),
+            "cycle": "pne_2026_2036",
+            "total_municipios": len(municipios),
+            "municipios_exportados": 0,
+            "municipios": {},
+        }
+
+    exported = sum(1 for p in projections.values() if any(v.get("available") for v in p.values()))
+    return {
+        "generated_at": _generated_at(),
+        "cycle": "pne_2026_2036",
+        "total_municipios": len(municipios),
+        "municipios_exportados": exported,
+        "municipios": _json_safe(projections),
+    }
+
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Exporta dados finais do dashboard Dash para JSON estático."
@@ -761,10 +796,20 @@ def _check_connection(load_municipios: Any) -> int:
 
 
 def main() -> int:
+    global EXPORT_DIR
+
     args = _parse_args()
+    is_partial_export = args.limit is not None or bool(args.municipio)
+    if is_partial_export:
+        EXPORT_DIR = BASE_DIR / "export" / "debug" / f"static_data_partial_{_safe_timestamp()}"
     print("Iniciando exportação estática do Dashboard PNE...")
     print(f"Projeto Python: {BASE_DIR}")
     print(f"Destino JSON: {EXPORT_DIR}")
+    if is_partial_export:
+        print(
+            "Export parcial detectado (--limit/--municipio): "
+            "arquivos serao gravados em export/debug e nao sobrescreverao a base final."
+        )
     stale_error_file = EXPORT_DIR / "export_errors.json"
     if stale_error_file.exists():
         stale_error_file.unlink()
@@ -875,6 +920,17 @@ def main() -> int:
     indicator_details_path = EXPORT_DIR / "indicator_details_por_municipio.json"
     _write_json(indicator_details_path, indicator_details_payload)
     generated_files.append(indicator_details_path)
+
+    from src.views.pne_2026_projections import build_all_projections
+
+    projections_payload = _export_projections(
+        municipios=municipios,
+        municipio_ids=None,
+        errors=errors,
+    )
+    projections_path = EXPORT_DIR / "pne_2026_2036" / "projecoes_por_municipio.json"
+    _write_json(projections_path, projections_payload)
+    generated_files.append(projections_path)
 
     fundeb_payload = _export_fundeb_data(
         municipios=municipios,
