@@ -62,3 +62,11 @@ export function primeMunicipioCache(slug, data) {
   if (!slug) return
   dataCache.set(`/data/municipios/${slug}/index.json`, data)
 }
+
+export function loadMunicipioSharedInfo(slug, sectionKey) {
+  if (!slug || !sectionKey) return Promise.resolve(null)
+  return loadJson(`/data/municipios/${slug}/details.json`).then(
+    (details) => details?._shared?.[sectionKey] ?? null,
+    () => null,
+  )
+}

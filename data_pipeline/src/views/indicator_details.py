@@ -25,6 +25,7 @@ from src.data_loader import load_escolas_integral_data
 from src.data_loader import load_escolas_integral_por_dependencia_data
 from src.data_loader import load_infraestrutura_escolar_data
 from src.data_loader import load_infraestrutura_escolar_por_dependencia_data
+from src.data_loader import load_matriculas_privadas_conveniadas
 from src.data_loader import load_pne_data
 from src.data_loader import load_pre_escola_data
 from src.data_loader import load_pre_escola_por_dependencia_data
@@ -2577,6 +2578,127 @@ def build_razao_escolaridade_racial_18_29_details(municipio):
     }
 
 
+def _load_municipio_id_map():
+    from src.data.repository import get_local_postgres_engine
+    query = "SELECT id_municipio::text, municipio FROM municipios WHERE municipio IS NOT NULL"
+    df = pd.read_sql_query(query, get_local_postgres_engine())
+    if df.empty:
+        return {}
+    return {nome.strip(): id_mun for nome, id_mun in zip(df["municipio"], df["id_municipio"])}
+
+
+def build_privadas_conveniadas_shared(municipio):
+    df = _safe_load(load_matriculas_privadas_conveniadas)
+    if df.empty or "id_municipio" not in df.columns:
+        return None
+
+    id_map = _load_municipio_id_map()
+    mun_id = id_map.get(municipio.strip())
+    if mun_id is None:
+        return None
+
+    dff = df[df["id_municipio"].astype(str) == mun_id].copy()
+    if dff.empty:
+        return None
+
+    colunas_num = [
+        "matriculas_conveniadas_total", "matriculas_resp_municipio",
+        "matriculas_resp_estado", "matriculas_resp_estado_municipio",
+        "matriculas_resp_municipal_total",
+    ]
+    for col in colunas_num:
+        dff[col] = pd.to_numeric(dff[col], errors="coerce")
+
+    ultimo_ano = int(dff["ano"].max())
+
+    total_eb = dff[
+        (dff["secao_sinopse"] == "educacao_basica")
+        & (dff["categoria_escola_privada"] == "total")
+    ]
+    resumo = None
+    if not total_eb.empty:
+        row = total_eb.iloc[0]
+        resumo = {
+            "total_conveniado": _int_or_none(row["matriculas_conveniadas_total"]),
+            "municipio": _int_or_none(row["matriculas_resp_municipio"]),
+            "estado_municipio": _int_or_none(row["matriculas_resp_estado_municipio"]),
+            "municipal_total": _int_or_none(row["matriculas_resp_municipal_total"]),
+        }
+
+    por_secao_raw = dff[dff["categoria_escola_privada"] == "total"]
+    if por_secao_raw.empty:
+        por_secao = []
+    else:
+        ordem_secao = [
+            "educacao_basica", "educacao_infantil", "creche", "pre_escola",
+            "ensino_fundamental", "anos_iniciais", "anos_finais",
+            "ensino_medio", "educacao_profissional", "eja",
+            "educacao_especial", "classes_comuns", "classes_exclusivas",
+        ]
+        por_secao_raw = por_secao_raw.copy()
+        por_secao_raw["_ordem"] = por_secao_raw["secao_sinopse"].map(
+            {s: i for i, s in enumerate(ordem_secao)}
+        )
+        por_secao_raw = por_secao_raw.dropna(subset=["_ordem"]).sort_values("_ordem")
+        por_secao = [
+            {
+                "secao": row["secao_sinopse"],
+                "total_conveniado": _int_or_none(row["matriculas_conveniadas_total"]),
+                "municipio": _int_or_none(row["matriculas_resp_municipio"]),
+                "estado_municipio": _int_or_none(row["matriculas_resp_estado_municipio"]),
+                "municipal_total": _int_or_none(row["matriculas_resp_municipal_total"]),
+            }
+            for _, row in por_secao_raw.iterrows()
+        ]
+
+    por_categoria_raw = dff[dff["secao_sinopse"] == "educacao_basica"]
+    if por_categoria_raw.empty:
+        por_categoria = []
+    else:
+        ordem_categoria = ["total", "particular", "comunitaria", "confessional", "filantropica"]
+        por_categoria_raw = por_categoria_raw.copy()
+        por_categoria_raw["_ordem"] = por_categoria_raw["categoria_escola_privada"].map(
+            {c: i for i, c in enumerate(ordem_categoria)}
+        )
+        por_categoria_raw = por_categoria_raw.dropna(subset=["_ordem"]).sort_values("_ordem")
+        por_categoria = [
+            {
+                "categoria": row["categoria_escola_privada"],
+                "total_conveniado": _int_or_none(row["matriculas_conveniadas_total"]),
+                "municipal_total": _int_or_none(row["matriculas_resp_municipal_total"]),
+            }
+            for _, row in por_categoria_raw.iterrows()
+        ]
+
+    fonte_eb = dff[
+        (dff["secao_sinopse"] == "educacao_basica")
+        & (dff["categoria_escola_privada"] == "total")
+    ]
+    if not fonte_eb.empty:
+        fonte = str(fonte_eb.iloc[0]["fonte"])
+    else:
+        fonte = "INEP - Sinopse Estatística do Censo Escolar 2025, tabela 1.3"
+
+    return {
+        "ultimo_ano": ultimo_ano,
+        "resumo": resumo,
+        "por_secao": por_secao,
+        "por_categoria": por_categoria,
+        "fonte": fonte,
+        "disponivel_desde": 2025,
+    }
+
+
+def _int_or_none(val):
+    if val is None or (isinstance(val, float) and pd.isna(val)):
+        return None
+    try:
+        v = int(val)
+        return v if v >= 0 else None
+    except (ValueError, TypeError):
+        return None
+
+
 DETAIL_BUILDERS = {
     "creche": build_creche_details,
     "pre_escola": build_pre_escola_details,
@@ -2637,4 +2759,9 @@ def build_indicator_details(municipio):
                 f"'{indicator_key}' ({municipio}): {exc}"
             )
             continue
+
+    privadas = build_privadas_conveniadas_shared(municipio)
+    if privadas is not None:
+        details["_shared"] = {"privadas_conveniadas": privadas}
+
     return details

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 
-import { loadIndicatorDetail } from '../data/staticData'
+import { loadIndicatorDetail, loadMunicipioSharedInfo } from '../data/staticData'
 import { isDemographicCensusIndicator } from '../utils/indicatorSeries'
 import { AdministrativeDependencyChart } from './AdministrativeDependencyChart'
 import { ComplementaryEnrollmentChart } from './ComplementaryEnrollmentChart'
@@ -18,6 +18,13 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
   const [details, setDetails] = useState(null)
   const [isOpen, setIsOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('')
+  const [sharedPrivadas, setSharedPrivadas] = useState(null)
+
+  useEffect(() => {
+    loadMunicipioSharedInfo(slug, 'privadas_conveniadas').then((data) => {
+      setSharedPrivadas(data)
+    })
+  }, [slug])
 
   useEffect(() => {
     let isMounted = true
@@ -88,6 +95,14 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
     },
     [calculationComponents, cycleRange, isCensusIndicator],
   )
+
+  const totalPrivadaRede = useMemo(() => {
+    if (!Array.isArray(filteredDependencia)) return null
+    const withPrivada = filteredDependencia
+      .filter((row) => Number.isFinite(Number(row?.privada)))
+      .sort((a, b) => Number(b.ano) - Number(a.ano))
+    return withPrivada.length > 0 ? Number(withPrivada[0].privada) : null
+  }, [filteredDependencia])
 
   const hasTotal = isCensusIndicator
     ? countRowsWithValue(filteredTotal, 'valor') >= 2
@@ -238,9 +253,183 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
           <div className="complementary-data__panel" role="tabpanel">
             {activeOption?.content}
           </div>
+          <PrivadasConveniadasSection
+            data={sharedPrivadas}
+            numberFormatter={numberFormatter}
+            indicatorKey={indicatorKey}
+            activeTab={activeTab}
+            totalPrivadaRede={totalPrivadaRede}
+          />
         </div>
       ) : null}
     </section>
+  )
+}
+
+const INDICATOR_TO_SECAO = {
+  creche: 'creche',
+  pre_escola: 'pre_escola',
+  ensino_fundamental_ou_completo_pop_6_14: 'ensino_fundamental',
+  fundamental_concluido_18_mais: 'ensino_fundamental',
+  fundamental_concluido_15_29: 'ensino_fundamental',
+  idade_regular_quinto: 'anos_iniciais',
+  idade_regular_nono: 'anos_finais',
+  basico_15_17: 'ensino_medio',
+  ensino_medio_ou_basica_completa_pop_15_17: 'ensino_medio',
+  idade_regular_medio: 'ensino_medio',
+  medio_concluido_18_mais: 'ensino_medio',
+  medio_concluido_18_29: 'ensino_medio',
+  medio_tecnico: 'educacao_profissional',
+  medio_tecnico_total: 'educacao_profissional',
+  medio_tecnico_participacao_publica: 'educacao_profissional',
+  subsequente_expansao: 'educacao_profissional',
+  eja_integrada_educacao_profissional: 'eja',
+  aee: 'educacao_especial',
+}
+
+const SECAO_LABELS = {
+  educacao_basica: 'Educação básica',
+  educacao_infantil: 'Educação infantil',
+  creche: 'Creche',
+  pre_escola: 'Pré-escola',
+  ensino_fundamental: 'Ensino fundamental',
+  anos_iniciais: 'Anos iniciais',
+  anos_finais: 'Anos finais',
+  ensino_medio: 'Ensino médio',
+  educacao_profissional: 'Educação profissional',
+  eja: 'EJA',
+  educacao_especial: 'Educação especial',
+}
+
+const SECAO_LABELS_LC = {
+  educacao_basica: 'educação básica',
+  educacao_infantil: 'educação infantil',
+  creche: 'creche',
+  pre_escola: 'pré-escola',
+  ensino_fundamental: 'ensino fundamental',
+  anos_iniciais: 'anos iniciais',
+  anos_finais: 'anos finais',
+  ensino_medio: 'ensino médio',
+  educacao_profissional: 'educação profissional',
+  eja: 'EJA',
+  educacao_especial: 'educação especial',
+}
+
+function resolveSecaoFromIndicator(indicatorKey) {
+  return INDICATOR_TO_SECAO[indicatorKey] ?? null
+}
+
+function findSecaoEntry(porSecao, secao) {
+  if (!Array.isArray(porSecao)) return null
+  return porSecao.find((entry) => entry.secao === secao) ?? null
+}
+
+function PrivadasConveniadasSection({ data, numberFormatter, indicatorKey, activeTab, totalPrivadaRede }) {
+  if (!data) return null
+  if (activeTab !== 'administrative-dependency') return null
+
+  const secao = resolveSecaoFromIndicator(indicatorKey)
+  if (!secao) return null
+
+  const entry = findSecaoEntry(data.por_secao, secao)
+  if (!entry) return null
+
+  const values = entry
+  const rotuloRecorte = SECAO_LABELS[secao] ?? secao
+  const rotuloRecorteLc = SECAO_LABELS_LC[secao] ?? secao
+
+  const calcPercent = (numerador, denominador) => {
+    if (numerador == null || denominador == null || typeof denominador !== 'number' || denominador <= 0) return null
+    if (!Number.isFinite(numerador) || !Number.isFinite(denominador)) return null
+    return (numerador / denominador) * 100
+  }
+
+  const pctMunicipalTotal = calcPercent(values.municipal_total, totalPrivadaRede)
+
+  const formatValue = (val) => {
+    if (val == null || (typeof val === 'number' && !Number.isFinite(val))) return '—'
+    return numberFormatter.format(val)
+  }
+
+  const formatPercent = (val) => {
+    if (val == null || !Number.isFinite(val)) return null
+    return `${val.toLocaleString('pt-BR', { maximumFractionDigits: 1, minimumFractionDigits: 1 })}% da rede privada`
+  }
+
+  const primaryHelper =
+    totalPrivadaRede != null && Number.isFinite(totalPrivadaRede) && totalPrivadaRede > 0
+      ? `${formatValue(values.municipal_total)} de ${formatValue(totalPrivadaRede)} matrículas privadas em ${rotuloRecorteLc}.`
+      : null
+
+  const pctLabel = pctMunicipalTotal != null ? formatPercent(pctMunicipalTotal) : null
+  const barPct = pctMunicipalTotal != null ? Math.min(pctMunicipalTotal, 100) : 0
+  const showBar = pctMunicipalTotal != null
+
+  return (
+    <div className="privadas-conveniadas">
+      <div className="privadas-conveniadas__header">
+        <h5 className="privadas-conveniadas__title">
+          Rede privada conveniada sob responsabilidade municipal
+        </h5>
+        {rotuloRecorte ? (
+          <span className="privadas-conveniadas__chip">{rotuloRecorte}</span>
+        ) : null}
+      </div>
+      <p className="privadas-conveniadas__desc">
+        Matrículas da rede privada conveniada cujo convênio é de responsabilidade do
+        município, isoladamente ou em conjunto com o Estado.
+      </p>
+      <div className="privadas-conveniadas__body">
+        <div className="privadas-conveniadas__primary">
+          <div className="privadas-conveniadas__primary-inner">
+            <span className="privadas-conveniadas__primary-label">
+              Total com participação municipal
+            </span>
+            <strong className="privadas-conveniadas__primary-value">
+              {formatValue(values.municipal_total)}
+            </strong>
+            {pctLabel ? (
+              <span className="privadas-conveniadas__primary-pct">{pctLabel}</span>
+            ) : null}
+            {primaryHelper ? (
+              <span className="privadas-conveniadas__primary-helper">{primaryHelper}</span>
+            ) : null}
+            {showBar ? (
+              <div className="privadas-conveniadas__bar">
+                <div
+                  className="privadas-conveniadas__bar-fill"
+                  style={{ width: `${barPct}%` }}
+                />
+              </div>
+            ) : null}
+          </div>
+        </div>
+        <div className="privadas-conveniadas__secondary">
+          <div className="privadas-conveniadas__sec-card">
+            <span className="privadas-conveniadas__sec-label">Total conveniado</span>
+            <strong className="privadas-conveniadas__sec-value">
+              {formatValue(values.total_conveniado)}
+            </strong>
+          </div>
+          <div className="privadas-conveniadas__sec-card">
+            <span className="privadas-conveniadas__sec-label">Município</span>
+            <strong className="privadas-conveniadas__sec-value">
+              {formatValue(values.municipio)}
+            </strong>
+          </div>
+          <div className="privadas-conveniadas__sec-card">
+            <span className="privadas-conveniadas__sec-label">Estado e Município</span>
+            <strong className="privadas-conveniadas__sec-value">
+              {formatValue(values.estado_municipio)}
+            </strong>
+          </div>
+        </div>
+      </div>
+      <p className="privadas-conveniadas__fonte">
+        Dado disponível a partir de {data.disponivel_desde} na Sinopse Estatística do
+        Censo Escolar.
+      </p>
+    </div>
   )
 }
 

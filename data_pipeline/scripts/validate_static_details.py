@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import sys
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -26,6 +27,7 @@ ALLOWED_TOP_LEVEL_FIELDS = {
     "subtitle",
     "title",
     "unit",
+    "_shared",
 }
 
 FORBIDDEN_FIELDS = {"series_by_dependencia"}
@@ -324,6 +326,108 @@ def validate_detail_payload(
     return True
 
 
+def validate_shared_privadas_conveniadas(
+    payload: Any, *, path: Path, problems: list[Problem]
+) -> None:
+    if not isinstance(payload, dict):
+        add_problem(problems, "ERROR", path, "_shared.privadas_conveniadas must be an object.")
+        return
+
+    expected_keys = {
+        "ultimo_ano", "resumo", "por_secao", "por_categoria", "fonte", "disponivel_desde"
+    }
+    missing = expected_keys - set(payload)
+    if missing:
+        add_problem(
+            problems, "ERROR", path,
+            f"_shared.privadas_conveniadas missing keys: {', '.join(sorted(missing))}."
+        )
+
+    ultimo_ano = payload.get("ultimo_ano")
+    if not isinstance(ultimo_ano, int) or ultimo_ano != 2025:
+        add_problem(
+            problems, "ERROR", path,
+            f"_shared.privadas_conveniadas.ultimo_ano should be 2025, got {ultimo_ano}."
+        )
+
+    disponivel_desde = payload.get("disponivel_desde")
+    if not isinstance(disponivel_desde, int) or disponivel_desde != 2025:
+        add_problem(
+            problems, "ERROR", path,
+            f"_shared.privadas_conveniadas.disponivel_desde should be 2025, got {disponivel_desde}."
+        )
+
+    resumo = payload.get("resumo")
+    if not isinstance(resumo, dict):
+        add_problem(
+            problems, "ERROR", path,
+            "_shared.privadas_conveniadas.resumo must be an object."
+        )
+    elif resumo:
+        for key in ("total_conveniado", "municipio", "estado_municipio", "municipal_total"):
+            val = resumo.get(key)
+            if val is not None and not is_number(val):
+                add_problem(
+                    problems, "ERROR", path,
+                    f"_shared.privadas_conveniadas.resumo.{key} must be number or null."
+                )
+
+    por_secao = payload.get("por_secao")
+    if not isinstance(por_secao, list):
+        add_problem(
+            problems, "ERROR", path,
+            "_shared.privadas_conveniadas.por_secao must be a list."
+        )
+    else:
+        _validate_por_list(
+            por_secao, "por_secao", {"secao": str},
+            ["total_conveniado", "municipio", "estado_municipio", "municipal_total"],
+            path, problems,
+        )
+
+    por_categoria = payload.get("por_categoria")
+    if not isinstance(por_categoria, list):
+        add_problem(
+            problems, "ERROR", path,
+            "_shared.privadas_conveniadas.por_categoria must be a list."
+        )
+    else:
+        _validate_por_list(
+            por_categoria, "por_categoria", {"categoria": str},
+            ["total_conveniado", "municipal_total"],
+            path, problems,
+        )
+
+
+def _validate_por_list(
+    items: list, field: str, str_fields: dict,
+    numeric_fields: list[str], path: Path, problems: list[Problem],
+) -> None:
+    for idx, item in enumerate(items):
+        if not isinstance(item, dict):
+            add_problem(
+                problems, "ERROR", path,
+                f"_shared.privadas_conveniadas.{field}[{idx}] must be an object."
+            )
+            continue
+        for key, expected_type in str_fields.items():
+            val = item.get(key)
+            if not isinstance(val, expected_type):
+                add_problem(
+                    problems, "ERROR", path,
+                    f"_shared.privadas_conveniadas.{field}[{idx}].{key} "
+                    f"must be a {expected_type.__name__}."
+                )
+        for key in numeric_fields:
+            val = item.get(key)
+            if val is not None and not is_number(val):
+                add_problem(
+                    problems, "ERROR", path,
+                    f"_shared.privadas_conveniadas.{field}[{idx}].{key} "
+                    f"must be number or null."
+                )
+
+
 def validate_detail_file(path: Path, problems: list[Problem]) -> int:
     try:
         with path.open("r", encoding="utf-8") as file:
@@ -339,8 +443,24 @@ def validate_detail_file(path: Path, problems: list[Problem]) -> int:
         add_problem(problems, "ERROR", path, "top-level payload must be an object.")
         return 0
 
+    shared = payload.get("_shared")
+    if shared is not None:
+        if not isinstance(shared, dict):
+            add_problem(
+                problems, "ERROR", path,
+                "top-level _shared must be an object."
+            )
+        else:
+            privadas = shared.get("privadas_conveniadas")
+            if privadas is not None:
+                validate_shared_privadas_conveniadas(
+                    privadas, path=path, problems=problems
+                )
+
     total_details = 0
     for indicator_key, detail_payload in payload.items():
+        if indicator_key == "_shared":
+            continue
         total_details += 1
         validate_detail_payload(
             detail_payload,
@@ -369,6 +489,63 @@ def print_summary(total_files: int, problems: list[Problem], max_problems: int) 
             print(f"  ... {len(problems) - max_problems} more problem(s) omitted.")
 
 
+EXPECTED_MUNICIPALITIES = 497
+_ID_PATTERN = re.compile(r"^\d{7}$")
+
+
+def _validate_shared_coverage(
+    detail_files: list[Path], data_dir: Path, problems: list[Problem]
+) -> None:
+    seen_ids_with: set[str] = set()
+    seen_ids_without: set[str] = set()
+
+    for path in detail_files:
+        parent_name = path.parent.name
+        if not _ID_PATTERN.match(parent_name):
+            continue
+
+        try:
+            with path.open("r", encoding="utf-8") as f:
+                payload = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            continue
+
+        shared = payload.get("_shared") if isinstance(payload, dict) else None
+        if isinstance(shared, dict):
+            privadas = shared.get("privadas_conveniadas")
+        else:
+            privadas = None
+
+        if privadas is not None:
+            seen_ids_with.add(parent_name)
+        else:
+            seen_ids_without.add(parent_name)
+
+    total_ids = len(seen_ids_with) + len(seen_ids_without)
+    if total_ids != EXPECTED_MUNICIPALITIES:
+        add_problem(
+            problems, "ERROR", data_dir,
+            f"Expected {EXPECTED_MUNICIPALITIES} municipal ID directories, "
+            f"found {total_ids}."
+        )
+
+    if len(seen_ids_without) > 0:
+        exemplos = sorted(seen_ids_without)[:5]
+        add_problem(
+            problems, "ERROR", data_dir,
+            f"{len(seen_ids_without)} municipio(s) sem "
+            f"_shared.privadas_conveniadas: {', '.join(exemplos)}"
+            + ("..." if len(seen_ids_without) > 5 else "")
+        )
+
+    if len(seen_ids_with) != EXPECTED_MUNICIPALITIES:
+        add_problem(
+            problems, "ERROR", data_dir,
+            f"Expected {EXPECTED_MUNICIPALITIES} municipios with "
+            f"_shared.privadas_conveniadas, found {len(seen_ids_with)}."
+        )
+
+
 def main() -> int:
     args = parse_args()
     data_dir = Path(args.data_dir).resolve()
@@ -388,6 +565,8 @@ def main() -> int:
     total_files = 0
     for path in detail_files:
         total_files += validate_detail_file(path, problems)
+
+    _validate_shared_coverage(detail_files, data_dir, problems)
 
     print_summary(total_files, problems, args.max_problems)
     return 1 if any(problem.severity == "ERROR" for problem in problems) else 0

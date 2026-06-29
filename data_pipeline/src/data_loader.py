@@ -174,6 +174,10 @@ def load_pne_2026_2036_metricas_data():
     return load_dataset("pne_2026_2036_metricas_data")
 
 
+def load_matriculas_privadas_conveniadas():
+    return fetch_raw_table("matriculas_privadas_conveniadas_poder_publico")
+
+
 __all__ = [
     "clear_data_cache",
     "fetch_supabase_table",
@@ -218,6 +222,7 @@ __all__ = [
     "load_saeb_ideb_data",
     "load_saeb_proficiencia_data",
     "load_saeb_matematica_data",
+    "load_matriculas_privadas_conveniadas",
     "load_pne_2014_2024_metricas_data",
     "load_pne_2026_2036_metricas_data",
     "load_taxa_alfabetizacao_data",
