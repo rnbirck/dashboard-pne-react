@@ -4,6 +4,7 @@ import { loadIndicatorDetail, loadMunicipioSharedInfo } from '../data/staticData
 import { isDemographicCensusIndicator } from '../utils/indicatorSeries'
 import { AdministrativeDependencyChart } from './AdministrativeDependencyChart'
 import { ComplementaryEnrollmentChart } from './ComplementaryEnrollmentChart'
+import { DataSourceNote } from './DataSourceNote'
 import { IndicatorProjectionPanel } from './IndicatorProjectionPanel'
 
 const numberFormatter = new Intl.NumberFormat('pt-BR')
@@ -151,7 +152,7 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
       if (hasComponents) {
         availableOptions.push({
           key: 'calculation-numbers',
-          label: 'Números usados no cálculo',
+          label: 'Dados usados no cálculo',
           content: (
             <CalculationComponentsTable
               denominatorLabel={denominatorLabel}
@@ -252,6 +253,17 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
           ) : null}
           <div className="complementary-data__panel" role="tabpanel">
             {activeOption?.content}
+            <DataSourceNote
+              context={{
+                block: 'pne',
+                cycle,
+                detailType: activeOption?.key,
+                details,
+                indicatorKey,
+                result,
+                title: activeOption?.label,
+              }}
+            />
           </div>
           <PrivadasConveniadasSection
             data={sharedPrivadas}
@@ -436,7 +448,7 @@ function PrivadasConveniadasSection({ data, numberFormatter, indicatorKey, activ
 function CalculationComponentsTable({ denominatorLabel, numeratorLabel, rows }) {
   return (
     <div className="complementary-components">
-      <h5>Números usados no cálculo</h5>
+      <h5>Dados usados no cálculo</h5>
       <div className="complementary-components__table-wrap">
         <table className="complementary-components__table">
           <thead>

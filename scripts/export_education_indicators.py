@@ -208,6 +208,49 @@ def detalhamento_faixa_etaria(df, dimensoes, filtros=None):
     return linhas
 
 
+def detalhamento_cor_raca(df, dimensoes, filtros=None):
+    """Constroi recortes de matriculas por cor/raca.
+
+    A fonte preserva sexo e cor/raca; aqui agregamos por soma para permitir
+    recortes municipais por etapa e por cor/raca no dashboard.
+    """
+    filtros = filtros or {}
+    sub = df.copy()
+    for coluna, valores in filtros.items():
+        if valores is None:
+            continue
+        if not isinstance(valores, (list, tuple, set)):
+            valores = [valores]
+        sub = sub[sub[coluna].isin(valores)]
+
+    if sub.empty:
+        return []
+
+    group_cols = ["ano", *dimensoes]
+    agregados = (
+        sub.groupby(group_cols, dropna=False)["matriculas"]
+        .sum(min_count=1)
+        .reset_index()
+        .sort_values(group_cols)
+    )
+
+    linhas = []
+    for _, r in agregados.iterrows():
+        matriculas = limpar_null(r["matriculas"])
+        if matriculas is None:
+            continue
+        linha = {
+            "ano": int(r["ano"]),
+            "valor": ri(matriculas),
+            "matriculas": ri(matriculas),
+        }
+        for dimensao in dimensoes:
+            linha[dimensao] = r[dimensao]
+        linhas.append(linha)
+
+    return linhas
+
+
 def detalhamento_tempo_integral(df, dimensoes, filtros=None):
     """Constroi recortes de matriculas em tempo integral.
 
@@ -534,11 +577,12 @@ FONTES = [
     {"nome": "INEP - SAEB/IDEB", "tabelas": ["saeb_ideb", "saeb_proficiencia"]},
     {"nome": "INEP - INSE", "tabelas": ["inse"]},
     {"nome": "INEP - Alfabetizacao", "tabelas": ["alfabetizacao"]},
+    {"nome": "INEP - Censo Escolar (Sistema S)", "tabelas": ["censo_escolas"]},
 ]
 
 AVISOS_GLOBAIS = [
     "null significa dado ausente, nao zero.",
-    "Cobertura varia por indicador: Censo 2014-2025, Rendimento 2018-2024, "
+    "Cobertura varia por indicador: Censo 2014-2025, Rendimento 2018-2025, "
     "Distorcao 2019-2025, IDEB bienal 2011-2023, INSE 2019/2021/2023.",
 ]
 
@@ -594,7 +638,7 @@ def carregar_view(view, rs_ids=None):
 # ── Bloco: Matriculas ────────────────────────────────────────────────────
 
 
-def montar_bloco_matriculas(df, id_mun, df_faixa_etaria=None):
+def montar_bloco_matriculas(df, id_mun, df_faixa_etaria=None, df_cor_raca=None):
     """Constroi o bloco de matriculas para um municipio."""
     d = df[df["id_municipio"] == id_mun].copy()
     if d.empty:
@@ -752,6 +796,22 @@ def montar_bloco_matriculas(df, id_mun, df_faixa_etaria=None):
                     ["etapa_ensino", "secao_sinopse", "faixa_etaria"],
                 )
 
+    if df_cor_raca is not None:
+        c = df_cor_raca[df_cor_raca["id_municipio"] == id_mun].copy()
+        if not c.empty:
+            detalhamentos["por_cor_raca"] = detalhamento_cor_raca(
+                c,
+                ["cor_raca"],
+            )
+            detalhamentos["por_etapa_cor_raca"] = detalhamento_cor_raca(
+                c,
+                ["etapa_ensino", "cor_raca"],
+            )
+            if "secao_sinopse" in c.columns:
+                detalhamentos["por_etapa_secao_cor_raca"] = detalhamento_cor_raca(
+                    c,
+                    ["etapa_ensino", "secao_sinopse", "cor_raca"],
+                )
     # Ultimo ano
     ultimo_ano = int(total["ano"].max()) if not total.empty else None
     resumo = _resumo_matriculas(d, ultimo_ano)
@@ -768,7 +828,7 @@ def montar_bloco_matriculas(df, id_mun, df_faixa_etaria=None):
         "ultimo_ano": ultimo_ano,
         "resumo_ultimo_ano": resumo,
         "dimensoes_disponiveis": [
-            "etapa_ensino", "dependencia", "localizacao", "faixa_etaria"
+            "etapa_ensino", "dependencia", "localizacao", "faixa_etaria", "cor_raca"
         ],
         "campos_indisponiveis": _campos_indisponiveis_matriculas(d, ultimo_ano),
     }
@@ -1547,6 +1607,120 @@ def _resumo_oferta(total, ano):
     }
 
 
+# ── Bloco: Sistema S ──────────────────────────────────────────────────────
+
+
+def montar_bloco_sistema_s(df, id_mun, df_escolas=None):
+    """Constroi o bloco de escolas do Sistema S para um municipio."""
+    d = df[df["id_municipio"] == id_mun].copy()
+    if d.empty:
+        return _bloco_vazio_sistema_s()
+
+    anos = sorted(d["ano"].unique())
+    ultimo_ano = int(anos[-1]) if anos else None
+
+    # Series
+    series = {
+        "total_escolas": [
+            {"ano": int(r["ano"]), "valor": ri(r["total_escolas_sistema_s"])}
+            for _, r in d.sort_values("ano").iterrows()
+            if limpar_null(r["total_escolas_sistema_s"]) is not None
+        ],
+        "matriculas": [
+            {"ano": int(r["ano"]), "valor": ri(r["total_matriculas"])}
+            for _, r in d.sort_values("ano").iterrows()
+            if limpar_null(r["total_matriculas"]) is not None
+        ],
+        "turmas": [
+            {"ano": int(r["ano"]), "valor": ri(r["total_turmas"])}
+            for _, r in d.sort_values("ano").iterrows()
+            if limpar_null(r["total_turmas"]) is not None
+        ],
+        "docentes": [
+            {"ano": int(r["ano"]), "valor": ri(r["total_docentes"])}
+            for _, r in d.sort_values("ano").iterrows()
+            if limpar_null(r["total_docentes"]) is not None
+        ],
+    }
+
+    # Resumo do ultimo ano
+    resumo = {}
+    if ultimo_ano is not None:
+        d_ultimo = d[d["ano"] == ultimo_ano]
+        if not d_ultimo.empty:
+            r = d_ultimo.iloc[0]
+            resumo = {
+                "total_escolas": ri(limpar_null(r["total_escolas_sistema_s"])),
+                "total_matriculas": ri(limpar_null(r["total_matriculas"])),
+                "total_turmas": ri(limpar_null(r["total_turmas"])),
+                "total_docentes": ri(limpar_null(r["total_docentes"])),
+            }
+
+    # Distribuicao por etapa
+    distribuicao_etapa = []
+    if ultimo_ano is not None:
+        d_ultimo = d[d["ano"] == ultimo_ano]
+        if not d_ultimo.empty:
+            r = d_ultimo.iloc[0]
+            etapas = [
+                ("Educação Infantil", "mat_infantil"),
+                ("Ensino Fundamental", "mat_fundamental"),
+                ("Ensino Médio", "mat_medio"),
+                ("Educação Profissional", "mat_profissional"),
+                ("EJA", "mat_eja"),
+            ]
+            distribuicao_etapa = [
+                {"etapa": nome, "matriculas": ri(limpar_null(r.get(col)))}
+                for nome, col in etapas
+                if limpar_null(r.get(col)) is not None
+            ]
+
+    # Escolas do ultimo ano
+    escolas = []
+    if df_escolas is not None:
+        de = df_escolas[df_escolas["id_municipio"] == id_mun].copy()
+        if not de.empty:
+            for _, r in de.sort_values("nome_escola").iterrows():
+                etapas = r.get("etapas_ofertadas", "")
+                escolas.append({
+                    "cod_escola": str(r["cod_escola"]),
+                    "nome_escola": str(r["nome_escola"]),
+                    "matriculas": ri(limpar_null(r.get("matriculas"))),
+                    "turmas": ri(limpar_null(r.get("turmas"))),
+                    "docentes": ri(limpar_null(r.get("docentes"))),
+                    "etapas": [e.strip() for e in etapas.split(",") if e.strip()] if etapas else [],
+                })
+
+    avisos = []
+    if not series["total_escolas"]:
+        avisos.append("Não há escolas do Sistema S registradas para este município nos dados disponíveis.")
+
+    return {
+        "series": series,
+        "ultimo_ano": ultimo_ano,
+        "resumo_ultimo_ano": resumo,
+        "distribuicao_etapa": distribuicao_etapa,
+        "escolas": escolas,
+        "avisos": avisos,
+    }
+
+
+def _bloco_vazio_sistema_s():
+    return {
+        "series": {
+            "total_escolas": [],
+            "matriculas": [],
+            "turmas": [],
+            "docentes": [],
+        },
+        "ultimo_ano": None,
+        "resumo_ultimo_ano": {},
+        "distribuicao_etapa": [],
+        "escolas": [],
+        "avisos": ["Não há escolas do Sistema S registradas para este município nos dados disponíveis."],
+    }
+
+
 # ── Helpers de bloco vazio ──────────────────────────────────────────────
 
 
@@ -1571,6 +1745,21 @@ def exportar_municipios(mun_rs, dfs_views, progress_every=0):
     falhas = []
     arquivos_escritos = []
     tamanhos = []
+    dfs_por_municipio = {}
+    for nome, df in dfs_views.items():
+        if hasattr(df, "columns") and "id_municipio" in df.columns:
+            dfs_por_municipio[nome] = {
+                str(id_mun): grupo.copy()
+                for id_mun, grupo in df.groupby("id_municipio", sort=False)
+            }
+        else:
+            dfs_por_municipio[nome] = {}
+
+    def view_df(nome, id_mun):
+        df = dfs_views.get(nome)
+        if df is None:
+            return pd.DataFrame()
+        return dfs_por_municipio.get(nome, {}).get(str(id_mun), df.iloc[0:0].copy())
 
     for idx, (_, mun) in enumerate(mun_rs.iterrows(), 1):
         id_mun = mun["id_municipio"]
@@ -1579,21 +1768,27 @@ def exportar_municipios(mun_rs, dfs_views, progress_every=0):
         try:
             blocos = {
                 "matriculas": montar_bloco_matriculas(
-                    dfs_views["matriculas"],
+                    view_df("matriculas", id_mun),
                     id_mun,
-                    dfs_views.get("matriculas_faixa_etaria"),
+                    view_df("matriculas_faixa_etaria", id_mun),
+                    view_df("matriculas_cor_raca", id_mun),
                 ),
                 "rede_escolar": montar_bloco_rede(
-                    dfs_views["rede_escolar"], id_mun,
-                    dfs_views.get("rede_escolar_etapa"),
+                    view_df("rede_escolar", id_mun), id_mun,
+                    view_df("rede_escolar_etapa", id_mun),
                 ),
-                "turmas_docentes": montar_bloco_turmas(dfs_views["turmas"], id_mun),
-                "fluxo": montar_bloco_fluxo(dfs_views["fluxo"], id_mun),
-                "aprendizagem": montar_bloco_aprendizagem(dfs_views["aprendizagem"], id_mun),
+                "turmas_docentes": montar_bloco_turmas(view_df("turmas", id_mun), id_mun),
+                "fluxo": montar_bloco_fluxo(view_df("fluxo", id_mun), id_mun),
+                "aprendizagem": montar_bloco_aprendizagem(view_df("aprendizagem", id_mun), id_mun),
                 "oferta_tecnica": montar_bloco_oferta(
-                    dfs_views["oferta"],
+                    view_df("oferta", id_mun),
                     id_mun,
-                    dfs_views.get("matriculas_faixa_etaria"),
+                    view_df("matriculas_faixa_etaria", id_mun),
+                ),
+                "sistema_s": montar_bloco_sistema_s(
+                    view_df("sistema_s", id_mun),
+                    id_mun,
+                    view_df("sistema_s_escolas", id_mun),
                 ),
             }
 
@@ -1867,6 +2062,7 @@ def gerar_index(mun_rs, anos_por_bloco, gerados_mun):
         "blocos_disponiveis": [
             "matriculas", "rede_escolar", "turmas_docentes",
             "fluxo", "aprendizagem", "oferta_tecnica",
+            "sistema_s",
         ],
         "campos_indisponiveis": [],
         "caminhos": {
@@ -2087,12 +2283,15 @@ def main():
     views = [
         ("vw_educacao_matriculas", "matriculas"),
         ("vw_educacao_matriculas_faixa_etaria", "matriculas_faixa_etaria"),
+        ("vw_educacao_matriculas_cor_raca", "matriculas_cor_raca"),
         ("vw_educacao_rede_escolar", "rede_escolar"),
         ("vw_educacao_rede_escolar_etapa", "rede_escolar_etapa"),
         ("vw_educacao_turmas_docentes", "turmas"),
         ("vw_educacao_fluxo", "fluxo"),
         ("vw_educacao_aprendizagem", "aprendizagem"),
         ("vw_educacao_oferta_tecnica", "oferta"),
+        ("vw_educacao_sistema_s", "sistema_s"),
+        ("vw_educacao_sistema_s_escolas", "sistema_s_escolas"),
     ]
     dfs = {}
     for view_name, key in views:

@@ -4,7 +4,6 @@ const CHART_WIDTH = 980
 const CHART_HEIGHT = 300
 const PADDING = { bottom: 44, left: 64, right: 68, top: 38 }
 
-const numberFormatter = new Intl.NumberFormat('pt-BR')
 const percentFormatter = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 1,
   minimumFractionDigits: 1,

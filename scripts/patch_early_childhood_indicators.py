@@ -4,11 +4,14 @@ import argparse
 import json
 import math
 import os
+import re
+import unicodedata
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
 import psycopg2
+from psycopg2.extras import execute_values
 from openpyxl import load_workbook
 
 
@@ -62,6 +65,31 @@ CYCLES = {
         "end_year": 2025,
         "meta_label": "Meta PNE 2036",
     },
+}
+
+DEMOGRAPHIC_STAGES = {
+    "creche": ("infantil", "creche"),
+    "pre_escola": ("infantil", "pre_escola"),
+    "fundamental_anos_iniciais": (
+        "fundamental_anos_iniciais",
+        "fundamental_anos_iniciais",
+    ),
+    "fundamental_anos_finais": (
+        "fundamental_anos_finais",
+        "fundamental_anos_finais",
+    ),
+    "medio": ("medio", "medio"),
+    "profissional": ("profissional", "educacao_profissional"),
+    "eja": ("eja", "eja"),
+}
+
+RACE_ORDER = {
+    "nao_declarada": "Não Declarada",
+    "branca": "Branca",
+    "preta": "Preta",
+    "parda": "Parda",
+    "amarela": "Amarela",
+    "indigena": "Indígena",
 }
 
 
@@ -141,6 +169,347 @@ def municipal_id(value: Any) -> str | None:
     if number is None:
         return None
     return str(int(number))
+
+
+def normalize_label(value: Any) -> str:
+    text = "" if value is None else str(value).strip()
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(char for char in text if not unicodedata.combining(char))
+    text = re.sub(r"\s+", " ", text.lower()).strip()
+    return text
+
+
+def safe_cell_text(value: Any) -> str:
+    return "" if value is None else str(value).strip()
+
+
+def worksheet_title_text(worksheet) -> str:
+    parts: list[str] = []
+    for row in worksheet.iter_rows(min_row=1, max_row=4, values_only=True):
+        parts.extend(safe_cell_text(value) for value in row if safe_cell_text(value))
+    return " ".join(parts)
+
+
+def demographic_stage_from_title(title: str) -> tuple[str, str] | None:
+    normalized = normalize_label(title)
+    if "educacao especial" in normalized or "educacao basica" in normalized:
+        return None
+    if "creche" in normalized:
+        return DEMOGRAPHIC_STAGES["creche"]
+    if "pre-escola" in normalized or "pre escola" in normalized:
+        return DEMOGRAPHIC_STAGES["pre_escola"]
+    if "anos iniciais" in normalized:
+        return DEMOGRAPHIC_STAGES["fundamental_anos_iniciais"]
+    if "anos finais" in normalized:
+        return DEMOGRAPHIC_STAGES["fundamental_anos_finais"]
+    if "ensino medio" in normalized:
+        return DEMOGRAPHIC_STAGES["medio"]
+    if "educacao profissional" in normalized:
+        return DEMOGRAPHIC_STAGES["profissional"]
+    if "jovens e adultos" in normalized or "eja" in normalized:
+        return DEMOGRAPHIC_STAGES["eja"]
+    return None
+
+
+def race_key(value: Any) -> str | None:
+    normalized = normalize_label(value)
+    if not normalized or normalized == "total":
+        return None
+    normalized = normalized.replace("nao declarada", "nao_declarada")
+    normalized = normalized.replace("indigena", "indigena")
+    if normalized in RACE_ORDER:
+        return normalized
+    return None
+
+
+def sex_key(value: Any) -> str | None:
+    normalized = normalize_label(value)
+    if normalized.startswith("feminino"):
+        return "feminino"
+    if normalized.startswith("masculino"):
+        return "masculino"
+    return None
+
+
+def is_age_header(value: Any) -> bool:
+    normalized = normalize_label(value)
+    if not normalized:
+        return False
+    if normalized.startswith("faixa etaria"):
+        return False
+    if normalized.startswith("total"):
+        return False
+    return "anos" in normalized or normalized.startswith("ate ")
+
+
+def sinopse_data_rows(worksheet):
+    for row in worksheet.iter_rows(values_only=True):
+        if len(row) < 5:
+            continue
+        if safe_cell_text(row[1]) != UF_TARGET:
+            continue
+        id_municipio = municipal_id(row[3])
+        municipio = safe_cell_text(row[2])
+        if id_municipio is None or not municipio:
+            continue
+        yield row, id_municipio, municipio
+
+
+def age_columns(worksheet) -> list[tuple[int, str]]:
+    best: list[tuple[int, str]] = []
+    for row in worksheet.iter_rows(min_row=1, max_row=12, values_only=True):
+        columns = [
+            (index, safe_cell_text(value))
+            for index, value in enumerate(row)
+            if index >= 5 and is_age_header(value)
+        ]
+        if len(columns) > len(best):
+            best = columns
+    return best
+
+
+def race_columns(worksheet) -> list[tuple[int, str, str]]:
+    header_rows = list(worksheet.iter_rows(min_row=1, max_row=12, values_only=True))
+    best_index = None
+    best_count = 0
+    for index, row in enumerate(header_rows):
+        count = sum(1 for value in row if race_key(value) is not None)
+        if count > best_count:
+            best_count = count
+            best_index = index
+    if best_index is None or best_count == 0:
+        return []
+
+    header = header_rows[best_index]
+    sex_header = header_rows[best_index - 1] if best_index > 0 else []
+    current_sex = None
+    sex_by_col: dict[int, str | None] = {}
+    for col_index in range(len(header)):
+        current = sex_key(sex_header[col_index] if col_index < len(sex_header) else None)
+        if current:
+            current_sex = current
+        sex_by_col[col_index] = current_sex
+
+    columns: list[tuple[int, str, str]] = []
+    for col_index, value in enumerate(header):
+        key = race_key(value)
+        if key is None:
+            continue
+        sex = sex_by_col.get(col_index)
+        if sex is None:
+            continue
+        columns.append((col_index, sex, RACE_ORDER[key]))
+    return columns
+
+
+def read_sinopse_demographic_rows(
+    sinopse_dir: Path,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    faixa_rows: list[dict[str, Any]] = []
+    cor_raca_rows: list[dict[str, Any]] = []
+
+    for year in YEARS:
+        workbook_path = locate_sinopse_file(sinopse_dir, year)
+        workbook = load_workbook(workbook_path, read_only=True, data_only=True)
+        try:
+            for worksheet in workbook.worksheets:
+                title = worksheet_title_text(worksheet)
+                normalized_title = normalize_label(title)
+                if "matriculas" not in normalized_title:
+                    continue
+                stage = demographic_stage_from_title(title)
+                if stage is None:
+                    continue
+                etapa_ensino, secao_sinopse = stage
+                fonte = (
+                    "INEP - Sinopse Estatistica do Censo Escolar "
+                    f"{year}, tabela {worksheet.title}"
+                )
+
+                if "faixa etaria" in normalized_title:
+                    columns = age_columns(worksheet)
+                    for row, id_municipio, municipio in sinopse_data_rows(worksheet):
+                        for col_index, faixa_etaria in columns:
+                            value = number_or_none(
+                                row[col_index] if col_index < len(row) else None
+                            )
+                            faixa_rows.append(
+                                {
+                                    "ano": year,
+                                    "id_municipio": id_municipio,
+                                    "municipio": municipio,
+                                    "etapa_ensino": etapa_ensino,
+                                    "secao_sinopse": secao_sinopse,
+                                    "faixa_etaria": faixa_etaria.strip(),
+                                    "matriculas": int(value or 0),
+                                    "fonte": fonte,
+                                }
+                            )
+                elif "sexo e cor/raca" in normalized_title:
+                    columns = race_columns(worksheet)
+                    for row, id_municipio, municipio in sinopse_data_rows(worksheet):
+                        for col_index, sexo, cor_raca in columns:
+                            value = number_or_none(
+                                row[col_index] if col_index < len(row) else None
+                            )
+                            cor_raca_rows.append(
+                                {
+                                    "ano": year,
+                                    "id_municipio": id_municipio,
+                                    "municipio": municipio,
+                                    "etapa_ensino": etapa_ensino,
+                                    "secao_sinopse": secao_sinopse,
+                                    "sexo": sexo,
+                                    "cor_raca": cor_raca,
+                                    "matriculas": int(value or 0),
+                                    "fonte": fonte,
+                                }
+                            )
+        finally:
+            workbook.close()
+
+    return faixa_rows, cor_raca_rows
+
+
+def sync_sinopse_demographic_tables(
+    python_project_dir: Path,
+    faixa_rows: list[dict[str, Any]],
+    cor_raca_rows: list[dict[str, Any]],
+) -> None:
+    with db_connection(python_project_dir) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS matriculas_faixa_etaria (
+                    ano bigint,
+                    id_municipio text,
+                    municipio text,
+                    etapa_ensino text,
+                    secao_sinopse text,
+                    faixa_etaria text,
+                    matriculas bigint,
+                    fonte text,
+                    data_carga timestamp without time zone DEFAULT now()
+                )
+                """
+            )
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS matriculas_cor_raca (
+                    ano bigint,
+                    id_municipio text,
+                    municipio text,
+                    etapa_ensino text,
+                    secao_sinopse text,
+                    sexo text,
+                    cor_raca text,
+                    matriculas bigint,
+                    fonte text,
+                    data_carga timestamp without time zone DEFAULT now()
+                )
+                """
+            )
+            cursor.execute("DELETE FROM matriculas_faixa_etaria WHERE ano BETWEEN %s AND %s", (min(YEARS), max(YEARS)))
+            cursor.execute("DELETE FROM matriculas_cor_raca WHERE ano BETWEEN %s AND %s", (min(YEARS), max(YEARS)))
+
+            if faixa_rows:
+                execute_values(
+                    cursor,
+                    """
+                    INSERT INTO matriculas_faixa_etaria (
+                        ano, id_municipio, municipio, etapa_ensino, secao_sinopse,
+                        faixa_etaria, matriculas, fonte, data_carga
+                    ) VALUES %s
+                    """,
+                    [
+                        (
+                            row["ano"],
+                            row["id_municipio"],
+                            row["municipio"],
+                            row["etapa_ensino"],
+                            row["secao_sinopse"],
+                            row["faixa_etaria"],
+                            row["matriculas"],
+                            row["fonte"],
+                        )
+                        for row in faixa_rows
+                    ],
+                    template="(%s, %s, %s, %s, %s, %s, %s, %s, now())",
+                    page_size=5000,
+                )
+            if cor_raca_rows:
+                execute_values(
+                    cursor,
+                    """
+                    INSERT INTO matriculas_cor_raca (
+                        ano, id_municipio, municipio, etapa_ensino, secao_sinopse,
+                        sexo, cor_raca, matriculas, fonte, data_carga
+                    ) VALUES %s
+                    """,
+                    [
+                        (
+                            row["ano"],
+                            row["id_municipio"],
+                            row["municipio"],
+                            row["etapa_ensino"],
+                            row["secao_sinopse"],
+                            row["sexo"],
+                            row["cor_raca"],
+                            row["matriculas"],
+                            row["fonte"],
+                        )
+                        for row in cor_raca_rows
+                    ],
+                    template="(%s, %s, %s, %s, %s, %s, %s, %s, %s, now())",
+                    page_size=5000,
+                )
+
+            cursor.execute(
+                """
+                CREATE OR REPLACE VIEW vw_educacao_matriculas_faixa_etaria AS
+                SELECT
+                    ano::integer AS ano,
+                    id_municipio::text AS id_municipio,
+                    municipio::text AS municipio,
+                    etapa_ensino::text AS etapa_ensino,
+                    secao_sinopse::text AS secao_sinopse,
+                    faixa_etaria::text AS faixa_etaria,
+                    matriculas::bigint AS matriculas,
+                    fonte::text AS fonte,
+                    data_carga
+                FROM matriculas_faixa_etaria
+                """
+            )
+            cursor.execute(
+                """
+                CREATE OR REPLACE VIEW vw_educacao_matriculas_cor_raca AS
+                SELECT
+                    ano::integer AS ano,
+                    id_municipio::text AS id_municipio,
+                    municipio::text AS municipio,
+                    etapa_ensino::text AS etapa_ensino,
+                    secao_sinopse::text AS secao_sinopse,
+                    sexo::text AS sexo,
+                    cor_raca::text AS cor_raca,
+                    matriculas::bigint AS matriculas,
+                    fonte::text AS fonte,
+                    data_carga
+                FROM matriculas_cor_raca
+                """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_matriculas_faixa_etaria_lookup
+                ON matriculas_faixa_etaria (id_municipio, ano, etapa_ensino, secao_sinopse)
+                """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_matriculas_cor_raca_lookup
+                ON matriculas_cor_raca (id_municipio, ano, etapa_ensino, secao_sinopse, cor_raca)
+                """
+            )
+        connection.commit()
 
 
 def read_sinopse_enrollments(
@@ -657,6 +1026,16 @@ def main() -> int:
     print("[early-childhood] Lendo matriculas das sinopses...")
     enrollments = read_sinopse_enrollments(sinopse_dir)
     print(f"[early-childhood] Linhas ano/municipio com matriculas: {len(enrollments)}")
+
+    print("[early-childhood] Lendo recortes de faixa etaria e cor/raca das sinopses...")
+    faixa_rows, cor_raca_rows = read_sinopse_demographic_rows(sinopse_dir)
+    print(
+        "[early-childhood] Linhas de detalhe extraidas: "
+        f"{len(faixa_rows)} faixa etaria; {len(cor_raca_rows)} cor/raca"
+    )
+
+    print("[early-childhood] Atualizando tabelas/views demograficas no Postgres local...")
+    sync_sinopse_demographic_tables(python_project_dir, faixa_rows, cor_raca_rows)
 
     print("[early-childhood] Lendo populacao do Postgres local...")
     population = read_population(python_project_dir)

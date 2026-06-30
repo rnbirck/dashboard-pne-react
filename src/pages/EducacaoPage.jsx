@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CategoryTabs } from '../components/CategoryTabs'
 import { FundebPanel } from '../components/FundebPanel'
+import { SistemaSPanel } from '../components/SistemaSPanel'
 import { FUNDEB_INDICATORS } from '../data/fundebIndicators'
 import { EducationBarChart } from '../components/EducationBarChart'
 import { EducationLineChart } from '../components/EducationLineChart'
 import { EducationStackedBarChart } from '../components/EducationStackedBarChart'
 import { EducationSummaryCard } from '../components/EducationSummaryCard'
 import { EducationTable } from '../components/EducationTable'
+import { DataSourceNote } from '../components/DataSourceNote'
 import { MetricCard } from '../components/MetricCard'
 import { StatusBadge } from '../components/StatusBadge'
 import { loadEducationMunicipio, loadEducationMunicipiosIndex } from '../data/educationData'
@@ -70,6 +72,7 @@ const EJA_VALID_AGE_RANGES = [
   '40 anos ou mais',
 ]
 const CATEGORY_COMPARISON_COLORS = ['#0f766e', '#2563eb', '#f59e0b', '#7c3aed', '#0891b2', '#db2777', '#65a30d', '#9333ea']
+const COR_RACA_ORDER = ['Branca', 'Parda', 'Preta', 'Amarela', 'Indígena', 'Não Declarada']
 
 export function EducacaoPage({ municipioData, selectedMunicipio }) {
   const eduIndexState = useAsyncData(() => loadEducationMunicipiosIndex(), [])
@@ -87,6 +90,18 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
   const [selectedThemeKey, setSelectedThemeKey] = useState('matriculas')
   const [selectedIndicatorKey, setSelectedIndicatorKey] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
+
+  const dados = munDataState.data
+  const sistemaS = dados?.blocos?.sistema_s ?? {}
+  const hasSistemaS =
+    Number(sistemaS.resumo_ultimo_ano?.total_escolas || 0) > 0 &&
+    Number(sistemaS.ultimo_ano) === 2025
+
+  useEffect(() => {
+    if (selectedScope === 'sistema_s' && !hasSistemaS) {
+      setSelectedScope('panorama')
+    }
+  }, [hasSistemaS, selectedScope])
 
   if (!selectedMunicipio) {
     return (
@@ -119,7 +134,6 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
     return <div className="page-stack"><div className="state-box state-box--error"><strong>Erro ao carregar dados</strong><span>{munDataState.error}</span></div></div>
   }
 
-  const dados = munDataState.data
   if (!dados) return null
 
   const model = buildEducationModel(dados.blocos ?? {})
@@ -156,6 +170,69 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
 
   const panoramaCount = model.themes.reduce((sum, t) => sum + t.items.length, 0)
 
+  function renderPanoramaScope() {
+    return (
+      <>
+        <div className="cycle-category-bar">
+          <span className="eyebrow">Temas de análise</span>
+          <div className="cycle-category-bar__controls">
+            <CategoryTabs
+              ariaLabel="Temas da educação"
+              categories={themes}
+              selectedCategory={selectedTheme?.key}
+              onSelectCategory={handleThemeSelect}
+            />
+          </div>
+        </div>
+        <div className="cycle-layout educacao-analysis-layout">
+          <aside className="indicator-sidebar">
+            <div className="indicator-sidebar__heading">
+              <h3>Indicadores</h3>
+              <span>{filteredItems.length}</span>
+            </div>
+            <label className="indicator-search">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="6.5" />
+                <path d="m16 16 4 4" />
+              </svg>
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Buscar indicador..."
+                aria-label="Buscar indicador"
+              />
+            </label>
+            <EducationIndicatorList
+              items={filteredItems}
+              selectedIndicator={activeIndicator?.key}
+              onSelectIndicator={setSelectedIndicatorKey}
+            />
+          </aside>
+          <EducationIndicatorDetail indicator={activeIndicator} blocos={dados.blocos} />
+        </div>
+      </>
+    )
+  }
+
+  function renderSelectedEducationScope() {
+    if (selectedScope === 'sistema_s' && hasSistemaS) {
+      return <SistemaSPanel blocos={dados.blocos} />
+    }
+
+    if (selectedScope === 'fundeb') {
+      return (
+        <FundebPanel
+          municipioData={municipioData}
+          selectedMunicipio={selectedMunicipio}
+          embedded={true}
+        />
+      )
+    }
+
+    return renderPanoramaScope()
+  }
+
   return (
     <div className="page-stack educacao-page">
       <section className="page-card educacao-hero">
@@ -170,7 +247,7 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
       <section className="educacao-scope-selector">
         <span className="eyebrow educacao-scope-selector__heading">Escolha o bloco de indicadores</span>
         <p className="educacao-scope-selector__subtitle">Alterne entre os indicadores gerais da educação e os dados financeiros do FUNDEB.</p>
-        <div className="educacao-scope-selector__grid">
+        <div className={'educacao-scope-selector__grid' + (hasSistemaS ? ' is-triple' : '')}>
           <button
             className={'educacao-scope-card' + (selectedScope === 'panorama' ? ' is-active' : '')}
             type="button"
@@ -185,6 +262,19 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
               <span className="educacao-scope-card__count">{panoramaCount} indicadores</span>
             </span>
           </button>
+          {hasSistemaS && (
+            <button
+              className={'educacao-scope-card' + (selectedScope === 'sistema_s' ? ' is-active' : '')}
+              type="button"
+              aria-pressed={selectedScope === 'sistema_s'}
+              onClick={() => handleScopeSelect('sistema_s')}
+            >
+              <span className="educacao-scope-card__title">Escolas do Sistema S</span>
+              <span className="educacao-scope-card__description">
+                Escolas, matrículas, turmas e etapas atendidas pelo Sistema S.
+              </span>
+            </button>
+          )}
           <button
             className={'educacao-scope-card' + (selectedScope === 'fundeb' ? ' is-active' : '')}
             type="button"
@@ -205,54 +295,7 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
       {selectedScope === 'panorama' && <EducationOverviewCards overview={model.overview} />}
 
       <section className="cycle-workspace educacao-workspace">
-        {selectedScope === 'panorama' ? (
-          <>
-            <div className="cycle-category-bar">
-              <span className="eyebrow">Temas de análise</span>
-              <div className="cycle-category-bar__controls">
-                <CategoryTabs
-                  ariaLabel="Temas da educação"
-                  categories={themes}
-                  selectedCategory={selectedTheme?.key}
-                  onSelectCategory={handleThemeSelect}
-                />
-              </div>
-            </div>
-            <div className="cycle-layout educacao-analysis-layout">
-              <aside className="indicator-sidebar">
-                <div className="indicator-sidebar__heading">
-                  <h3>Indicadores</h3>
-                  <span>{filteredItems.length}</span>
-                </div>
-                <label className="indicator-search">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <circle cx="11" cy="11" r="6.5" />
-                    <path d="m16 16 4 4" />
-                  </svg>
-                  <input
-                    type="search"
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="Buscar indicador..."
-                    aria-label="Buscar indicador"
-                  />
-                </label>
-                <EducationIndicatorList
-                  items={filteredItems}
-                  selectedIndicator={activeIndicator?.key}
-                  onSelectIndicator={setSelectedIndicatorKey}
-                />
-              </aside>
-              <EducationIndicatorDetail indicator={activeIndicator} blocos={dados.blocos} />
-            </div>
-          </>
-        ) : (
-          <FundebPanel
-            municipioData={municipioData}
-            selectedMunicipio={selectedMunicipio}
-            embedded={true}
-          />
-        )}
+        {renderSelectedEducationScope()}
       </section>
     </div>
   )
@@ -306,6 +349,51 @@ function EducationIndicatorList({ items, selectedIndicator, onSelectIndicator })
   )
 }
 
+function IndicatorSegmentedControl({ options, selectedKey, onSelect, ariaLabel }) {
+  return (
+    <div className="indicator-stage-segmented" role="group" aria-label={ariaLabel}>
+      {options.map((option) => {
+        const isActive = option.key === selectedKey
+
+        return (
+          <button
+            key={option.key}
+            type="button"
+            className={
+              isActive
+                ? 'indicator-stage-segmented__button is-active'
+                : 'indicator-stage-segmented__button'
+            }
+            aria-pressed={isActive}
+            onClick={() => onSelect(option.key)}
+          >
+            {option.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function IndicatorChartHeader({ title, subtitle, hasWideSegmented = false, children }) {
+  return (
+    <div
+      className={
+        hasWideSegmented
+          ? 'indicator-chart-header has-wide-segmented'
+          : 'indicator-chart-header'
+      }
+    >
+      <div className="indicator-chart-title-group">
+        <h3>{title}</h3>
+        <p>{subtitle}</p>
+      </div>
+
+      {children}
+    </div>
+  )
+}
+
 function EducationIndicatorDetail({ indicator, blocos }) {
   const [selectedStageKey, setSelectedStageKey] = useState('')
 
@@ -335,6 +423,7 @@ function EducationIndicatorDetail({ indicator, blocos }) {
   const displayIndicator = applyStageOption(indicator, selectedStageOption)
   const hasMainSeries = displayIndicator.series.length >= 2
   const showStageFilter = stageOptions.length > 1
+  const hasManyStageOptions = stageOptions.length > 4
 
   return (
     <section className="detail-panel educacao-detail-panel">
@@ -359,31 +448,36 @@ function EducationIndicatorDetail({ indicator, blocos }) {
       </div>
 
       <div className="indicator-chart-card educacao-main-chart-card">
-        <div className="education-chart-heading">
-          <div>
-            <span>Evolução do indicador</span>
-            <p>{displayIndicator.label} · Recorte: {displayIndicator.mainCutLabel}</p>
-          </div>
+        <IndicatorChartHeader
+          title="Evolução do indicador"
+          subtitle={`${displayIndicator.label} · Recorte exibido: ${displayIndicator.mainCutLabel}`}
+          hasWideSegmented={hasManyStageOptions}
+        >
           {showStageFilter ? (
-            <label className="education-stage-filter">
-              <span>Etapa exibida</span>
-              <select value={selectedStageOption?.key ?? ''} onChange={(event) => setSelectedStageKey(event.target.value)}>
-                {stageOptions.map((option) => (
-                  <option key={option.key} value={option.key}>{option.label}</option>
-                ))}
-              </select>
-            </label>
+            <div className="indicator-stage-segmented-wrap">
+              <span className="indicator-stage-segmented-label">Etapa exibida</span>
+
+              <IndicatorSegmentedControl
+                options={stageOptions}
+                selectedKey={selectedStageOption?.key}
+                onSelect={setSelectedStageKey}
+                ariaLabel="Recorte da evolução"
+              />
+            </div>
           ) : null}
-        </div>
+        </IndicatorChartHeader>
         {hasMainSeries ? (
-          <EducationLineChart
-            color={displayIndicator.chartColor}
-            formatLabel={displayIndicator.formatValue}
-            scaleType={displayIndicator.scaleType}
-            series={displayIndicator.series}
-            showPointLabels={displayIndicator.showPointLabels}
-            title={null}
-          />
+          <>
+            <EducationLineChart
+              color={displayIndicator.chartColor}
+              formatLabel={displayIndicator.formatValue}
+              scaleType={displayIndicator.scaleType}
+              series={displayIndicator.series}
+              showPointLabels={displayIndicator.showPointLabels}
+              title={null}
+            />
+            <DataSourceNote context={dataSourceContextForEducation(displayIndicator)} />
+          </>
         ) : (
           <div className="detail-empty-state">
             <p>Não há série histórica suficiente para calcular evolução.</p>
@@ -620,6 +714,12 @@ function InfraDetailPanel({ indicator, blocos }) {
           <div className="infra-table-scroll">
             <EducationTable columns={evolutionColumns} rows={evolutionRows} />
           </div>
+          <DataSourceNote
+            context={dataSourceContextForEducation(indicator, {
+              detailType: 'table',
+              title: 'Evolução dos principais indicadores de infraestrutura',
+            })}
+          />
         </div>
       ) : null}
     </section>
@@ -668,7 +768,7 @@ function EducationIndicatorBreakdown({ indicator }) {
 
       {activeItem ? (
         <div className="educacao-explore__panel">
-          <ExploreItem item={activeItem} />
+          <ExploreItem indicator={indicator} item={activeItem} />
         </div>
       ) : (
         <div className="detail-empty-state">
@@ -730,23 +830,17 @@ function TurmasPanoramaPanel({ indicator, blocos }) {
         <StatusBadge status={indicator.statusLabel} tone={indicator.statusTone} />
       </div>
 
-      <div className="turmas-metric-filter">
-        <span className="turmas-metric-filter__label">Filtrar métrica:</span>
-        <div className="turmas-metric-filter__options">
-          {METRIC_OPTIONS.map((m) => {
-            const isActive = selectedMetricKey === m.key
-            return (
-              <button
-                key={m.key}
-                className={`turmas-metric-filter__button${isActive ? ' is-active' : ''}`}
-                onClick={() => setSelectedMetricKey(m.key)}
-                type="button"
-              >
-                {m.label}
-              </button>
-            )
-          })}
+      <div className="indicator-control-bar">
+        <div className="indicator-control-bar__copy">
+          <span className="indicator-control-bar__label">Métrica analisada</span>
+          <span className="indicator-control-bar__hint">Atualiza os valores, a evolução e o detalhamento.</span>
         </div>
+        <IndicatorSegmentedControl
+          options={METRIC_OPTIONS}
+          selectedKey={selectedMetricKey}
+          onSelect={setSelectedMetricKey}
+          ariaLabel="Métrica analisada"
+        />
       </div>
 
       <div className="metric-grid metric-grid--three">
@@ -761,20 +855,26 @@ function TurmasPanoramaPanel({ indicator, blocos }) {
       </div>
 
       <div className="indicator-chart-card educacao-main-chart-card">
-        <div className="education-chart-heading">
-          <div>
-            <span>Evolução do indicador</span>
-            <p>{activeMetric.label} · Recorte: {cutLabel}</p>
-          </div>
-        </div>
+        <IndicatorChartHeader
+          title="Evolução do indicador"
+          subtitle={`${activeMetric.label} · Recorte exibido: ${cutLabel}`}
+        />
         {hasMainSeries ? (
-          <EducationLineChart
-            color="#16713a"
-            formatLabel={activeMetric.formatLabel}
-            scaleType={selectedMetricKey === 'turmas' || selectedMetricKey === 'docentes' ? 'count' : 'dynamic'}
-            series={displaySeries}
-            showPointLabels
-          />
+          <>
+            <EducationLineChart
+              color="#16713a"
+              formatLabel={activeMetric.formatLabel}
+              scaleType={selectedMetricKey === 'turmas' || selectedMetricKey === 'docentes' ? 'count' : 'dynamic'}
+              series={displaySeries}
+              showPointLabels
+            />
+            <DataSourceNote
+              context={dataSourceContextForEducation(indicator, {
+                detailType: selectedMetricKey,
+                title: activeMetric.label,
+              })}
+            />
+          </>
         ) : (
           <div className="detail-empty-state">
             <p>Não há série histórica suficiente para calcular evolução.</p>
@@ -783,7 +883,7 @@ function TurmasPanoramaPanel({ indicator, blocos }) {
       </div>
 
       {displayExplore.length ? (
-        <EducationIndicatorBreakdown indicator={{ explore: displayExplore }} />
+        <EducationIndicatorBreakdown indicator={{ ...indicator, explore: displayExplore }} />
       ) : (
         <div className="educacao-explore">
           <div className="educacao-explore__heading">
@@ -802,6 +902,19 @@ function sortDetailItems(items) {
   return [...items].sort((a, b) => detailTabPriority(a) - detailTabPriority(b))
 }
 
+function dataSourceContextForEducation(indicator, extra = {}) {
+  return {
+    block: 'educacao',
+    description: indicator?.description,
+    indicatorKey: indicator?.key,
+    indicatorName: indicator?.label,
+    section: indicator?.themeLabel,
+    themeKey: indicator?.themeKey ?? indicator?.tema,
+    title: indicator?.label,
+    ...extra,
+  }
+}
+
 function detailTabPriority(item) {
   if (Number.isFinite(item.tabPriority)) return item.tabPriority
   const label = getDetailTabLabel(item)
@@ -809,9 +922,10 @@ function detailTabPriority(item) {
   if (label === 'Por localização') return 2
   if (label === 'Por etapa') return 3
   if (label === 'Por faixa etária') return 4
-  if (label === 'Por modalidade') return 5
-  if (label === 'Evolução') return 6
-  if (label === 'Infraestrutura') return 7
+  if (label === 'Por cor/raça') return 5
+  if (label === 'Por modalidade') return 6
+  if (label === 'Evolução') return 7
+  if (label === 'Infraestrutura') return 8
   return 10
 }
 
@@ -819,7 +933,9 @@ function getDetailTabLabel(item) {
   if (item.tabLabel) return item.tabLabel
   const title = String(item.title ?? '').toLocaleLowerCase('pt-BR')
   if (item.type === 'age-range') return 'Por faixa etária'
+  if (item.type === 'color-race') return 'Por cor/raça'
   if (title.includes('faixa et')) return 'Por faixa etária'
+  if (title.includes('cor/ra') || title.includes('raça')) return 'Por cor/raça'
   if (title.includes('etapa')) return 'Por etapa'
   if (title.includes('localiza')) return 'Por localização'
   if (title.includes('rede') || title.includes('depend')) return 'Por rede'
@@ -830,8 +946,16 @@ function getDetailTabLabel(item) {
   return item.title ?? 'Detalhamento'
 }
 
-function ExploreItem({ item }) {
+function ExploreItem({ indicator, item }) {
   const noteEl = item.note ? <p className="educacao-explore__note">{item.note}</p> : null
+  const sourceNote = (
+    <DataSourceNote
+      context={dataSourceContextForEducation(indicator, {
+        detailType: item.type,
+        title: item.title ?? item.tabLabel,
+      })}
+    />
+  )
 
   if (item.type === 'stacked') {
     return (
@@ -842,6 +966,7 @@ function ExploreItem({ item }) {
           formatLabel={item.formatLabel}
           title={item.title}
         />
+        {sourceNote}
         {noteEl}
       </>
     )
@@ -851,6 +976,7 @@ function ExploreItem({ item }) {
     return (
       <>
         <EducationBarChart color={item.color} data={item.data} formatLabel={item.formatLabel} preserveOrder={item.preserveOrder} title={item.title} />
+        {sourceNote}
         {noteEl}
       </>
     )
@@ -862,6 +988,7 @@ function ExploreItem({ item }) {
           <div className="educacao-explore-table" style={{ marginBottom: '1.5rem' }}>
             <h4>{item.panoramaTitle}</h4>
             <EducationTable columns={item.panoramaColumns} rows={item.panoramaRows} />
+            {sourceNote}
           </div>
         ) : null}
         <EducationBarChart
@@ -870,6 +997,7 @@ function ExploreItem({ item }) {
           formatLabel={item.formatLabel}
           title={item.distributionTitle}
         />
+        {sourceNote}
         {item.historyCategories && item.historyData && item.historyData.length >= 2 ? (
           <div style={{ marginTop: '2rem' }}>
             <EducationStackedBarChart
@@ -878,6 +1006,7 @@ function ExploreItem({ item }) {
               formatLabel={item.formatLabel}
               title={item.historyTitle}
             />
+            {sourceNote}
           </div>
         ) : item.note ? (
           <p className="educacao-explore__note">{item.note}</p>
@@ -908,14 +1037,37 @@ function ExploreItem({ item }) {
     )
   }
   if (item.type === 'age-range') {
-    return <AgeRangeDetail key={item.key} item={item} />
+    return (
+      <>
+        <AgeRangeDetail key={item.key} item={item} />
+        {sourceNote}
+      </>
+    )
+  }
+  if (item.type === 'color-race') {
+    return (
+      <>
+        <ColorRaceDetail key={item.key} item={item} />
+        {sourceNote}
+      </>
+    )
   }
   if (item.type === 'modality-range') {
-    return <ModalityDetail key={item.key} item={item} />
+    return (
+      <>
+        <ModalityDetail key={item.key} item={item} />
+        {sourceNote}
+      </>
+    )
   }
   if (item.type === 'line') {
     return item.series.length >= 2
-      ? <EducationLineChart color={item.color} formatLabel={item.formatLabel} scaleType={item.scaleType} series={item.series} title={item.title} />
+      ? (
+        <>
+          <EducationLineChart color={item.color} formatLabel={item.formatLabel} scaleType={item.scaleType} series={item.series} title={item.title} />
+          {sourceNote}
+        </>
+      )
       : <div className="education-chart-empty"><p>Não há dados suficientes para exibir o gráfico.</p></div>
   }
   if (item.type === 'table') {
@@ -923,6 +1075,7 @@ function ExploreItem({ item }) {
       <div className="educacao-explore-table">
         <h4>{item.title}</h4>
         <EducationTable columns={item.columns} rows={item.rows} />
+        {sourceNote}
         {noteEl}
       </div>
     )
@@ -946,7 +1099,7 @@ function AgeRangeDetail({ item }) {
   const faixaOptions = ageRangeOptions(scopedRows)
   const [selectedFaixa, setSelectedFaixa] = useState('')
   const activeFaixa = faixaOptions.includes(selectedFaixa) ? selectedFaixa : faixaOptions[0]
-  const comparisonYears = comparisonYearsForRows(scopedRows)
+  const comparisonYears = comparisonYearsWithRecentTail(scopedRows)
   const comparisonRows = ageRangeComparisonRows(scopedRows, comparisonYears, faixaOptions)
   const ageCategories = ageRangeCategoryDefinitions(faixaOptions)
   const historySeries = ageRangeHistorySeries(scopedRows, activeFaixa)
@@ -1130,6 +1283,102 @@ function ModalityDetail({ item }) {
             <span>Modalidade</span>
             <select value={activeModalidade ?? ''} onChange={(event) => setSelectedModalidade(event.target.value)}>
               {modalidadeOptions.map((option) => (
+                <option key={option.key} value={option.key}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+      </div>
+
+      {viewMode === 'comparison' ? (
+        <AgeRangeComparisonChart
+          categories={categories}
+          data={comparisonRows}
+          formatLabel={item.formatLabel}
+          title={comparisonTitle}
+          years={comparisonYears}
+        />
+      ) : (
+        <EducationLineChart
+          color={item.historyColor}
+          formatLabel={item.formatLabel}
+          scaleType="count"
+          series={historySeries}
+          showPointLabels
+          title={historyTitle}
+        />
+      )}
+    </div>
+  )
+}
+
+function ColorRaceDetail({ item }) {
+  const stageOptions = item.stageOptions ?? []
+  const defaultStage = stageOptions[0]?.key ?? null
+  const [viewMode, setViewMode] = useState('comparison')
+  const [selectedStageKey, setSelectedStageKey] = useState(defaultStage ?? '')
+  const activeStageKey = stageOptions.some((stage) => stage.key === selectedStageKey)
+    ? selectedStageKey
+    : defaultStage
+  const activeStage = stageOptions.find((stage) => stage.key === activeStageKey) ?? null
+  const activeStageLabel = activeStage?.label ?? item.stageLabel
+  const scopedRows = activeStageKey
+    ? item.rows.filter((row) => row[activeStage?.field ?? 'etapa_ensino'] === activeStageKey)
+    : item.rows
+  const corOptions = corRacaOptions(scopedRows)
+  const [selectedCorRaca, setSelectedCorRaca] = useState('')
+  const activeCorRaca = corOptions.some((option) => option.key === selectedCorRaca)
+    ? selectedCorRaca
+    : corOptions[0]?.key
+  const comparisonYears = comparisonYearsWithRecentTail(scopedRows, { minYear: 2019 })
+  const comparisonRows = categoryComparisonRows(scopedRows, comparisonYears, corOptions, 'cor_raca')
+  const categories = corOptions.map((option, index) => ({
+    key: option.key,
+    label: option.label,
+    color: CATEGORY_COMPARISON_COLORS[index % CATEGORY_COMPARISON_COLORS.length],
+  }))
+  const historySeries = categoryHistorySeries(scopedRows, activeCorRaca, 'cor_raca')
+  const period = historySeries.length
+    ? `${historySeries[0].ano}-${historySeries[historySeries.length - 1].ano}`
+    : ''
+  const comparisonTitlePrefix = item.comparisonTitlePrefix ?? 'Matrículas por cor/raça'
+  const historyStageLabel = item.historyStageLabel ?? activeStageLabel
+  const comparisonTitle = comparisonYears.length
+    ? `${comparisonTitlePrefix} — ${activeStageLabel} — ${formatYearList(comparisonYears)}`
+    : `${comparisonTitlePrefix} — ${activeStageLabel} — comparação entre anos`
+  const historyTitle = period
+    ? `Histórico — ${historyStageLabel} — ${corRacaLabel(activeCorRaca)} — ${period}`
+    : `Histórico — ${historyStageLabel} — ${corRacaLabel(activeCorRaca)}`
+
+  if (!comparisonRows.length || !categories.length) {
+    return <div className="education-chart-empty"><p>Não há dados suficientes para exibir o gráfico.</p></div>
+  }
+
+  return (
+    <div className="educacao-age-detail">
+      <div className="educacao-age-detail__controls">
+        <label className="educacao-age-detail__control">
+          <span>Visualização</span>
+          <select value={viewMode} onChange={(event) => setViewMode(event.target.value)}>
+            <option value="comparison">Comparação por ano</option>
+            <option value="history">Histórico de uma cor/raça</option>
+          </select>
+        </label>
+        {stageOptions.length ? (
+          <label className="educacao-age-detail__control">
+            <span>Etapa</span>
+            <select value={activeStageKey ?? ''} onChange={(event) => setSelectedStageKey(event.target.value)}>
+              {stageOptions.map((stage) => (
+                <option key={stage.key} value={stage.key}>{stage.label}</option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        {viewMode === 'history' ? (
+          <label className="educacao-age-detail__control">
+            <span>Cor/raça</span>
+            <select value={activeCorRaca ?? ''} onChange={(event) => setSelectedCorRaca(event.target.value)}>
+              {corOptions.map((option) => (
                 <option key={option.key} value={option.key}>{option.label}</option>
               ))}
             </select>
@@ -1426,6 +1675,9 @@ function hasExploreData(item) {
   if (item.type === 'age-range') {
     return Array.isArray(item.rows) && item.rows.some((row) => !isMissing(detailRowValue(row, 'matriculas')))
   }
+  if (item.type === 'color-race') {
+    return Array.isArray(item.rows) && item.rows.some((row) => !isMissing(detailRowValue(row, 'matriculas')))
+  }
   if (item.type === 'modality-range') {
     return Array.isArray(item.rows) && item.rows.some((row) => !isMissing(detailRowValue(row, 'matriculas')))
   }
@@ -1549,10 +1801,12 @@ function buildMatriculasExplore(mat, cut = { cutKey: 'total', cutLabel: 'Total d
     const stageLocationRows = detailRowsFor(detalhamentos.por_etapa_localizacao, { etapa_ensino: cut.stageKey })
     const stageLocationKeys = detailKeys(stageLocationRows, 'localizacao', ['urbana', 'rural'])
     const faixaEtariaItem = buildMatriculasFaixaEtariaItem(detalhamentos, cut)
+    const corRacaItem = buildMatriculasCorRacaItem(detalhamentos, cut)
 
     return [
       ...etapaItems,
       ...(faixaEtariaItem ? [faixaEtariaItem] : []),
+      ...(corRacaItem ? [corRacaItem] : []),
       {
         key: `mat-${cut.stageKey}-dep`,
         type: 'stacked',
@@ -1647,6 +1901,45 @@ function buildMatriculasFaixaEtariaItem(detalhamentos, cut) {
     rows,
     stageLabel,
     stageOptions,
+    formatLabel: formatNumber,
+  }
+}
+
+function buildMatriculasCorRacaItem(detalhamentos, cut) {
+  const fonte = detalhamentos.por_etapa_cor_raca ?? []
+  const fonteSecao = detalhamentos.por_etapa_secao_cor_raca ?? []
+  let rows = []
+  let stageLabel = cut.cutLabel
+  let stageOptions = []
+
+  if (cut.stageKey === 'infantil') {
+    rows = detailRowsFor(fonteSecao, { etapa_ensino: 'infantil' })
+      .filter((row) => ['creche', 'pre_escola'].includes(row?.secao_sinopse))
+    stageLabel = 'Creche'
+    stageOptions = [
+      { key: 'creche', label: 'Creche', field: 'secao_sinopse' },
+      { key: 'pre_escola', label: 'Pré-escola', field: 'secao_sinopse' },
+    ].filter((option) => rows.some((row) => row.secao_sinopse === option.key))
+  } else if (cut.stageKey === 'fundamental') {
+    rows = fonte.filter((row) => FUNDAMENTAL_FAIXA_STAGES.includes(row?.etapa_ensino))
+    stageLabel = etapaLabel(FUNDAMENTAL_FAIXA_STAGES[0])
+    stageOptions = FUNDAMENTAL_FAIXA_STAGES
+      .filter((stageKey) => rows.some((row) => row.etapa_ensino === stageKey))
+      .map((stageKey) => ({ key: stageKey, label: etapaLabel(stageKey), field: 'etapa_ensino' }))
+  } else if (cut.stageKey) {
+    rows = detailRowsFor(fonte, { etapa_ensino: cut.stageKey })
+  }
+
+  if (!corRacaOptions(rows).length) return null
+
+  return {
+    key: `mat-${cut.stageKey}-cor-raca`,
+    type: 'color-race',
+    title: 'Matrículas por cor/raça',
+    rows,
+    stageLabel,
+    stageOptions,
+    historyColor: '#7c3aed',
     formatLabel: formatNumber,
   }
 }
@@ -1775,6 +2068,38 @@ function comparisonYearsForRows(rows) {
   return [...new Set([years[0], years[middleIndex], years[years.length - 1]])]
 }
 
+function comparisonYearsWithRecentTail(rows, options = {}) {
+  const { minYear, maxYears = 5, recentCount = 3 } = options
+
+  const years = [...new Set((Array.isArray(rows) ? rows : [])
+    .map((row) => Number(row?.ano))
+    .filter((year) => Number.isFinite(year)))]
+    .sort((a, b) => a - b)
+
+  let available = years
+  if (minYear !== undefined) {
+    available = years.filter((year) => year >= minYear)
+  }
+
+  if (available.length === 0) {
+    available = years
+  }
+
+  if (available.length <= maxYears) return available
+
+  const result = [available[0]]
+  const tail = available.slice(-recentCount)
+  const middleCandidates = available.filter((y) => y > result[0] && y < tail[0])
+
+  if (middleCandidates.length > 0) {
+    const midIndex = Math.round((middleCandidates.length - 1) / 2)
+    result.push(middleCandidates[midIndex])
+  }
+
+  result.push(...tail)
+  return result
+}
+
 function ageRangeComparisonRows(rows, years, faixas) {
   return years.map((year) => {
     const values = {}
@@ -1801,6 +2126,25 @@ function modalityOptions(rows) {
     .filter((modalidade) => !isMissing(modalidade)))]
     .sort((a, b) => modLabel(a).localeCompare(modLabel(b), 'pt-BR'))
     .map((key) => ({ key, label: modLabel(key) }))
+}
+
+function corRacaLabel(key) {
+  return key ?? EM
+}
+
+function corRacaOptions(rows) {
+  return [...new Set((Array.isArray(rows) ? rows : [])
+    .map((row) => row?.cor_raca)
+    .filter((corRaca) => !isMissing(corRaca)))]
+    .sort((a, b) => {
+      const ai = COR_RACA_ORDER.indexOf(a)
+      const bi = COR_RACA_ORDER.indexOf(b)
+      if (ai >= 0 && bi >= 0) return ai - bi
+      if (ai >= 0) return -1
+      if (bi >= 0) return 1
+      return String(a).localeCompare(String(b), 'pt-BR')
+    })
+    .map((key) => ({ key, label: corRacaLabel(key) }))
 }
 
 function categoryComparisonRows(rows, years, options, field) {
@@ -2246,12 +2590,16 @@ function buildFluxoExplore(fluxo, cut = { cutLabel: 'Ensino Fundamental', stageK
   const locKeys = detailKeys(locationRows, 'localizacao', ['urbana', 'rural'], cut.metricKey)
   const titleSuffix = ` — ${cut.cutLabel}`
   const dependencyLatest = detailRowsToLatestRows(stageRows, 'dependencia', depLabel, cut.metricKey)
+  const etapaLatest = detailRowsToLatestRows(detalhamentos.por_etapa, 'etapa_ensino', etapaLabel, cut.metricKey)
   const items = [
     { key: 'fluxo-dep', type: 'bar', title: titleWithYear(`Taxa por rede${titleSuffix}`, dependencyLatest), color: '#2563eb', formatLabel: formatPercent, data: dependencyLatest },
   ]
   if (!cut.noLocation) {
     const locationLatest = detailRowsToLatestRows(locationRows.filter((row) => locKeys.includes(row.localizacao)), 'localizacao', locLabel, cut.metricKey)
     items.push({ key: 'fluxo-loc', type: 'bar', title: titleWithYear(`Taxa por localização${titleSuffix}`, locationLatest), color: '#7c3aed', formatLabel: formatPercent, data: locationLatest })
+  }
+  if (etapaLatest.length) {
+    items.push({ key: 'fluxo-etapa', type: 'bar', title: titleWithYear(`Taxa por etapa`, etapaLatest), color: '#16713a', formatLabel: formatPercent, data: etapaLatest })
   }
   return [
     ...items,

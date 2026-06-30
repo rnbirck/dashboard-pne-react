@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { FUNDEB_INDICATORS, formatFundebValue, getLimiteReferencia } from '../data/fundebIndicators'
+import { DataSourceNote } from './DataSourceNote'
 import { IndicatorHistoryChart } from '../components/IndicatorHistoryChart'
 
 function formatCompactCurrency(value) {
@@ -259,6 +260,13 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
                     unit={chartUnit}
                     yTickCount={5}
                   />
+                  <DataSourceNote
+                    context={{
+                      block: 'fundeb',
+                      indicatorKey: selectedIndicator?.key,
+                      indicatorName: selectedIndicator?.label,
+                    }}
+                  />
                 </div>
               </>
             )}
@@ -270,6 +278,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
             )}
 
             {series.length >= 1 && (
+              <>
               <div className="fundeb-table-wrap">
                 <table className="fundeb-table">
                   <thead>
@@ -308,6 +317,15 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
                   </tbody>
                 </table>
               </div>
+              <DataSourceNote
+                context={{
+                  block: 'fundeb',
+                  detailType: 'table',
+                  indicatorKey: selectedIndicator?.key,
+                  indicatorName: selectedIndicator?.label,
+                }}
+              />
+              </>
             )}
 
             {series.length === 0 && (

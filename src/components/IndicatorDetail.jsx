@@ -20,6 +20,7 @@ import { IndicatorComplementaryData } from './IndicatorComplementaryData'
 import { IndicatorHistoryChart } from './IndicatorHistoryChart'
 import { isDemographicCensusIndicator, buildDisplayIndicatorSeries } from '../utils/indicatorSeries'
 import { loadIndicatorDetail } from '../data/staticData'
+import { DataSourceNote } from './DataSourceNote'
 import { MetricCard } from './MetricCard'
 import { PNE_2026_GOAL_TEXTS } from '../data/pne2026GoalTexts'
 import { PNE_2014_GOAL_TEXTS } from '../data/pne2014GoalTexts'
@@ -277,13 +278,35 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
             unit={unit}
             floorNegativeValues={isAccExpansion}
           />
+          <DataSourceNote
+            context={{
+              block: 'pne',
+              cycle,
+              details,
+              indicatorKey: item?.key,
+              item,
+              result,
+            }}
+          />
         </div>
       )}
 
       {!hasSeries && !isInformative && (
-        <div className="detail-empty-state">
-          <p>Este indicador não possui série histórica disponível para este município no ciclo vigente.</p>
-        </div>
+        <>
+          <div className="detail-empty-state">
+            <p>Este indicador não possui série histórica disponível para este município no ciclo vigente.</p>
+          </div>
+          <DataSourceNote
+            context={{
+              block: 'pne',
+              cycle,
+              details,
+              indicatorKey: item?.key,
+              item,
+              result,
+            }}
+          />
+        </>
       )}
 
       {isInformative && !hasSeries && (
