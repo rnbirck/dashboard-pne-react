@@ -9,17 +9,19 @@
     "check:units": "node scripts/checks/verify-units.cjs",
     "lint": "eslint .",
     "list:indicators": "node scripts/checks/list-indicators.cjs",
-    "preview": "vite preview",
+    "preview": "npm run build && wrangler dev",
     "test:e2e": "node scripts/checks/e2e-test.cjs",
     "update:data": "python data_pipeline/scripts/update_static_data.py",
     "update:data:skip-build": "python data_pipeline/scripts/update_static_data.py --skip-build",
-    "validate:details": "python data_pipeline/scripts/validate_static_details.py"
+    "validate:details": "python data_pipeline/scripts/validate_static_details.py",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.42.4",
     "@eslint/js": "^10.0.1",
     "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^10.3.0",
@@ -27,6 +29,7 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
     "playwright": "^1.60.0",
-    "vite": "^8.0.12"
+    "vite": "^8.0.12",
+    "wrangler": "^4.106.0"
   }
 }
