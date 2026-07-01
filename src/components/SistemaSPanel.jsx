@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { EducationLineChart } from './EducationLineChart'
 import { MetricCard } from './MetricCard'
+import { EducationSummaryCard } from './EducationSummaryCard'
 import { formatNumber, isMissing } from '../utils/educationFormatters'
 
 const EM = '\u2014'
@@ -143,31 +144,18 @@ export function SistemaSPanel({ blocos }) {
 
   return (
     <div className="sistema-s-panel">
-      <div className="sistema-s-summary">
-        <span className="sistema-s-summary__eyebrow">Visão geral do Sistema S em {anoResumo}</span>
-        <div className="sistema-s-summary-grid">
-          <div className="sistema-s-summary-card">
-            <span className="sistema-s-summary-card__title">Escolas</span>
-            <span className="sistema-s-summary-card__value">{!isMissing(resumo.total_escolas) ? formatNumber(resumo.total_escolas) : EM}</span>
-            <span className="sistema-s-summary-card__label">Escolas</span>
-          </div>
-          <div className="sistema-s-summary-card">
-            <span className="sistema-s-summary-card__title">Matrículas</span>
-            <span className="sistema-s-summary-card__value">{!isMissing(resumo.total_matriculas) ? formatNumber(resumo.total_matriculas) : EM}</span>
-            <span className="sistema-s-summary-card__label">Matrículas</span>
-          </div>
-          <div className="sistema-s-summary-card">
-            <span className="sistema-s-summary-card__title">Turmas</span>
-            <span className="sistema-s-summary-card__value">{!isMissing(resumo.total_turmas) ? formatNumber(resumo.total_turmas) : EM}</span>
-            <span className="sistema-s-summary-card__label">Turmas</span>
-          </div>
-          <div className="sistema-s-summary-card">
-            <span className="sistema-s-summary-card__title">Docentes</span>
-            <span className="sistema-s-summary-card__value">{!isMissing(resumo.total_docentes) ? formatNumber(resumo.total_docentes) : EM}</span>
-            <span className="sistema-s-summary-card__label">Docentes</span>
-          </div>
+      <section className="page-card education-summary-section sistema-s-summary">
+        <div className="education-summary-header">
+          <h2 className="education-summary-title">Visão geral</h2>
+          <p className="education-summary-note">Dados das escolas do Sistema S no ano de referência.</p>
         </div>
-      </div>
+        <div className="education-summary-grid sistema-s-summary-grid">
+          <EducationSummaryCard label="Escolas" value={!isMissing(resumo.total_escolas) ? formatNumber(resumo.total_escolas) : EM} year={anoResumo} />
+          <EducationSummaryCard label="Matrículas" value={!isMissing(resumo.total_matriculas) ? formatNumber(resumo.total_matriculas) : EM} year={anoResumo} />
+          <EducationSummaryCard label="Turmas" value={!isMissing(resumo.total_turmas) ? formatNumber(resumo.total_turmas) : EM} year={anoResumo} />
+          <EducationSummaryCard label="Docentes" value={!isMissing(resumo.total_docentes) ? formatNumber(resumo.total_docentes) : EM} year={anoResumo} />
+        </div>
+      </section>
 
       <div className="cycle-layout educacao-analysis-layout">
         <aside className="indicator-sidebar">

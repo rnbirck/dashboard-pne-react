@@ -236,18 +236,19 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
   return (
     <div className="page-stack educacao-page">
       <section className="page-card educacao-hero">
-        <div>
+        <div className="educacao-hero__intro">
           <span className="eyebrow">Indicadores da Educação</span>
           <h1>Indicadores da Educação</h1>
           <p>Matrículas, escolas, docentes, fluxo, aprendizagem e oferta técnica do município.</p>
-          <p>Município em foco: <strong>{selectedMunicipio}</strong></p>
+          <p className="educacao-hero__municipality">Município em foco: <strong>{selectedMunicipio}</strong></p>
         </div>
-      </section>
 
-      <section className="educacao-scope-selector">
-        <span className="eyebrow educacao-scope-selector__heading">Escolha o bloco de indicadores</span>
-        <p className="educacao-scope-selector__subtitle">Alterne entre os indicadores gerais da educação e os dados financeiros do FUNDEB.</p>
-        <div className={'educacao-scope-selector__grid' + (hasSistemaS ? ' is-triple' : '')}>
+        <div className="educacao-scope-selector">
+          <div className="educacao-scope-selector__intro">
+            <span className="eyebrow educacao-scope-selector__heading">Escolha o bloco de indicadores</span>
+            <p className="educacao-scope-selector__subtitle">Alterne entre os indicadores gerais da educação e os dados financeiros do FUNDEB.</p>
+          </div>
+          <div className={'educacao-scope-selector__grid' + (hasSistemaS ? ' is-triple' : '')}>
           <button
             className={'educacao-scope-card' + (selectedScope === 'panorama' ? ' is-active' : '')}
             type="button"
@@ -273,6 +274,9 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
               <span className="educacao-scope-card__description">
                 Escolas, matrículas, turmas e etapas atendidas pelo Sistema S.
               </span>
+              <span className="educacao-scope-card__footer">
+                <span className="educacao-scope-card__count">4 indicadores</span>
+              </span>
             </button>
           )}
           <button
@@ -289,6 +293,7 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
               <span className="educacao-scope-card__count">{FUNDEB_INDICATORS.length} indicadores</span>
             </span>
           </button>
+          </div>
         </div>
       </section>
 
@@ -303,12 +308,12 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
 
 function EducationOverviewCards({ overview }) {
   return (
-    <section className="page-card educacao-overview">
-      <div className="educacao-overview__heading">
-        <h2>Visão geral</h2>
-        <p>Últimos dados disponíveis por bloco, com o ano de referência em cada indicador.</p>
+    <section className="page-card education-summary-section educacao-overview">
+      <div className="education-summary-header educacao-overview__heading">
+        <h2 className="education-summary-title">Visão geral</h2>
+        <p className="education-summary-note">Últimos dados disponíveis por bloco, com o ano de referência em cada indicador.</p>
       </div>
-      <div className="educacao-overview-grid">
+      <div className="education-summary-grid educacao-overview-grid">
         {overview.map((card) => (
           <EducationSummaryCard key={card.label} label={card.label} value={card.value} year={card.year} tone={card.tone} />
         ))}

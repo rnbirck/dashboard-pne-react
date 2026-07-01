@@ -174,7 +174,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
           <span className="eyebrow">Indicador selecionado</span>
           <h3>{getIndicatorTitle(item, result)}</h3>
           {item.sub && <p>{item.sub}</p>}
-          {item.desc && <p>{item.desc}</p>}
+          {item.desc && <p>{appendStageExplanations(item.desc)}</p>}
           {legalGoal && (
             <div className="indicator-goal-reference">
               <span>Referência do PNE</span>
@@ -319,6 +319,17 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
     </section>
   )
 })
+
+function appendStageExplanations(desc) {
+  if (!desc) return desc
+  if (desc.includes('anos iniciais do ensino fundamental') && !desc.includes('1º ao 5º ano')) {
+    desc = desc.replace('anos iniciais do ensino fundamental', 'anos iniciais do ensino fundamental (1º ao 5º ano)')
+  }
+  if (desc.includes('anos finais do ensino fundamental') && !desc.includes('6º ao 9º ano')) {
+    desc = desc.replace('anos finais do ensino fundamental', 'anos finais do ensino fundamental (6º ao 9º ano)')
+  }
+  return desc
+}
 
 function GoalProgress({ result, unit }) {
   const endValue = formatIndicatorValue(result.end_value, unit)

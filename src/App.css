@@ -4711,28 +4711,45 @@
 }
 
 .educacao-hero {
-  min-height: 64px;
-  padding: 12px 16px;
-  align-items: center;
-  border-left: 4px solid rgba(47, 113, 60, 0.72);
+  display: grid;
+  gap: 20px;
+  min-height: 0;
+  padding: 22px 24px 20px;
+  background: linear-gradient(135deg, #ffffff 0%, #ffffff 58%, #f4faf2 100%);
+  border-color: rgba(38, 80, 38, 0.14);
 }
 
 .educacao-hero h1 {
-  margin: 3px 0 0;
-  font-size: clamp(1.16rem, 1.7vw, 1.42rem);
+  margin: 5px 0 0;
+  font-size: clamp(1.3rem, 1.9vw, 1.62rem);
   letter-spacing: -0.03em;
+  line-height: 1.12;
 }
 
 .educacao-hero p {
-  margin: 3px 0 0;
-  font-size: 0.82rem;
-  line-height: 1.35;
+  margin: 6px 0 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.educacao-hero__intro {
+  max-width: 76ch;
+}
+
+.educacao-hero .educacao-hero__municipality {
+  margin-top: 5px;
+  color: var(--text);
+}
+
+.educacao-hero__municipality strong {
+  color: var(--text-strong);
+  font-weight: 800;
 }
 
 .educacao-overview {
   display: grid;
-  gap: 8px;
-  padding: 10px;
+  gap: 12px;
+  padding: 16px 18px 18px;
 }
 
 .educacao-overview__heading {
@@ -4745,7 +4762,7 @@
 .educacao-overview__heading h2 {
   margin: 0;
   color: var(--text-strong);
-  font-size: 0.98rem;
+  font-size: 1.02rem;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
@@ -4759,7 +4776,48 @@
 
 .educacao-overview-grid {
   grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
-  gap: 8px;
+  gap: 10px;
+}
+
+/* Shared education summary */
+.education-summary-section {
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px 18px;
+  border-color: rgba(38, 80, 38, 0.14);
+  background: #ffffff;
+  box-shadow: 0 4px 14px rgba(18, 45, 18, 0.05);
+}
+
+.education-summary-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.education-summary-title {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 1.02rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.education-summary-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.education-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 10px;
 }
 
 /* =========================
@@ -4767,7 +4825,14 @@
    ========================= */
 .educacao-scope-selector {
   display: grid;
-  gap: 8px;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(38, 80, 38, 0.12);
+}
+
+.educacao-scope-selector__intro {
+  display: grid;
+  gap: 4px;
 }
 
 .educacao-scope-selector__heading {
@@ -4776,14 +4841,15 @@
 
 .educacao-scope-selector__subtitle {
   color: var(--text-soft);
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   line-height: 1.4;
-  margin: 2px 0 2px;
+  margin: 0;
 }
 
 .educacao-scope-selector__grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  grid-auto-rows: 1fr;
   gap: 10px;
 }
 
@@ -4795,18 +4861,19 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-height: 90px;
-  padding: 18px 20px;
-  border: 1px solid var(--border);
+  gap: 7px;
+  min-height: 112px;
+  padding: 16px 18px;
+  border: 1px solid rgba(38, 80, 38, 0.14);
   border-radius: var(--radius-md);
   background: #ffffff;
   cursor: pointer;
   text-align: left;
-  box-shadow: none;
+  box-shadow: 0 2px 8px rgba(18, 45, 18, 0.04);
   transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease;
   font-family: inherit;
   width: 100%;
+  height: 100%;
 }
 
 .educacao-scope-card:hover {
@@ -4822,29 +4889,20 @@
 }
 
 .educacao-scope-card.is-active {
-  border: 2px solid var(--accent-soft);
-  background: #eef7ec;
-  box-shadow: 0 0 0 1px var(--accent-soft), 0 8px 28px rgba(26, 92, 42, 0.18);
-  transform: translateY(-1px);
+  border: 1px solid var(--accent);
+  background: linear-gradient(135deg, #f8fcf7 0%, #edf7eb 100%);
+  box-shadow: 0 0 0 1px rgba(47, 113, 60, 0.1), 0 5px 16px rgba(26, 92, 42, 0.1);
+  transform: none;
 }
 
 .educacao-scope-card.is-active:hover {
-  box-shadow: 0 0 0 1px var(--accent-soft), 0 8px 28px rgba(26, 92, 42, 0.18);
+  box-shadow: 0 0 0 1px rgba(47, 113, 60, 0.1), 0 5px 16px rgba(26, 92, 42, 0.1);
   transform: translateY(-1px);
 }
 
-.educacao-scope-card.is-active::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 6px;
-  border-radius: var(--radius-md) 0 0 var(--radius-md);
-  background: var(--accent);
-}
-
 .educacao-scope-card__title {
-  color: var(--text-muted);
-  font-size: 1rem;
+  color: var(--text-strong);
+  font-size: 0.96rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.2;
@@ -4864,6 +4922,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-top: auto;
 }
 
 .educacao-scope-card__count {
@@ -4885,12 +4944,13 @@
 }
 
 .education-card {
-  min-height: 72px;
+  min-height: 96px;
   justify-content: space-between;
-  padding: 10px;
-  border-color: var(--border);
+  padding: 13px 14px;
+  border-color: rgba(38, 80, 38, 0.13);
+  border-radius: 10px;
   background: #ffffff;
-  box-shadow: 0 1px 2px rgba(18, 45, 18, 0.04);
+  box-shadow: 0 2px 8px rgba(18, 45, 18, 0.04);
 }
 
 .education-card--success {
@@ -4910,8 +4970,14 @@
 }
 
 .education-card__value {
-  font-size: clamp(1.12rem, 1.4vw, 1.42rem);
+  font-size: clamp(1.2rem, 1.5vw, 1.5rem);
   letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.education-card__value--compact {
+  font-size: clamp(0.96rem, 1.25vw, 1.28rem);
+  overflow-wrap: anywhere;
 }
 
 .education-card__year {
@@ -5545,66 +5611,8 @@
   gap: 10px;
 }
 
-.sistema-s-summary {
-  display: grid;
-  gap: 8px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: #ffffff;
-  box-shadow: 0 3px 10px rgba(18, 45, 18, 0.025);
-}
-
-.sistema-s-summary__eyebrow {
-  color: var(--text-soft);
-  font-size: 0.66rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
 .sistema-s-summary-grid {
-  display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-}
-
-.sistema-s-summary-card {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1px;
-  padding: 9px 11px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: #fbfdf9;
-  box-shadow: none;
-  min-height: 0;
-}
-
-.sistema-s-summary-card__title {
-  color: var(--text-soft);
-  font-size: 0.64rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  line-height: 1.2;
-  text-transform: uppercase;
-}
-
-.sistema-s-summary-card__value {
-  color: var(--text-strong);
-  font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-}
-
-.sistema-s-summary-card__label {
-  color: var(--text-muted);
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0;
-  text-transform: none;
-  line-height: 1.2;
 }
 
 .sistema-s-chart {
@@ -6059,6 +6067,16 @@
     gap: 4px;
   }
 
+  .education-summary-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .education-summary-note {
+    text-align: left;
+  }
+
   .educacao-overview-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -6069,7 +6087,8 @@
     min-height: 0;
   }
 
-  .educacao-scope-selector__grid {
+  .educacao-scope-selector__grid,
+  .educacao-scope-selector__grid.is-triple {
     grid-template-columns: 1fr;
   }
 
@@ -6116,6 +6135,10 @@
 
   .educacao-overview,
   .educacao-hero {
+    padding: 12px;
+  }
+
+  .education-summary-section {
     padding: 12px;
   }
 
@@ -6166,29 +6189,13 @@
   max-width: 70ch;
 }
 
-.fundeb-summary {
-  padding: 16px 20px;
-  display: grid;
-  gap: 12px;
-}
-
-.fundeb-summary__heading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-}
-
 .fundeb-summary__note {
   color: var(--text-muted);
-  font-size: 0.78rem;
   font-weight: 600;
 }
 
 .fundeb-summary-grid {
-  display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
 }
 
 @media (max-width: 1100px) {
@@ -6203,48 +6210,11 @@
   }
 }
 
-.fundeb-card {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: #ffffff;
-  min-width: 0;
-}
-
-.fundeb-card__label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.fundeb-card__value {
-  font-size: 1.4rem;
-  font-weight: 850;
-  color: var(--text-strong);
-  line-height: 1.1;
-}
-
-.fundeb-card__detail {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  font-weight: 600;
-  margin-top: 2px;
-}
-
-.fundeb-card--finance {
-  border-left: 3px solid var(--accent);
-}
-
 .fundeb-info-box {
   padding: 14px 20px;
-  border: 1px solid rgba(37, 99, 235, 0.1);
+  border: 1px solid rgba(47, 113, 60, 0.16);
   border-radius: var(--radius-md);
-  background: rgba(37, 99, 235, 0.04);
+  background: #f5faf3;
   display: grid;
   gap: 8px;
 }
@@ -6264,12 +6234,6 @@
   border: 0;
   box-shadow: none;
   border-radius: 0;
-  padding: 0;
-}
-
-.fundeb-panel-embedded .fundeb-summary {
-  border: 0;
-  box-shadow: none;
   padding: 0;
 }
 

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { FUNDEB_INDICATORS, formatFundebValue, getLimiteReferencia } from '../data/fundebIndicators'
 import { DataSourceNote } from './DataSourceNote'
 import { IndicatorHistoryChart } from '../components/IndicatorHistoryChart'
+import { EducationSummaryCard } from './EducationSummaryCard'
 
 function formatCompactCurrency(value) {
   if (!Number.isFinite(Number(value))) return ''
@@ -78,7 +79,6 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
   )
 
   const { resumo_ultimo_ano, ultimo_ano, historico } = fundebData
-  const ultimoLabel = ultimo_ano ? ` (${ultimo_ano})` : ''
   const historicoVisivel = useMemo(
     () => filterCrechePreEscola(historico ?? [], selectedIndicator?.key),
     [historico, selectedIndicator?.key],
@@ -132,39 +132,24 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
         </section>
       )}
 
-      <section className="page-card fundeb-summary">
-        <div className="fundeb-summary__heading">
-          <span className="eyebrow">Resumo do último ano disponível{ultimoLabel}</span>
+      <section className="page-card education-summary-section fundeb-summary">
+        <div className="education-summary-header fundeb-summary__heading">
+          <h2 className="education-summary-title">Visão geral</h2>
           {Number.isInteger(ultimo_ano) && ultimo_ano < 2025 && (
-            <small className="fundeb-summary__note">
+            <small className="education-summary-note fundeb-summary__note">
               Último dado disponível: {ultimo_ano}
             </small>
           )}
+          {Number.isInteger(ultimo_ano) && ultimo_ano >= 2025 && (
+            <small className="education-summary-note">Dados financeiros do ano de referência: {ultimo_ano}.</small>
+          )}
         </div>
-        <div className="fundeb-summary-grid">
-          <div className="fundeb-card">
-            <span className="fundeb-card__label">Receitas do FUNDEB</span>
-            <strong className="fundeb-card__value">{formatFundebValue(resumo_ultimo_ano?.receitas, 'financeiro')}</strong>
-          </div>
-          <div className="fundeb-card">
-            <span className="fundeb-card__label">Despesa total do FUNDEB</span>
-            <strong className="fundeb-card__value">{formatFundebValue(resumo_ultimo_ano?.despesa_total_fundeb, 'financeiro')}</strong>
-          </div>
-          <div className="fundeb-card">
-            <span className="fundeb-card__label">Percentual aplicado em remuneração</span>
-            <strong className="fundeb-card__value">{formatFundebValue(resumo_ultimo_ano?.percentual_minimo_remuneracao_profissionais, 'percentual')}</strong>
-          </div>
-          <div className="fundeb-card">
-            <span className="fundeb-card__label">Regra vigente</span>
-            <strong className="fundeb-card__value">
-              Mínimo de {resumo_ultimo_ano?.limite_remuneracao_referencia ?? getLimiteReferencia(ultimo_ano)}%
-            </strong>
-          </div>
-          <div className="fundeb-card fundeb-card--finance">
-            <span className="fundeb-card__label">Disponibilidade financeira</span>
-            <strong className="fundeb-card__value">{formatFundebValue(ultimoRegistro?.disponibilidade_financeira_ate_bimestre, 'financeiro')}</strong>
-            <small className="fundeb-card__detail">Saldo anterior: {formatFundebValue(ultimoRegistro?.disponibilidade_financeira_ano_anterior, 'financeiro')}</small>
-          </div>
+        <div className="education-summary-grid fundeb-summary-grid">
+          <EducationSummaryCard label="Receitas do FUNDEB" value={formatFundebValue(resumo_ultimo_ano?.receitas, 'financeiro')} year={ultimo_ano} valueSize="compact" />
+          <EducationSummaryCard label="Despesa total do FUNDEB" value={formatFundebValue(resumo_ultimo_ano?.despesa_total_fundeb, 'financeiro')} year={ultimo_ano} valueSize="compact" />
+          <EducationSummaryCard label="Percentual aplicado em remuneração" value={formatFundebValue(resumo_ultimo_ano?.percentual_minimo_remuneracao_profissionais, 'percentual')} year={ultimo_ano} />
+          <EducationSummaryCard label="Regra vigente" value={`Mínimo de ${resumo_ultimo_ano?.limite_remuneracao_referencia ?? getLimiteReferencia(ultimo_ano)}%`} year={ultimo_ano} valueSize="compact" />
+          <EducationSummaryCard label="Disponibilidade financeira" value={formatFundebValue(ultimoRegistro?.disponibilidade_financeira_ate_bimestre, 'financeiro')} detail={`Saldo anterior: ${formatFundebValue(ultimoRegistro?.disponibilidade_financeira_ano_anterior, 'financeiro')}`} valueSize="compact" />
         </div>
       </section>
 

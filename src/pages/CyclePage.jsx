@@ -116,14 +116,18 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
               : '-'}
           />
           <ManagementMetricCard
-            detail="abaixo da referência"
+            detail={cycleManagementStats.monitorableTotal
+              ? `${cycleManagementStats.attentionPercent}% dos indicadores com meta`
+              : 'sem indicadores comparáveis'}
             label="Exigem atenção"
             tone="attention"
-            value={cycleManagementStats.attention}
+            value={cycleManagementStats.monitorableTotal
+              ? `${cycleManagementStats.attention}/${cycleManagementStats.monitorableTotal}`
+              : '-'}
           />
           <ManagementMetricCard
-            detail="informativos ou sem dado"
-            label="Sem comparação"
+            detail="indicadores sem meta definida"
+            label="Sem metas definidas"
             tone="neutral"
             value={cycleManagementStats.noComparison}
           />
@@ -132,7 +136,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
 
       <section className="cycle-workspace">
         <div className="cycle-category-bar">
-          <span className="eyebrow">Temas de análise</span>
+          <span className="eyebrow">TEMAS DAS METAS DO {title.replace('-', ' - ')}</span>
           <div className="cycle-category-bar__controls">
             <CategoryTabs
               categories={thematicGroups}
@@ -159,7 +163,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
         <div className="cycle-layout">
           <aside className="indicator-sidebar">
             <div className="indicator-sidebar__heading">
-              <h3>Indicadores</h3>
+              <h3>Metas/Indicadores</h3>
               <span>{filteredGroupItems.length}</span>
             </div>
             {filteredGroupItems.length === 0 ? (
@@ -306,6 +310,10 @@ function buildCycleManagementStats(categories, municipioResults) {
 
   stats.achievedPercent = stats.monitorableTotal
     ? Math.round((stats.achieved / stats.monitorableTotal) * 100)
+    : 0
+
+  stats.attentionPercent = stats.monitorableTotal
+    ? Math.round((stats.attention / stats.monitorableTotal) * 100)
     : 0
 
   return stats
