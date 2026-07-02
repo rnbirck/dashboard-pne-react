@@ -65,7 +65,7 @@ export function IndicatorHistoryChart({
     <section className={`history-chart${chart.hasNegativeValues ? ' history-chart--with-negatives' : ''}${chart.isInformative ? ' history-chart--informative' : ''}`}>
       <div className="history-chart__heading">
         <div>
-          <span className="eyebrow">Evolução do indicador</span>
+          <span className="eyebrow">Histórico do indicador</span>
           <h4>{title}</h4>
         </div>
       </div>

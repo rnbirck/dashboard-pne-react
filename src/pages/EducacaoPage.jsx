@@ -110,7 +110,7 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
           <div>
             <span className="eyebrow">Indicadores da Educação</span>
             <h1>Indicadores da Educação</h1>
-            <p>Matrículas, escolas, docentes, fluxo, aprendizagem e oferta técnica do município.</p>
+            <p>Matrículas, escolas, docentes, fluxo, aprendizagem e matrículas técnicas do município.</p>
           </div>
         </section>
         <section className="empty-state">
@@ -239,7 +239,7 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
         <div className="educacao-hero__intro">
           <span className="eyebrow">Indicadores da Educação</span>
           <h1>Indicadores da Educação</h1>
-          <p>Matrículas, escolas, docentes, fluxo, aprendizagem e oferta técnica do município.</p>
+          <p>Matrículas, escolas, docentes, fluxo, aprendizagem e matrículas técnicas do município.</p>
           <p className="educacao-hero__municipality">Município em foco: <strong>{selectedMunicipio}</strong></p>
         </div>
 
@@ -257,7 +257,7 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
           >
             <span className="educacao-scope-card__title">Panorama Educacional</span>
             <span className="educacao-scope-card__description">
-              Matrículas, escolas, turmas, fluxo, aprendizagem e oferta técnica.
+              Matrículas, escolas, turmas, fluxo, aprendizagem e matrículas técnicas.
             </span>
             <span className="educacao-scope-card__footer">
               <span className="educacao-scope-card__count">{panoramaCount} indicadores</span>
@@ -454,7 +454,7 @@ function EducationIndicatorDetail({ indicator, blocos }) {
 
       <div className="indicator-chart-card educacao-main-chart-card">
         <IndicatorChartHeader
-          title="Evolução do indicador"
+          title="Histórico do indicador"
           subtitle={`${displayIndicator.label} · Recorte exibido: ${displayIndicator.mainCutLabel}`}
           hasWideSegmented={hasManyStageOptions}
         >
@@ -466,7 +466,7 @@ function EducationIndicatorDetail({ indicator, blocos }) {
                 options={stageOptions}
                 selectedKey={selectedStageOption?.key}
                 onSelect={setSelectedStageKey}
-                ariaLabel="Recorte da evolução"
+                ariaLabel="Recorte do histórico do indicador"
               />
             </div>
           ) : null}
@@ -485,7 +485,7 @@ function EducationIndicatorDetail({ indicator, blocos }) {
           </>
         ) : (
           <div className="detail-empty-state">
-            <p>Não há série histórica suficiente para calcular evolução.</p>
+            <p>Não há série histórica suficiente para exibir o histórico do indicador.</p>
           </div>
         )}
       </div>
@@ -712,7 +712,7 @@ function InfraDetailPanel({ indicator, blocos }) {
         <div className="indicator-chart-card infra-evolution-table-wrap">
           <div className="education-chart-heading">
             <div>
-              <span>Evolução dos principais indicadores de infraestrutura</span>
+              <span>Histórico dos principais indicadores de infraestrutura</span>
               <p>Percentual por ano — {tableLabel}</p>
             </div>
           </div>
@@ -722,7 +722,7 @@ function InfraDetailPanel({ indicator, blocos }) {
           <DataSourceNote
             context={dataSourceContextForEducation(indicator, {
               detailType: 'table',
-              title: 'Evolução dos principais indicadores de infraestrutura',
+              title: 'Histórico dos principais indicadores de infraestrutura',
             })}
           />
         </div>
@@ -793,7 +793,7 @@ function TurmasPanoramaPanel({ indicator, blocos }) {
 
   const METRIC_OPTIONS = [
     { key: 'turmas', label: 'Turmas', formatLabel: formatNumber },
-    { key: 'alunos_por_turma', label: 'Alunos por turma', formatLabel: formatRatio },
+    { key: 'alunos_por_turma', label: 'Média de alunos por turma', formatLabel: formatRatio },
     { key: 'docentes', label: 'Docentes', formatLabel: formatNumber },
     { key: 'alunos_por_docente', label: 'Alunos por docente', formatLabel: formatRatio },
   ]
@@ -838,7 +838,7 @@ function TurmasPanoramaPanel({ indicator, blocos }) {
       <div className="indicator-control-bar">
         <div className="indicator-control-bar__copy">
           <span className="indicator-control-bar__label">Métrica analisada</span>
-          <span className="indicator-control-bar__hint">Atualiza os valores, a evolução e o detalhamento.</span>
+          <span className="indicator-control-bar__hint">Atualiza os valores, o histórico do indicador e o detalhamento.</span>
         </div>
         <IndicatorSegmentedControl
           options={METRIC_OPTIONS}
@@ -861,7 +861,7 @@ function TurmasPanoramaPanel({ indicator, blocos }) {
 
       <div className="indicator-chart-card educacao-main-chart-card">
         <IndicatorChartHeader
-          title="Evolução do indicador"
+          title="Histórico do indicador"
           subtitle={`${activeMetric.label} · Recorte exibido: ${cutLabel}`}
         />
         {hasMainSeries ? (
@@ -882,7 +882,7 @@ function TurmasPanoramaPanel({ indicator, blocos }) {
           </>
         ) : (
           <div className="detail-empty-state">
-            <p>Não há série histórica suficiente para calcular evolução.</p>
+            <p>Não há série histórica suficiente para exibir o histórico do indicador.</p>
           </div>
         )}
       </div>
@@ -929,7 +929,7 @@ function detailTabPriority(item) {
   if (label === 'Por faixa etária') return 4
   if (label === 'Por cor/raça') return 5
   if (label === 'Por modalidade') return 6
-  if (label === 'Evolução') return 7
+  if (label === 'Histórico do indicador') return 7
   if (label === 'Infraestrutura') return 8
   return 10
 }
@@ -946,7 +946,7 @@ function getDetailTabLabel(item) {
   if (title.includes('rede') || title.includes('depend')) return 'Por rede'
   if (title.includes('modalidade')) return 'Por modalidade'
   if (title.includes('infraestrutura')) return 'Infraestrutura'
-  if (title.includes('evolu')) return 'Evolução'
+  if (title.includes('evolu') || title.includes('histórico')) return 'Histórico do indicador'
   if (item.type === 'table') return 'Tabela'
   return item.title ?? 'Detalhamento'
 }
@@ -1031,7 +1031,7 @@ function ExploreItem({ indicator, item }) {
           </div>
           <div className="educacao-stage-context__card">
             <span className="educacao-stage-context__value">{!isMissing(item.alunosPorTurma) ? formatRatio(item.alunosPorTurma) : EM}</span>
-            <span className="educacao-stage-context__label">Alunos por turma</span>
+            <span className="educacao-stage-context__label">Média de alunos por turma</span>
           </div>
           <div className="educacao-stage-context__card">
             <span className="educacao-stage-context__value">{!isMissing(item.docentes) ? formatNumber(item.docentes) : EM}</span>
@@ -1443,7 +1443,7 @@ function buildEducationModel(blocos) {
     makeTheme('turmas', 'Turmas e docentes', 'Turmas e docentes', items),
     makeTheme('fluxo', 'Fluxo escolar', 'Fluxo', items),
     makeTheme('aprendizagem', 'Aprendizagem', 'Aprendizagem', items),
-    makeTheme('oferta', 'Oferta técnica/profissional', 'Oferta técnica', items),
+    makeTheme('oferta', 'Matrículas na educação profissional', 'Matrículas técnicas', items),
   ]
 
   return {
@@ -1451,10 +1451,10 @@ function buildEducationModel(blocos) {
       { label: 'Matrículas', value: formatNumber(matResumo.total_matriculas), year: mat.ultimo_ano },
       { label: 'Escolas', value: formatNumber(redeResumo.total_escolas), year: rede.ultimo_ano },
       { label: 'Turmas', value: formatNumber(turmasResumo.turmas), year: turmas.ultimo_ano },
-      { label: 'Alunos por turma', value: formatRatio(turmasResumo.alunos_por_turma), year: turmas.ultimo_ano },
+      { label: 'Média de alunos por turma', value: formatRatio(turmasResumo.alunos_por_turma), year: turmas.ultimo_ano },
       { label: 'Aprovação', value: formatPercent(fluxoResumo.taxa_aprovacao), year: fluxo.ultimo_ano, tone: 'success' },
       { label: 'IDEB', value: preferredIdeb ? formatValue(preferredIdeb.ideb) : EM, year: preferredIdeb?.ano },
-      { label: 'Oferta técnica', value: formatNumber(ofertaResumo.total_matriculas_tecnicas), year: oferta.ultimo_ano },
+      { label: 'Matrículas técnicas', value: formatNumber(ofertaResumo.total_matriculas_tecnicas), year: oferta.ultimo_ano },
     ],
     themes,
   }
@@ -1588,7 +1588,7 @@ function buildOfertaIndicators(oferta) {
   const latestYear = oferta.ultimo_ano
   const explore = buildOfertaExplore(oferta)
   return [
-    createIndicator({ key: 'oferta-total', label: 'Matrículas em educação técnica/profissional', description: 'Total de matrículas em oferta técnica/profissional.', themeKey: 'oferta', themeLabel: 'Oferta técnica/profissional', themeShortLabel: 'Oferta', categories: [FILTER_KEYS.profissional], stageLabel: 'Educação Profissional', series: normalizeYearSeries(series.total), currentValue: resumo.total_matriculas_tecnicas, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Oferta técnica', explore, notices: oferta.avisos ?? [] }),
+    createIndicator({ key: 'oferta-total', label: 'Matrículas na educação profissional', description: 'Total de matrículas em cursos técnicos e profissionais.', themeKey: 'oferta', themeLabel: 'Matrículas na educação profissional', themeShortLabel: 'Matrículas técnicas', categories: [FILTER_KEYS.profissional], stageLabel: 'Educação Profissional', series: normalizeYearSeries(series.total), currentValue: resumo.total_matriculas_tecnicas, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Matrículas técnicas', explore, notices: oferta.avisos ?? [] }),
   ]
 }
 
@@ -2549,7 +2549,7 @@ function buildTurmasExplore(turmas, cut = { cutLabel: 'Total do município', met
       ...(hasEtapaHistory ? {
         historyCategories: etapaStacked.categories,
         historyData: etapaStacked.data,
-        historyTitle: `Evolução histórica — ${titleBase} por etapa${titleSuffix}`,
+        historyTitle: `Histórico do indicador — ${titleBase} por etapa${titleSuffix}`,
       } : {}),
       panoramaColumns: panorama?.columns,
       panoramaRows: panorama?.rows,
@@ -2583,7 +2583,7 @@ function buildTurmasExplore(turmas, cut = { cutLabel: 'Total do município', met
 
 function turmasMetricLabel(metricKey) {
   if (metricKey === 'docentes') return 'Docentes'
-  if (metricKey === 'alunos_por_turma') return 'Alunos por turma'
+  if (metricKey === 'alunos_por_turma') return 'Média de alunos por turma'
   if (metricKey === 'alunos_por_docente') return 'Alunos por docente'
   return 'Turmas'
 }
@@ -2786,7 +2786,7 @@ function buildEtapaPanorama(porEtapa, metricKey, ultimoAno) {
     columns: [
       { key: 'etapa', label: 'Etapa' },
       { key: 'turmas', label: 'Turmas' },
-      { key: 'alunos_por_turma', label: 'Alunos por turma' },
+      { key: 'alunos_por_turma', label: 'Média de alunos por turma' },
       { key: 'variacao', label: 'Variação' },
     ],
     rows,
@@ -2828,7 +2828,7 @@ function getIndicatorStatus(currentValue, series) {
 
 function buildQuickReading({ currentDisplay, currentValue, currentYear, formatType, initialValue, initialYear, label, variation }) {
   if (isMissing(currentValue)) return `Não há dado recente disponível para ${label.toLocaleLowerCase('pt-BR')}.`
-  if (isMissing(initialValue) || !initialYear || !currentYear || variation.raw === null) return 'Não há série histórica suficiente para calcular evolução.'
+  if (isMissing(initialValue) || !initialYear || !currentYear || variation.raw === null) return 'Não há série histórica suficiente para exibir o histórico do indicador.'
   const movement = variation.raw > 0 ? 'aumento' : variation.raw < 0 ? 'redução' : 'estabilidade'
   const variationText = formatType === 'percent' ? variation.display : variation.display.replace('+', '')
   return `Em ${currentYear}, o município registra ${currentDisplay}. Em relação a ${initialYear}, houve ${movement} de ${variationText}.`

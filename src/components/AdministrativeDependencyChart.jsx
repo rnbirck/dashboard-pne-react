@@ -107,7 +107,7 @@ export function AdministrativeDependencyChart({
         ))}
       </div>
       <div className="complementary-chart__canvas">
-        <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} role="img" aria-label={`${title}: evolução por dependência administrativa`}>
+        <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} role="img" aria-label={`${title}: histórico do indicador por dependência administrativa`}>
           {[0.25, 0.5, 0.75].map((ratio) => {
             const y = PADDING.top + plotHeight * ratio
             return (

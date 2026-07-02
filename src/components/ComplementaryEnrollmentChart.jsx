@@ -95,7 +95,7 @@ export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em c
         <span className="eyebrow">{title}</span>
       </div>
       <div className="complementary-chart__canvas">
-        <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} role="img" aria-label={`${title}: evolução por ano`}>
+        <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} role="img" aria-label={`${title}: histórico por ano`}>
           {[0.25, 0.5, 0.75].map((ratio) => {
             const y = PADDING.top + plotHeight * ratio
             return (

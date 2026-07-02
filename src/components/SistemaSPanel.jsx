@@ -209,7 +209,7 @@ export function SistemaSPanel({ blocos }) {
           <div className="indicator-chart-card sistema-s-chart">
             <div className="education-chart-heading">
               <div>
-                <span>Evolução do indicador</span>
+                <span>Histórico do indicador</span>
                 <p>{activeConfig.label}</p>
               </div>
             </div>
@@ -224,7 +224,7 @@ export function SistemaSPanel({ blocos }) {
               />
             ) : (
               <div className="detail-empty-state">
-                <p>Não há série histórica suficiente para calcular evolução.</p>
+                <p>Não há série histórica suficiente para exibir o histórico do indicador.</p>
               </div>
             )}
           </div>

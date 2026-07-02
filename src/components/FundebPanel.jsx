@@ -156,7 +156,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
       <section className="fundeb-info-box">
         <p>
           O FUNDEB reúne recursos destinados à manutenção e desenvolvimento da educação básica.
-          Os indicadores abaixo mostram a evolução das receitas, despesas e aplicação mínima em
+          Os indicadores abaixo mostram o histórico das receitas, despesas e aplicação mínima em
           remuneração dos profissionais da educação no município selecionado.
         </p>
         <p>

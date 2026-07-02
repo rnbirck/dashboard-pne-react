@@ -61,7 +61,7 @@ export function Home({ onNavigate, selectedMunicipio }) {
           <FeatureCard
             icon={<BarsIcon />}
             title="Indicadores"
-            text="Explore matrículas, escolas, docentes, fluxo, aprendizagem, oferta técnica e indicadores financeiros do FUNDEB."
+            text="Explore matrículas, escolas, docentes, fluxo, aprendizagem, matrículas técnicas e indicadores financeiros do FUNDEB."
           />
           <FeatureCard
             icon={<TargetIcon />}
