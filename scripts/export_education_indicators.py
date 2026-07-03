@@ -578,6 +578,7 @@ FONTES = [
     {"nome": "INEP - INSE", "tabelas": ["inse"]},
     {"nome": "INEP - Alfabetizacao", "tabelas": ["alfabetizacao"]},
     {"nome": "INEP - Censo Escolar (Sistema S)", "tabelas": ["censo_escolas"]},
+    {"nome": "VAAR/FUNDEB", "tabelas": ["vw_vaar_municipio_dashboard"]},
 ]
 
 AVISOS_GLOBAIS = [
@@ -633,6 +634,181 @@ def carregar_view(view, rs_ids=None):
     if "id_municipio" in df.columns:
         df["id_municipio"] = df["id_municipio"].astype(str)
     return df
+
+
+# ── Bloco: VAAR/FUNDEB ────────────────────────────────────────────────
+
+VAAR_CAMPOS_RESUMO = [
+    "ano_fundeb",
+    "habilitado_condicionalidades",
+    "recebe_aprendizagem",
+    "recebe_atendimento",
+    "melhorou_aprendizagem",
+    "melhorou_atendimento",
+    "motivo_aprendizagem",
+    "motivo_atendimento",
+    "coeficiente_total",
+    "metodologia_vaar",
+]
+
+VAAR_CAMPOS_APRENDIZAGEM = [
+    "ano_fundeb",
+    "indicador_aprendizagem",
+    "delta_aprendizagem",
+    "delta_aprendizagem_ajustado",
+    "iad",
+    "iad_ajustado",
+    "proporcao_adequada_saeb_2019",
+    "proporcao_adequada_saeb_2023",
+    "taxa_aprovacao_penalizada_2019",
+    "taxa_aprovacao_penalizada_2023",
+    "equidade_2023",
+]
+
+VAAR_CAMPOS_ATENDIMENTO = [
+    "ano_fundeb",
+    "indicador_atendimento_anterior",
+    "indicador_atendimento_atual",
+    "delta_atendimento",
+    "delta_atendimento_ajustado",
+    "estudantes_areas_prioritarias_anterior",
+    "estudantes_areas_prioritarias_atual",
+    "proporcao_abandono_anterior",
+    "proporcao_abandono_atual",
+    "proporcao_sem_informacao_anterior",
+    "proporcao_sem_informacao_atual",
+]
+
+VAAR_CAMPOS_METODOLOGIA_ANTERIOR = [
+    "ano_fundeb",
+    "metodologia_vaar",
+    "indicador_atendimento_metodologia_anterior",
+    "evolucao_atendimento_metodologia_anterior",
+    "coeficiente_atendimento",
+    "indicador_aprendizagem_metodologia_anterior",
+    "evolucao_aprendizagem_metodologia_anterior",
+    "coeficiente_aprendizagem",
+    "coeficiente_total",
+    "apresentou_evolucao_nos_dois_indicadores",
+]
+
+VAAR_CAMPOS_INTEIROS = {
+    "ano_fundeb",
+    "estudantes_areas_prioritarias_anterior",
+    "estudantes_areas_prioritarias_atual",
+}
+
+VAAR_CAMPOS_BOOLEANOS = {
+    "habilitado_condicionalidades",
+    "recebe_aprendizagem",
+    "recebe_atendimento",
+    "melhorou_aprendizagem",
+    "melhorou_atendimento",
+    "apresentou_evolucao_nos_dois_indicadores",
+}
+
+VAAR_OBSERVACOES_METODOLOGICAS = [
+    "Os exercicios de 2023 e 2024 seguem metodologia anterior e nao devem ser comparados diretamente aos indicadores de 2025 e 2026."
+]
+
+def _valor_vaar(valor, campo):
+    """Converte escalares VAAR para JSON sem transformar ausência em zero."""
+    valor = limpar_null(valor)
+    if valor is None:
+        return None
+    if campo in VAAR_CAMPOS_INTEIROS:
+        return ri(valor)
+    if campo in VAAR_CAMPOS_BOOLEANOS:
+        return bool(valor)
+    if isinstance(valor, (int, float)) or hasattr(valor, "item"):
+        return round(float(valor), 6)
+    return valor
+
+
+def _linha_vaar(row, campos):
+    return {campo: _valor_vaar(row.get(campo), campo) for campo in campos}
+
+
+def montar_bloco_vaar(df, id_mun):
+    """Constroi resumo e series anuais VAAR para um municipio."""
+    d = df[df["id_municipio"] == id_mun].copy()
+    if d.empty:
+        return {
+            "anos": [],
+            "anos_disponiveis": [],
+            "ultimo_ano": None,
+            "resumo_ultimo_ano": {},
+            "historico": [],
+            "aprendizagem": [],
+            "atendimento": [],
+            "historico_recebimento": [],
+            "metodologia_anterior": [],
+            "metodologias": {},
+            "observacoes_metodologicas": VAAR_OBSERVACOES_METODOLOGICAS,
+            "series": {},
+            "dimensoes_disponiveis": ["ano_fundeb", "componente"],
+            "campos_indisponiveis": ["sem_dados"],
+            "fonte": "VAAR/FUNDEB",
+        }
+
+    d = d.sort_values("ano_fundeb").drop_duplicates("ano_fundeb", keep="last")
+    anos = [int(ano) for ano in d["ano_fundeb"].tolist()]
+    historico = []
+    aprendizagem = []
+    atendimento = []
+    metodologia_anterior = []
+    metodologias = {}
+
+    for _, row in d.iterrows():
+        resumo = _linha_vaar(row, VAAR_CAMPOS_RESUMO)
+        metodologia = resumo.get("metodologia_vaar")
+        if metodologia:
+            metodologias[str(int(row["ano_fundeb"]))] = metodologia
+        historico.append({
+            **resumo,
+            "indicador_aprendizagem": _valor_vaar(
+                row.get("indicador_aprendizagem"), "indicador_aprendizagem"
+            ),
+            "delta_aprendizagem": _valor_vaar(
+                row.get("delta_aprendizagem"), "delta_aprendizagem"
+            ),
+            "indicador_atendimento_atual": _valor_vaar(
+                row.get("indicador_atendimento_atual"),
+                "indicador_atendimento_atual",
+            ),
+            "delta_atendimento": _valor_vaar(
+                row.get("delta_atendimento"), "delta_atendimento"
+            ),
+            "coeficiente_total": _valor_vaar(
+                row.get("coeficiente_total"), "coeficiente_total"
+            ),
+        })
+        if metodologia == "metodologia_atual":
+            aprendizagem.append(_linha_vaar(row, VAAR_CAMPOS_APRENDIZAGEM))
+            atendimento.append(_linha_vaar(row, VAAR_CAMPOS_ATENDIMENTO))
+        elif metodologia == "metodologia_anterior":
+            metodologia_anterior.append(
+                _linha_vaar(row, VAAR_CAMPOS_METODOLOGIA_ANTERIOR)
+            )
+
+    resumo_ultimo_ano = _linha_vaar(d.iloc[-1], VAAR_CAMPOS_RESUMO)
+    return {
+        "anos": anos,
+        "anos_disponiveis": anos,
+        "ultimo_ano": anos[-1],
+        "resumo_ultimo_ano": resumo_ultimo_ano,
+        "historico": historico,
+        "aprendizagem": aprendizagem,
+        "atendimento": atendimento,
+        "historico_recebimento": historico,
+        "metodologia_anterior": metodologia_anterior,
+        "metodologias": metodologias,
+        "observacoes_metodologicas": VAAR_OBSERVACOES_METODOLOGICAS,
+        "series": {"historico": historico},
+        "dimensoes_disponiveis": ["ano_fundeb", "componente"],
+        "campos_indisponiveis": [],
+        "fonte": "VAAR/FUNDEB",
+    }
 
 
 # ── Bloco: Matriculas ────────────────────────────────────────────────────
@@ -1738,7 +1914,11 @@ def _bloco_vazio(nome, dimensoes, avisos=None):
 # ── Exportacao municipal ─────────────────────────────────────────────────
 
 
-def exportar_municipios(mun_rs, dfs_views, progress_every=0):
+def exportar_municipios(
+    mun_rs,
+    dfs_views,
+    progress_every=0,
+):
     """Gera um JSON por municipio RS com tratamento de erro e progresso."""
     log(f"Exportando {len(mun_rs)} municipios...")
     gerados = 0
@@ -1789,6 +1969,10 @@ def exportar_municipios(mun_rs, dfs_views, progress_every=0):
                     view_df("sistema_s", id_mun),
                     id_mun,
                     view_df("sistema_s_escolas", id_mun),
+                ),
+                "vaar": montar_bloco_vaar(
+                    view_df("vaar", id_mun),
+                    id_mun,
                 ),
             }
 
@@ -2062,7 +2246,7 @@ def gerar_index(mun_rs, anos_por_bloco, gerados_mun):
         "blocos_disponiveis": [
             "matriculas", "rede_escolar", "turmas_docentes",
             "fluxo", "aprendizagem", "oferta_tecnica",
-            "sistema_s",
+            "sistema_s", "vaar",
         ],
         "campos_indisponiveis": [],
         "caminhos": {
@@ -2292,6 +2476,7 @@ def main():
         ("vw_educacao_oferta_tecnica", "oferta"),
         ("vw_educacao_sistema_s", "sistema_s"),
         ("vw_educacao_sistema_s_escolas", "sistema_s_escolas"),
+        ("vw_vaar_municipio_dashboard", "vaar"),
     ]
     dfs = {}
     for view_name, key in views:
@@ -2305,13 +2490,17 @@ def main():
     for nome, df in dfs.items():
         if not df.empty and "ano" in df.columns:
             anos_por_bloco[nome] = sorted(df["ano"].unique().tolist())
+        elif not df.empty and "ano_fundeb" in df.columns:
+            anos_por_bloco[nome] = sorted(df["ano_fundeb"].unique().tolist())
 
     if args.diagnostic:
         log(f"Anos disponiveis por view: {anos_por_bloco}")
 
     # 4. Exportar municipios
     gerados_mun, falhas_mun, arquivos_escritos, tamanhos = exportar_municipios(
-        mun_rs, dfs, args.progress_every,
+        mun_rs,
+        dfs,
+        args.progress_every,
     )
     log(f"Municipios exportados com sucesso: {gerados_mun}")
     if falhas_mun:

@@ -15,6 +15,7 @@ const CHART_HEIGHT_NEGATIVE = 330
 const PADDING = { bottom: 44, left: 64, right: 68, top: 38 }
 
 export function IndicatorHistoryChart({
+  chartHeight,
   endYear,
   formatDataLabel: formatDataLabelProp,
   formatYAxis: formatYAxisProp,
@@ -52,8 +53,9 @@ export function IndicatorHistoryChart({
         startYear,
         yTickCount,
         floorNegativeValues,
+        chartHeightOverride: chartHeight,
       }),
-    [endYear, formatDataLabelProp, formatYAxisProp, labelMode, meta, missingLabel, resolvedUnit, series, showMetaLine, showMissingPoints, startYear, yTickCount, floorNegativeValues],
+    [chartHeight, endYear, formatDataLabelProp, formatYAxisProp, labelMode, meta, missingLabel, resolvedUnit, series, showMetaLine, showMissingPoints, startYear, yTickCount, floorNegativeValues],
   )
 
   const validCount = chart.points.filter(p => p.valid !== false).length
@@ -261,6 +263,7 @@ function buildChartModel({
   startYear,
   yTickCount,
   floorNegativeValues = false,
+  chartHeightOverride,
 }) {
   const rawPoints = normalizeSeries(series, floorNegativeValues, showMissingPoints)
   const validPoints = rawPoints.filter((p) => p.valid !== false)
@@ -270,7 +273,8 @@ function buildChartModel({
   const metaValue = Number.isFinite(rawMetaValue) ? rawMetaValue : null
 
   if (validPoints.length < 2) {
-    const chartHeight = showMetaLine ? CHART_HEIGHT_NORMAL : CHART_HEIGHT_INFORMATIVE
+    const baseChartHeight = showMetaLine ? CHART_HEIGHT_NORMAL : CHART_HEIGHT_INFORMATIVE
+    const chartHeight = resolveChartHeight(baseChartHeight, chartHeightOverride)
     return {
       formatDataLabel,
       formatValue: (value) => formatIndicatorValue(value, resolvedUnit),
@@ -285,11 +289,12 @@ function buildChartModel({
 
   const values = validPoints.map((point) => point.value)
   const hasNegativeValues = values.some((value) => value < 0)
-  const chartHeight = hasNegativeValues
+  const baseChartHeight = hasNegativeValues
     ? CHART_HEIGHT_NEGATIVE
     : showMetaLine
       ? CHART_HEIGHT_NORMAL
       : CHART_HEIGHT_INFORMATIVE
+  const chartHeight = resolveChartHeight(baseChartHeight, chartHeightOverride)
   const isPercent = resolvedUnit === 'percent'
   const isIndex = resolvedUnit === 'index'
   const isYears = resolvedUnit === 'years'
@@ -413,6 +418,12 @@ function buildChartModel({
     yearMarkers,
     zeroLine,
   }
+}
+
+function resolveChartHeight(baseHeight, override) {
+  const numericOverride = Number(override)
+  if (!Number.isFinite(numericOverride)) return baseHeight
+  return Math.max(baseHeight, numericOverride)
 }
 
 function normalizeSeries(series = [], floorNegativeValues = false, showMissingPoints = false) {

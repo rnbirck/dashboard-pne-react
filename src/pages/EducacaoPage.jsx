@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { CategoryTabs } from '../components/CategoryTabs'
 import { FundebPanel } from '../components/FundebPanel'
 import { SistemaSPanel } from '../components/SistemaSPanel'
+import { VaarPanel } from '../components/VaarPanel'
 import { FUNDEB_INDICATORS } from '../data/fundebIndicators'
 import { EducationBarChart } from '../components/EducationBarChart'
 import { EducationLineChart } from '../components/EducationLineChart'
@@ -74,6 +75,118 @@ const EJA_VALID_AGE_RANGES = [
 const CATEGORY_COMPARISON_COLORS = ['#0f766e', '#2563eb', '#f59e0b', '#7c3aed', '#0891b2', '#db2777', '#65a30d', '#9333ea']
 const COR_RACA_ORDER = ['Branca', 'Parda', 'Preta', 'Amarela', 'Indígena', 'Não Declarada']
 
+const MAIN_BLOCK_KEYS = {
+  panorama: 'panoramaEducacional',
+  financiamento: 'financiamentoEducacao',
+}
+
+const PANORAMA_THEME_KEYS = {
+  matriculas: 'matriculas',
+  escolasSistemaS: 'escolasSistemaS',
+}
+
+const FINANCING_MODULE_KEYS = {
+  fundeb: 'fundeb',
+  vaar: 'vaar',
+}
+
+const MAIN_INDICATOR_BLOCKS = [
+  {
+    key: MAIN_BLOCK_KEYS.panorama,
+    title: 'Panorama Educacional',
+    description: 'Matrículas, escolas, turmas, fluxo, aprendizagem, matrículas técnicas e escolas do Sistema S.',
+  },
+  {
+    key: MAIN_BLOCK_KEYS.financiamento,
+    title: 'Financiamento da Educação',
+    description: 'FUNDEB, complementação VAAR, receitas, despesas, condicionalidades e resultados.',
+  },
+]
+
+const FINANCING_MODULES = [
+  {
+    key: FINANCING_MODULE_KEYS.fundeb,
+    title: 'FUNDEB',
+    description: 'Receitas, despesas, remuneração e saldos do fundo.',
+    count: `${FUNDEB_INDICATORS.length} indicadores`,
+  },
+  {
+    key: FINANCING_MODULE_KEYS.vaar,
+    title: 'Complementação VAAR',
+    description: 'Condicionalidades e resultados de aprendizagem e atendimento.',
+    count: '2023-2026',
+  },
+]
+
+function getInitialEducationNavigation() {
+  const fallback = {
+    mainBlock: MAIN_BLOCK_KEYS.panorama,
+    panoramaTheme: PANORAMA_THEME_KEYS.matriculas,
+    financingModule: FINANCING_MODULE_KEYS.fundeb,
+  }
+
+  if (typeof window === 'undefined') return fallback
+
+  const searchParams = new URLSearchParams(window.location.search)
+  const rawHash = window.location.hash.replace(/^#\/?/, '')
+  const hashQuery = rawHash.includes('?') ? rawHash.slice(rawHash.indexOf('?') + 1) : ''
+  const hashParams = new URLSearchParams(hashQuery)
+  const keys = ['bloco', 'block', 'scope', 'tema', 'theme', 'modulo', 'module']
+  const candidates = [
+    rawHash && !rawHash.includes('?') ? rawHash : null,
+    ...keys.flatMap((key) => [searchParams.get(key), hashParams.get(key)]),
+  ]
+
+  for (const candidate of candidates) {
+    const value = normalizeNavigationValue(candidate)
+
+    if (value === 'fundeb') {
+      return {
+        ...fallback,
+        mainBlock: MAIN_BLOCK_KEYS.financiamento,
+        financingModule: FINANCING_MODULE_KEYS.fundeb,
+      }
+    }
+
+    if (value === 'vaar' || value === 'complementacaovaar' || value === 'complementaovaar') {
+      return {
+        ...fallback,
+        mainBlock: MAIN_BLOCK_KEYS.financiamento,
+        financingModule: FINANCING_MODULE_KEYS.vaar,
+      }
+    }
+
+    if (['sistemas', 'escolassistemas'].includes(value)) {
+      return {
+        ...fallback,
+        mainBlock: MAIN_BLOCK_KEYS.panorama,
+        panoramaTheme: PANORAMA_THEME_KEYS.escolasSistemaS,
+      }
+    }
+
+    if (value === 'financiamentoeducacao') {
+      return {
+        ...fallback,
+        mainBlock: MAIN_BLOCK_KEYS.financiamento,
+      }
+    }
+
+    if (value === 'panoramaeducacional' || value === 'panorama') {
+      return fallback
+    }
+  }
+
+  return fallback
+}
+
+function normalizeNavigationValue(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('pt-BR')
+    .replace(/[^a-z0-9]/g, '')
+}
+
 export function EducacaoPage({ municipioData, selectedMunicipio }) {
   const eduIndexState = useAsyncData(() => loadEducationMunicipiosIndex(), [])
   const eduMunMap = useMemo(() => {
@@ -86,8 +199,10 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
     return loadEducationMunicipio(selectedId)
   }, [selectedId])
 
-  const [selectedScope, setSelectedScope] = useState('panorama')
-  const [selectedThemeKey, setSelectedThemeKey] = useState('matriculas')
+  const initialNavigation = useMemo(() => getInitialEducationNavigation(), [])
+  const [selectedMainBlock, setSelectedMainBlock] = useState(initialNavigation.mainBlock)
+  const [selectedThemeKey, setSelectedThemeKey] = useState(initialNavigation.panoramaTheme)
+  const [selectedFinancingModule, setSelectedFinancingModule] = useState(initialNavigation.financingModule)
   const [selectedIndicatorKey, setSelectedIndicatorKey] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -98,10 +213,10 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
     Number(sistemaS.ultimo_ano) === 2025
 
   useEffect(() => {
-    if (selectedScope === 'sistema_s' && !hasSistemaS) {
-      setSelectedScope('panorama')
+    if (selectedThemeKey === PANORAMA_THEME_KEYS.escolasSistemaS && !hasSistemaS) {
+      setSelectedThemeKey(PANORAMA_THEME_KEYS.matriculas)
     }
-  }, [hasSistemaS, selectedScope])
+  }, [hasSistemaS, selectedThemeKey])
 
   if (!selectedMunicipio) {
     return (
@@ -137,8 +252,16 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
   if (!dados) return null
 
   const model = buildEducationModel(dados.blocos ?? {})
-  const themes = model.themes
+  const sistemaSTheme = {
+    key: PANORAMA_THEME_KEYS.escolasSistemaS,
+    label: 'Escolas do Sistema S',
+    shortLabel: 'Sistema S',
+    count: 4,
+    items: [],
+  }
+  const themes = hasSistemaS ? [...model.themes, sistemaSTheme] : model.themes
   const selectedTheme = themes.find((theme) => theme.key === selectedThemeKey) ?? themes[0]
+  const isSistemaSTheme = selectedTheme?.key === PANORAMA_THEME_KEYS.escolasSistemaS
   const themeItems = selectedTheme?.items ?? []
   const filteredItems = themeItems.filter((item) => {
     const query = searchQuery.trim().toLocaleLowerCase('pt-BR')
@@ -155,20 +278,22 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
     setSearchQuery('')
   }
 
-  function handleScopeSelect(scope) {
-    if (scope === selectedScope) return
-    setSelectedScope(scope)
+  function handleMainBlockSelect(mainBlock) {
+    if (mainBlock === selectedMainBlock) return
+    setSelectedMainBlock(mainBlock)
     setSelectedIndicatorKey('')
     setSearchQuery('')
-    if (scope === 'panorama') {
-      const validKeys = model.themes.map((t) => t.key)
+    if (mainBlock === MAIN_BLOCK_KEYS.panorama) {
+      const validKeys = themes.map((t) => t.key)
       if (!validKeys.includes(selectedThemeKey)) {
-        setSelectedThemeKey('matriculas')
+        setSelectedThemeKey(PANORAMA_THEME_KEYS.matriculas)
       }
     }
   }
 
-  const panoramaCount = model.themes.reduce((sum, t) => sum + t.items.length, 0)
+  function handleFinancingModuleSelect(moduleKey) {
+    setSelectedFinancingModule(moduleKey)
+  }
 
   function renderPanoramaScope() {
     return (
@@ -184,6 +309,9 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
             />
           </div>
         </div>
+        {isSistemaSTheme ? (
+          <SistemaSPanel blocos={dados.blocos} />
+        ) : (
         <div className="cycle-layout educacao-analysis-layout">
           <aside className="indicator-sidebar">
             <div className="indicator-sidebar__heading">
@@ -211,22 +339,54 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
           </aside>
           <EducationIndicatorDetail indicator={activeIndicator} blocos={dados.blocos} />
         </div>
+        )}
       </>
     )
   }
 
-  function renderSelectedEducationScope() {
-    if (selectedScope === 'sistema_s' && hasSistemaS) {
-      return <SistemaSPanel blocos={dados.blocos} />
-    }
+  function renderFinancingScope() {
+    return (
+      <>
+        <div className="cycle-category-bar educacao-financing-nav">
+          <span className="eyebrow">Módulos de financiamento</span>
+          <div className="educacao-financing-nav__grid" role="tablist" aria-label="Módulos de financiamento da educação">
+            {FINANCING_MODULES.map((module) => {
+              const isActive = module.key === selectedFinancingModule
 
-    if (selectedScope === 'fundeb') {
+              return (
+                <button
+                  className={'educacao-module-card' + (isActive ? ' is-active' : '')}
+                  key={module.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => handleFinancingModuleSelect(module.key)}
+                >
+                  <span className="educacao-module-card__title">{module.title}</span>
+                  <span className="educacao-module-card__description">{module.description}</span>
+                  <span className="educacao-module-card__count">{module.count}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        {selectedFinancingModule === FINANCING_MODULE_KEYS.fundeb ? (
+          <FundebPanel
+            municipioData={municipioData}
+            selectedMunicipio={selectedMunicipio}
+            embedded={true}
+          />
+        ) : (
+          <VaarPanel vaarData={dados?.blocos?.vaar} />
+        )}
+      </>
+    )
+  }
+
+  function renderSelectedEducationBlock() {
+    if (selectedMainBlock === MAIN_BLOCK_KEYS.financiamento) {
       return (
-        <FundebPanel
-          municipioData={municipioData}
-          selectedMunicipio={selectedMunicipio}
-          embedded={true}
-        />
+        renderFinancingScope()
       )
     }
 
@@ -246,61 +406,39 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
         <div className="educacao-scope-selector">
           <div className="educacao-scope-selector__intro">
             <span className="eyebrow educacao-scope-selector__heading">Escolha o bloco de indicadores</span>
-            <p className="educacao-scope-selector__subtitle">Alterne entre os indicadores gerais da educação e os dados financeiros do FUNDEB.</p>
+            <p className="educacao-scope-selector__subtitle">Alterne entre os indicadores educacionais e o financiamento da educação.</p>
           </div>
-          <div className={'educacao-scope-selector__grid' + (hasSistemaS ? ' is-triple' : '')}>
-          <button
-            className={'educacao-scope-card' + (selectedScope === 'panorama' ? ' is-active' : '')}
-            type="button"
-            aria-pressed={selectedScope === 'panorama'}
-            onClick={() => handleScopeSelect('panorama')}
-          >
-            <span className="educacao-scope-card__title">Panorama Educacional</span>
-            <span className="educacao-scope-card__description">
-              Matrículas, escolas, turmas, fluxo, aprendizagem e matrículas técnicas.
-            </span>
-            <span className="educacao-scope-card__footer">
-              <span className="educacao-scope-card__count">{panoramaCount} indicadores</span>
-            </span>
-          </button>
-          {hasSistemaS && (
-            <button
-              className={'educacao-scope-card' + (selectedScope === 'sistema_s' ? ' is-active' : '')}
-              type="button"
-              aria-pressed={selectedScope === 'sistema_s'}
-              onClick={() => handleScopeSelect('sistema_s')}
-            >
-              <span className="educacao-scope-card__title">Escolas do Sistema S</span>
-              <span className="educacao-scope-card__description">
-                Escolas, matrículas, turmas e etapas atendidas pelo Sistema S.
-              </span>
-              <span className="educacao-scope-card__footer">
-                <span className="educacao-scope-card__count">4 indicadores</span>
-              </span>
-            </button>
-          )}
-          <button
-            className={'educacao-scope-card' + (selectedScope === 'fundeb' ? ' is-active' : '')}
-            type="button"
-            aria-pressed={selectedScope === 'fundeb'}
-            onClick={() => handleScopeSelect('fundeb')}
-          >
-            <span className="educacao-scope-card__title">FUNDEB</span>
-            <span className="educacao-scope-card__description">
-              Receitas, despesas, remuneração e saldos do fundo.
-            </span>
-            <span className="educacao-scope-card__footer">
-              <span className="educacao-scope-card__count">{FUNDEB_INDICATORS.length} indicadores</span>
-            </span>
-          </button>
+          <div className="educacao-scope-selector__grid">
+            {MAIN_INDICATOR_BLOCKS.map((block) => {
+              const isActive = selectedMainBlock === block.key
+              const count = block.key === MAIN_BLOCK_KEYS.panorama
+                ? `${themes.length} temas`
+                : `${FINANCING_MODULES.length} módulos`
+
+              return (
+                <button
+                  className={'educacao-scope-card' + (isActive ? ' is-active' : '')}
+                  key={block.key}
+                  type="button"
+                  aria-pressed={isActive}
+                  onClick={() => handleMainBlockSelect(block.key)}
+                >
+                  <span className="educacao-scope-card__title">{block.title}</span>
+                  <span className="educacao-scope-card__description">{block.description}</span>
+                  <span className="educacao-scope-card__footer">
+                    <span className="educacao-scope-card__count">{count}</span>
+                  </span>
+                </button>
+              )
+            })}
           </div>
         </div>
       </section>
 
-      {selectedScope === 'panorama' && <EducationOverviewCards overview={model.overview} />}
+      {selectedMainBlock === MAIN_BLOCK_KEYS.panorama && !isSistemaSTheme && <EducationOverviewCards overview={model.overview} />}
 
       <section className="cycle-workspace educacao-workspace">
-        {renderSelectedEducationScope()}
+        {renderSelectedEducationBlock()}
       </section>
     </div>
   )

@@ -4,6 +4,24 @@ import { DataSourceNote } from './DataSourceNote'
 import { IndicatorHistoryChart } from '../components/IndicatorHistoryChart'
 import { EducationSummaryCard } from './EducationSummaryCard'
 
+const FUNDEB_READING_CARDS = [
+  {
+    icon: 'receitas',
+    title: 'Receitas e recursos',
+    text: 'Acompanhe os recursos registrados para manutenção e desenvolvimento da educação básica.',
+  },
+  {
+    icon: 'despesas',
+    title: 'Despesas e remuneração',
+    text: 'Veja despesas totais e aplicação na remuneração dos profissionais da educação.',
+  },
+  {
+    icon: 'saldos',
+    title: 'Saldos financeiros',
+    text: 'Consulte saldos, disponibilidade financeira e valores conciliados no período.',
+  },
+]
+
 function formatCompactCurrency(value) {
   if (!Number.isFinite(Number(value))) return ''
   const num = Number(value)
@@ -64,6 +82,40 @@ function findUltimoRegistro(historico, ultimo_ano) {
   return historico
     .filter((item) => Number.isFinite(Number(item.ano)))
     .sort((a, b) => Number(b.ano) - Number(a.ano))[0] ?? null
+}
+
+function getIndicatorHelpText(indicator) {
+  return indicator?.description || 'Acompanhe a evolução anual deste indicador.'
+}
+
+function FundebInfoIcon({ type }) {
+  if (type === 'despesas') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="4" y="5" width="16" height="15" rx="3" />
+        <path d="M8 5V3m8 2V3M4 9h16" />
+        <path d="M9 14h6m-3-3v6" />
+      </svg>
+    )
+  }
+
+  if (type === 'saldos') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 12c1.8-3.2 4.4-4.8 8-4.8s6.2 1.6 8 4.8c-1.8 3.2-4.4 4.8-8 4.8S5.8 15.2 4 12Z" />
+        <circle cx="12" cy="12" r="2.4" />
+        <path d="M12 5.2V3.5m0 17v-1.7" />
+      </svg>
+    )
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="4" y="4" width="16" height="16" rx="3" />
+      <path d="M8 9h5m-5 4h8m-8 4h4" />
+      <path d="M16 8.5h2.5V11" />
+    </svg>
+  )
 }
 
 export function FundebPanel({ municipioData, selectedMunicipio, embedded = false }) {
@@ -132,6 +184,30 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
         </section>
       )}
 
+      <section className="page-card fundeb-info-box" aria-labelledby="fundeb-info-title">
+        <div className="fundeb-info-box__header">
+          <h2 id="fundeb-info-title">O que é o FUNDEB</h2>
+          <p>
+            O FUNDEB reúne recursos destinados à manutenção e desenvolvimento da educação básica.
+            Os indicadores mostram receitas, despesas, remuneração dos profissionais e saldos
+            financeiros do município selecionado.
+          </p>
+        </div>
+        <div className="fundeb-info-box__cards" aria-label="Eixos de leitura do FUNDEB">
+          {FUNDEB_READING_CARDS.map((card) => (
+            <article className="fundeb-info-card" key={card.title}>
+              <span className="fundeb-info-card__icon">
+                <FundebInfoIcon type={card.icon} />
+              </span>
+              <div>
+                <strong>{card.title}</strong>
+                <p>{card.text}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section className="page-card education-summary-section fundeb-summary">
         <div className="education-summary-header fundeb-summary__heading">
           <h2 className="education-summary-title">Visão geral</h2>
@@ -151,17 +227,6 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
           <EducationSummaryCard label="Regra vigente" value={`Mínimo de ${resumo_ultimo_ano?.limite_remuneracao_referencia ?? getLimiteReferencia(ultimo_ano)}%`} year={ultimo_ano} valueSize="compact" />
           <EducationSummaryCard label="Disponibilidade financeira" value={formatFundebValue(ultimoRegistro?.disponibilidade_financeira_ate_bimestre, 'financeiro')} detail={`Saldo anterior: ${formatFundebValue(ultimoRegistro?.disponibilidade_financeira_ano_anterior, 'financeiro')}`} valueSize="compact" />
         </div>
-      </section>
-
-      <section className="fundeb-info-box">
-        <p>
-          O FUNDEB reúne recursos destinados à manutenção e desenvolvimento da educação básica.
-          Os indicadores abaixo mostram o histórico das receitas, despesas e aplicação mínima em
-          remuneração dos profissionais da educação no município selecionado.
-        </p>
-        <p>
-          A regra de remuneração mudou em 2021: até 2020 o mínimo era 60%; desde 2021 é 70%.
-        </p>
       </section>
 
       <section className="page-card fundeb-workspace">
@@ -202,6 +267,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
                       onClick={() => setSelectedKey(indicator.key)}
                     >
                       <span className="indicator-row__label">{indicator.label}</span>
+                      <span className="indicator-row__description">{getIndicatorHelpText(indicator)}</span>
                       <span className="indicator-row__badges">
                         <span className={
                           indicator.tipo === 'percentual'
@@ -218,18 +284,33 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
             </aside>
 
           <div className="fundeb-detail">
-            {selectedIndicator?.description && (
-              <p className="fundeb-indicator-description">{selectedIndicator.description}</p>
-            )}
+            <div className="fundeb-detail-header">
+              <div>
+                <span className="eyebrow">Indicador selecionado</span>
+                <h3>{selectedIndicator.label}</h3>
+                {selectedIndicator?.description && (
+                  <p className="fundeb-indicator-description">{selectedIndicator.description}</p>
+                )}
+              </div>
+              <span className={
+                selectedIndicator.tipo === 'percentual'
+                  ? 'indicator-stage-badge indicator-stage-badge--pct'
+                  : 'indicator-stage-badge'
+              }>
+                {selectedIndicator.tipo === 'percentual' ? 'Percentual' : 'Financeiro'}
+              </span>
+            </div>
 
             {(selectedKey === 'despesa_remuneracao_profissionais_creche' || selectedKey === 'despesa_remuneracao_profissionais_pre_escola') && (
-              <p className="fundeb-indicator-note">Série exibida a partir de 2021 para manter comparabilidade com a estrutura do Novo FUNDEB.</p>
+              <p className="fundeb-indicator-note"><strong>Nota metodológica:</strong> Série exibida a partir de 2021 para manter comparabilidade com a estrutura do Novo FUNDEB.</p>
             )}
 
-            {validSeries.length >= 2 && (
-              <>
+            {(validSeries.length >= 2 || series.length >= 1) && (
+              <div className="fundeb-visual-grid">
+                {validSeries.length >= 2 && (
                 <div className="fundeb-chart-card">
                   <IndicatorHistoryChart
+                    chartHeight={340}
                     endYear={series[series.length - 1].ano}
                     formatDataLabel={chartUnit === 'currency' ? (v) => formatCompactDataLabel(v, 'financeiro') : (v) => formatCompactDataLabel(v, 'percentual')}
                     formatYAxis={chartUnit === 'currency' ? formatCompactCurrency : undefined}
@@ -245,72 +326,72 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
                     unit={chartUnit}
                     yTickCount={5}
                   />
-                  <DataSourceNote
-                    context={{
-                      block: 'fundeb',
-                      indicatorKey: selectedIndicator?.key,
-                      indicatorName: selectedIndicator?.label,
-                    }}
-                  />
                 </div>
-              </>
-            )}
+                )}
 
-            {validSeries.length <= 1 && series.length >= 2 && (
-              <div className="fundeb-empty">
-                <p>Apenas um ano com dado disponível — não há pontos suficientes para exibir o gráfico. Consulte a tabela abaixo.</p>
-              </div>
-            )}
+                {validSeries.length <= 1 && series.length >= 2 && (
+                  <div className="fundeb-empty fundeb-empty--chart">
+                    <p>Apenas um ano com dado disponível — não há pontos suficientes para exibir o gráfico. Consulte a tabela ao lado.</p>
+                  </div>
+                )}
 
-            {series.length >= 1 && (
-              <>
-              <div className="fundeb-table-wrap">
-                <table className="fundeb-table">
-                  <thead>
-                    <tr>
-                      <th>Ano</th>
-                      <th>Valor</th>
-                      <th>Variação anual</th>
-                      {isPercentual && <th>Mínimo exigido</th>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {historicoVisivel
-                      .filter((h) => h.ano != null)
-                      .map((entry, index) => {
-                        const prev = index > 0 ? historicoVisivel[index - 1] : null
-                        const currentVal = entry[selectedIndicator.key]
-                        const prevVal = prev?.[selectedIndicator.key]
-                        const vari = prev != null ? calcVariation(currentVal, prevVal, selectedIndicator.tipo) : null
-                        return (
-                          <tr key={entry.ano}>
-                            <td>{entry.ano}</td>
-                            <td>{formatFundebValue(currentVal, selectedIndicator.tipo)}</td>
-                            <td><span className={
-                              index === 0 || vari == null
-                                ? 'fundeb-variation-neutral'
-                                : vari > 0
-                                  ? 'fundeb-variation-positive'
-                                  : vari < 0
-                                    ? 'fundeb-variation-negative'
-                                    : 'fundeb-variation-neutral'
-                            }>{index === 0 ? '—' : formatVariation(vari, selectedIndicator.tipo)}</span></td>
-                            {isPercentual && <td>{getLimiteReferencia(entry.ano)}%</td>}
-                          </tr>
-                        )
-                      })}
-                  </tbody>
-                </table>
+                {series.length >= 1 && (
+                <div className="fundeb-table-card">
+                <div className="fundeb-table-card__header">
+                  <div>
+                    <h4>Histórico do indicador</h4>
+                  </div>
+                </div>
+                <div className="fundeb-table-wrap">
+                  <table className="fundeb-table">
+                    <thead>
+                      <tr>
+                        <th>Ano</th>
+                        <th>Valor</th>
+                        <th>Variação anual</th>
+                        {isPercentual && <th>Mínimo exigido</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {historicoVisivel
+                        .filter((h) => h.ano != null)
+                        .map((entry, index) => {
+                          const prev = index > 0 ? historicoVisivel[index - 1] : null
+                          const currentVal = entry[selectedIndicator.key]
+                          const prevVal = prev?.[selectedIndicator.key]
+                          const vari = prev != null ? calcVariation(currentVal, prevVal, selectedIndicator.tipo) : null
+                          return (
+                            <tr key={entry.ano}>
+                              <td>{entry.ano}</td>
+                              <td>{formatFundebValue(currentVal, selectedIndicator.tipo)}</td>
+                              <td><span className={
+                                index === 0 || vari == null
+                                  ? 'fundeb-variation-neutral'
+                                  : vari > 0
+                                    ? 'fundeb-variation-positive'
+                                    : vari < 0
+                                      ? 'fundeb-variation-negative'
+                                      : 'fundeb-variation-neutral'
+                              }>{index === 0 ? '—' : formatVariation(vari, selectedIndicator.tipo)}</span></td>
+                              {isPercentual && <td>{getLimiteReferencia(entry.ano)}%</td>}
+                            </tr>
+                          )
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+                <DataSourceNote
+                  className="fundeb-data-source"
+                  context={{
+                    block: 'fundeb',
+                    detailType: 'table',
+                    indicatorKey: selectedIndicator?.key,
+                    indicatorName: selectedIndicator?.label,
+                  }}
+                />
               </div>
-              <DataSourceNote
-                context={{
-                  block: 'fundeb',
-                  detailType: 'table',
-                  indicatorKey: selectedIndicator?.key,
-                  indicatorName: selectedIndicator?.label,
-                }}
-              />
-              </>
+                )}
+              </div>
             )}
 
             {series.length === 0 && (
