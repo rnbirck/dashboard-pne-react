@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { CategoryTabs } from '../components/CategoryTabs'
 import { FundebPanel } from '../components/FundebPanel'
 import { PnatePanel } from '../components/PnatePanel'
+import { SiopeIndicatorsPanel } from '../components/SiopeIndicatorsPanel'
 import { SistemaSPanel } from '../components/SistemaSPanel'
 import { VaarPanel } from '../components/VaarPanel'
 import { FUNDEB_INDICATORS } from '../data/fundebIndicators'
 import { PNATE_INDICATORS } from '../data/pnateIndicators'
+import { SIOPE_SELECTED_INDICATORS_COUNT } from '../data/siopeIndicators'
 import { EducationBarChart } from '../components/EducationBarChart'
 import { EducationLineChart } from '../components/EducationLineChart'
 import { EducationStackedBarChart } from '../components/EducationStackedBarChart'
@@ -120,6 +122,7 @@ const PANORAMA_THEME_KEYS = {
 const FINANCING_MODULE_KEYS = {
   fundeb: 'fundeb',
   pnate: 'pnate',
+  siope: 'siope',
   vaar: 'vaar',
 }
 
@@ -132,11 +135,17 @@ const MAIN_INDICATOR_BLOCKS = [
   {
     key: MAIN_BLOCK_KEYS.financiamento,
     title: 'Financiamento da Educação',
-    description: 'FUNDEB, PNATE, complementação VAAR, receitas, despesas, condicionalidades e resultados.',
+    description: 'SIOPE, FUNDEB, complementação VAAR, PNATE, receitas, despesas, condicionalidades e resultados.',
   },
 ]
 
 const FINANCING_MODULES = [
+  {
+    key: FINANCING_MODULE_KEYS.siope,
+    title: 'Indicadores SIOPE',
+    description: 'Aplicação mínima, FUNDEB, gasto por aluno, receitas e resultado financeiro.',
+    count: `${SIOPE_SELECTED_INDICATORS_COUNT} indicadores`,
+  },
   {
     key: FINANCING_MODULE_KEYS.fundeb,
     title: 'FUNDEB',
@@ -144,16 +153,16 @@ const FINANCING_MODULES = [
     count: `${FUNDEB_INDICATORS.length} indicadores`,
   },
   {
-    key: FINANCING_MODULE_KEYS.pnate,
-    title: 'PNATE',
-    description: 'Transporte escolar rural, estudantes atendidos e repasses.',
-    count: `${PNATE_INDICATORS.length} indicadores`,
-  },
-  {
     key: FINANCING_MODULE_KEYS.vaar,
     title: 'Complementação VAAR',
     description: 'Condicionalidades e resultados de aprendizagem e atendimento.',
     count: '2023-2026',
+  },
+  {
+    key: FINANCING_MODULE_KEYS.pnate,
+    title: 'PNATE',
+    description: 'Transporte escolar rural, estudantes atendidos e repasses.',
+    count: `${PNATE_INDICATORS.length} indicadores`,
   },
 ]
 
@@ -161,7 +170,7 @@ function getInitialEducationNavigation() {
   const fallback = {
     mainBlock: MAIN_BLOCK_KEYS.panorama,
     panoramaTheme: PANORAMA_THEME_KEYS.matriculas,
-    financingModule: FINANCING_MODULE_KEYS.fundeb,
+    financingModule: FINANCING_MODULE_KEYS.siope,
   }
 
   if (typeof window === 'undefined') return fallback
@@ -192,6 +201,14 @@ function getInitialEducationNavigation() {
         ...fallback,
         mainBlock: MAIN_BLOCK_KEYS.financiamento,
         financingModule: FINANCING_MODULE_KEYS.pnate,
+      }
+    }
+
+    if (value === 'siope' || value === 'indicadoressiope') {
+      return {
+        ...fallback,
+        mainBlock: MAIN_BLOCK_KEYS.financiamento,
+        financingModule: FINANCING_MODULE_KEYS.siope,
       }
     }
 
@@ -417,19 +434,24 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
             })}
           </div>
         </div>
-        {selectedFinancingModule === FINANCING_MODULE_KEYS.fundeb ? (
+        {selectedFinancingModule === FINANCING_MODULE_KEYS.siope ? (
+          <SiopeIndicatorsPanel
+            idMunicipio={selectedId}
+            selectedMunicipio={selectedMunicipio}
+          />
+        ) : selectedFinancingModule === FINANCING_MODULE_KEYS.fundeb ? (
           <FundebPanel
             municipioData={municipioData}
             selectedMunicipio={selectedMunicipio}
             embedded={true}
           />
-        ) : selectedFinancingModule === FINANCING_MODULE_KEYS.pnate ? (
+        ) : selectedFinancingModule === FINANCING_MODULE_KEYS.vaar ? (
+          <VaarPanel vaarData={dados?.blocos?.vaar} />
+        ) : (
           <PnatePanel
             pnateData={dados?.blocos?.pnate ?? municipioData?.blocos?.pnate}
             selectedMunicipio={selectedMunicipio}
           />
-        ) : (
-          <VaarPanel vaarData={dados?.blocos?.vaar} />
         )}
       </>
     )
