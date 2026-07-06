@@ -5482,12 +5482,42 @@
 
 .indicator-chart-header.has-wide-segmented .indicator-stage-segmented-wrap {
   width: 100%;
-  justify-content: flex-start;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  justify-content: stretch;
+  gap: 8px 12px;
 }
 
 .indicator-chart-header.has-wide-segmented .indicator-stage-segmented {
   width: 100%;
-  overflow-x: auto;
+  overflow-x: visible;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 5px;
+  padding: 6px;
+  border-radius: 12px;
+  background: #f7fbf5;
+  box-shadow: none;
+}
+
+.indicator-chart-header.has-wide-segmented .indicator-stage-segmented__button {
+  min-height: 30px;
+  padding: 7px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  line-height: 1.15;
+  white-space: normal;
+  text-align: center;
+}
+
+.indicator-chart-header.has-wide-segmented .indicator-stage-segmented__button:hover {
+  border-color: rgba(47, 113, 60, 0.18);
+}
+
+.indicator-chart-header.has-wide-segmented .indicator-stage-segmented__button.is-active {
+  border-color: var(--accent-strong);
 }
 
 .indicator-chart-title-group {
@@ -5519,6 +5549,7 @@
 }
 
 .indicator-stage-segmented-label {
+  align-self: center;
   color: var(--text-muted);
   font-size: 0.72rem;
   font-weight: 800;
@@ -6126,6 +6157,17 @@
 .education-chart--bar svg {
   min-width: 720px;
   max-height: 330px;
+}
+
+.education-chart--column svg {
+  min-width: 820px;
+  max-height: 420px;
+}
+
+.chart-x-label--angled {
+  fill: var(--text);
+  font-size: 10px;
+  font-weight: 750;
 }
 
 .chart-axis-label,

@@ -1,4 +1,5 @@
 const SOURCE_CENSO_ESCOLAR = 'Censo Escolar / Sinopse Estatística da Educação Básica — INEP'
+const SOURCE_ATU = 'INEP - Média de Alunos por Turma (ATU)'
 const SOURCE_POPULATION_ATTENDANCE = 'Censo Escolar — INEP; Estimativas Populacionais — IBGE'
 const SOURCE_EDUCATIONAL_INDICATORS = 'Indicadores Educacionais — INEP'
 const SOURCE_IDEB_SAEB = 'IDEB / SAEB — INEP'
@@ -12,7 +13,9 @@ const EDUCATION_THEME_SOURCES = {
   oferta: SOURCE_CENSO_ESCOLAR,
   rede: SOURCE_CENSO_ESCOLAR,
   sistema_s: SOURCE_CENSO_ESCOLAR,
-  turmas: SOURCE_CENSO_ESCOLAR,
+  docentes: SOURCE_CENSO_ESCOLAR,
+  turmas: SOURCE_ATU,
+  alunos_turma: SOURCE_ATU,
 }
 
 const POPULATION_ATTENDANCE_KEYS = new Set([
@@ -97,6 +100,10 @@ export function getDataSourceNote(context = {}) {
     return SOURCE_EDUCATIONAL_INDICATORS
   }
 
+  if (isAtuAlunosTurma(indicatorKey, theme, text)) {
+    return SOURCE_ATU
+  }
+
   if (CENSO_ESCOLAR_KEYS.has(indicatorKey) || isCensoEscolarText(text)) {
     return SOURCE_CENSO_ESCOLAR
   }
@@ -126,6 +133,13 @@ function sourceFromDeclaredMetadata(context, normalizedText) {
     return SOURCE_IDEB_SAEB
   }
   if (
+    combined.includes('media de alunos por turma') ||
+    combined.includes('alunos por turma (atu)') ||
+    combined.includes(' atu')
+  ) {
+    return SOURCE_ATU
+  }
+  if (
     combined.includes('taxas de rendimento') ||
     combined.includes('rendimento escolar') ||
     combined.includes('distorcao idade serie') ||
@@ -139,6 +153,17 @@ function sourceFromDeclaredMetadata(context, normalizedText) {
   }
 
   return ''
+}
+
+function isAtuAlunosTurma(indicatorKey, theme, text) {
+  return (
+    indicatorKey.includes('alunos-turma') ||
+    theme === 'alunos_turma' ||
+    text.includes('alunos por turma (atu)') ||
+    text.includes('media de alunos por turma') ||
+    text.includes('fonte: inep - media de alunos por turma') ||
+    (theme === 'turmas' && (text.includes('alunos por turma') || text.includes('atu')))
+  )
 }
 
 function isIdebSaeb(indicatorKey, text) {

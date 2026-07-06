@@ -61,6 +61,36 @@ const LOCATION_COLORS = {
 }
 
 const STAGE_FILTER_ORDER = ['total', 'infantil', 'fundamental', 'fundamental_anos_iniciais', 'fundamental_anos_finais', 'medio', 'eja', 'profissional']
+const ALUNOS_TURMA_STAGE_ORDER = ['infantil', 'fundamental', 'medio']
+const ATU_TOTAL_SERIE_BY_STAGE = {
+  infantil: 'infantil_total',
+  fundamental: 'fundamental_total',
+  medio: 'medio_total',
+}
+const ALUNOS_TURMA_SERIE_LABELS = {
+  infantil_total: 'Total - Educação Infantil',
+  creche: 'Creche',
+  pre_escola: 'Pré-Escola',
+  fundamental_total: 'Total - Ensino Fundamental',
+  fundamental_anos_iniciais: 'Anos Iniciais',
+  fundamental_anos_finais: 'Anos Finais',
+  fundamental_1_ano: '1º ano',
+  fundamental_2_ano: '2º ano',
+  fundamental_3_ano: '3º ano',
+  fundamental_4_ano: '4º ano',
+  fundamental_5_ano: '5º ano',
+  fundamental_6_ano: '6º ano',
+  fundamental_7_ano: '7º ano',
+  fundamental_8_ano: '8º ano',
+  fundamental_9_ano: '9º ano',
+  fundamental_multietapa: 'Multietapa, multi ou correção de fluxo',
+  medio_total: 'Total - Ensino Médio',
+  medio_1_serie: '1ª série',
+  medio_2_serie: '2ª série',
+  medio_3_serie: '3ª série',
+  medio_4_serie: '4ª série',
+  medio_nao_seriado: 'Não-seriado',
+}
 const FUNDAMENTAL_FAIXA_STAGES = ['fundamental_anos_iniciais', 'fundamental_anos_finais']
 const EJA_VALID_AGE_RANGES = [
   'Até 14 anos',
@@ -94,7 +124,7 @@ const MAIN_INDICATOR_BLOCKS = [
   {
     key: MAIN_BLOCK_KEYS.panorama,
     title: 'Panorama Educacional',
-    description: 'Matrículas, escolas, turmas, fluxo, aprendizagem, matrículas técnicas e escolas do Sistema S.',
+    description: 'Matrículas, escolas, alunos por turma, docentes, fluxo, aprendizagem, matrículas técnicas e escolas do Sistema S.',
   },
   {
     key: MAIN_BLOCK_KEYS.financiamento,
@@ -265,7 +295,7 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
   const themeItems = selectedTheme?.items ?? []
   const filteredItems = themeItems.filter((item) => {
     const query = searchQuery.trim().toLocaleLowerCase('pt-BR')
-    const queryMatches = !query || `${item.label} ${item.description} ${item.themeLabel}`.toLocaleLowerCase('pt-BR').includes(query)
+    const queryMatches = !query || `${item.label} ${item.description} ${item.themeLabel} ${item.searchText ?? ''}`.toLocaleLowerCase('pt-BR').includes(query)
     return queryMatches
   })
   const activeIndicator = filteredItems.length
@@ -567,6 +597,7 @@ function EducationIndicatorDetail({ indicator, blocos }) {
   const hasMainSeries = displayIndicator.series.length >= 2
   const showStageFilter = stageOptions.length > 1
   const hasManyStageOptions = stageOptions.length > 4
+  const stageFilterLabel = indicator.stageFilterLabel ?? 'Etapa exibida'
 
   return (
     <section className="detail-panel educacao-detail-panel">
@@ -598,7 +629,7 @@ function EducationIndicatorDetail({ indicator, blocos }) {
         >
           {showStageFilter ? (
             <div className="indicator-stage-segmented-wrap">
-              <span className="indicator-stage-segmented-label">Etapa exibida</span>
+              <span className="indicator-stage-segmented-label">{stageFilterLabel}</span>
 
               <IndicatorSegmentedControl
                 options={stageOptions}
@@ -1118,7 +1149,7 @@ function ExploreItem({ indicator, item }) {
   if (item.type === 'bar') {
     return (
       <>
-        <EducationBarChart color={item.color} data={item.data} formatLabel={item.formatLabel} preserveOrder={item.preserveOrder} title={item.title} />
+        <EducationBarChart color={item.color} data={item.data} formatLabel={item.formatLabel} orientation={item.orientation} preserveOrder={item.preserveOrder} title={item.title} />
         {sourceNote}
         {noteEl}
       </>
@@ -1159,13 +1190,15 @@ function ExploreItem({ indicator, item }) {
   }
   if (item.type === 'stage-context') {
     const format = item.formatLabel ?? formatNumber
+    const primaryValue = item.value ?? item.turmas
+    const primaryLabel = item.valueLabel ?? 'Turmas'
     return (
       <div className="educacao-stage-context">
         <span>Resumo{item.ano ? ` — ${item.ano}` : ''}</span>
         <div className="educacao-stage-context__grid">
           <div className="educacao-stage-context__card">
-            <span className="educacao-stage-context__value">{!isMissing(item.turmas) ? format(item.turmas) : EM}</span>
-            <span className="educacao-stage-context__label">Turmas</span>
+            <span className="educacao-stage-context__value">{!isMissing(primaryValue) ? format(primaryValue) : EM}</span>
+            <span className="educacao-stage-context__label">{primaryLabel}</span>
           </div>
           <div className="educacao-stage-context__card">
             <span className="educacao-stage-context__value">{!isMissing(item.alunosPorTurma) ? formatRatio(item.alunosPorTurma) : EM}</span>
@@ -1554,12 +1587,14 @@ function ColorRaceDetail({ item }) {
 function buildEducationModel(blocos) {
   const mat = blocos.matriculas ?? {}
   const rede = blocos.rede_escolar ?? {}
+  const alunosTurma = blocos.alunos_turma ?? {}
   const turmas = blocos.turmas_docentes ?? {}
   const fluxo = blocos.fluxo ?? {}
   const aprend = blocos.aprendizagem ?? {}
   const oferta = blocos.oferta_tecnica ?? {}
   const matResumo = mat.resumo_ultimo_ano ?? {}
   const redeResumo = rede.resumo_ultimo_ano ?? {}
+  const alunosTurmaResumo = alunosTurma.resumo_ultimo_ano ?? {}
   const turmasResumo = turmas.resumo_ultimo_ano ?? {}
   const fluxoResumo = fluxo.resumo_ultimo_ano ?? {}
   const aprendResumo = aprend.resumo_ultimo_ano ?? {}
@@ -1569,7 +1604,8 @@ function buildEducationModel(blocos) {
   const items = [
     ...buildMatriculasIndicators(mat),
     ...buildRedeIndicators(rede),
-    ...buildTurmasIndicators(turmas),
+    ...buildAlunosTurmaIndicators(alunosTurma),
+    ...buildDocentesIndicators(turmas),
     ...buildFluxoIndicators(fluxo),
     ...buildAprendizagemIndicators(aprend),
     ...buildOfertaIndicators(oferta),
@@ -1578,7 +1614,8 @@ function buildEducationModel(blocos) {
   const themes = [
     makeTheme('matriculas', 'Matrículas e atendimento', 'Matrículas', items),
     makeTheme('rede', 'Escolas', 'Escolas', items),
-    makeTheme('turmas', 'Turmas e docentes', 'Turmas e docentes', items),
+    makeTheme('turmas', 'Alunos por turma', 'Alunos por turma', items),
+    makeTheme('docentes', 'Docentes', 'Docentes', items),
     makeTheme('fluxo', 'Fluxo escolar', 'Fluxo', items),
     makeTheme('aprendizagem', 'Aprendizagem', 'Aprendizagem', items),
     makeTheme('oferta', 'Matrículas na educação profissional', 'Matrículas técnicas', items),
@@ -1588,8 +1625,8 @@ function buildEducationModel(blocos) {
     overview: [
       { label: 'Matrículas', value: formatNumber(matResumo.total_matriculas), year: mat.ultimo_ano },
       { label: 'Escolas', value: formatNumber(redeResumo.total_escolas), year: rede.ultimo_ano },
-      { label: 'Turmas', value: formatNumber(turmasResumo.turmas), year: turmas.ultimo_ano },
-      { label: 'Média de alunos por turma', value: formatRatio(turmasResumo.alunos_por_turma), year: turmas.ultimo_ano },
+      { label: 'Docentes', value: formatNumber(turmasResumo.docentes), year: turmas.ultimo_ano },
+      { label: 'Alunos/turma (fund.)', value: formatRatio(alunosTurmaResumo.alunos_por_turma_fundamental), year: alunosTurma.ultimo_ano },
       { label: 'Aprovação', value: formatPercent(fluxoResumo.taxa_aprovacao), year: fluxo.ultimo_ano, tone: 'success' },
       { label: 'IDEB', value: preferredIdeb ? formatValue(preferredIdeb.ideb) : EM, year: preferredIdeb?.ano },
       { label: 'Matrículas técnicas', value: formatNumber(ofertaResumo.total_matriculas_tecnicas), year: oferta.ultimo_ano },
@@ -1662,29 +1699,117 @@ function buildRedeIndicators(rede) {
   ]
 }
 
-function buildTurmasIndicators(turmas) {
+function buildAlunosTurmaIndicators(alunosTurma) {
+  const series = alunosTurma.series ?? {}
+  const resumo = alunosTurma.resumo_ultimo_ano ?? {}
+  const latestYear = alunosTurma.ultimo_ano
+  const base = {
+    themeKey: 'turmas',
+    themeLabel: 'Alunos por turma',
+    themeShortLabel: 'Alunos por turma',
+    currentYear: latestYear,
+    formatType: 'ratio',
+    scaleType: 'dynamic',
+    notices: alunosTurma.avisos ?? [],
+  }
+
+  const options = (alunosTurma.series_options ?? [])
+    .filter((option) => ALUNOS_TURMA_STAGE_ORDER.includes(option.etapa_ensino))
+    .filter((option) => hasSeriesData(series.por_serie?.[option.key]))
+    .sort((a, b) => {
+      const stageDiff = ALUNOS_TURMA_STAGE_ORDER.indexOf(a.etapa_ensino) - ALUNOS_TURMA_STAGE_ORDER.indexOf(b.etapa_ensino)
+      if (stageDiff !== 0) return stageDiff
+      return Number(a.ordem ?? 999) - Number(b.ordem ?? 999)
+    })
+
+  return ALUNOS_TURMA_STAGE_ORDER.map((stageKey) => {
+    const stageOptions = options.filter((option) => option.etapa_ensino === stageKey)
+    const totalSerieKey = ATU_TOTAL_SERIE_BY_STAGE[stageKey] ?? stageOptions[0]?.key
+    const mainOption = stageOptions.find((option) => option.key === totalSerieKey) ?? stageOptions[0]
+    if (!mainOption) return null
+
+    const serieKey = mainOption.key
+    const serieLabel = alunosTurmaSerieLabel(serieKey, mainOption.label)
+    const serie = normalizeYearSeries(series.por_serie?.[serieKey])
+    if (serie.length < 2) return null
+    const searchText = stageOptions
+      .map((option) => alunosTurmaSerieLabel(option.key, option.label))
+      .join(' ')
+
+    return createIndicator({
+      ...base,
+      key: `alunos-turma-${stageKey}`,
+      label: `Alunos por turma - ${etapaLabel(stageKey)}`,
+      description: `Média oficial de alunos por turma em ${etapaLabel(stageKey).toLocaleLowerCase('pt-BR')}. Use o filtro para trocar total, ano ou série.`,
+      categories: [FILTER_KEYS[stageKey] ?? FILTER_KEYS.todos],
+      stageKey,
+      stageLabel: etapaLabel(stageKey),
+      series: serie,
+      currentValue: resumo.por_etapa?.[stageKey] ?? serie.at(-1)?.valor,
+      mainCutLabel: serieLabel,
+      searchText,
+      explore: buildAlunosTurmaExplore(alunosTurma, {
+        stageKey,
+        serieKey,
+        serieLabel,
+      }),
+      stageFilterLabel: 'Série exibida',
+      stageFilterOptions: buildAlunosTurmaSerieOptions(alunosTurma, stageOptions),
+    })
+  }).filter(Boolean)
+}
+
+function buildDocentesIndicators(turmas) {
   const series = turmas.series ?? {}
   const resumo = turmas.resumo_ultimo_ano ?? {}
   const latestYear = turmas.ultimo_ano
-  const base = { themeKey: 'turmas', themeLabel: 'Turmas e docentes', themeShortLabel: 'Turmas e docentes', categories: [FILTER_KEYS.todos], isGeral: true, currentYear: latestYear, notices: turmas.avisos ?? [] }
+  const base = { themeKey: 'docentes', themeLabel: 'Docentes', themeShortLabel: 'Docentes', categories: [FILTER_KEYS.todos], isGeral: true, currentYear: latestYear, notices: turmas.avisos ?? [] }
   const stageOrder = ['infantil', 'fundamental', 'medio', 'eja', 'profissional']
 
   const etapaIndicators = stageOrder.map((stageKey) => {
-    const stageSeries = valueSeries(series.por_etapa?.[stageKey], 'turmas')
+    const stageSeries = valueSeries(series.por_etapa?.[stageKey], 'docentes')
     if (stageSeries.length < 2) return null
     return createIndicator({
       ...base,
-      key: `turmas-${stageKey}`,
-      label: etapaLabel(stageKey),
-      description: 'Acompanhe turmas, docentes e relações aluno/turma e aluno/docente nesta etapa de ensino.',
+      key: `docentes-${stageKey}`,
+      label: `Docentes - ${etapaLabel(stageKey)}`,
+      description: `Total de docentes vinculados a ${etapaLabel(stageKey).toLowerCase()}.`,
+      categories: [FILTER_KEYS[stageKey] ?? FILTER_KEYS.todos],
+      isGeral: false,
+      stageLabel: etapaLabel(stageKey),
       series: stageSeries,
+      currentValue: latestValue(series.por_etapa?.[stageKey], 'docentes'),
       formatType: 'number',
       mainCutLabel: etapaLabel(stageKey),
+      explore: buildTurmasExplore(turmas, {
+        cutLabel: etapaLabel(stageKey),
+        formatLabel: formatNumber,
+        metricKey: 'docentes',
+        stageKey,
+      }),
     })
   }).filter(Boolean)
 
   return [
-    createIndicator({ ...base, key: 'turmas-total', label: 'Total do município', description: 'Acompanhe turmas, docentes e relações aluno/turma e aluno/docente no total do município.', series: valueSeries(series.total, 'turmas'), currentValue: resumo.turmas, formatType: 'number', mainCutLabel: 'Total do município' }),
+    createIndicator({
+      ...base,
+      key: 'docentes-total',
+      label: 'Total de docentes',
+      description: 'Total de docentes registrados no município.',
+      series: valueSeries(series.total, 'docentes'),
+      currentValue: resumo.docentes,
+      formatType: 'number',
+      mainCutLabel: 'Total do município',
+      explore: buildTurmasExplore(turmas, {
+        cutLabel: 'Total do município',
+        formatLabel: formatNumber,
+        metricKey: 'docentes',
+      }),
+      stageFilterOptions: buildTurmasStageOptions(turmas, {
+        formatLabel: formatNumber,
+        metricKey: 'docentes',
+      }),
+    }),
     ...etapaIndicators,
   ]
 }
@@ -1828,7 +1953,7 @@ function hasExploreData(item) {
     return Array.isArray(item.distributionData) && item.distributionData.some((row) => !isMissing(row.value))
   }
   if (item.type === 'stage-context') {
-    return !isMissing(item.turmas)
+    return !isMissing(item.value ?? item.turmas)
   }
   if (item.type === 'table') {
     return Array.isArray(item.rows) && item.rows.length > 0
@@ -1855,6 +1980,60 @@ function buildMatriculasStageOptions(mat) {
     })),
   ]
   return options.filter(Boolean)
+}
+
+function buildAlunosTurmaSerieOptions(alunosTurma, options) {
+  const series = alunosTurma.series ?? {}
+  return options
+    .map((option) => {
+      const serieKey = option.key
+      const serieLabel = alunosTurmaSerieLabel(serieKey, option.label)
+      return makeStageOption({
+        key: serieKey,
+        label: serieLabel,
+        mainCutLabel: serieLabel,
+        series: series.por_serie?.[serieKey],
+        explore: buildAlunosTurmaExplore(alunosTurma, {
+          stageKey: option.etapa_ensino,
+          serieKey,
+          serieLabel,
+        }),
+      })
+    })
+    .filter(Boolean)
+}
+
+function buildTurmasStageOptions(turmas, metric) {
+  const series = turmas.series ?? {}
+  const metricLabel = turmasMetricLabel(metric.metricKey)
+  const options = [
+    makeStageOption({
+      key: 'total',
+      label: 'Total',
+      mainCutLabel: 'Total do município',
+      series: valueSeries(series.total, metric.metricKey),
+      explore: buildTurmasExplore(turmas, {
+        cutLabel: 'Total do município',
+        formatLabel: metric.formatLabel,
+        metricKey: metric.metricKey,
+      }),
+    }),
+    ...orderedStageKeys(series.por_etapa, metric.metricKey).map((key) => makeStageOption({
+      key,
+      label: etapaLabel(key),
+      mainCutLabel: etapaLabel(key),
+      series: valueSeries(series.por_etapa?.[key], metric.metricKey),
+      explore: buildTurmasExplore(turmas, {
+        cutLabel: etapaLabel(key),
+        formatLabel: metric.formatLabel,
+        metricKey: metric.metricKey,
+        stageKey: key,
+      }),
+    })),
+  ]
+  return options
+    .filter(Boolean)
+    .map((option) => ({ ...option, label: option.key === 'total' ? `Total de ${metricLabel.toLowerCase()}` : option.label }))
 }
 
 function buildFluxoStageOptions(fluxo, metric) {
@@ -2625,6 +2804,81 @@ function buildInfraDimensionTab(rawRows, dimKey, dimLabelFn, itemKey, title, tab
   }
 }
 
+function alunosTurmaSerieLabel(key, fallback) {
+  return ALUNOS_TURMA_SERIE_LABELS[key] ?? fallback ?? key
+}
+
+function alunosTurmaLatestSerieRows(rows) {
+  const latestBySerie = new Map()
+  rows.forEach((row) => {
+    const key = row?.serie
+    const value = detailRowValue(row, 'alunos_por_turma')
+    if (isMissing(key) || isMissing(row?.ano) || isMissing(value)) return
+    const current = latestBySerie.get(key)
+    if (!current || Number(row.ano) > Number(current.ano)) {
+      latestBySerie.set(key, {
+        ano: Number(row.ano),
+        label: alunosTurmaSerieLabel(key, row.serie_label),
+        order: Number(row.serie_ordem ?? 999),
+        value,
+      })
+    }
+  })
+
+  return [...latestBySerie.values()]
+    .sort((a, b) => a.order - b.order)
+    .map((row) => ({ label: row.label, value: row.value, year: row.ano }))
+}
+
+function buildAlunosTurmaExplore(alunosTurma, cut = { stageKey: 'fundamental', serieKey: 'fundamental_total', serieLabel: 'Total - Ensino Fundamental' }) {
+  const detalhamentos = alunosTurma.detalhamentos ?? {}
+  const titleSuffix = ` — ${cut.serieLabel}`
+  const serieRows = alunosTurmaLatestSerieRows(
+    detailRowsFor(detalhamentos.por_serie, { etapa_ensino: cut.stageKey }),
+  )
+  const dependencyRows = detailRowsFor(detalhamentos.por_serie_rede, { serie: cut.serieKey })
+    .filter((row) => row.dependencia !== 'total')
+  const locationRows = detailRowsFor(detalhamentos.por_serie_localizacao, { serie: cut.serieKey })
+    .filter((row) => row.localizacao !== 'total')
+  const dependencyLatest = detailRowsToLatestRows(dependencyRows, 'dependencia', depLabel, 'alunos_por_turma')
+  const locationLatest = detailRowsToLatestRows(locationRows, 'localizacao', locLabel, 'alunos_por_turma')
+
+  return [
+    serieRows.length ? {
+      key: 'alunos-turma-series',
+      type: 'bar',
+      title: titleWithYear(`Média de alunos por turma por série — ${etapaLabel(cut.stageKey)}`, serieRows),
+      color: '#16713a',
+      formatLabel: formatRatio,
+      orientation: 'vertical',
+      preserveOrder: true,
+      data: serieRows,
+      tabLabel: 'Por série',
+      tabPriority: 1,
+    } : null,
+    dependencyLatest.length ? {
+      key: 'alunos-turma-rede',
+      type: 'bar',
+      title: titleWithYear(`Média de alunos por turma por rede${titleSuffix}`, dependencyLatest),
+      color: '#2563eb',
+      formatLabel: formatRatio,
+      data: dependencyLatest,
+      tabLabel: 'Por rede',
+      tabPriority: 2,
+    } : null,
+    locationLatest.length ? {
+      key: 'alunos-turma-localizacao',
+      type: 'bar',
+      title: titleWithYear(`Média de alunos por turma por localização${titleSuffix}`, locationLatest),
+      color: '#7c3aed',
+      formatLabel: formatRatio,
+      data: locationLatest,
+      tabLabel: 'Por localização',
+      tabPriority: 3,
+    } : null,
+  ].filter(Boolean)
+}
+
 function buildTurmasExplore(turmas, cut = { cutLabel: 'Total do município', metricKey: 'turmas', formatLabel: formatNumber }) {
   const detalhamentos = turmas.detalhamentos ?? {}
   const series = turmas.series ?? {}
@@ -2639,12 +2893,13 @@ function buildTurmasExplore(turmas, cut = { cutLabel: 'Total do município', met
     const locationKeys = detailKeys(locationRows, 'localizacao', ['urbana', 'rural'], cut.metricKey)
 
     const stageLast = normalizeYearSeries(series.por_etapa?.[cut.stageKey]).at(-1)
-    const contextItem = stageLast ? {
+    const contextItem = cut.metricKey === 'turmas' && stageLast ? {
       key: `turmas-${cut.stageKey}-context`,
       type: 'stage-context',
       tabLabel: 'Resumo',
       tabPriority: 0,
-      turmas: stageLast[cut.metricKey],
+      value: stageLast[cut.metricKey],
+      valueLabel: titleBase,
       alunosPorTurma: stageLast.alunos_por_turma,
       docentes: stageLast.docentes,
       ano: stageLast.ano,
@@ -2897,6 +3152,7 @@ function seriesPorEtapaToStackedRows(source, metricKey) {
 function buildEtapaPanorama(porEtapa, metricKey, ultimoAno) {
   const stages = orderedStageKeys(porEtapa, metricKey)
   if (!stages.length) return null
+  const metricLabel = turmasMetricLabel(metricKey)
 
   const rows = stages.map((key) => {
     const s = normalizeYearSeries(porEtapa[key])
@@ -2912,7 +3168,7 @@ function buildEtapaPanorama(porEtapa, metricKey, ultimoAno) {
     }
     return {
       etapa: etapaLabel(key),
-      turmas: formatNumber(currentTurmas),
+      valor: formatNumber(currentTurmas),
       alunos_por_turma: !isMissing(last.alunos_por_turma) ? formatRatio(last.alunos_por_turma) : EM,
       variacao,
     }
@@ -2923,7 +3179,7 @@ function buildEtapaPanorama(porEtapa, metricKey, ultimoAno) {
   return {
     columns: [
       { key: 'etapa', label: 'Etapa' },
-      { key: 'turmas', label: 'Turmas' },
+      { key: 'valor', label: metricLabel },
       { key: 'alunos_por_turma', label: 'Média de alunos por turma' },
       { key: 'variacao', label: 'Variação' },
     ],

@@ -72,6 +72,11 @@ def limpar_null(valor):
     """Converte NaN/inf/None para None (null no JSON)."""
     if valor is None:
         return None
+    try:
+        if pd.isna(valor):
+            return None
+    except (TypeError, ValueError):
+        pass
     if isinstance(valor, float) and (math.isnan(valor) or math.isinf(valor)):
         return None
     return valor
@@ -469,6 +474,11 @@ def safe_json_dump(data, path):
     def clean(obj):
         if obj is None:
             return None
+        try:
+            if pd.isna(obj):
+                return None
+        except (TypeError, ValueError):
+            pass
         if isinstance(obj, float):
             if math.isnan(obj) or math.isinf(obj):
                 return None
@@ -568,6 +578,7 @@ GRUPOS_INFRA = {
 
 FONTES = [
     {"nome": "INEP - Censo Escolar", "tabelas": ["censo", "censo_escolas"]},
+    {"nome": "INEP - Media de Alunos por Turma (ATU)", "tabelas": ["alunos_turma"]},
     {"nome": "INEP - Sinopse Estatistica do Censo Escolar", "tabelas": [
         "matriculas_faixa_etaria", "docentes_pos_graduacao",
         "ept_nivel_medio", "eja_integrada_educacao_profissional"
@@ -596,6 +607,11 @@ AVISOS_FLUXO = [
 AVISOS_TURMAS = [
     "alunos_por_docente pode apresentar valores altos em EJA e Educacao Infantil "
     "devido a poucos docentes reportados para muitas matriculas.",
+]
+
+AVISOS_ALUNOS_TURMA = [
+    "ATU usa medias oficiais da planilha do INEP; totais nao sao recalculados "
+    "por media de medias.",
 ]
 
 AVISOS_APRENDIZAGEM = [
@@ -1482,6 +1498,189 @@ def _resumo_turmas(total, ano):
 # ── Bloco: Fluxo ─────────────────────────────────────────────────────────
 
 
+# ── Bloco: Alunos por Turma (ATU) ────────────────────────────────────────
+
+ATU_SERIE_TOTAL_ETAPA = {
+    "infantil": "infantil_total",
+    "fundamental": "fundamental_total",
+    "medio": "medio_total",
+}
+
+
+def detalhamento_alunos_turma(df, dimensoes, filtros=None):
+    """Retorna linhas ATU sem agregacao, preservando as medias oficiais."""
+    filtros = filtros or {}
+    sub = df.copy()
+    for coluna, valores in filtros.items():
+        if valores is None:
+            continue
+        if not isinstance(valores, (list, tuple, set)):
+            valores = [valores]
+        sub = sub[sub[coluna].isin(valores)]
+
+    if sub.empty:
+        return []
+
+    sort_cols = ["ano", *[c for c in dimensoes if c in sub.columns]]
+    if "serie_ordem" in sub.columns:
+        sort_cols.append("serie_ordem")
+    sub = sub.sort_values(sort_cols)
+
+    linhas = []
+    for _, r in sub.iterrows():
+        valor = limpar_null(r.get("alunos_por_turma"))
+        if valor is None:
+            continue
+        linha = {
+            "ano": int(r["ano"]),
+            "valor": r1(valor),
+            "alunos_por_turma": r1(valor),
+        }
+        for dimensao in dimensoes:
+            if dimensao in r:
+                linha[dimensao] = r[dimensao]
+        for coluna in ["etapa_ensino", "serie", "serie_label", "serie_ordem", "dependencia", "localizacao"]:
+            if coluna in r and coluna not in linha:
+                linha[coluna] = limpar_null(r[coluna])
+        linhas.append(linha)
+    return linhas
+
+
+def serie_alunos_turma(df, serie=None, dependencia="total", localizacao="total"):
+    sub = df[
+        (df["dependencia"] == dependencia)
+        & (df["localizacao"] == localizacao)
+    ].copy()
+    if serie:
+        sub = sub[sub["serie"] == serie]
+    sub = sub.sort_values("ano")
+
+    pontos = []
+    for _, r in sub.iterrows():
+        valor = limpar_null(r.get("alunos_por_turma"))
+        if valor is None:
+            continue
+        pontos.append({
+            "ano": int(r["ano"]),
+            "valor": r1(valor),
+            "alunos_por_turma": r1(valor),
+        })
+    return pontos
+
+
+def montar_bloco_alunos_turma(df, id_mun):
+    d = df[df["id_municipio"] == id_mun].copy()
+    if d.empty:
+        return _bloco_vazio(
+            "alunos_turma",
+            ["etapa_ensino", "serie", "dependencia", "localizacao"],
+            AVISOS_ALUNOS_TURMA,
+        )
+
+    d_valid = d[d["alunos_por_turma"].notna()].copy()
+    if d_valid.empty:
+        return _bloco_vazio(
+            "alunos_turma",
+            ["etapa_ensino", "serie", "dependencia", "localizacao"],
+            AVISOS_ALUNOS_TURMA,
+        )
+
+    total_rows = d_valid[(d_valid["dependencia"] == "total") & (d_valid["localizacao"] == "total")]
+    series_options_df = (
+        total_rows[["etapa_ensino", "serie", "serie_label", "serie_ordem"]]
+        .drop_duplicates()
+        .sort_values(["etapa_ensino", "serie_ordem", "serie"])
+    )
+    series_options = [
+        {
+            "key": row["serie"],
+            "label": row["serie_label"],
+            "etapa_ensino": row["etapa_ensino"],
+            "ordem": ri(limpar_null(row["serie_ordem"])),
+        }
+        for _, row in series_options_df.iterrows()
+    ]
+
+    por_serie = {}
+    for serie in sorted(total_rows["serie"].dropna().unique()):
+        serie_hist = serie_alunos_turma(d_valid, serie=serie)
+        if serie_hist:
+            por_serie[serie] = serie_hist
+
+    por_etapa = {}
+    for etapa, serie_total in ATU_SERIE_TOTAL_ETAPA.items():
+        serie_hist = serie_alunos_turma(d_valid, serie=serie_total)
+        if serie_hist:
+            por_etapa[etapa] = serie_hist
+
+    serie_total_padrao = por_etapa.get("fundamental") or next(iter(por_etapa.values()), [])
+
+    deps_rede = ["publica", "privada", "estadual", "municipal", "federal"]
+    locs = ["urbana", "rural"]
+    detalhamentos = {
+        "por_etapa": detalhamento_alunos_turma(
+            d_valid[d_valid["serie"].isin(ATU_SERIE_TOTAL_ETAPA.values())],
+            ["etapa_ensino", "serie"],
+            {"dependencia": "total", "localizacao": "total"},
+        ),
+        "por_serie": detalhamento_alunos_turma(
+            d_valid,
+            ["etapa_ensino", "serie"],
+            {"dependencia": "total", "localizacao": "total"},
+        ),
+        "por_serie_rede": detalhamento_alunos_turma(
+            d_valid,
+            ["etapa_ensino", "serie", "dependencia"],
+            {"dependencia": deps_rede, "localizacao": "total"},
+        ),
+        "por_serie_localizacao": detalhamento_alunos_turma(
+            d_valid,
+            ["etapa_ensino", "serie", "localizacao"],
+            {"dependencia": "total", "localizacao": locs},
+        ),
+    }
+
+    ultimo_ano = int(d_valid["ano"].max()) if not d_valid.empty else None
+    resumo = _resumo_alunos_turma(d_valid, ultimo_ano)
+
+    return {
+        "series": {
+            "total": serie_total_padrao,
+            "por_etapa": por_etapa,
+            "por_serie": por_serie,
+        },
+        "detalhamentos": detalhamentos,
+        "series_options": series_options,
+        "ultimo_ano": ultimo_ano,
+        "resumo_ultimo_ano": resumo,
+        "dimensoes_disponiveis": ["etapa_ensino", "serie", "dependencia", "localizacao"],
+        "campos_indisponiveis": [],
+        "avisos": AVISOS_ALUNOS_TURMA,
+    }
+
+
+def _resumo_alunos_turma(d, ano):
+    if ano is None or d.empty:
+        return {}
+    d_ano = d[
+        (d["ano"] == ano)
+        & (d["dependencia"] == "total")
+        & (d["localizacao"] == "total")
+    ]
+    resumo = {"por_etapa": {}}
+    for etapa, serie_total in ATU_SERIE_TOTAL_ETAPA.items():
+        row = d_ano[d_ano["serie"] == serie_total]
+        if row.empty:
+            continue
+        valor = limpar_null(row.iloc[0]["alunos_por_turma"])
+        if valor is None:
+            continue
+        chave = f"alunos_por_turma_{etapa}"
+        resumo[chave] = r1(valor)
+        resumo["por_etapa"][etapa] = r1(valor)
+    return resumo
+
+
 def montar_bloco_fluxo(df, id_mun):
     d = df[df["id_municipio"] == id_mun].copy()
     if d.empty:
@@ -1958,6 +2157,7 @@ def exportar_municipios(
                     view_df("rede_escolar_etapa", id_mun),
                 ),
                 "turmas_docentes": montar_bloco_turmas(view_df("turmas", id_mun), id_mun),
+                "alunos_turma": montar_bloco_alunos_turma(view_df("alunos_turma", id_mun), id_mun),
                 "fluxo": montar_bloco_fluxo(view_df("fluxo", id_mun), id_mun),
                 "aprendizagem": montar_bloco_aprendizagem(view_df("aprendizagem", id_mun), id_mun),
                 "oferta_tecnica": montar_bloco_oferta(
@@ -2242,9 +2442,10 @@ def gerar_index(mun_rs, anos_por_bloco, gerados_mun):
             "Distorcao idade-serie nao tem dimensao de localizacao na fonte.",
             "IDEB e bienal; anos sem avaliacao tem null.",
             "alunos_por_docente pode ser alto em EJA/Infantil.",
+            "ATU de alunos por turma usa medias oficiais da planilha, sem recalculo de media de medias.",
         ],
         "blocos_disponiveis": [
-            "matriculas", "rede_escolar", "turmas_docentes",
+            "matriculas", "rede_escolar", "alunos_turma", "turmas_docentes",
             "fluxo", "aprendizagem", "oferta_tecnica",
             "sistema_s", "vaar",
         ],
@@ -2471,6 +2672,7 @@ def main():
         ("vw_educacao_rede_escolar", "rede_escolar"),
         ("vw_educacao_rede_escolar_etapa", "rede_escolar_etapa"),
         ("vw_educacao_turmas_docentes", "turmas"),
+        ("vw_educacao_alunos_turma", "alunos_turma"),
         ("vw_educacao_fluxo", "fluxo"),
         ("vw_educacao_aprendizagem", "aprendizagem"),
         ("vw_educacao_oferta_tecnica", "oferta"),
