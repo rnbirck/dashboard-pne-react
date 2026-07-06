@@ -282,6 +282,7 @@ LOCAL_QUERY_FILES_BY_TABLE: dict[str, str] = {
     "pne_2026_2036_metricas": "pne_2026_2036_metricas.sql",
     "matriculas_privadas_conveniadas_poder_publico": "matriculas_privadas_conveniadas.sql",
     "siope_fundeb_municipio_dashboard": "fundeb.sql",
+    "fnde_pnate_municipio_dashboard": "pnate.sql",
 }
 
 

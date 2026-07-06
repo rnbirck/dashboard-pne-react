@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CategoryTabs } from '../components/CategoryTabs'
 import { FundebPanel } from '../components/FundebPanel'
+import { PnatePanel } from '../components/PnatePanel'
 import { SistemaSPanel } from '../components/SistemaSPanel'
 import { VaarPanel } from '../components/VaarPanel'
 import { FUNDEB_INDICATORS } from '../data/fundebIndicators'
+import { PNATE_INDICATORS } from '../data/pnateIndicators'
 import { EducationBarChart } from '../components/EducationBarChart'
 import { EducationLineChart } from '../components/EducationLineChart'
 import { EducationStackedBarChart } from '../components/EducationStackedBarChart'
@@ -117,6 +119,7 @@ const PANORAMA_THEME_KEYS = {
 
 const FINANCING_MODULE_KEYS = {
   fundeb: 'fundeb',
+  pnate: 'pnate',
   vaar: 'vaar',
 }
 
@@ -129,7 +132,7 @@ const MAIN_INDICATOR_BLOCKS = [
   {
     key: MAIN_BLOCK_KEYS.financiamento,
     title: 'Financiamento da Educação',
-    description: 'FUNDEB, complementação VAAR, receitas, despesas, condicionalidades e resultados.',
+    description: 'FUNDEB, PNATE, complementação VAAR, receitas, despesas, condicionalidades e resultados.',
   },
 ]
 
@@ -139,6 +142,12 @@ const FINANCING_MODULES = [
     title: 'FUNDEB',
     description: 'Receitas, despesas, remuneração e saldos do fundo.',
     count: `${FUNDEB_INDICATORS.length} indicadores`,
+  },
+  {
+    key: FINANCING_MODULE_KEYS.pnate,
+    title: 'PNATE',
+    description: 'Transporte escolar rural, estudantes atendidos e repasses.',
+    count: `${PNATE_INDICATORS.length} indicadores`,
   },
   {
     key: FINANCING_MODULE_KEYS.vaar,
@@ -175,6 +184,14 @@ function getInitialEducationNavigation() {
         ...fallback,
         mainBlock: MAIN_BLOCK_KEYS.financiamento,
         financingModule: FINANCING_MODULE_KEYS.fundeb,
+      }
+    }
+
+    if (value === 'pnate') {
+      return {
+        ...fallback,
+        mainBlock: MAIN_BLOCK_KEYS.financiamento,
+        financingModule: FINANCING_MODULE_KEYS.pnate,
       }
     }
 
@@ -405,6 +422,11 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
             municipioData={municipioData}
             selectedMunicipio={selectedMunicipio}
             embedded={true}
+          />
+        ) : selectedFinancingModule === FINANCING_MODULE_KEYS.pnate ? (
+          <PnatePanel
+            pnateData={dados?.blocos?.pnate ?? municipioData?.blocos?.pnate}
+            selectedMunicipio={selectedMunicipio}
           />
         ) : (
           <VaarPanel vaarData={dados?.blocos?.vaar} />

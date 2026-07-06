@@ -160,6 +160,9 @@ def load_aggregate_payloads() -> dict[str, dict]:
     payloads["fundeb"] = load_optional_json(
         SOURCE_DIR / "fundeb_por_municipio.json"
     )
+    payloads["pnate"] = load_optional_json(
+        SOURCE_DIR / "pnate_por_municipio.json"
+    )
     payloads["projecoes"] = load_optional_json(
         SOURCE_DIR / "pne_2026_2036" / "projecoes_por_municipio.json"
     )
@@ -210,6 +213,50 @@ def validate_fundeb_payload(payloads: dict[str, dict], municipios: list[str]) ->
         )
 
 
+def validate_pnate_payload(payloads: dict[str, dict], municipios: list[str]) -> None:
+    pnate_payload = payloads.get("pnate") or {}
+    pnate_municipios = pnate_payload.get("municipios")
+    if not isinstance(pnate_municipios, dict):
+        raise RuntimeError(
+            "[partition] PNATE invalido: arquivo pnate_por_municipio.json ausente "
+            "ou sem objeto 'municipios'. Rode export_static_data.py completo antes do particionamento."
+        )
+
+    total_expected = EXPECTED_MUNICIPALITIES
+    total_base = len(municipios)
+    total_file = int(pnate_payload.get("total_municipios") or len(pnate_municipios))
+    total_entries = len(pnate_municipios)
+    total_with_data = sum(
+        1
+        for municipio in municipios
+        if isinstance(pnate_municipios.get(municipio, {}).get("pnate"), dict)
+        and pnate_municipios[municipio]["pnate"].get("historico")
+    )
+
+    print("[partition] Validacao PNATE")
+    print(f"[partition]   total esperado: {total_expected}")
+    print(f"[partition]   total da base municipal: {total_base}")
+    print(f"[partition]   total declarado no PNATE: {total_file}")
+    print(f"[partition]   total de entradas no PNATE: {total_entries}")
+    print(f"[partition]   total com dados PNATE: {total_with_data}")
+
+    problems = []
+    if total_base != total_expected:
+        problems.append(f"base municipal tem {total_base}, esperado {total_expected}")
+    if total_file != total_expected:
+        problems.append(f"pnate_por_municipio.json declara {total_file}, esperado {total_expected}")
+    if total_entries != total_expected:
+        problems.append(f"pnate_por_municipio.json contem {total_entries} entradas, esperado {total_expected}")
+    if total_with_data != total_expected:
+        problems.append(f"PNATE com dados em {total_with_data} municipios, esperado {total_expected}")
+
+    if problems:
+        raise RuntimeError(
+            "[partition] Fonte PNATE incompleta/parcial; particionamento interrompido para "
+            "nao sobrescrever a base final. " + "; ".join(problems)
+        )
+
+
 def extract_results(payload: dict, municipio: str) -> dict:
     return payload.get("municipios", {}).get(municipio, {}).get("results", {})
 
@@ -232,6 +279,10 @@ def extract_projections(payload: dict, municipio: str) -> dict:
 
 def extract_fundeb(payload: dict, municipio: str) -> dict | None:
     return payload.get("municipios", {}).get(municipio, {}).get("fundeb")
+
+
+def extract_pnate(payload: dict, municipio: str) -> dict | None:
+    return payload.get("municipios", {}).get(municipio, {}).get("pnate")
 
 
 def extract_fundeb_id(payload: dict, municipio: str) -> str | None:
@@ -258,6 +309,7 @@ def build_municipio_payload(
     id_municipio: str | None = None,
 ) -> dict:
     fundeb_data = extract_fundeb(payloads["fundeb"], municipio)
+    pnate_data = extract_pnate(payloads["pnate"], municipio)
     projection_data = extract_projections(payloads["projecoes"], municipio)
     payload = {
         "id_municipio": id_municipio,
@@ -276,6 +328,8 @@ def build_municipio_payload(
     }
     if fundeb_data is not None:
         payload.setdefault("blocos", {})["fundeb"] = fundeb_data
+    if pnate_data is not None:
+        payload.setdefault("blocos", {})["pnate"] = pnate_data
     return payload
 
 
@@ -324,6 +378,7 @@ def main() -> int:
     payloads = load_aggregate_payloads()
     municipios = payloads["municipios"].get("municipios", [])
     validate_fundeb_payload(payloads, municipios)
+    validate_pnate_payload(payloads, municipios)
     slug_map = unique_slugs(municipios)
     id_map = {
         municipio: extract_fundeb_id(payloads["fundeb"], municipio)

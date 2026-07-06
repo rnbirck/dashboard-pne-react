@@ -697,6 +697,64 @@ def _export_fundeb_data(
     }
 
 
+def _export_pnate_data(
+    municipios: list[str],
+    errors: list[dict[str, Any]],
+) -> dict[str, Any]:
+    from src.data_loader import load_pnate_data
+    from src.views import pnate_export
+
+    exported = 0
+    municipio_payloads: dict[str, Any] = {}
+
+    print("\nProcessando PNATE...")
+    try:
+        pnate_df = load_pnate_data()
+    except Exception as exc:  # noqa: BLE001
+        errors.append({"stage": "load_pnate_data", "error": str(exc)})
+        return {
+            "generated_at": _generated_at(),
+            "total_municipios": len(municipios),
+            "municipios_exportados": 0,
+            "municipios": {},
+        }
+
+    if "municipio" not in pnate_df.columns:
+        errors.append({"stage": "load_pnate_data", "error": "Coluna 'municipio' ausente."})
+        return {
+            "generated_at": _generated_at(),
+            "total_municipios": len(municipios),
+            "municipios_exportados": 0,
+            "municipios": {},
+        }
+
+    pnate_df["municipio"] = pnate_df["municipio"].astype(str).str.strip()
+
+    for index, municipio in enumerate(municipios, start=1):
+        print(f"  [{index}/{len(municipios)}] {municipio}")
+        try:
+            data = pnate_export.extract_pnate_for_municipio(municipio, pnate_df)
+            municipio_payloads[municipio] = {"pnate": data} if data is not None else {"pnate": None}
+            if data is not None:
+                exported += 1
+        except Exception as exc:  # noqa: BLE001
+            errors.append(
+                {
+                    "stage": "pnate",
+                    "municipio": municipio,
+                    "error": str(exc),
+                }
+            )
+            municipio_payloads[municipio] = {"pnate": None}
+
+    return {
+        "generated_at": _generated_at(),
+        "total_municipios": len(municipios),
+        "municipios_exportados": exported,
+        "municipios": municipio_payloads,
+    }
+
+
 def _export_projections(
     *,
     municipios: list[str],
@@ -939,6 +997,14 @@ def main() -> int:
     fundeb_path = EXPORT_DIR / "fundeb_por_municipio.json"
     _write_json(fundeb_path, fundeb_payload)
     generated_files.append(fundeb_path)
+
+    pnate_payload = _export_pnate_data(
+        municipios=municipios,
+        errors=errors,
+    )
+    pnate_path = EXPORT_DIR / "pnate_por_municipio.json"
+    _write_json(pnate_path, pnate_payload)
+    generated_files.append(pnate_path)
 
     if args.include_derived:
         for cycle_key, cycle_module in cycle_modules.items():

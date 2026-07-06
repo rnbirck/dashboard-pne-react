@@ -4,6 +4,7 @@ const SOURCE_POPULATION_ATTENDANCE = 'Censo Escolar — INEP; Estimativas Popula
 const SOURCE_EDUCATIONAL_INDICATORS = 'Indicadores Educacionais — INEP'
 const SOURCE_IDEB_SAEB = 'IDEB / SAEB — INEP'
 const SOURCE_FUNDEB = 'SIOPE / FNDE'
+const SOURCE_PNATE = 'PNATE / FNDE'
 const SOURCE_CENSO_DEMOGRAFICO = 'Censo Demográfico — IBGE'
 
 const EDUCATION_THEME_SOURCES = {
@@ -84,6 +85,10 @@ export function getDataSourceNote(context = {}) {
     return SOURCE_FUNDEB
   }
 
+  if (block === 'pnate' || theme === 'pnate') {
+    return SOURCE_PNATE
+  }
+
   if (POPULATION_ATTENDANCE_KEYS.has(indicatorKey)) {
     return SOURCE_POPULATION_ATTENDANCE
   }
@@ -127,6 +132,9 @@ function sourceFromDeclaredMetadata(context, normalizedText) {
   const combined = [normalizedText, ...sourceNames].join(' ')
 
   if (combined.includes('siope') || combined.includes('fnde')) {
+    if (combined.includes('pnate')) {
+      return SOURCE_PNATE
+    }
     return SOURCE_FUNDEB
   }
   if (combined.includes('saeb') || combined.includes('ideb')) {

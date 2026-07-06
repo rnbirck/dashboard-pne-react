@@ -61,7 +61,7 @@ export function Home({ onNavigate, selectedMunicipio }) {
           <FeatureCard
             icon={<BarsIcon />}
             title="Indicadores"
-            text="Explore matrículas, escolas, docentes, fluxo, aprendizagem, matrículas técnicas e indicadores financeiros do FUNDEB."
+            text="Explore matrículas, escolas, docentes, fluxo, aprendizagem, matrículas técnicas e indicadores financeiros do FUNDEB e PNATE."
           />
           <FeatureCard
             icon={<TargetIcon />}
@@ -96,7 +96,7 @@ export function Home({ onNavigate, selectedMunicipio }) {
           <ModuleCard
             icon={<BarsIcon />}
             title="Indicadores da Educação"
-            text="Explore dados educacionais do município por tema e série histórica, incluindo indicadores financeiros do FUNDEB."
+            text="Explore dados educacionais do município por tema e série histórica, incluindo indicadores financeiros do FUNDEB e PNATE."
             onClick={() => onNavigate?.('educacao')}
           />
           <ModuleCard

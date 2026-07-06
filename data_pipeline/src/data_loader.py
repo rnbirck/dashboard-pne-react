@@ -170,6 +170,10 @@ def load_fundeb_data():
     return fetch_raw_table("siope_fundeb_municipio_dashboard")
 
 
+def load_pnate_data():
+    return fetch_raw_table("fnde_pnate_municipio_dashboard")
+
+
 def load_pne_2026_2036_metricas_data():
     return load_dataset("pne_2026_2036_metricas_data")
 
@@ -185,6 +189,7 @@ __all__ = [
     "get_data_cache_ttl_seconds",
     "get_supabase_client",
     "load_fundeb_data",
+    "load_pnate_data",
     "load_municipios",
     "load_basico_15_17_data",
     "load_basico_6_17_data",
