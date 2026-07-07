@@ -6,7 +6,8 @@ import {
 } from '../utils/format'
 
 function isAccumulativeExpansionLabel(label) {
-  return String(label ?? '').toLocaleLowerCase('pt-BR').includes('expansão acumulada')
+  const text = String(label ?? '').toLocaleLowerCase('pt-BR')
+  return text.includes('expansão acumulada') || text.includes('expansÃ£o acumulada')
 }
 
 function isNegativeHighlightEligible(indicator) {
@@ -60,6 +61,7 @@ const AREA_ICON_PATHS = {
 export function DiagnosticPanel({ categories = [], data, municipio, results = {} }) {
   const analysis = buildDiagnosticAnalysis(categories, results)
   const [selectedFilter, setSelectedFilter] = useState('all')
+  const [activeAnchor, setActiveAnchor] = useState('summary')
   const filteredIndicators = useMemo(
     () => {
       if (selectedFilter === 'all') return analysis.indicators
@@ -71,6 +73,11 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
   const filteredBestPosition = useMemo(() => buildBestPosition(filteredIndicators), [filteredIndicators])
   const filteredLargestGaps = useMemo(() => buildLargestGaps(filteredIndicators), [filteredIndicators])
   const showCategoryChip = selectedFilter === 'all'
+  const selectedArea = analysis.areas.find((area) => area.key === selectedFilter)
+  const selectedFilterLabel = selectedFilter === 'all'
+    ? 'Todos os temas'
+    : selectedArea?.fullLabel ?? selectedArea?.label ?? 'Tema selecionado'
+  const executiveSummary = buildExecutiveSummary(analysis)
 
   if (!data && analysis.summary.total === 0) {
     return (
@@ -82,31 +89,43 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
 
   return (
     <div className="diagnostic-panel">
-      <section className="page-card diagnostic-hero">
-        <div>
+      <section className="page-card diagnostic-hero" id="diagnostic-summary">
+        <div className="diagnostic-hero__copy">
+          <span className="diagnostic-hero__eyebrow">DIAGNÓSTICO MUNICIPAL</span>
           <h2>Diagnóstico de {municipio}</h2>
-          <p>Síntese dos indicadores e posicionamento do município no ciclo vigente.</p>
+          <p>
+            Síntese da posição do município em relação às metas e indicadores acompanhados
+            no ciclo vigente.
+          </p>
+          <div className="diagnostic-executive-note">
+            <span>Leitura executiva</span>
+            <strong>{executiveSummary}</strong>
+          </div>
         </div>
         <div className="diagnostic-summary">
           <SummaryCard
+            helper="Com dados suficientes para leitura municipal."
             icon="clipboard"
             label="Indicadores analisados"
             tone="default"
             value={analysis.summary.total}
           />
           <SummaryCard
+            helper="Indicadores comparáveis com meta alcançada."
             icon="check"
             label="Metas atingidas"
             tone="success"
             value={analysis.summary.achieved}
           />
           <SummaryCard
+            helper="Indicadores comparáveis abaixo da referência."
             icon="down"
             label="Abaixo da meta"
             tone="danger"
             value={analysis.summary.below}
           />
           <SummaryCard
+            helper="Indicadores sem base de comparação direta."
             icon="minus"
             label="Sem comparação"
             tone="neutral"
@@ -115,8 +134,45 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
         </div>
       </section>
 
-      <section className="diagnostic-theme-filter" aria-label="Filtrar destaques por tema">
-        <div className="diagnostic-theme-filter__eyebrow">Temas de análise</div>
+      <nav className="diagnostic-anchor-nav" aria-label="Navegação interna do diagnóstico">
+        <a
+          className={activeAnchor === 'summary' ? 'is-active' : ''}
+          href="#diagnostic-summary"
+          onClick={() => setActiveAnchor('summary')}
+        >
+          Resumo
+        </a>
+        <a
+          className={activeAnchor === 'themes' ? 'is-active' : ''}
+          href="#diagnostic-themes"
+          onClick={() => setActiveAnchor('themes')}
+        >
+          Temas
+        </a>
+        <a
+          className={activeAnchor === 'priorities' ? 'is-active' : ''}
+          href="#diagnostic-priorities"
+          onClick={() => setActiveAnchor('priorities')}
+        >
+          Prioridades
+        </a>
+        <a
+          className={activeAnchor === 'reading' ? 'is-active' : ''}
+          href="#diagnostic-reading"
+          onClick={() => setActiveAnchor('reading')}
+        >
+          Síntese
+        </a>
+      </nav>
+
+      <section className="diagnostic-theme-filter" id="diagnostic-themes" aria-label="Filtrar destaques por tema">
+        <div className="diagnostic-theme-filter__header">
+          <div>
+            <span>Temas de análise</span>
+            <p>{selectedFilterLabel}</p>
+          </div>
+          <strong>{filteredIndicators.length} indicadores</strong>
+        </div>
         <div className="diagnostic-theme-filter__grid">
           <button
             type="button"
@@ -161,7 +217,10 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
       </section>
 
       <section className="page-card diagnostic-section">
-        <h3>Posicionamento por tema</h3>
+        <header className="diagnostic-section__heading">
+          <h3>Posicionamento por tema</h3>
+          <p>Leitura agregada dos indicadores, metas atingidas e lacunas prioritárias em cada tema.</p>
+        </header>
         <div className="diagnostic-area-grid">
           {analysis.areas.map((area) => (
             <AreaMiniCard area={area} key={area.key} />
@@ -171,10 +230,13 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
 
       <PrioritiesSection items={analysis.priorities} />
 
-      <section className="page-card diagnostic-reading">
+      <section className="page-card diagnostic-reading" id="diagnostic-reading">
         <div className="diagnostic-reading__heading">
           <IconBubble icon="book" tone="success" />
-          <h3>Síntese analítica</h3>
+          <div>
+            <h3>Síntese analítica</h3>
+            <p>Quadro interpretativo para apoiar priorização e conversa técnica com a gestão.</p>
+          </div>
         </div>
         <div className="diagnostic-reading__grid">
           {analysis.readings.map((reading) => (
@@ -189,12 +251,13 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
   )
 }
 
-function SummaryCard({ icon, label, tone, value }) {
+function SummaryCard({ helper, icon, label, tone, value }) {
   return (
     <article className={`diagnostic-summary-card diagnostic-summary-card--${tone}`}>
       <div>
-        <span>{label}</span>
         <strong>{value}</strong>
+        <span>{label}</span>
+        <small>{helper}</small>
       </div>
       <IconBubble icon={icon} tone={tone} />
     </article>
@@ -204,14 +267,12 @@ function SummaryCard({ icon, label, tone, value }) {
 function PrioritiesSection({ items }) {
   const list = items ?? []
   return (
-    <section className="page-card diagnostic-priorities">
+    <section className="page-card diagnostic-priorities" id="diagnostic-priorities">
       <header className="diagnostic-priorities__header">
         <div className="diagnostic-priorities__header-text">
-          <span className="diagnostic-priorities__eyebrow">Plano de ação</span>
+          <span className="diagnostic-priorities__eyebrow">PLANO DE AÇÃO</span>
           <h3>Prioridades do município</h3>
-          <p>
-            Indicadores comparáveis com maior distância negativa em relação à meta.
-          </p>
+          <p>Indicadores com maior distância em relação à meta.</p>
         </div>
         {list.length > 0 && (
           <span className="diagnostic-priorities__count">
@@ -233,14 +294,20 @@ function PrioritiesSection({ items }) {
                 </span>
               </div>
               <div className="diagnostic-priorities__meta">
-                <span className="diagnostic-priorities__chip">
-                  Atual: <strong>{item.currentLabel}</strong>
+                <span className="diagnostic-priorities__comparison">
+                  <span>Atual</span>
+                  <strong>{item.currentLabel}</strong>
                 </span>
-                <span className="diagnostic-priorities__chip">
-                  Meta: <strong>{item.metaLabel}</strong>
+                <span className="diagnostic-priorities__comparison">
+                  <span>Meta</span>
+                  <strong>{item.metaLabel}</strong>
                 </span>
-                <span className="diagnostic-priorities__chip diagnostic-priorities__chip--negative">
-                  Distância: <strong>{item.distanceLabel}</strong>
+                <span className="diagnostic-priorities__comparison diagnostic-priorities__comparison--negative">
+                  <span>Distância</span>
+                  <strong>{item.distanceLabel}</strong>
+                </span>
+                <span className="diagnostic-priorities__status">
+                  {item.statusLabel}
                 </span>
               </div>
             </li>
@@ -255,7 +322,14 @@ function PrioritiesSection({ items }) {
   )
 }
 
-function InsightCard({ emptyMessage = 'Nenhum indicador disponível para esta leitura.', icon, items, showCategoryChip = true, title, tone }) {
+function InsightCard({
+  emptyMessage = 'Nenhum indicador disponível para esta leitura.',
+  icon,
+  items,
+  showCategoryChip = true,
+  title,
+  tone,
+}) {
   return (
     <section className={`page-card diagnostic-insight diagnostic-insight--${tone}`}>
       <div className="diagnostic-insight__heading">
@@ -265,11 +339,14 @@ function InsightCard({ emptyMessage = 'Nenhum indicador disponível para esta le
       {items.length ? (
         <ul className="diagnostic-insight-list">
           {items.map((item) => (
-            <li key={item.key}>
-              <span aria-hidden="true" />
-              <div>
-                <p>{item.label} — {renderColoredNote(item.note, tone)}</p>
-                {showCategoryChip ? <small>{item.categoryLabel}</small> : null}
+            <li className="diagnostic-insight-list__item" key={item.key}>
+              <span className="diagnostic-insight-list__marker" aria-hidden="true" />
+              <div className="diagnostic-insight-list__body">
+                <div className="diagnostic-insight-list__topline">
+                  <strong title={item.label}>{item.label}</strong>
+                  {showCategoryChip ? <small>{item.categoryLabel}</small> : null}
+                </div>
+                <p>{renderColoredNote(item.note, tone)}</p>
               </div>
             </li>
           ))}
@@ -289,7 +366,7 @@ function AreaMiniCard({ area }) {
   const hasItems = total > 0
   const gapLabel = area.worstIndicator
     ? `${area.worstIndicator.label} (${area.worstIndicator.summary})`
-    : '—'
+    : '-'
 
   return (
     <div className="diagnostic-area-mini-card">
@@ -327,8 +404,10 @@ function AreaMiniCard({ area }) {
       ) : (
         <div className="diagnostic-area-mini-card__bar" />
       )}
+      <p className="diagnostic-area-mini-card__reading">{area.reading}</p>
       <div className="diagnostic-area-mini-card__gap" title={gapLabel}>
-        Lacuna: {gapLabel}
+        <span>Principal lacuna</span>
+        <strong>{gapLabel}</strong>
       </div>
     </div>
   )
@@ -509,6 +588,7 @@ function buildAreaAnalysis(category, results) {
     label: category.shortLabel ?? category.label,
     fullLabel: category.label,
     noComparison,
+    reading: buildAreaReading({ achieved, below, comparableTotal, noComparison, total }),
     statusLabel: diagnosis.statusLabel,
     statusTone: diagnosis.statusTone,
     total,
@@ -610,9 +690,57 @@ function buildPriorities(indicators) {
     .map((indicator) => ({
       ...indicator,
       currentLabel: formatIndicatorValueForPriority(indicator),
-      metaLabel: formatMetaValueForPriority(indicator),
       distanceLabel: formatDistance(indicator, true),
+      metaLabel: formatMetaValueForPriority(indicator),
+      statusLabel: getIndicatorStatusLabel(indicator.status),
     }))
+}
+
+function buildExecutiveSummary(analysis) {
+  const { areas, summary } = analysis
+  const comparableTotal = summary.achieved + summary.below
+  if (!summary.total) {
+    return 'Não há indicadores disponíveis para uma síntese executiva neste município.'
+  }
+
+  const pressureAreas = [...areas]
+    .filter((area) => area.below > 0 && area.comparableTotal > 0)
+    .sort((a, b) => {
+      const countDiff = b.below - a.below
+      if (countDiff !== 0) return countDiff
+      return (b.below / b.comparableTotal) - (a.below / a.comparableTotal)
+    })
+    .slice(0, 2)
+
+  const pressureText = pressureAreas.length
+    ? `maior pressão em ${formatAreaList(pressureAreas.map((area) => area.label))}`
+    : 'sem área crítica comparável destacada'
+
+  if (!comparableTotal) {
+    return `O município tem ${summary.total} indicadores analisados, mas sem referência comparável suficiente para leitura de meta.`
+  }
+
+  return `O município apresenta ${pressureText}, com ${summary.achieved} metas atingidas entre ${comparableTotal} indicadores comparáveis.`
+}
+
+function formatAreaList(labels) {
+  if (labels.length <= 1) return labels[0] ?? ''
+  return `${labels.slice(0, -1).join(', ')} e ${labels[labels.length - 1]}`
+}
+
+function buildAreaReading({ achieved, below, comparableTotal, noComparison, total }) {
+  if (!total) return 'Sem indicadores disponíveis.'
+  if (!comparableTotal) return 'Leitura limitada por baixa comparabilidade.'
+  if (achieved >= below) return 'Predomínio de metas atingidas.'
+  if (below > achieved && achieved > 0) return 'Resultado misto, com lacunas relevantes.'
+  if (noComparison > 0) return 'Pressão abaixo da meta e parte sem comparação.'
+  return 'Predomínio de indicadores abaixo da meta.'
+}
+
+function getIndicatorStatusLabel(status) {
+  if (status === 'achieved') return 'Meta atingida'
+  if (status === 'below') return 'Abaixo da meta'
+  return 'Sem comparação'
 }
 
 function formatIndicatorValueForPriority(indicator) {
@@ -695,7 +823,7 @@ function buildReadings(summary, areas, priorities) {
 function buildAreaDiagnosis({ achieved, below, comparableTotal }) {
   if (!comparableTotal) {
     return {
-      statusLabel: 'Baixa comparabilidade',
+      statusLabel: 'Baixa comparação',
       statusTone: 'neutral',
     }
   }
@@ -705,27 +833,27 @@ function buildAreaDiagnosis({ achieved, below, comparableTotal }) {
 
   if (achievedShare >= 0.5) {
     return {
-      statusLabel: 'Resultado favorável',
+      statusLabel: 'Favorável',
       statusTone: 'success',
     }
   }
 
   if (belowShare >= 0.75 || achieved === 0) {
     return {
-      statusLabel: 'Predomínio abaixo da meta',
+      statusLabel: 'Abaixo da meta',
       statusTone: 'danger',
     }
   }
 
   if (achieved > 0 && below > 0) {
     return {
-      statusLabel: 'Resultado misto',
+      statusLabel: 'Misto',
       statusTone: 'mixed',
     }
   }
 
   return {
-    statusLabel: 'Predomínio abaixo da meta',
+    statusLabel: 'Abaixo da meta',
     statusTone: 'danger',
   }
 }
