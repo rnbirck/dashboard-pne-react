@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 
 const CHART_WIDTH = 980
-const CHART_HEIGHT = 300
+const CHART_HEIGHT = 260
 const PADDING = { top: 34, right: 28, bottom: 48, left: 64 }
 
 function formatNumber(value) {
@@ -24,11 +24,10 @@ function shouldShowYearLabel(index, total) {
 
 function shouldShowValueLabel(point, index, points, maxValue) {
   if (index === 0 || index === points.length - 1) return true
-  if (point.value === maxValue) return true
-  return points.length <= 8 ? index % 2 === 0 : index % 3 === 0
+  return point.value === maxValue && points.length > 4
 }
 
-export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em creche', unit = 'Matrículas' }) {
+export function ComplementaryEnrollmentChart({ series, showHeading = true, title = 'Matrículas em creche', unit = 'Matrículas' }) {
   const [activePoint, setActivePoint] = useState(null)
   const rawPoints = useMemo(() => {
     return (series ?? [])
@@ -91,9 +90,11 @@ export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em c
 
   return (
     <section className="complementary-chart">
-      <div className="complementary-chart__heading">
-        <span className="eyebrow">{title}</span>
-      </div>
+      {showHeading ? (
+        <div className="complementary-chart__heading">
+          <span className="eyebrow">{title}</span>
+        </div>
+      ) : null}
       <div className="complementary-chart__canvas">
         <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} role="img" aria-label={`${title}: histórico por ano`}>
           {[0.25, 0.5, 0.75].map((ratio) => {
@@ -114,14 +115,14 @@ export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em c
             x2={CHART_WIDTH - PADDING.right}
             y1={CHART_HEIGHT - PADDING.bottom}
             y2={CHART_HEIGHT - PADDING.bottom}
-            className="complementary-chart__axis"
+            className="complementary-chart__axis complementary-chart__axis--x"
           />
           <line
             x1={PADDING.left}
             x2={PADDING.left}
             y1={PADDING.top}
             y2={CHART_HEIGHT - PADDING.bottom}
-            className="complementary-chart__axis"
+            className="complementary-chart__axis complementary-chart__axis--y"
           />
 
           <text x={PADDING.left - 10} y={PADDING.top + 6} textAnchor="end" className="complementary-chart__tick">
@@ -148,10 +149,10 @@ export function ComplementaryEnrollmentChart({ series, title = 'Matrículas em c
             <path key={`line-${i}`} d={d} className="complementary-chart__line" />
           ))}
 
-          {scaledPoints.map((p) => (
+          {scaledPoints.map((p, index) => (
             <circle
               aria-label={`${p.year}: ${formatNumber(p.value)} ${unit}`}
-              className={`complementary-chart__point${activePoint?.year === p.year ? ' is-active' : ''}`}
+              className={`complementary-chart__point${activePoint?.year === p.year ? ' is-active' : ''}${index === scaledPoints.length - 1 ? ' is-last' : ''}`}
               cx={p.x}
               cy={p.y}
               key={p.year}

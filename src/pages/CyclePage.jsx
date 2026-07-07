@@ -1,13 +1,14 @@
 import { useMemo, useRef, useState } from 'react'
 import { CategoryTabs } from '../components/CategoryTabs'
-import { IndicatorDetail, isComparableIndicator } from '../components/IndicatorDetail'
-import { IndicatorList } from '../components/IndicatorList'
-import { RankingBlock } from '../components/RankingBlock'
+import { DataSourceNote } from '../components/DataSourceNote'
+import { IndicatorDetail } from '../components/IndicatorDetail'
+import { MetaCard } from '../components/MetaCard'
 import { PNE_2026_INDICATOR_GOAL_REFS } from '../data/pne2026IndicatorGoalRefs'
 import { PNE_2014_INDICATOR_GOAL_REFS } from '../data/pne2014IndicatorGoalRefs'
 import { buildThematicGroups } from '../data/thematicGroups'
-import { isAccumulativeExpansionIndicator, resolveIndicatorUnit } from '../utils/format'
 import { normalizePopulationPercentResults } from '../utils/indicatorValues'
+
+const CYCLE_SOURCE_NOTE = 'INEP, Censo Escolar, SAEB, IBGE e bases oficiais consolidadas no painel.'
 
 export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio, title }) {
   const categories = useMemo(
@@ -21,8 +22,10 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   const [selectedGroupKey, setSelectedGroupKey] = useState('')
   const [selectedBasicEducationFilterKey, setSelectedBasicEducationFilterKey] = useState('todos')
   const [selectedIndicatorKey, setSelectedIndicatorKey] = useState('')
+  const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const detailPanelRef = useRef(null)
+  const gridScrollYRef = useRef(0)
 
   const selectedGroup = useMemo(() => {
     if (!thematicGroups.length) return null
@@ -53,44 +56,72 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     () => normalizePopulationPercentResults(municipioResults, allCycleItems),
     [municipioResults, allCycleItems],
   )
-  const municipioRankings = municipioData?.[cycle]?.rankings ?? null
   const filteredGroupItems = useMemo(() => {
     const query = searchQuery.trim().toLocaleLowerCase('pt-BR')
     if (!query) return visibleGroupItems
     return visibleGroupItems.filter((item) => item.label.toLocaleLowerCase('pt-BR').includes(query))
   }, [visibleGroupItems, searchQuery])
-  const activeIndicatorKey = useMemo(() => {
-    if (!visibleGroupItems.length) return ''
-    if (visibleGroupItems.some((item) => item.key === selectedIndicatorKey)) {
-      return selectedIndicatorKey
-    }
-    return visibleGroupItems[0].key
-  }, [visibleGroupItems, selectedIndicatorKey])
+  const activeIndicatorKey = useMemo(
+    () => filteredGroupItems.some((item) => item.key === selectedIndicatorKey)
+      ? selectedIndicatorKey
+      : '',
+    [filteredGroupItems, selectedIndicatorKey],
+  )
   const activeItem = useMemo(
-    () => visibleGroupItems.find((item) => item.key === activeIndicatorKey) ?? visibleGroupItems[0],
-    [activeIndicatorKey, visibleGroupItems],
+    () => filteredGroupItems.find((item) => item.key === activeIndicatorKey) ?? null,
+    [activeIndicatorKey, filteredGroupItems],
   )
   const activeResult = activeItem ? normalizedMunicipioResults?.[activeItem.key] : null
-  const normalizedRanking = useMemo(
-    () => normalizeRankings(municipioRankings, visibleGroupItems, normalizedMunicipioResults),
-    [municipioRankings, visibleGroupItems, normalizedMunicipioResults],
-  )
+  const activeIndex = activeItem
+    ? filteredGroupItems.findIndex((item) => item.key === activeItem.key)
+    : -1
+  const previousItem = activeIndex > 0 ? filteredGroupItems[activeIndex - 1] : null
+  const nextItem = activeIndex >= 0 && activeIndex < filteredGroupItems.length - 1
+    ? filteredGroupItems[activeIndex + 1]
+    : null
   const cycleManagementStats = useMemo(
     () => buildCycleManagementStats(categories, normalizedMunicipioResults),
     [categories, normalizedMunicipioResults],
   )
+  const isShowingDetail = Boolean(isDetailOpen && activeItem)
 
   function handleGroupSelect(groupKey) {
     setSelectedGroupKey(groupKey)
     setSelectedBasicEducationFilterKey('todos')
     setSelectedIndicatorKey('')
+    setIsDetailOpen(false)
     setSearchQuery('')
   }
 
   function handleBasicEducationFilterSelect(filterKey) {
     setSelectedBasicEducationFilterKey(filterKey)
     setSelectedIndicatorKey('')
+    setIsDetailOpen(false)
     setSearchQuery('')
+  }
+
+  function handleCardSelect(itemKey) {
+    gridScrollYRef.current = window.scrollY
+    setSelectedIndicatorKey(itemKey)
+    setIsDetailOpen(true)
+    window.requestAnimationFrame(() => {
+      detailPanelRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    })
+  }
+
+  function handleBackToGrid() {
+    setIsDetailOpen(false)
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: gridScrollYRef.current, behavior: 'auto' })
+    })
+  }
+
+  function handleAdjacentMeta(itemKey) {
+    setSelectedIndicatorKey(itemKey)
+    setIsDetailOpen(true)
+    window.requestAnimationFrame(() => {
+      detailPanelRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    })
   }
 
   return (
@@ -140,45 +171,82 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
         </div>
       </section>
 
-      <section className="cycle-workspace">
-        <div className="cycle-category-bar">
-          <span className="eyebrow">TEMAS DAS METAS DO {title.replace('-', ' - ')}</span>
-          <div className="cycle-category-bar__controls">
-            <CategoryTabs
-              categories={thematicGroups}
-              selectedCategory={selectedGroup?.key}
-              onSelectCategory={handleGroupSelect}
-              ariaLabel="Temas"
-            />
-            {selectedGroup?.filters?.length ? (
-              <div className="basic-education-filter-wrap">
-                <div className="basic-education-filter-wrap__header">
-                  <span>Etapa da Educação Básica</span>
-                  <small>Selecione quais indicadores deseja visualizar</small>
-                </div>
-                <BasicEducationFilter
-                  filters={selectedGroup.filters}
-                  selectedFilter={selectedBasicEducationFilter?.key}
-                  onSelectFilter={handleBasicEducationFilterSelect}
-                />
+      <section className="cycle-workspace cycle-card-workspace">
+        {isShowingDetail ? (
+          <div className="cycle-detail-view">
+            <div className="cycle-detail-nav">
+              <button className="cycle-back-button" type="button" onClick={handleBackToGrid}>
+                &larr; Voltar para metas
+              </button>
+              <div className="cycle-detail-nav__sequence" aria-label="Navegar entre metas filtradas">
+                <button
+                  className="cycle-step-button"
+                  type="button"
+                  onClick={() => previousItem && handleAdjacentMeta(previousItem.key)}
+                  disabled={!previousItem}
+                >
+                  <span>&lsaquo;</span>
+                  Meta anterior
+                </button>
+                <span className="cycle-detail-nav__position">
+                  {activeIndex + 1} de {filteredGroupItems.length}
+                </span>
+                <button
+                  className="cycle-step-button"
+                  type="button"
+                  onClick={() => nextItem && handleAdjacentMeta(nextItem.key)}
+                  disabled={!nextItem}
+                >
+                  Próxima meta
+                  <span>&rsaquo;</span>
+                </button>
               </div>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="cycle-layout">
-          <aside className="indicator-sidebar">
-            <div className="indicator-sidebar__heading">
-              <h3>Metas/Indicadores</h3>
-              <span>{filteredGroupItems.length}</span>
             </div>
-            {filteredGroupItems.length === 0 ? (
-              <div className="indicator-sidebar__empty" style={{ padding: '10px 12px', color: 'var(--text-muted)', fontSize: '0.82rem', lineHeight: '1.4' }}>
-                <p>Nenhum indicador disponível para este município neste tema.</p>
+            <IndicatorDetail
+              cycle={cycle}
+              item={activeItem}
+              municipioData={municipioData}
+              ref={detailPanelRef}
+              result={activeResult}
+            />
+            <div className="cycle-detail-nav cycle-detail-nav--bottom">
+              <button className="cycle-back-button" type="button" onClick={handleBackToGrid}>
+                &larr; Voltar para metas
+              </button>
+              <div className="cycle-detail-nav__sequence" aria-label="Navegar entre metas filtradas">
+                <button
+                  className="cycle-step-button"
+                  type="button"
+                  onClick={() => previousItem && handleAdjacentMeta(previousItem.key)}
+                  disabled={!previousItem}
+                >
+                  <span>&lsaquo;</span>
+                  Meta anterior
+                </button>
+                <span className="cycle-detail-nav__position">
+                  {activeIndex + 1} de {filteredGroupItems.length}
+                </span>
+                <button
+                  className="cycle-step-button"
+                  type="button"
+                  onClick={() => nextItem && handleAdjacentMeta(nextItem.key)}
+                  disabled={!nextItem}
+                >
+                  Pr&oacute;xima meta
+                  <span>&rsaquo;</span>
+                </button>
               </div>
-            ) : (
-              <>
-                <label className="indicator-search">
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="cycle-filter-panel">
+              <div className="cycle-filter-panel__heading">
+                <div>
+                  <span className="eyebrow">Temas das metas</span>
+                  <h2>{selectedGroup?.label ?? 'Metas do ciclo'}</h2>
+                </div>
+                <label className="cycle-search">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <circle cx="11" cy="11" r="6.5" />
                     <path d="m16 16 4 4" />
@@ -187,41 +255,65 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
                     type="search"
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="Buscar indicador..."
-                    aria-label="Buscar indicador"
+                    placeholder="Buscar meta..."
+                    aria-label="Buscar meta"
                   />
                 </label>
-                <IndicatorList
-                  items={filteredGroupItems}
-                  results={normalizedMunicipioResults}
-                  selectedIndicator={activeItem?.key}
-                  onSelectIndicator={setSelectedIndicatorKey}
-                  stageFilters={selectedGroup?.key === 'educacao_basica' ? selectedGroup.filters : null}
-                />
-              </>
+              </div>
+
+              <CategoryTabs
+                categories={thematicGroups}
+                selectedCategory={selectedGroup?.key}
+                onSelectCategory={handleGroupSelect}
+                ariaLabel="Temas"
+              />
+
+              {selectedGroup?.filters?.length ? (
+                <div className="basic-education-filter-wrap">
+                  <div className="basic-education-filter-wrap__header">
+                    <span>Etapa</span>
+                  </div>
+                  <BasicEducationFilter
+                    filters={selectedGroup.filters}
+                    selectedFilter={selectedBasicEducationFilter?.key}
+                    onSelectFilter={handleBasicEducationFilterSelect}
+                  />
+                </div>
+              ) : null}
+            </div>
+
+            <div className="meta-grid-header">
+              <span>{filteredGroupItems.length} metas/indicadores</span>
+              <p>{selectedMunicipio} · {title}</p>
+            </div>
+
+            {filteredGroupItems.length === 0 ? (
+              <div className="meta-grid-empty">
+                <p>Nenhum indicador disponível para este município neste tema.</p>
+              </div>
+            ) : (
+              <div className="meta-card-grid">
+                {filteredGroupItems.map((item) => (
+                  <MetaCard
+                    cycle={cycle}
+                    isSelected={item.key === selectedIndicatorKey}
+                    item={item}
+                    key={item.key}
+                    onSelect={() => handleCardSelect(item.key)}
+                    result={normalizedMunicipioResults?.[item.key]}
+                    stageLabel={
+                      selectedGroup?.key === 'educacao_basica'
+                        ? getStageTagLabel(item.key, selectedGroup.filters)
+                        : null
+                    }
+                  />
+                ))}
+              </div>
             )}
-          </aside>
 
-          <IndicatorDetail cycle={cycle} item={activeItem} municipioData={municipioData} ref={detailPanelRef} result={activeResult} />
-        </div>
-      </section>
-
-      <section className="ranking-grid">
-        <RankingBlock
-          title="Avanços no período"
-          items={normalizedRanking.topAvancos}
-          emptyMessage="Nenhum avanço relevante neste tema."
-          unit={normalizedRanking.topAvancos?.[0]?.unit}
-          tone="success"
-        />
-        <RankingBlock
-          title="Pontos de atenção"
-          items={normalizedRanking.topAtencao}
-          emptyMessage="Nenhum indicador crítico neste tema."
-          valueMode="distance"
-          unit={normalizedRanking.topAtencao?.[0]?.unit}
-          tone="warning"
-        />
+            <DataSourceNote className="cycle-source-line" source={CYCLE_SOURCE_NOTE} />
+          </>
+        )}
       </section>
     </div>
   )
@@ -278,6 +370,43 @@ function BasicEducationFilter({ filters, selectedFilter, onSelectFilter }) {
   )
 }
 
+function getStageTagLabel(itemKey, stageFilters = []) {
+  const stages = stageFilters
+    .filter((filter) => filter.key !== 'todos' && filterIncludesItem(filter, itemKey))
+    .map((filter) => filter.key)
+
+  if (!stages.length) return null
+  if (stages.length >= 3) return 'Todas as etapas'
+
+  if (stages.length === 1) {
+    return STAGE_LABELS[stages[0]] ?? null
+  }
+
+  return stages
+    .map((stageKey) => STAGE_COMPACT_LABELS[stageKey])
+    .filter(Boolean)
+    .join(' + ')
+}
+
+function filterIncludesItem(filter, itemKey) {
+  return (
+    filter.indicatorKeys?.includes(itemKey) ||
+    filter.items?.some((item) => item.key === itemKey)
+  )
+}
+
+const STAGE_LABELS = {
+  educacao_infantil: 'Educação Infantil',
+  ensino_fundamental: 'Ensino Fundamental',
+  ensino_medio: 'Ensino Médio',
+}
+
+const STAGE_COMPACT_LABELS = {
+  educacao_infantil: 'Infantil',
+  ensino_fundamental: 'Fundamental',
+  ensino_medio: 'Médio',
+}
+
 function buildCycleManagementStats(categories, municipioResults) {
   const stats = {
     achieved: 0,
@@ -323,150 +452,4 @@ function buildCycleManagementStats(categories, municipioResults) {
     : 0
 
   return stats
-}
-
-function normalizeRankings(rankingsByCategory, categoryItems, municipioResults) {
-  const itemByKey = new Map(categoryItems.map((item) => [item.key, item]))
-  const activeRanking = mergeRankingsByIndicator(rankingsByCategory, itemByKey)
-  const seenAdvanceKeys = new Set()
-  const topAvancos = buildTopAvancos(activeRanking, categoryItems, itemByKey, municipioResults, seenAdvanceKeys)
-
-  const advanceKeys = new Set(topAvancos.map((item) => item.indicator_key))
-  const explicitAttention = (activeRanking?.top_atencao ?? [])
-    .map((item) => normalizeRankingItem(item, itemByKey, municipioResults))
-    .filter((item) => item && itemByKey.has(item.indicator_key))
-  const categoryAttention = categoryItems.map((item) => normalizeRankingItem({
-    indicator_key: item.key,
-    label: item.label,
-    sub: item.sub,
-  }, itemByKey, municipioResults))
-
-  const seenAttentionKeys = new Set()
-  const topAtencao = [...explicitAttention, ...categoryAttention]
-    .filter((item) => {
-      if (!item?.indicator_key || seenAttentionKeys.has(item.indicator_key)) return false
-      seenAttentionKeys.add(item.indicator_key)
-      return !advanceKeys.has(item.indicator_key) && isCriticalRankingItem(item, municipioResults?.[item.indicator_key])
-    })
-    .sort(compareCriticalRankingItems)
-    .slice(0, 3)
-
-  return { topAvancos, topAtencao }
-}
-
-function buildTopAvancos(activeRanking, categoryItems, itemByKey, municipioResults, seenAdvanceKeys) {
-  const fromJson = (activeRanking?.top_avancos ?? [])
-    .map((item) => normalizeRankingItem(item, itemByKey, municipioResults))
-    .filter((item) => item && itemByKey.has(item.indicator_key))
-
-  const result = []
-  const allAdvanceCandidates = [
-    ...fromJson,
-    ...categoryItems.map((item) =>
-      normalizeRankingItem({ indicator_key: item.key, label: item.label, sub: item.sub }, itemByKey, municipioResults)
-    ),
-  ]
-  const seen = new Set()
-  for (const item of allAdvanceCandidates) {
-    if (!item?.indicator_key || seen.has(item.indicator_key)) continue
-    seen.add(item.indicator_key)
-    const variation = parsePpValue(item.display?.variation ?? item.display?.distance)
-    if (!Number.isFinite(variation) || variation <= 0) continue
-    result.push(item)
-  }
-  result.sort((a, b) => (
-    parsePpValue(b.display?.variation ?? b.display?.distance) -
-    parsePpValue(a.display?.variation ?? a.display?.distance)
-  ))
-  const top3 = result.slice(0, 3)
-  top3.forEach((item) => seenAdvanceKeys.add(item.indicator_key))
-  return top3
-}
-
-function resolveRankingLabel(item, categoryItem, key) {
-  const rawLabel = String(item?.label ?? '').trim()
-  const looksLikeSlug = /^[a-z0-9_]+$/i.test(rawLabel)
-
-  if (!rawLabel || rawLabel === key || rawLabel === item?.indicator_key || rawLabel === item?.key || looksLikeSlug) {
-    return categoryItem.label
-  }
-
-  return rawLabel
-}
-
-function normalizeRankingItem(item, itemByKey, municipioResults) {
-  if (!item) return null
-  const key = item.indicator_key ?? item.key
-  const categoryItem = itemByKey.get(key)
-  if (!categoryItem) return null
-  const result = municipioResults?.[key]
-  const unit = resolveIndicatorUnit(categoryItem, result)
-  return {
-    ...item,
-    indicator_key: key,
-    label: resolveRankingLabel(item, categoryItem, key),
-    sub: item.sub ?? categoryItem.sub,
-    unit,
-    display: {
-      ...item.display,
-      ...result?.display,
-    },
-  }
-}
-
-function mergeRankingsByIndicator(rankingsByCategory, itemByKey) {
-  const merged = {
-    top_avancos: [],
-    top_atencao: [],
-  }
-
-  Object.values(rankingsByCategory ?? {}).forEach((categoryRanking) => {
-    ;(categoryRanking?.top_avancos ?? []).forEach((item) => {
-      const key = item?.indicator_key ?? item?.key
-      if (itemByKey.has(key)) merged.top_avancos.push(item)
-    })
-    ;(categoryRanking?.top_atencao ?? []).forEach((item) => {
-      const key = item?.indicator_key ?? item?.key
-      if (itemByKey.has(key)) merged.top_atencao.push(item)
-    })
-  })
-
-  return merged
-}
-
-function isCriticalRankingItem(item, result) {
-  if (!result || !isComparableIndicator(result) || result.atingida === true) return false
-
-  if (isAccumulativeExpansionIndicator({ label: item.label }, result)) return false
-
-  const status = String(result.display?.status ?? item.display?.status ?? '').toLocaleLowerCase('pt-BR')
-  if (status.includes('meta atingida')) return false
-
-  const distance = parsePpValue(result.display?.distance ?? item.display?.distance)
-  if (Number.isFinite(distance)) return distance < 0
-
-  if (status.includes('não atingida') || status.includes('nao atingida')) return true
-
-  const variation = parsePpValue(result.display?.variation ?? item.display?.variation)
-  return Number.isFinite(variation) && variation < 0
-}
-
-function compareCriticalRankingItems(a, b) {
-  const aDistance = parsePpValue(a.display?.distance)
-  const bDistance = parsePpValue(b.display?.distance)
-  if (Number.isFinite(aDistance) && Number.isFinite(bDistance)) return aDistance - bDistance
-  if (Number.isFinite(aDistance)) return -1
-  if (Number.isFinite(bDistance)) return 1
-  return parsePpValue(a.display?.variation) - parsePpValue(b.display?.variation)
-}
-
-function parsePpValue(value) {
-  const text = String(value ?? '').toLocaleLowerCase('pt-BR')
-  const match = text.match(/[-+]?\d+(?:[,.]\d+)?/)
-  if (!match) return Number.NaN
-  const parsed = Number(match[0].replace(',', '.'))
-  if (!Number.isFinite(parsed)) return Number.NaN
-  if (text.includes('queda')) return -Math.abs(parsed)
-  if (text.includes('alta')) return Math.abs(parsed)
-  return parsed
 }

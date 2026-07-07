@@ -1,14 +1,14 @@
 import { useMemo, useState } from 'react'
 
 const CHART_WIDTH = 980
-const CHART_HEIGHT = 300
+const CHART_HEIGHT = 260
 const PADDING = { top: 28, right: 28, bottom: 58, left: 64 }
 
 const ALL_DEPENDENCY_KEYS = [
-  { key: 'federal', label: 'Federal', color: '#ea580c' },
-  { key: 'estadual', label: 'Estadual', color: '#7c3aed' },
-  { key: 'municipal', label: 'Municipal', color: '#2563eb' },
-  { key: 'privada', label: 'Privada', color: '#db2777' },
+  { key: 'federal', label: 'Federal', color: '#3E7A5E', opacity: 0.42 },
+  { key: 'estadual', label: 'Estadual', color: '#3E7A5E', opacity: 0.58 },
+  { key: 'municipal', label: 'Municipal', color: '#3E7A5E', opacity: 0.9 },
+  { key: 'privada', label: 'Privada', color: '#B08A34', opacity: 0.86 },
 ]
 
 function formatNumber(value, unit) {
@@ -22,7 +22,14 @@ function formatNumber(value, unit) {
 function roundUp(value) {
   if (!Number.isFinite(value) || value <= 0) return 1
   const magnitude = 10 ** Math.floor(Math.log10(value))
-  return Math.ceil(value / magnitude) * magnitude
+  const step = magnitude >= 1000
+    ? magnitude / 10
+    : magnitude >= 100
+      ? 50
+      : magnitude >= 10
+        ? 5
+        : 1
+  return Math.ceil(value / step) * step
 }
 
 function shouldShowYearLabel(index, total) {
@@ -34,6 +41,7 @@ function shouldShowYearLabel(index, total) {
 
 export function AdministrativeDependencyChart({
   series,
+  showHeading = true,
   title = 'Por dependência administrativa',
   unit = '',
   valueType,
@@ -73,7 +81,9 @@ export function AdministrativeDependencyChart({
 
   const totals = rows.map((r) => activeKeys.reduce((sum, dep) => sum + (Number.isFinite(r[dep.key]) ? r[dep.key] : 0), 0))
   const values = rows.flatMap((row) => activeKeys.map((dep) => Number.isFinite(row[dep.key]) ? row[dep.key] : 0))
-  const maxValue = isPercent ? Math.max(...values, 1) : roundUp(Math.max(...totals, 1) * 1.1)
+  const maxValue = isPercent
+    ? Math.min(100, roundUp(Math.max(...values, 1) * 1.1))
+    : roundUp(Math.max(...totals, 1) * 1.1)
 
   const plotWidth = CHART_WIDTH - PADDING.left - PADDING.right
   const plotHeight = CHART_HEIGHT - PADDING.top - PADDING.bottom
@@ -95,13 +105,18 @@ export function AdministrativeDependencyChart({
 
   return (
     <section className="complementary-chart complementary-chart--dependency">
-      <div className="complementary-chart__heading">
-        <span className="eyebrow">{title}</span>
-      </div>
+      {showHeading ? (
+        <div className="complementary-chart__heading">
+          <span className="eyebrow">{title}</span>
+        </div>
+      ) : null}
       <div className="complementary-chart__legend complementary-chart__legend--top">
         {activeKeys.map((dep) => (
           <span key={dep.key} className="complementary-chart__legend-item">
-            <span className="complementary-chart__legend-swatch" style={{ backgroundColor: dep.color }} />
+            <span
+              className="complementary-chart__legend-swatch"
+              style={{ backgroundColor: dep.color, opacity: dep.opacity }}
+            />
             {dep.label}
           </span>
         ))}
@@ -126,14 +141,14 @@ export function AdministrativeDependencyChart({
             x2={CHART_WIDTH - PADDING.right}
             y1={CHART_HEIGHT - PADDING.bottom}
             y2={CHART_HEIGHT - PADDING.bottom}
-            className="complementary-chart__axis"
+            className="complementary-chart__axis complementary-chart__axis--x"
           />
           <line
             x1={PADDING.left}
             x2={PADDING.left}
             y1={PADDING.top}
             y2={CHART_HEIGHT - PADDING.bottom}
-            className="complementary-chart__axis"
+            className="complementary-chart__axis complementary-chart__axis--y"
           />
 
           <text x={PADDING.left - 10} y={PADDING.top + 6} textAnchor="end" className="complementary-chart__tick">
@@ -186,22 +201,23 @@ export function AdministrativeDependencyChart({
                         .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
                         .join(' ')
                       return (
-                        <path key={si} d={pathD} fill="none" stroke={dep.color} strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.84" strokeWidth="2.5" />
+                        <path key={si} d={pathD} fill="none" stroke={dep.color} strokeLinecap="round" strokeLinejoin="round" strokeOpacity={dep.opacity} strokeWidth="2.5" />
                       )
                     })}
                     {allPoints.filter((p) => Number.isFinite(p.value)).map((point) => (
                       <circle
                         aria-label={`${point.dependency} ${point.year}: ${formatTooltipValue(point.value)}`}
-                        className={`complementary-chart__dependency-point${activePoint?.dependency === point.dependency && activePoint?.year === point.year ? ' is-active' : ''}`}
+                        className={`complementary-chart__dependency-point${activePoint?.dependency === point.dependency && activePoint?.year === point.year ? ' is-active' : ''}${point.year === maxYear ? ' is-last' : ''}`}
                         cx={point.x}
                         cy={point.y}
                         fill={point.color}
                         key={`${dep.key}-${point.year}`}
+                        opacity={activePoint?.dependency === point.dependency && activePoint?.year === point.year ? 1 : dep.opacity}
                         onBlur={clearActive}
                         onFocus={() => setActivePoint(point)}
                         onMouseEnter={() => setActivePoint(point)}
                         onMouseLeave={clearActive}
-                        r={activePoint?.dependency === point.dependency && activePoint?.year === point.year ? 5 : 3.8}
+                        r={activePoint?.dependency === point.dependency && activePoint?.year === point.year ? 5 : point.year === maxYear ? 4.3 : 3.8}
                         tabIndex="0"
                       />
                     ))}
@@ -260,7 +276,7 @@ export function AdministrativeDependencyChart({
                         onFocus={() => setActivePoint(point)}
                         onMouseEnter={() => setActivePoint(point)}
                         onMouseLeave={clearActive}
-                        opacity={rawBarHeight < 3 ? 0.72 : 0.86}
+                        opacity={isActive ? 1 : Math.max(dep.opacity, rawBarHeight < 3 ? 0.55 : dep.opacity)}
                         rx={3}
                         tabIndex="0"
                         width={barWidth}
