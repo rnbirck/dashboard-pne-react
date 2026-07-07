@@ -45,6 +45,7 @@ export function EducationLineChart({
             <g key={`pt-${i}`}>
               <circle
                 cx={point.x} cy={point.y} r={activePoint?.year === point.year ? 5 : 3.5}
+                className={point.isLast ? 'is-last' : undefined}
                 fill={color}
                 onMouseEnter={() => setActivePoint(point)}
                 onMouseLeave={() => setActivePoint(null)}
