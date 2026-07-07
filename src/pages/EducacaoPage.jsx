@@ -157,8 +157,8 @@ const FINANCIAL_PAGE_COPY = {
 const FINANCING_MODULES = [
   {
     key: FINANCING_MODULE_KEYS.siope,
-    title: 'Indicadores SIOPE',
-    description: 'Aplicação mínima, FUNDEB, gasto por aluno, receitas e resultado financeiro.',
+    title: 'Aplicação dos Recursos',
+    description: 'Receitas, despesas, mínimos legais, FUNDEB, gasto por aluno e saldos declarados ao SIOPE/FNDE.',
     count: `${SIOPE_SELECTED_INDICATORS_COUNT} indicadores`,
   },
   {

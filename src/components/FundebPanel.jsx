@@ -3,6 +3,16 @@ import { FUNDEB_INDICATORS, formatFundebValue, getLimiteReferencia } from '../da
 import { DataSourceNote } from './DataSourceNote'
 import { IndicatorHistoryChart } from '../components/IndicatorHistoryChart'
 import { EducationSummaryCard } from './EducationSummaryCard'
+import {
+  FinancialChartFrame,
+  FinancialDetailHeader,
+  FinancialDetailNavigation,
+  FinancialIndicatorCard,
+  FinancialMetricGrid,
+  FinancialQuickReading,
+  FinancialReferenceBox,
+  FinancialSupportData,
+} from './FinancialIndicatorPrimitives'
 
 const FUNDEB_READING_CARDS = [
   {
@@ -84,6 +94,98 @@ function findUltimoRegistro(historico, ultimo_ano) {
     .sort((a, b) => Number(b.ano) - Number(a.ano))[0] ?? null
 }
 
+function firstAvailable(series) {
+  return [...series]
+    .filter((point) => point.valor !== null && point.valor !== undefined && Number.isFinite(Number(point.valor)))
+    .sort((a, b) => Number(a.ano) - Number(b.ano))[0] ?? null
+}
+
+function latestAvailable(series) {
+  return [...series]
+    .filter((point) => point.valor !== null && point.valor !== undefined && Number.isFinite(Number(point.valor)))
+    .sort((a, b) => Number(b.ano) - Number(a.ano))[0] ?? null
+}
+
+function buildSeriesForIndicator(historico, indicator) {
+  return filterCrechePreEscola(historico ?? [], indicator.key)
+    .filter((entry) => entry.ano != null)
+    .map((entry) => ({ ano: entry.ano, valor: entry[indicator.key] ?? null }))
+}
+
+function getFundebStatus(indicator, latest, variation) {
+  if (latest?.valor === null || latest?.valor === undefined || !Number.isFinite(Number(latest.valor))) {
+    return { label: 'Sem dados', tone: 'muted' }
+  }
+
+  if (indicator.key === 'percentual_minimo_remuneracao_profissionais') {
+    const minimum = getLimiteReferencia(latest.ano)
+    return Number(latest.valor) >= minimum
+      ? { label: 'Acima do mínimo', tone: 'success' }
+      : { label: 'Abaixo do mínimo', tone: 'warning' }
+  }
+
+  if (variation === null) return { label: 'Com dados', tone: 'info' }
+  if (variation > 0) return { label: 'Alta', tone: 'success' }
+  if (variation < 0) return { label: 'Queda', tone: 'warning' }
+  return { label: 'Estável', tone: 'muted' }
+}
+
+function buildFundebHistorySummary(model) {
+  if (!model.initialYear || !model.currentYear || model.initialYear === model.currentYear) return ''
+  return `Série de ${model.initialYear} a ${model.currentYear}: ${model.initialDisplay} no início e ${model.currentDisplay} no dado mais recente.`
+}
+
+function buildFundebQuickReading(model) {
+  if (!model.currentYear || model.currentDisplay === '—') {
+    return 'O município não possui dado disponível para este indicador no período carregado.'
+  }
+  if (model.raw.key === 'percentual_minimo_remuneracao_profissionais') {
+    return model.statusTone === 'success'
+      ? `O município alcançou o mínimo de remuneração do FUNDEB no dado mais recente disponível.`
+      : `O município ficou abaixo do mínimo de remuneração do FUNDEB no dado mais recente disponível.`
+  }
+  if (model.variationDisplay === '—') return `O indicador mais recente disponível é de ${model.currentYear}.`
+  const movement = model.variationTone === 'success'
+    ? 'alta'
+    : model.variationTone === 'warning'
+      ? 'queda'
+      : 'estabilidade'
+  return `O indicador mais recente disponível é de ${model.currentYear}; a série aponta ${movement} no período observado.`
+}
+
+function buildFundebIndicatorModel(indicator, historico) {
+  const series = buildSeriesForIndicator(historico, indicator)
+  const first = firstAvailable(series)
+  const latest = latestAvailable(series)
+  const variation = calcVariation(latest?.valor, first?.valor, indicator.tipo)
+  const status = getFundebStatus(indicator, latest, variation)
+  const model = {
+    description: getIndicatorHelpText(indicator),
+    initialDisplay: first ? formatFundebValue(first.valor, indicator.tipo) : '—',
+    initialYear: first?.ano ?? null,
+    key: indicator.key,
+    label: indicator.label,
+    moduleLabel: 'FUNDEB',
+    currentDisplay: latest ? formatFundebValue(latest.valor, indicator.tipo) : '—',
+    currentYear: latest?.ano ?? null,
+    sourceLabel: latest?.ano ? `FUNDEB ${latest.ano}` : 'FUNDEB',
+    statusLabel: status.label,
+    statusTone: status.tone,
+    unitLabel: indicator.tipo === 'percentual' ? 'Percentual' : 'Financeiro',
+    variationDisplay: variation === null ? '—' : formatVariation(variation, indicator.tipo),
+    variationLabel: first?.ano ? `Variação desde ${first.ano}` : 'Variação no período',
+    variationTone: variation === null ? 'muted' : variation > 0 ? 'success' : variation < 0 ? 'warning' : 'muted',
+    series,
+    raw: indicator,
+  }
+
+  return {
+    ...model,
+    historySummary: buildFundebHistorySummary(model),
+    quickReading: buildFundebQuickReading(model),
+  }
+}
+
 function getIndicatorHelpText(indicator) {
   return indicator?.description || 'Acompanhe a evolução anual deste indicador.'
 }
@@ -124,6 +226,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
   const fundebData = rawFundebData ?? {}
   const [selectedKey, setSelectedKey] = useState(FUNDEB_INDICATORS[0].key)
   const [searchQuery, setSearchQuery] = useState('')
+  const [isDetailOpen, setIsDetailOpen] = useState(false)
 
   const selectedIndicator = useMemo(
     () => FUNDEB_INDICATORS.find((ind) => ind.key === selectedKey) ?? FUNDEB_INDICATORS[0],
@@ -161,6 +264,27 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
       return text.includes(query)
     })
   }, [searchQuery])
+  const indicatorModels = useMemo(
+    () => filteredItems.map((indicator) => buildFundebIndicatorModel(indicator, historico ?? [])),
+    [filteredItems, historico],
+  )
+  const selectedIndicatorModel = indicatorModels.find((indicator) => indicator.key === selectedKey) ?? indicatorModels[0] ?? null
+  const selectedIndex = selectedIndicatorModel
+    ? indicatorModels.findIndex((indicator) => indicator.key === selectedIndicatorModel.key)
+    : -1
+  const previousIndicator = selectedIndex > 0 ? indicatorModels[selectedIndex - 1] : null
+  const nextIndicator = selectedIndex >= 0 && selectedIndex < indicatorModels.length - 1
+    ? indicatorModels[selectedIndex + 1]
+    : null
+
+  function handleIndicatorSelect(indicatorKey) {
+    setSelectedKey(indicatorKey)
+    setIsDetailOpen(true)
+  }
+
+  function handleBackToGrid() {
+    setIsDetailOpen(false)
+  }
 
   if (!hasFundebData) {
     return (
@@ -229,7 +353,143 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
         </div>
       </section>
 
-      <section className="page-card fundeb-workspace">
+      {isDetailOpen && selectedIndicatorModel ? (
+        <div className="financial-detail-view education-detail-view">
+          <FinancialDetailNavigation
+            activeIndex={selectedIndex}
+            nextIndicator={nextIndicator}
+            onBack={handleBackToGrid}
+            onNext={handleIndicatorSelect}
+            onPrevious={handleIndicatorSelect}
+            previousIndicator={previousIndicator}
+            total={indicatorModels.length}
+          />
+          <section className="detail-panel educacao-detail-panel financial-detail-panel fundeb-detail">
+            <FinancialDetailHeader indicator={selectedIndicatorModel} />
+            <FinancialReferenceBox>{selectedIndicatorModel.description}</FinancialReferenceBox>
+            <FinancialMetricGrid indicator={selectedIndicatorModel} />
+            <FinancialQuickReading text={selectedIndicatorModel.quickReading} tone={selectedIndicatorModel.statusTone} />
+
+            {(selectedKey === 'despesa_remuneracao_profissionais_creche' || selectedKey === 'despesa_remuneracao_profissionais_pre_escola') && (
+              <p className="fundeb-indicator-note"><strong>Nota metodológica:</strong> Série exibida a partir de 2021 para manter comparabilidade com a estrutura do Novo FUNDEB.</p>
+            )}
+
+            <FinancialChartFrame
+              subtitle={`${selectedIndicator.label} · FUNDEB`}
+              summary={selectedIndicatorModel.historySummary}
+              source={(
+                <DataSourceNote
+                  className="fundeb-data-source"
+                  context={{
+                    block: 'fundeb',
+                    detailType: 'chart',
+                    indicatorKey: selectedIndicator?.key,
+                    indicatorName: selectedIndicator?.label,
+                  }}
+                />
+              )}
+            >
+              {validSeries.length >= 2 ? (
+                <IndicatorHistoryChart
+                  chartHeight={340}
+                  endYear={series[series.length - 1].ano}
+                  formatDataLabel={chartUnit === 'currency' ? (v) => formatCompactDataLabel(v, 'financeiro') : (v) => formatCompactDataLabel(v, 'percentual')}
+                  formatYAxis={chartUnit === 'currency' ? formatCompactCurrency : undefined}
+                  item={{ label: selectedIndicator.label }}
+                  labelMode="all"
+                  missingLabel="—"
+                  result={null}
+                  series={series}
+                  showMetaLine={false}
+                  showMissingPoints={true}
+                  startYear={series[0].ano}
+                  title={selectedIndicator.label}
+                  unit={chartUnit}
+                  yTickCount={5}
+                />
+              ) : (
+                <div className="fundeb-empty fundeb-empty--chart">
+                  <p>Não há pontos suficientes para exibir o gráfico deste indicador.</p>
+                </div>
+              )}
+            </FinancialChartFrame>
+
+            {series.length >= 1 ? (
+              <FinancialSupportData subtitle="Tabela anual do demonstrativo do FUNDEB para o indicador selecionado.">
+                <div className="fundeb-table-card financial-support-table">
+                  <div className="fundeb-table-card__header">
+                    <div>
+                      <h4>Histórico do indicador</h4>
+                    </div>
+                  </div>
+                  <div className="fundeb-table-wrap">
+                    <table className="fundeb-table">
+                      <thead>
+                        <tr>
+                          <th>Ano</th>
+                          <th>Valor</th>
+                          <th>Variação anual</th>
+                          {isPercentual && <th>Mínimo exigido</th>}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {historicoVisivel
+                          .filter((h) => h.ano != null)
+                          .map((entry, index) => {
+                            const prev = index > 0 ? historicoVisivel[index - 1] : null
+                            const currentVal = entry[selectedIndicator.key]
+                            const prevVal = prev?.[selectedIndicator.key]
+                            const vari = prev != null ? calcVariation(currentVal, prevVal, selectedIndicator.tipo) : null
+                            return (
+                              <tr key={entry.ano}>
+                                <td>{entry.ano}</td>
+                                <td>{formatFundebValue(currentVal, selectedIndicator.tipo)}</td>
+                                <td><span className={
+                                  index === 0 || vari == null
+                                    ? 'fundeb-variation-neutral'
+                                    : vari > 0
+                                      ? 'fundeb-variation-positive'
+                                      : vari < 0
+                                        ? 'fundeb-variation-negative'
+                                        : 'fundeb-variation-neutral'
+                                }>{index === 0 ? '—' : formatVariation(vari, selectedIndicator.tipo)}</span></td>
+                                {isPercentual && <td>{getLimiteReferencia(entry.ano)}%</td>}
+                              </tr>
+                            )
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <DataSourceNote
+                    className="fundeb-data-source"
+                    context={{
+                      block: 'fundeb',
+                      detailType: 'table',
+                      indicatorKey: selectedIndicator?.key,
+                      indicatorName: selectedIndicator?.label,
+                    }}
+                  />
+                </div>
+              </FinancialSupportData>
+            ) : (
+              <div className="fundeb-empty">
+                <p>Este indicador não possui série histórica disponível para este município.</p>
+              </div>
+            )}
+          </section>
+          <FinancialDetailNavigation
+            activeIndex={selectedIndex}
+            isBottom
+            nextIndicator={nextIndicator}
+            onBack={handleBackToGrid}
+            onNext={handleIndicatorSelect}
+            onPrevious={handleIndicatorSelect}
+            previousIndicator={previousIndicator}
+            total={indicatorModels.length}
+          />
+        </div>
+      ) : (
+      <section className="financial-indicator-section fundeb-workspace financial-grid-workspace">
         <div className="fundeb-workspace-layout educacao-analysis-layout">
             <aside className="indicator-sidebar">
               <div className="indicator-sidebar__heading">
@@ -249,41 +509,25 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
                   aria-label="Buscar indicador"
                 />
               </label>
-              <div className="indicator-list">
-                {filteredItems.length === 0 ? (
+              <div className="indicator-list financial-indicator-card-grid">
+                {indicatorModels.length === 0 ? (
                   <div className="indicator-sidebar__empty">
                     <p>Nenhum indicador encontrado.</p>
                   </div>
                 ) : (
-                  filteredItems.map((indicator) => (
-                    <button
+                  indicatorModels.map((indicator) => (
+                    <FinancialIndicatorCard
+                      indicator={indicator}
+                      isSelected={indicator.key === selectedKey}
                       key={indicator.key}
-                      type="button"
-                      className={
-                        indicator.key === selectedKey
-                          ? 'indicator-row is-active'
-                          : 'indicator-row'
-                      }
-                      onClick={() => setSelectedKey(indicator.key)}
-                    >
-                      <span className="indicator-row__label">{indicator.label}</span>
-                      <span className="indicator-row__description">{getIndicatorHelpText(indicator)}</span>
-                      <span className="indicator-row__badges">
-                        <span className={
-                          indicator.tipo === 'percentual'
-                            ? 'indicator-stage-badge indicator-stage-badge--pct'
-                            : 'indicator-stage-badge'
-                        }>
-                          {indicator.tipo === 'percentual' ? 'Percentual' : 'Financeiro'}
-                        </span>
-                      </span>
-                    </button>
+                      onSelect={() => handleIndicatorSelect(indicator.key)}
+                    />
                   ))
                 )}
               </div>
             </aside>
 
-          <div className="fundeb-detail">
+          <div className="fundeb-detail fundeb-detail--legacy">
             <div className="fundeb-detail-header">
               <div>
                 <span className="eyebrow">Indicador selecionado</span>
@@ -402,6 +646,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
           </div>
         </div>
       </section>
+      )}
     </div>
   )
 }
