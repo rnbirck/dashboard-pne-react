@@ -16,6 +16,7 @@ import { Diagnostico } from './pages/Diagnostico'
 import { EducacaoPage } from './pages/EducacaoPage'
 import { MunicipalitySelector } from './components/MunicipalitySelector'
 import { Home } from './pages/Home'
+import { PneOverviewPage } from './pages/PneOverviewPage'
 import { useAsyncData } from './utils/useAsyncData'
 
 function App() {
@@ -132,6 +133,10 @@ function PageContent({
         selectedMunicipio={selectedMunicipio}
       />
     )
+  }
+
+  if (activePage === 'pne-overview') {
+    return <PneOverviewPage onNavigate={onNavigate} />
   }
 
   if (!selectedMunicipio) {

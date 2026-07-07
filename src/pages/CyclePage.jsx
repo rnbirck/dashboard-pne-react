@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { CategoryTabs } from '../components/CategoryTabs'
 import { DataSourceNote } from '../components/DataSourceNote'
 import { IndicatorDetail } from '../components/IndicatorDetail'
@@ -24,8 +24,9 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   const [selectedIndicatorKey, setSelectedIndicatorKey] = useState('')
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const detailPanelRef = useRef(null)
+  const detailViewRef = useRef(null)
   const gridScrollYRef = useRef(0)
+  const shouldScrollToDetailTopRef = useRef(false)
 
   const selectedGroup = useMemo(() => {
     if (!thematicGroups.length) return null
@@ -85,6 +86,15 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   )
   const isShowingDetail = Boolean(isDetailOpen && activeItem)
 
+  useEffect(() => {
+    if (!isShowingDetail || !shouldScrollToDetailTopRef.current) return
+
+    shouldScrollToDetailTopRef.current = false
+    window.requestAnimationFrame(() => {
+      detailViewRef.current?.scrollIntoView({ block: 'start', behavior: 'auto' })
+    })
+  }, [activeItem?.key, isShowingDetail])
+
   function handleGroupSelect(groupKey) {
     setSelectedGroupKey(groupKey)
     setSelectedBasicEducationFilterKey('todos')
@@ -102,11 +112,9 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
 
   function handleCardSelect(itemKey) {
     gridScrollYRef.current = window.scrollY
+    shouldScrollToDetailTopRef.current = true
     setSelectedIndicatorKey(itemKey)
     setIsDetailOpen(true)
-    window.requestAnimationFrame(() => {
-      detailPanelRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
-    })
   }
 
   function handleBackToGrid() {
@@ -117,11 +125,9 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   }
 
   function handleAdjacentMeta(itemKey) {
+    shouldScrollToDetailTopRef.current = true
     setSelectedIndicatorKey(itemKey)
     setIsDetailOpen(true)
-    window.requestAnimationFrame(() => {
-      detailPanelRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
-    })
   }
 
   return (
@@ -173,7 +179,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
 
       <section className="cycle-workspace cycle-card-workspace">
         {isShowingDetail ? (
-          <div className="cycle-detail-view">
+          <div className="cycle-detail-view" ref={detailViewRef}>
             <div className="cycle-detail-nav">
               <button className="cycle-back-button" type="button" onClick={handleBackToGrid}>
                 &larr; Voltar para metas
@@ -206,7 +212,6 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
               cycle={cycle}
               item={activeItem}
               municipioData={municipioData}
-              ref={detailPanelRef}
               result={activeResult}
             />
             <div className="cycle-detail-nav cycle-detail-nav--bottom">

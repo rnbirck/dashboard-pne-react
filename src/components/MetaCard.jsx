@@ -36,10 +36,11 @@ export function MetaCard({
   const identifier = item?.metaRef ? `Meta ${item.metaRef}` : 'Indicador'
   const title = getIndicatorTitle(item, result)
   const goalReference = getGoalReference(cycle, item)
+  const isNextCycle = cycle === 'pne_2026_2036'
 
   return (
     <button
-      className={`meta-card meta-card--${status.state}${isSelected ? ' is-selected' : ''}`}
+      className={`meta-card meta-card--${status.state}${isNextCycle ? ' meta-card--next-cycle' : ''}${isSelected ? ' is-selected' : ''}`}
       type="button"
       onClick={onSelect}
       aria-pressed={isSelected}
@@ -52,8 +53,8 @@ export function MetaCard({
 
       <span className="meta-card__title">{title}</span>
       {goalReference ? (
-        <span className="meta-card__pne-reference">
-          <strong>{identifier}</strong>
+        <span className={`meta-card__pne-reference${isNextCycle ? ' meta-card__pne-reference--full' : ''}`}>
+          <strong>{identifier}</strong>{' '}
           <span>— {goalReference}</span>
         </span>
       ) : null}

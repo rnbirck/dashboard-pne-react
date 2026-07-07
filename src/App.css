@@ -12937,6 +12937,10 @@
   gap: 9px;
 }
 
+.cycle-page .cycle-detail-view {
+  scroll-margin-top: 96px;
+}
+
 .cycle-detail-nav {
   gap: 9px;
 }
@@ -13142,5 +13146,892 @@
 
   .cycle-detail-nav--bottom .cycle-detail-nav__sequence {
     justify-content: space-between;
+  }
+}
+
+/* PNE 2026 goal cards - full goal reference */
+.meta-card--next-cycle {
+  min-height: 374px;
+  grid-template-rows: auto minmax(36px, auto) auto auto auto auto 48px minmax(30px, 1fr) auto;
+}
+
+.meta-card--next-cycle .meta-card__pne-reference,
+.meta-card__pne-reference--full {
+  width: 100%;
+  display: block;
+  overflow: visible;
+  color: var(--text-muted);
+  font-size: 0.73rem;
+  line-height: 1.4;
+  opacity: 1;
+  white-space: normal;
+}
+
+.meta-card--next-cycle .meta-card__pne-reference strong,
+.meta-card__pne-reference--full strong {
+  color: var(--green-deep);
+  font-size: 0.68rem;
+  font-weight: 760;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+  margin-right: 4px;
+  text-transform: uppercase;
+}
+
+.meta-card--next-cycle .meta-card__pne-reference span,
+.meta-card__pne-reference--full span {
+  min-width: 0;
+  display: inline;
+  overflow: visible;
+  line-height: 1.42;
+  text-overflow: clip;
+  text-wrap: pretty;
+  white-space: normal;
+}
+
+/* Plano Nacional de Educação overview */
+.pne-overview-page {
+  gap: 22px;
+}
+
+.pne-overview-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+  gap: 24px;
+  align-items: stretch;
+  padding: 28px;
+  border-color: var(--border-card);
+  background:
+    linear-gradient(135deg, rgba(62, 122, 94, 0.08), transparent 42%),
+    #ffffff;
+}
+
+.pne-overview-hero__copy {
+  max-width: 76ch;
+  display: grid;
+  align-content: center;
+  gap: 10px;
+}
+
+.pne-overview-hero h1,
+.pne-overview-section__heading h2,
+.pne-overview-intro h2 {
+  margin: 0;
+  color: var(--text-strong);
+  font-family: var(--font-serif);
+  letter-spacing: 0;
+}
+
+.pne-overview-hero h1 {
+  max-width: 16ch;
+  font-size: clamp(2rem, 4vw, 3.65rem);
+  font-weight: 700;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+
+.pne-overview-hero p,
+.pne-overview-section__heading p,
+.pne-overview-intro p,
+.pne-concept-card p,
+.pne-objective-card p,
+.pne-entry-card p,
+.pne-guideline-item p,
+.pne-overview-source p {
+  margin: 0;
+}
+
+.pne-overview-hero__copy > p {
+  max-width: 62ch;
+  color: var(--text-body);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.pne-overview-hero__cycle {
+  padding: 20px;
+  border: 1px solid rgba(62, 122, 94, 0.2);
+  border-radius: 14px;
+  background: rgba(62, 122, 94, 0.07);
+  display: grid;
+  align-content: end;
+  gap: 8px;
+}
+
+.pne-overview-hero__cycle span {
+  color: var(--green-deep);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pne-overview-hero__cycle strong {
+  color: var(--text-strong);
+  font-family: var(--font-serif);
+  font-size: 1.45rem;
+  line-height: 1.08;
+}
+
+.pne-overview-hero__cycle p {
+  color: var(--text-body);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.pne-overview-intro {
+  display: grid;
+  grid-template-columns: minmax(210px, 0.34fr) minmax(0, 1fr);
+  gap: 20px 28px;
+  padding: 24px;
+}
+
+.pne-overview-intro h2,
+.pne-overview-section__heading h2 {
+  font-size: 1.55rem;
+  font-weight: 650;
+  line-height: 1.18;
+}
+
+.pne-overview-intro > p {
+  color: var(--text-body);
+  font-size: 0.94rem;
+  line-height: 1.58;
+}
+
+.pne-overview-intro__note {
+  grid-column: 2;
+  padding: 12px 14px;
+  border: 1px solid rgba(62, 122, 94, 0.14);
+  border-radius: 10px;
+  background: rgba(62, 122, 94, 0.055);
+  color: var(--green-deep);
+}
+
+.pne-overview-section {
+  display: grid;
+  gap: 14px;
+}
+
+.pne-overview-section__heading {
+  max-width: 78ch;
+  display: grid;
+  gap: 7px;
+}
+
+.pne-overview-section__heading p {
+  color: var(--text-body);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.pne-overview-section--split {
+  grid-template-columns: minmax(240px, 0.36fr) minmax(0, 1fr);
+  gap: 24px;
+  padding: 24px;
+}
+
+.pne-concept-grid,
+.pne-entry-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.pne-concept-card,
+.pne-objective-card,
+.pne-entry-card {
+  border: 1px solid var(--border-card);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
+}
+
+.pne-concept-card {
+  min-height: 154px;
+  padding: 18px;
+  display: grid;
+  align-content: start;
+  gap: 9px;
+}
+
+.pne-concept-card h3 {
+  margin: 0;
+  color: var(--green-deep);
+  font-size: 1rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.pne-concept-card p,
+.pne-objective-card p {
+  color: var(--text-body);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.pne-guideline-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+}
+
+.pne-guideline-item {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 9px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.pne-guideline-item span {
+  width: 7px;
+  height: 7px;
+  margin-top: 7px;
+  border-radius: 50%;
+  background: var(--green-primary);
+}
+
+.pne-guideline-item p {
+  color: var(--text-body);
+  font-size: 0.86rem;
+  line-height: 1.48;
+}
+
+.pne-objective-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pne-objective-card {
+  min-height: 112px;
+  padding: 14px;
+  display: grid;
+  align-content: start;
+}
+
+.pne-entry-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pne-entry-card {
+  min-height: 180px;
+  padding: 18px;
+  color: var(--text);
+  cursor: pointer;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  text-align: left;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+.pne-entry-card:hover {
+  border-color: rgba(62, 122, 94, 0.32);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.pne-entry-card:focus-visible {
+  outline: 2px solid var(--green-primary);
+  outline-offset: 3px;
+}
+
+.pne-entry-card span {
+  color: var(--text-strong);
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  font-weight: 650;
+  line-height: 1.18;
+}
+
+.pne-entry-card p {
+  color: var(--text-body);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.pne-entry-card strong {
+  margin-top: auto;
+  color: var(--green-deep);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.pne-overview-source {
+  padding: 18px 0 0;
+  border-top: 1px solid var(--border-line);
+  color: var(--text-muted);
+  display: grid;
+  gap: 7px;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.pne-overview-source div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.pne-overview-source a {
+  color: var(--green-deep);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.pne-overview-source a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 1180px) {
+  .pne-concept-grid,
+  .pne-objective-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .pne-overview-hero,
+  .pne-overview-intro,
+  .pne-overview-section--split,
+  .pne-entry-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pne-overview-intro__note {
+    grid-column: auto;
+  }
+
+  .pne-guideline-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .pne-overview-hero,
+  .pne-overview-intro,
+  .pne-overview-section--split {
+    padding: 18px;
+  }
+
+  .pne-overview-hero h1 {
+    font-size: 2rem;
+  }
+
+  .pne-concept-grid,
+  .pne-objective-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Plano Nacional de Educação overview refinements */
+.pne-overview-page {
+  gap: 22px;
+}
+
+.pne-overview-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 22px;
+  align-items: stretch;
+  padding: 24px;
+  background:
+    linear-gradient(135deg, rgba(62, 122, 94, 0.08), transparent 44%),
+    #ffffff;
+}
+
+.pne-overview-hero__copy {
+  max-width: min(100%, 960px);
+  gap: 12px;
+}
+
+.pne-overview-hero h1 {
+  max-width: 20ch;
+  font-size: clamp(1.85rem, 3.1vw, 3rem);
+  line-height: 1.05;
+}
+
+.pne-overview-hero__copy > p {
+  max-width: 940px;
+  font-size: 0.98rem;
+}
+
+.pne-legal-card {
+  min-height: 100%;
+  padding: 18px;
+  border: 1px solid rgba(62, 122, 94, 0.2);
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(180deg, rgba(62, 122, 94, 0.08), rgba(62, 122, 94, 0.035)),
+    #fbfdf9;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.pne-legal-card__eyebrow {
+  color: var(--green-deep);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.pne-legal-card strong {
+  color: var(--text-strong);
+  font-family: var(--font-serif);
+  font-size: 1.36rem;
+  font-weight: 680;
+  line-height: 1.1;
+}
+
+.pne-legal-card dl {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.pne-legal-card dl div {
+  min-width: 0;
+  padding: 8px 0 0;
+  border-top: 1px solid rgba(62, 122, 94, 0.14);
+  display: grid;
+  grid-template-columns: minmax(82px, 0.42fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.pne-legal-card dt,
+.pne-legal-card dd {
+  margin: 0;
+  min-width: 0;
+}
+
+.pne-legal-card dt {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.pne-legal-card dd {
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.pne-overview-intro {
+  grid-template-columns: 1fr;
+  gap: 16px;
+  padding: 20px;
+}
+
+.pne-overview-intro__heading {
+  width: 100%;
+  max-width: 1080px;
+  display: grid;
+  gap: 8px;
+}
+
+.pne-overview-intro__heading p {
+  max-width: 1060px;
+  margin: 0;
+  color: var(--text-body);
+  font-size: 0.94rem;
+  line-height: 1.58;
+}
+
+.pne-intro-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pne-intro-card {
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid rgba(62, 122, 94, 0.14);
+  border-radius: var(--radius-sm);
+  background: rgba(62, 122, 94, 0.045);
+  display: grid;
+  gap: 8px;
+}
+
+.pne-intro-card > span {
+  width: 28px;
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--green-primary);
+}
+
+.pne-intro-card h3,
+.pne-anchor-card h3 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 0.96rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.pne-intro-card p,
+.pne-anchor-card p {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  color: var(--text-body);
+  font-size: 0.86rem;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.pne-overview-section {
+  gap: 14px;
+}
+
+.pne-overview-section__heading {
+  width: 100%;
+  max-width: 1120px;
+  gap: 8px;
+}
+
+.pne-overview-section__heading h2,
+.pne-overview-intro h2 {
+  font-size: clamp(1.32rem, 2vw, 1.68rem);
+}
+
+.pne-overview-section__heading p {
+  max-width: 1100px;
+  font-size: 0.92rem;
+}
+
+.pne-overview-section--guided {
+  padding: 20px;
+}
+
+.pne-concept-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.pne-concept-card {
+  min-height: 198px;
+  padding: 18px;
+  align-content: start;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.pne-concept-card__index {
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--green-soft);
+  color: var(--green-deep);
+  font-size: 0.7rem;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.pne-concept-card h3 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.pne-concept-card p {
+  width: 100%;
+  max-width: none;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.pne-concept-card__note {
+  margin-top: 2px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(62, 122, 94, 0.12);
+  color: var(--green-deep);
+  font-weight: 680;
+}
+
+.pne-guideline-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pne-guideline-summary span {
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid rgba(62, 122, 94, 0.14);
+  border-left: 3px solid var(--green-primary);
+  border-radius: var(--radius-sm);
+  background: #fbfaf6;
+  color: var(--text-body);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.pne-expandable-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pne-expandable-grid--wide {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pne-expandable {
+  min-width: 0;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.pne-expandable:hover {
+  border-color: rgba(62, 122, 94, 0.28);
+  box-shadow: var(--shadow-md);
+}
+
+.pne-expandable[open] {
+  border-color: rgba(62, 122, 94, 0.34);
+  background: #fffefa;
+}
+
+.pne-expandable summary {
+  min-height: 72px;
+  padding: 15px 16px;
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.pne-expandable summary::-webkit-details-marker {
+  display: none;
+}
+
+.pne-expandable summary:focus-visible {
+  outline: 2px solid var(--green-primary);
+  outline-offset: -2px;
+}
+
+.pne-expandable__summary {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.pne-expandable__summary > span {
+  color: var(--text-strong);
+  font-size: 0.94rem;
+  font-weight: 820;
+  line-height: 1.25;
+}
+
+.pne-expandable__summary small {
+  color: var(--green-deep);
+  font-size: 0.73rem;
+  font-weight: 780;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+}
+
+.pne-expandable__marker {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  border: 1px solid rgba(62, 122, 94, 0.24);
+  border-radius: var(--radius-pill);
+  background: rgba(62, 122, 94, 0.06);
+  position: relative;
+  transition: background 0.16s ease, transform 0.16s ease;
+}
+
+.pne-expandable__marker::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  left: 9px;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid var(--green-deep);
+  border-bottom: 2px solid var(--green-deep);
+  transform: rotate(45deg);
+  transition: transform 0.16s ease, top 0.16s ease;
+}
+
+.pne-expandable[open] .pne-expandable__marker {
+  background: var(--green-soft);
+}
+
+.pne-expandable[open] .pne-expandable__marker::before {
+  top: 10px;
+  transform: rotate(225deg);
+}
+
+.pne-expandable__body {
+  padding: 0 16px 16px;
+  display: grid;
+  gap: 10px;
+  max-width: none;
+}
+
+.pne-expandable__body p {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  color: var(--text-body);
+  font-size: 0.86rem;
+  line-height: 1.52;
+  text-wrap: pretty;
+}
+
+.pne-expandable__note {
+  padding: 10px 12px;
+  border-left: 3px solid rgba(62, 122, 94, 0.55);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: rgba(62, 122, 94, 0.055);
+}
+
+.pne-expandable__note strong {
+  color: var(--green-deep);
+}
+
+.pne-anchor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pne-anchor-card {
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid rgba(62, 122, 94, 0.14);
+  border-radius: var(--radius-sm);
+  background: #fbfaf6;
+  display: grid;
+  gap: 7px;
+}
+
+.pne-entry-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pne-entry-card {
+  min-height: 198px;
+  padding: 17px;
+  grid-template-rows: auto auto 1fr auto;
+  align-content: stretch;
+  gap: 10px;
+  border-radius: var(--radius-sm);
+}
+
+.pne-entry-card .pne-entry-card__indicator {
+  width: fit-content;
+  padding: 5px 9px 5px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--green-soft);
+  color: var(--green-deep);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 820;
+  line-height: 1;
+}
+
+.pne-entry-card .pne-entry-card__indicator span {
+  width: 25px;
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background:
+    linear-gradient(90deg, var(--green-primary) 0 62%, rgba(62, 122, 94, 0.22) 62% 100%);
+}
+
+.pne-entry-card .pne-entry-card__title {
+  color: var(--text-strong);
+  font-family: var(--font-serif);
+  font-size: 1.18rem;
+  font-weight: 680;
+  line-height: 1.16;
+}
+
+.pne-entry-card p {
+  width: 100%;
+  max-width: none;
+  font-size: 0.86rem;
+  text-wrap: pretty;
+}
+
+.pne-entry-card strong {
+  font-size: 0.78rem;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.pne-overview-source {
+  margin-top: 2px;
+}
+
+@media (max-width: 1180px) {
+  .pne-overview-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  }
+
+  .pne-concept-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pne-intro-grid,
+  .pne-guideline-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .pne-overview-hero,
+  .pne-entry-grid,
+  .pne-expandable-grid,
+  .pne-expandable-grid--wide,
+  .pne-anchor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pne-overview-hero h1 {
+    max-width: 24ch;
+  }
+}
+
+@media (max-width: 620px) {
+  .pne-overview-hero,
+  .pne-overview-intro,
+  .pne-overview-section--guided {
+    padding: 18px;
+  }
+
+  .pne-overview-hero h1 {
+    font-size: 1.9rem;
+  }
+
+  .pne-concept-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pne-legal-card dl div {
+    grid-template-columns: 1fr;
+    gap: 3px;
   }
 }

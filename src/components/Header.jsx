@@ -7,14 +7,15 @@ const NAV_BLOCKS = [
   },
   {
     icon: TargetIcon,
-    key: 'metas',
-    label: 'Metas do PNE',
+    key: 'pne',
+    label: 'Plano Nacional de Educação',
     subitems: [
+      { key: 'pne-overview', label: 'O que é o PNE', target: 'pne-overview' },
       { key: 'pne2014', label: 'PNE 2014-2024', target: 'pne2014' },
       { key: 'pne2026', label: 'PNE 2026-2036', target: 'pne2026' },
       { key: 'diagnostico', label: 'Diagnóstico municipal', target: 'diagnostico' },
     ],
-    target: 'pne2026',
+    target: 'pne-overview',
   },
   {
     icon: EducationIcon,
@@ -30,7 +31,7 @@ const NAV_BLOCKS = [
   },
 ]
 
-const META_PAGES = new Set(['pne2014', 'pne2026', 'diagnostico'])
+const PNE_PAGES = new Set(['pne-overview', 'pne2014', 'pne2026', 'diagnostico'])
 
 export function Header({ activePage, onNavigate }) {
   return (
@@ -49,8 +50,8 @@ export function Header({ activePage, onNavigate }) {
       <nav className="top-nav" aria-label="Navegação principal">
         {NAV_BLOCKS.map((item) => {
           const Icon = item.icon
-          const isActive = item.key === 'metas'
-            ? META_PAGES.has(activePage)
+          const isActive = item.key === 'pne'
+            ? PNE_PAGES.has(activePage)
             : item.key === activePage
 
           return (
@@ -67,7 +68,7 @@ export function Header({ activePage, onNavigate }) {
               </button>
 
               {item.subitems ? (
-                <div className="nav-subitems" aria-label="Subitens de Metas do PNE">
+                <div className="nav-subitems" aria-label="Subitens do Plano Nacional de Educação">
                   {item.subitems.map((subitem) => (
                     <button
                       className={
@@ -88,11 +89,6 @@ export function Header({ activePage, onNavigate }) {
           )
         })}
       </nav>
-
-      <div className="sidebar-sources">
-        <span>Fontes</span>
-        <p>INEP · Censo Escolar · FNDE · SIOPE · IBGE</p>
-      </div>
     </header>
   )
 }
