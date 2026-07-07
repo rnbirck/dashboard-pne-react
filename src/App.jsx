@@ -194,6 +194,17 @@ function PageContent({
   if (activePage === 'educacao') {
     return (
       <EducacaoPage
+        initialMainBlock="panoramaEducacional"
+        municipioData={municipioData}
+        selectedMunicipio={selectedMunicipio}
+      />
+    )
+  }
+
+  if (activePage === 'financeiros') {
+    return (
+      <EducacaoPage
+        initialMainBlock="financiamentoEducacao"
         municipioData={municipioData}
         selectedMunicipio={selectedMunicipio}
       />

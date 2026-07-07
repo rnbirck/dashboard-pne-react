@@ -130,14 +130,28 @@ const MAIN_INDICATOR_BLOCKS = [
   {
     key: MAIN_BLOCK_KEYS.panorama,
     title: 'Panorama Educacional',
-    description: 'Matrículas, escolas, alunos por turma, docentes, fluxo, aprendizagem, matrículas técnicas e escolas do Sistema S.',
+    description: 'Matrículas, escolas, alunos por turma, docentes, fluxo, aprendizagem e matrículas técnicas.',
   },
   {
     key: MAIN_BLOCK_KEYS.financiamento,
     title: 'Financiamento da Educação',
-    description: 'SIOPE, FUNDEB, complementação VAAR, PNATE, receitas, despesas, condicionalidades e resultados.',
+    description: 'SIOPE, FUNDEB, VAAR, PNATE, receitas, despesas, aplicação de recursos e resultados financeiros.',
   },
 ]
+
+const EDUCATION_PAGE_COPY = {
+  description: 'Matrículas, escolas, docentes, fluxo, aprendizagem e matrículas técnicas do município.',
+  emptyDescription: 'Os indicadores educacionais são carregados após a seleção do município. Use o seletor no topo da página.',
+  eyebrow: 'Indicadores de Educação',
+  title: 'Indicadores de Educação',
+}
+
+const FINANCIAL_PAGE_COPY = {
+  description: 'SIOPE, FUNDEB, VAAR, PNATE, receitas, despesas, aplicação de recursos e resultados financeiros.',
+  emptyDescription: 'Os indicadores financeiros são carregados após a seleção do município. Use o seletor no topo da página.',
+  eyebrow: 'Indicadores Financeiros da Educação',
+  title: 'Indicadores Financeiros da Educação',
+}
 
 const FINANCING_MODULES = [
   {
@@ -251,7 +265,10 @@ function normalizeNavigationValue(value) {
     .replace(/[^a-z0-9]/g, '')
 }
 
-export function EducacaoPage({ municipioData, selectedMunicipio }) {
+export function EducacaoPage({ initialMainBlock, municipioData, selectedMunicipio }) {
+  const isFinancingPage = initialMainBlock === MAIN_BLOCK_KEYS.financiamento
+  const isSidebarScopedPage = Boolean(initialMainBlock)
+  const pageCopy = isFinancingPage ? FINANCIAL_PAGE_COPY : EDUCATION_PAGE_COPY
   const eduIndexState = useAsyncData(() => loadEducationMunicipiosIndex(), [])
   const eduMunMap = useMemo(() => {
     const list = eduIndexState.data?.municipios ?? []
@@ -263,12 +280,25 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
     return loadEducationMunicipio(selectedId)
   }, [selectedId])
 
-  const initialNavigation = useMemo(() => getInitialEducationNavigation(), [])
+  const initialNavigation = useMemo(
+    () => ({
+      ...getInitialEducationNavigation(),
+      ...(initialMainBlock ? { mainBlock: initialMainBlock } : {}),
+    }),
+    [initialMainBlock],
+  )
   const [selectedMainBlock, setSelectedMainBlock] = useState(initialNavigation.mainBlock)
   const [selectedThemeKey, setSelectedThemeKey] = useState(initialNavigation.panoramaTheme)
   const [selectedFinancingModule, setSelectedFinancingModule] = useState(initialNavigation.financingModule)
   const [selectedIndicatorKey, setSelectedIndicatorKey] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
+
+  useEffect(() => {
+    if (!initialMainBlock || initialMainBlock === selectedMainBlock) return
+    setSelectedMainBlock(initialMainBlock)
+    setSelectedIndicatorKey('')
+    setSearchQuery('')
+  }, [initialMainBlock, selectedMainBlock])
 
   const dados = munDataState.data
   const sistemaS = dados?.blocos?.sistema_s ?? {}
@@ -287,9 +317,9 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
       <div className="page-stack educacao-page">
         <section className="page-card educacao-hero">
           <div>
-            <span className="eyebrow">Indicadores da Educação</span>
-            <h1>Indicadores da Educação</h1>
-            <p>Matrículas, escolas, docentes, fluxo, aprendizagem e matrículas técnicas do município.</p>
+            <span className="eyebrow">{pageCopy.eyebrow}</span>
+            <h1>{pageCopy.title}</h1>
+            <p>{pageCopy.description}</p>
           </div>
         </section>
         <section className="empty-state">
@@ -299,7 +329,7 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
             </svg>
           </div>
           <h2>Selecione um município</h2>
-          <p>Os indicadores educacionais são carregados após a seleção do município. Use o seletor no topo da página.</p>
+          <p>{pageCopy.emptyDescription}</p>
         </section>
       </div>
     )
@@ -316,16 +346,11 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
   if (!dados) return null
 
   const model = buildEducationModel(dados.blocos ?? {})
-  const sistemaSTheme = {
-    key: PANORAMA_THEME_KEYS.escolasSistemaS,
-    label: 'Escolas do Sistema S',
-    shortLabel: 'Sistema S',
-    count: 4,
-    items: [],
-  }
-  const themes = hasSistemaS ? [...model.themes, sistemaSTheme] : model.themes
-  const selectedTheme = themes.find((theme) => theme.key === selectedThemeKey) ?? themes[0]
-  const isSistemaSTheme = selectedTheme?.key === PANORAMA_THEME_KEYS.escolasSistemaS
+  const themes = model.themes
+  const isSistemaSTheme = selectedThemeKey === PANORAMA_THEME_KEYS.escolasSistemaS && hasSistemaS
+  const selectedTheme = isSistemaSTheme
+    ? null
+    : (themes.find((theme) => theme.key === selectedThemeKey) ?? themes[0])
   const themeItems = selectedTheme?.items ?? []
   const filteredItems = themeItems.filter((item) => {
     const query = searchQuery.trim().toLocaleLowerCase('pt-BR')
@@ -471,12 +496,13 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
     <div className="page-stack educacao-page">
       <section className="page-card educacao-hero">
         <div className="educacao-hero__intro">
-          <span className="eyebrow">Indicadores da Educação</span>
-          <h1>Indicadores da Educação</h1>
-          <p>Matrículas, escolas, docentes, fluxo, aprendizagem e matrículas técnicas do município.</p>
+          <span className="eyebrow">{pageCopy.eyebrow}</span>
+          <h1>{pageCopy.title}</h1>
+          <p>{pageCopy.description}</p>
           <p className="educacao-hero__municipality">Município em foco: <strong>{selectedMunicipio}</strong></p>
         </div>
 
+        {!isSidebarScopedPage ? (
         <div className="educacao-scope-selector">
           <div className="educacao-scope-selector__intro">
             <span className="eyebrow educacao-scope-selector__heading">Escolha o bloco de indicadores</span>
@@ -507,6 +533,7 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
             })}
           </div>
         </div>
+        ) : null}
       </section>
 
       {selectedMainBlock === MAIN_BLOCK_KEYS.panorama && !isSistemaSTheme && <EducationOverviewCards overview={model.overview} />}

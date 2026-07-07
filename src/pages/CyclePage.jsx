@@ -106,28 +106,34 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
         </div>
         <div className="cycle-hero-meta-group">
           <ManagementMetricCard
+            detail="denominador para atingidas e atenção"
+            label="Indicadores com meta"
+            tone="info"
+            value={cycleManagementStats.monitorableTotal}
+          />
+          <ManagementMetricCard
             detail={cycleManagementStats.monitorableTotal
-              ? `${cycleManagementStats.achievedPercent}% dos indicadores com meta`
-              : 'sem indicadores comparáveis'}
+              ? `${cycleManagementStats.achievedPercent}% dentro dos indicadores com meta`
+              : 'sem indicadores com meta'}
             label="Metas atingidas"
             tone="success"
             value={cycleManagementStats.monitorableTotal
-              ? `${cycleManagementStats.achieved}/${cycleManagementStats.monitorableTotal}`
+              ? cycleManagementStats.achieved
               : '-'}
           />
           <ManagementMetricCard
             detail={cycleManagementStats.monitorableTotal
-              ? `${cycleManagementStats.attentionPercent}% dos indicadores com meta`
-              : 'sem indicadores comparáveis'}
+              ? `${cycleManagementStats.attentionPercent}% dentro dos indicadores com meta`
+              : 'sem indicadores com meta'}
             label="Exigem atenção"
             tone="attention"
             value={cycleManagementStats.monitorableTotal
-              ? `${cycleManagementStats.attention}/${cycleManagementStats.monitorableTotal}`
+              ? cycleManagementStats.attention
               : '-'}
           />
           <ManagementMetricCard
-            detail="indicadores sem meta definida"
-            label="Sem metas definidas"
+            detail="fora do denominador dos indicadores com meta"
+            label="Indicadores sem meta"
             tone="neutral"
             value={cycleManagementStats.noComparison}
           />
