@@ -71,7 +71,10 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
     [analysis.indicators, analysis.areas, selectedFilter],
   )
   const filteredBestPosition = useMemo(() => buildBestPosition(filteredIndicators), [filteredIndicators])
-  const filteredLargestGaps = useMemo(() => buildLargestGaps(filteredIndicators), [filteredIndicators])
+  const filteredLargestGaps = useMemo(
+    () => buildLargestGaps(filteredIndicators, filteredBestPosition),
+    [filteredIndicators, filteredBestPosition],
+  )
   const showCategoryChip = selectedFilter === 'all'
   const selectedArea = analysis.areas.find((area) => area.key === selectedFilter)
   const selectedFilterLabel = selectedFilter === 'all'
@@ -104,28 +107,28 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
         </div>
         <div className="diagnostic-summary">
           <SummaryCard
-            helper="Com dados suficientes para leitura municipal."
+            helper="Base da síntese."
             icon="clipboard"
             label="Indicadores analisados"
             tone="default"
             value={analysis.summary.total}
           />
           <SummaryCard
-            helper="Indicadores comparáveis com meta alcançada."
+            helper="Meta alcançada."
             icon="check"
             label="Metas atingidas"
             tone="success"
             value={analysis.summary.achieved}
           />
           <SummaryCard
-            helper="Indicadores comparáveis abaixo da referência."
+            helper="Exigem atenção."
             icon="down"
             label="Abaixo da meta"
             tone="danger"
             value={analysis.summary.below}
           />
           <SummaryCard
-            helper="Indicadores sem base de comparação direta."
+            helper="Sem referência direta."
             icon="minus"
             label="Sem comparação"
             tone="neutral"
@@ -199,14 +202,16 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
 
       <section className="diagnostic-insight-grid">
         <InsightCard
+          description="Melhores sinais comparáveis."
           icon="trendUp"
-          emptyMessage="Nenhum indicador comparável com meta nesta categoria."
+          emptyMessage="Nenhum indicador atingido ou próximo da meta neste tema."
           items={filteredBestPosition}
           showCategoryChip={showCategoryChip}
           title="Melhor posicionamento"
           tone="success"
         />
         <InsightCard
+          description="Maiores afastamentos comparáveis."
           icon="trendDown"
           emptyMessage="Nenhum indicador abaixo da meta nesta categoria."
           items={filteredLargestGaps}
@@ -219,7 +224,7 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
       <section className="page-card diagnostic-section">
         <header className="diagnostic-section__heading">
           <h3>Posicionamento por tema</h3>
-          <p>Leitura agregada dos indicadores, metas atingidas e lacunas prioritárias em cada tema.</p>
+          <p>Resumo dos indicadores, metas atingidas e lacunas em cada tema.</p>
         </header>
         <div className="diagnostic-area-grid">
           {analysis.areas.map((area) => (
@@ -229,6 +234,8 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
       </section>
 
       <PrioritiesSection items={analysis.priorities} />
+
+      <DiagnosticReadingGuide />
 
       <section className="page-card diagnostic-reading" id="diagnostic-reading">
         <div className="diagnostic-reading__heading">
@@ -270,9 +277,8 @@ function PrioritiesSection({ items }) {
     <section className="page-card diagnostic-priorities" id="diagnostic-priorities">
       <header className="diagnostic-priorities__header">
         <div className="diagnostic-priorities__header-text">
-          <span className="diagnostic-priorities__eyebrow">PLANO DE AÇÃO</span>
           <h3>Prioridades do município</h3>
-          <p>Indicadores com maior distância em relação à meta.</p>
+          <p>Os 5 maiores pontos de atenção frente à meta.</p>
         </div>
         {list.length > 0 && (
           <span className="diagnostic-priorities__count">
@@ -286,29 +292,29 @@ function PrioritiesSection({ items }) {
             <li className="diagnostic-priorities__item" key={item.key}>
               <span className="diagnostic-priorities__rank" aria-hidden="true">{index + 1}</span>
               <div className="diagnostic-priorities__body">
-                <strong className="diagnostic-priorities__indicator" title={item.label}>
-                  {item.label}
-                </strong>
-                <span className="diagnostic-priorities__chip diagnostic-priorities__chip--area">
-                  {item.categoryLabel}
-                </span>
+                <div className="diagnostic-priorities__topline">
+                  <strong className="diagnostic-priorities__indicator" title={item.label}>
+                    {item.label}
+                  </strong>
+                  <span className="diagnostic-priorities__chip diagnostic-priorities__chip--area">
+                    {item.categoryLabel}
+                  </span>
+                </div>
+                <p className="diagnostic-priorities__reading">{item.reading}</p>
               </div>
-              <div className="diagnostic-priorities__meta">
-                <span className="diagnostic-priorities__comparison">
-                  <span>Atual</span>
-                  <strong>{item.currentLabel}</strong>
-                </span>
-                <span className="diagnostic-priorities__comparison">
-                  <span>Meta</span>
-                  <strong>{item.metaLabel}</strong>
-                </span>
-                <span className="diagnostic-priorities__comparison diagnostic-priorities__comparison--negative">
+              <div className="diagnostic-priorities__measure">
+                <div className="diagnostic-priorities__values">
+                  <span>Atual <strong>{item.currentLabel}</strong></span>
+                  <span>Meta <strong>{item.metaLabel}</strong></span>
+                  <span className="diagnostic-priorities__status">{item.statusLabel}</span>
+                </div>
+                <div className="diagnostic-priorities__progress" aria-label={`Atual ${item.currentLabel} de meta ${item.metaLabel}`}>
+                  <span style={{ width: `${item.progressPercent}%` }} />
+                </div>
+                <strong className="diagnostic-priorities__distance">
                   <span>Distância</span>
-                  <strong>{item.distanceLabel}</strong>
-                </span>
-                <span className="diagnostic-priorities__status">
-                  {item.statusLabel}
-                </span>
+                  {item.distanceLabel}
+                </strong>
               </div>
             </li>
           ))}
@@ -322,7 +328,28 @@ function PrioritiesSection({ items }) {
   )
 }
 
+function DiagnosticReadingGuide() {
+  return (
+    <section className="page-card diagnostic-guide" aria-labelledby="diagnostic-guide-title">
+      <div className="diagnostic-guide__heading">
+        <div>
+          <h3 id="diagnostic-guide-title">Como ler este diagnóstico</h3>
+          <p>
+            Comparações usam metas disponíveis; “sem comparação” não indica pior desempenho.
+          </p>
+        </div>
+      </div>
+      <ul className="diagnostic-guide__list">
+        <li>Prioridades seguem as maiores distâncias da meta.</li>
+        <li>Temas mostram onde a pressão se concentra.</li>
+        <li>Síntese apoia conversa técnica e planejamento.</li>
+      </ul>
+    </section>
+  )
+}
+
 function InsightCard({
+  description,
   emptyMessage = 'Nenhum indicador disponível para esta leitura.',
   icon,
   items,
@@ -334,7 +361,10 @@ function InsightCard({
     <section className={`page-card diagnostic-insight diagnostic-insight--${tone}`}>
       <div className="diagnostic-insight__heading">
         <IconBubble icon={icon} tone={tone} />
-        <h3>{title}</h3>
+        <div>
+          <h3>{title}</h3>
+          {description ? <p className="diagnostic-insight__description">{description}</p> : null}
+        </div>
       </div>
       {items.length ? (
         <ul className="diagnostic-insight-list">
@@ -342,12 +372,10 @@ function InsightCard({
             <li className="diagnostic-insight-list__item" key={item.key}>
               <span className="diagnostic-insight-list__marker" aria-hidden="true" />
               <div className="diagnostic-insight-list__body">
-                <div className="diagnostic-insight-list__topline">
-                  <strong title={item.label}>{item.label}</strong>
-                  {showCategoryChip ? <small>{item.categoryLabel}</small> : null}
-                </div>
-                <p>{renderColoredNote(item.note, tone)}</p>
+                <strong title={item.label}>{item.label}</strong>
+                {showCategoryChip ? <small>{item.categoryLabel}</small> : null}
               </div>
+              <p className="diagnostic-insight-list__result">{renderColoredNote(item.note, tone)}</p>
             </li>
           ))}
         </ul>
@@ -405,10 +433,7 @@ function AreaMiniCard({ area }) {
         <div className="diagnostic-area-mini-card__bar" />
       )}
       <p className="diagnostic-area-mini-card__reading">{area.reading}</p>
-      <div className="diagnostic-area-mini-card__gap" title={gapLabel}>
-        <span>Principal lacuna</span>
-        <strong>{gapLabel}</strong>
-      </div>
+      <p className="diagnostic-area-mini-card__gap" title={gapLabel}>{gapLabel}</p>
     </div>
   )
 }
@@ -550,7 +575,7 @@ function buildDiagnosticAnalysis(categories, results) {
   )
 
   const bestPosition = buildBestPosition(uniqueIndicators)
-  const largestGaps = buildLargestGaps(uniqueIndicators)
+  const largestGaps = buildLargestGaps(uniqueIndicators, bestPosition)
   const priorities = buildPriorities(uniqueIndicators)
 
   return {
@@ -638,43 +663,63 @@ function buildBestPosition(indicators) {
     .sort((a, b) => getSortValue(b.distance) - getSortValue(a.distance))
     .map((indicator) => ({
       ...indicator,
-      note: `meta atingida${Number.isFinite(indicator.distance) ? ` (${formatDistance(indicator)})` : ''}`,
+      note: formatAchievedPositionNote(indicator),
     }))
 
   achieved.forEach((indicator) => selectedKeys.add(indicator.key))
 
-  const closestBelow = indicators
-    .filter((indicator) => indicator.status === 'below' && indicator.isComparable && Number.isFinite(indicator.distance) && !selectedKeys.has(indicator.key))
+  const nearGoal = indicators
+    .filter((indicator) =>
+      indicator.status === 'below'
+      && indicator.isComparable
+      && Number.isFinite(indicator.distance)
+      && isCloseToGoal(indicator)
+      && !selectedKeys.has(indicator.key),
+    )
     .sort((a, b) => b.distance - a.distance)
     .map((indicator) => ({
       ...indicator,
-      note: `mais próximo da meta (${formatDistance(indicator, true)})`,
+      note: `Perto da meta ${formatDistance(indicator)}`,
     }))
 
-  closestBelow.forEach((indicator) => selectedKeys.add(indicator.key))
-
-  const progress = indicators
-    .filter((indicator) => indicator.isComparable && Number.isFinite(indicator.variation) && !selectedKeys.has(indicator.key))
-    .sort((a, b) => getSortValue(b.variation) - getSortValue(a.variation))
-    .map((indicator) => ({
-      ...indicator,
-      note: `maior avanço observado${formatVariationSuffix(indicator)}`,
-    }))
-
-  return [...achieved, ...closestBelow, ...progress].slice(0, 3)
+  return [...achieved, ...nearGoal].slice(0, 3)
 }
 
-function buildLargestGaps(indicators) {
+function buildLargestGaps(indicators, excludedIndicators = []) {
+  const excludedKeys = new Set(excludedIndicators.map((indicator) => indicator.key))
   return indicators
     .filter((indicator) =>
       indicator.status === 'below'
       && indicator.isComparable
       && Number.isFinite(indicator.distance)
-      && isNegativeHighlightEligible(indicator),
+      && isNegativeHighlightEligible(indicator)
+      && !excludedKeys.has(indicator.key),
     )
     .sort((a, b) => a.distance - b.distance)
     .slice(0, 4)
-    .map((indicator) => ({ ...indicator, note: formatDistance(indicator, true) }))
+    .map((indicator) => ({ ...indicator, note: formatDistance(indicator) }))
+}
+
+function formatAchievedPositionNote(indicator) {
+  if (Number.isFinite(indicator.distance) && indicator.distance > 0) {
+    return `Atingida ${formatDistance(indicator)}`
+  }
+  return 'Atingida'
+}
+
+function isCloseToGoal(indicator) {
+  if (!Number.isFinite(indicator.distance) || indicator.distance >= 0) return false
+
+  const gap = Math.abs(indicator.distance)
+  if (indicator.unit === 'percent') return gap <= 10
+  if (indicator.unit === 'index' || isIdebLabel(indicator.label)) return gap <= 0.5
+
+  const meta = Math.abs(Number(indicator.meta))
+  if (Number.isFinite(meta) && meta > 0) {
+    return gap <= meta * 0.1
+  }
+
+  return false
 }
 
 function buildPriorities(indicators) {
@@ -687,13 +732,32 @@ function buildPriorities(indicators) {
     )
     .sort((a, b) => a.distance - b.distance)
     .slice(0, 5)
-    .map((indicator) => ({
+    .map((indicator, index) => ({
       ...indicator,
       currentLabel: formatIndicatorValueForPriority(indicator),
-      distanceLabel: formatDistance(indicator, true),
+      distanceLabel: formatDistance(indicator),
       metaLabel: formatMetaValueForPriority(indicator),
+      progressPercent: buildPriorityProgressPercent(indicator),
+      reading: buildPriorityReading(indicator, index),
       statusLabel: getIndicatorStatusLabel(indicator.status),
     }))
+}
+
+function buildPriorityProgressPercent(indicator) {
+  const current = Number(indicator.currentValue)
+  const meta = Number(indicator.meta)
+  if (!Number.isFinite(current) || !Number.isFinite(meta) || meta <= 0) return 0
+  return Math.max(0, Math.min(100, (current / meta) * 100))
+}
+
+function buildPriorityReading(indicator, index) {
+  if (index === 0) {
+    return 'Maior distância do diagnóstico.'
+  }
+  if (index < 3) {
+    return 'Atenção técnica prioritária.'
+  }
+  return 'Acompanhar evolução.'
 }
 
 function buildExecutiveSummary(analysis) {
@@ -703,38 +767,39 @@ function buildExecutiveSummary(analysis) {
     return 'Não há indicadores disponíveis para uma síntese executiva neste município.'
   }
 
-  const pressureAreas = [...areas]
-    .filter((area) => area.below > 0 && area.comparableTotal > 0)
-    .sort((a, b) => {
-      const countDiff = b.below - a.below
-      if (countDiff !== 0) return countDiff
-      return (b.below / b.comparableTotal) - (a.below / a.comparableTotal)
-    })
-    .slice(0, 2)
-
-  const pressureText = pressureAreas.length
-    ? `maior pressão em ${formatAreaList(pressureAreas.map((area) => area.label))}`
-    : 'sem área crítica comparável destacada'
-
   if (!comparableTotal) {
     return `O município tem ${summary.total} indicadores analisados, mas sem referência comparável suficiente para leitura de meta.`
   }
 
-  return `O município apresenta ${pressureText}, com ${summary.achieved} metas atingidas entre ${comparableTotal} indicadores comparáveis.`
-}
+  const pressureArea = pickAreaByBelowPressure(areas)
+  const pressureText = pressureArea?.below > 0
+    ? `maior pressão em ${pressureArea.label}`
+    : 'sem área crítica comparável destacada'
+  const achievedLabel = summary.achieved === 1 ? 'meta atingida' : 'metas atingidas'
+  const noComparisonText = summary.noComparison > 0
+    ? `; ${summary.noComparison} sem comparação direta`
+    : ''
 
-function formatAreaList(labels) {
-  if (labels.length <= 1) return labels[0] ?? ''
-  return `${labels.slice(0, -1).join(', ')} e ${labels[labels.length - 1]}`
+  return `${summary.total} indicadores analisados: ${summary.achieved} ${achievedLabel} em ${comparableTotal} comparáveis; ${pressureText}${noComparisonText}.`
 }
 
 function buildAreaReading({ achieved, below, comparableTotal, noComparison, total }) {
   if (!total) return 'Sem indicadores disponíveis.'
-  if (!comparableTotal) return 'Leitura limitada por baixa comparabilidade.'
-  if (achieved >= below) return 'Predomínio de metas atingidas.'
-  if (below > achieved && achieved > 0) return 'Resultado misto, com lacunas relevantes.'
-  if (noComparison > 0) return 'Pressão abaixo da meta e parte sem comparação.'
-  return 'Predomínio de indicadores abaixo da meta.'
+  if (!comparableTotal) {
+    return `${noComparison} ${noComparison === 1 ? 'sem comparação' : 'sem comparação'}.`
+  }
+
+  const comparisonNote = noComparison > 0
+    ? ` ${noComparison} sem comparação.`
+    : ''
+
+  if (achieved >= below) {
+    return `Predomínio de metas atingidas.${comparisonNote}`
+  }
+  if (below > achieved && achieved > 0) {
+    return `Resultado misto.${comparisonNote}`
+  }
+  return `Predomínio abaixo da meta.${comparisonNote}`
 }
 
 function getIndicatorStatusLabel(status) {
@@ -773,43 +838,39 @@ function buildReadings(summary, areas, priorities) {
   const achievedShare = comparableTotal ? summary.achieved / comparableTotal : 0
   const belowArea = pickAreaByBelowPressure(areas)
   const bestArea = pickAreaByComparableRatio(areas, 'achieved')
-  const achievedPercent = Math.round(achievedShare * 100)
-  const belowPercent = comparableTotal ? Math.round((summary.below / comparableTotal) * 100) : 0
   const noComparison = summary.total - comparableTotal
 
   let overview
   if (summary.total === 0) {
     overview = 'Não há indicadores disponíveis para este município no ciclo vigente.'
   } else if (!comparableTotal) {
-    overview = `Dos ${summary.total} indicadores analisados, nenhum possui referência de meta comparável. A leitura do município é limitada neste ciclo.`
+    overview = `${summary.total} indicadores analisados, sem referência comparável de meta.`
   } else {
-    const achievedPart = `${summary.achieved} com meta atingida (${achievedPercent}% dos comparáveis)`
-    const belowPart = `${summary.below} abaixo da referência (${belowPercent}% dos comparáveis)`
     let toneText
     if (achievedShare >= 0.55) {
-      toneText = 'predominância de metas atingidas no ciclo vigente'
+      toneText = 'predominância de metas atingidas'
     } else if (achievedShare >= 0.25) {
-      toneText = 'desempenho heterogêneo entre áreas'
+      toneText = 'desempenho heterogêneo entre temas'
     } else {
       toneText = 'predominância de indicadores abaixo da meta'
     }
     const noComparisonPart = noComparison > 0
-      ? ` Outros ${noComparison} indicadores não possuem referência comparável.`
+      ? ` ${noComparison} sem comparação.`
       : ''
-    overview = `Dos ${summary.total} indicadores analisados, ${achievedPart} e ${belowPart}. O conjunto indica ${toneText}.${noComparisonPart}`
+    overview = `${summary.total} indicadores: ${summary.achieved} metas atingidas e ${summary.below} abaixo da meta. O quadro indica ${toneText}.${noComparisonPart}`
   }
 
-  const bestAreaText = bestArea?.comparableTotal > 0
-    ? `${bestArea.label} é a área mais favorável, com ${bestArea.achieved} metas atingidas em ${bestArea.comparableTotal} indicadores comparáveis (${Math.round((bestArea.achieved / bestArea.comparableTotal) * 100)}%).`
+  const bestAreaText = bestArea?.achieved > 0
+    ? `${bestArea.label}: ${bestArea.achieved} de ${bestArea.comparableTotal} comparáveis atingem a meta.`
     : 'Não há indicadores comparáveis suficientes para destacar uma área favorável.'
 
   const belowAreaText = belowArea?.below > 0
-    ? `${belowArea.label} é a área mais crítica, com ${belowArea.below} indicadores abaixo da meta em ${belowArea.comparableTotal} comparáveis (${Math.round((belowArea.below / belowArea.comparableTotal) * 100)}%).`
+    ? `${belowArea.label}: ${belowArea.below} de ${belowArea.comparableTotal} comparáveis estão abaixo da meta.`
     : 'Não há indicadores comparáveis abaixo da meta para destacar uma área crítica.'
 
   const topPriority = priorities[0]
   const priorityText = topPriority
-    ? `Concentre atenção em ${topPriority.categoryLabel.toLocaleLowerCase('pt-BR')}, especialmente no indicador "${topPriority.label}", que está ${formatDistance(topPriority, true)}.`
+    ? `${topPriority.label}: ${formatDistance(topPriority, true)} em ${topPriority.categoryLabel}.`
     : 'Não há indicadores abaixo da meta com prioridade crítica.'
 
   return [
