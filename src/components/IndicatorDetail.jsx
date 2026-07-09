@@ -168,6 +168,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
   const quickReading = buildQuickReading({
     atingida: goalResult.atingida,
     distanceValue,
+    direction: goalResult.direction,
     endYear,
     formattedEnd,
     isComparable,
@@ -178,6 +179,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
   const historySummary = buildHistoryChartSummary({
     atingida: goalResult.atingida,
     distanceValue,
+    direction: goalResult.direction,
     endYear,
     formattedEnd,
     isComparable,
@@ -599,6 +601,7 @@ function getDistanceTone(result, isComparable) {
 function buildHistoryChartSummary({
   atingida,
   distanceValue,
+  direction,
   endYear,
   formattedEnd,
   isComparable,
@@ -624,6 +627,13 @@ function buildHistoryChartSummary({
   }
   const distanceAbs = formatAbsPp(distanceValue)
 
+  if (direction === 'at_most' && hasReadableValue(distanceAbs)) {
+    if (atingida === true) {
+      return `${formattedEnd} em ${endYear} — dentro do limite maximo de ${metaValue}.`
+    }
+    return `${formattedEnd} em ${endYear} — ${distanceAbs} acima do limite maximo de ${metaValue}.`
+  }
+
   if (Number.isFinite(distanceNumber) && Math.abs(distanceNumber) < 0.05) {
     return `${formattedEnd} em ${endYear} — no nível da meta de ${metaValue}.`
   }
@@ -641,6 +651,7 @@ function buildHistoryChartSummary({
 function buildQuickReading({
   atingida,
   distanceValue,
+  direction,
   endYear,
   formattedEnd,
   isComparable,
@@ -661,6 +672,16 @@ function buildQuickReading({
 
   if (!isComparable || !hasMeta) {
     return `Em ${endYear}, o município registra ${formattedEnd}. Este indicador é acompanhado como informação de contexto, sem meta definida para comparação.`
+  }
+
+  if (direction === 'at_most') {
+    if (atingida === true) {
+      return `Em ${endYear}, o municipio registra ${formattedEnd}, dentro do limite maximo de ${metaValue}.`
+    }
+    const distance = hasDistance
+      ? `, ${distanceAbs} acima do limite maximo de ${metaValue}`
+      : `, acima do limite maximo de ${metaValue}`
+    return `Em ${endYear}, o municipio registra ${formattedEnd}${distance}. E preciso reduzir o indicador para enquadrar o resultado na meta.`
   }
 
   if (isStable && hasStartYear && hasVariation) {

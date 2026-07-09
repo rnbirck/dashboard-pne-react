@@ -225,6 +225,7 @@ function PageContent({
   if (activePage === 'educacao') {
     return (
       <EducacaoPage
+        indicadores={indicadores}
         initialMainBlock="panoramaEducacional"
         municipioData={municipioData}
         selectedMunicipio={selectedMunicipio}
@@ -235,6 +236,7 @@ function PageContent({
   if (activePage === 'financeiros') {
     return (
       <EducacaoPage
+        indicadores={indicadores}
         initialMainBlock="financiamentoEducacao"
         municipioData={municipioData}
         selectedMunicipio={selectedMunicipio}

@@ -13,22 +13,32 @@ import {
   roundPpString,
 } from '../utils/format'
 import { normalizePopulationPercentResults } from '../utils/indicatorValues'
+import {
+  isPneComparableIndicator,
+  isPneContextProxyRelation,
+} from '../utils/pneDisplayRules'
 
 const PNE_2026_CYCLE = 'pne_2026_2036'
 const EMPTY_ARRAY = []
 
-const COVERAGE_LABELS = {
-  aproximada: 'Indicador aproximado',
-  direta: 'Indicador direto',
-  parcial: 'Cobertura parcial',
+const METHODOLOGY_WARNINGS_BY_KEY = {
+  salas_climatizadas:
+    'Proxy parcial de conforto térmico; não mede todo o padrão físico do estabelecimento.',
+  salas_acessiveis:
+    'Proxy parcial de acessibilidade; não mede toda a acessibilidade escolar.',
 }
 
-const COVERAGE_FILTERS = [
-  { label: 'Todas as coberturas', value: 'todos' },
-  { label: 'Indicador direto', value: 'direta' },
-  { label: 'Parcial ou aproximada', value: 'parcial_aproximada' },
-  { label: 'Sem indicador municipal', value: 'sem_indicador' },
-]
+const COVERAGE_LABELS = {
+  contexto: 'Indicador de contexto',
+  direta: 'Acompanhamento direto',
+  parcial: 'Cobertura parcial',
+  proxy: 'Proxy metodológico',
+  sem_comparavel: 'Sem acompanhamento municipal comparável',
+  sem_indicador: 'Sem indicador municipal',
+}
+
+const ALL_THEMES_FILTER = 'todos'
+const UNMAPPED_THEME_LABEL = 'Tema sem indicador associado'
 
 const PERCENT_FORMATTER = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 1,
@@ -44,8 +54,8 @@ export function PneLegalGoalsPage({
   selectedMunicipio,
 }) {
   const [expandedGoalIds, setExpandedGoalIds] = useState(() => new Set())
-  const [objectiveFilter, setObjectiveFilter] = useState('todos')
-  const [coverageFilter, setCoverageFilter] = useState('todos')
+  const [showUntrackedGoals, setShowUntrackedGoals] = useState(false)
+  const [themeFilter, setThemeFilter] = useState(ALL_THEMES_FILTER)
   const [searchQuery, setSearchQuery] = useState('')
 
   const cycleCategories = indicadores?.cycles?.[PNE_2026_CYCLE]?.categories ?? EMPTY_ARRAY
@@ -72,32 +82,32 @@ export function PneLegalGoalsPage({
   const projections = municipioData?.[PNE_2026_CYCLE]?.projecoes ?? {}
 
   const summary = useMemo(
-    () => buildCoverageSummary(PNE_2026_LEGAL_GOAL_INDICATOR_MAP),
-    [],
+    () => buildCoverageSummary(PNE_2026_LEGAL_GOAL_INDICATOR_MAP, normalizedResults),
+    [normalizedResults],
   )
 
-  const objectiveOptions = useMemo(() => {
-    const objectiveIds = new Set(
-      PNE_2026_LEGAL_GOAL_INDICATOR_MAP.map((goal) => goal.objectiveId).filter(Boolean),
-    )
-
-    return Array.from(objectiveIds).sort((a, b) => Number(a) - Number(b))
-  }, [])
+  const themeOptions = useMemo(
+    () => [
+      { label: 'Todos os temas', value: ALL_THEMES_FILTER },
+      ...cycleCategories.map((category) => ({
+        label: category.label,
+        value: category.key,
+      })),
+    ],
+    [cycleCategories],
+  )
 
   const filteredGoals = useMemo(() => {
     const query = normalizeText(searchQuery.trim())
 
     return PNE_2026_LEGAL_GOAL_INDICATOR_MAP.filter((goal) => {
-      if (objectiveFilter !== 'todos' && goal.objectiveId !== objectiveFilter) {
-        return false
-      }
-
-      if (!matchesCoverageFilter(goal, coverageFilter)) {
+      if (!matchesThemeFilter(goal, themeFilter, itemByKey)) {
         return false
       }
 
       if (!query) return true
 
+      const goalThemes = getGoalThemeLabels(goal, itemByKey)
       const indicatorTexts = goal.relatedIndicators.flatMap((indicatorRelation) => {
         const item = itemByKey.get(indicatorRelation.indicatorId)
         return [
@@ -116,12 +126,22 @@ export function PneLegalGoalsPage({
         goal.objectiveId,
         `Objetivo ${goal.objectiveId}`,
         goal.legalText,
+        ...goalThemes,
         ...indicatorTexts,
       ].join(' ')
 
       return normalizeText(searchableText).includes(query)
     })
-  }, [coverageFilter, itemByKey, objectiveFilter, searchQuery])
+  }, [itemByKey, searchQuery, themeFilter])
+
+  const trackedGoals = useMemo(
+    () => filteredGoals.filter((goal) => classifyGoalCoverage(goal, normalizedResults) !== 'sem_comparavel'),
+    [filteredGoals, normalizedResults],
+  )
+  const untrackedGoals = useMemo(
+    () => filteredGoals.filter((goal) => classifyGoalCoverage(goal, normalizedResults) === 'sem_comparavel'),
+    [filteredGoals, normalizedResults],
+  )
 
   function toggleGoal(goalId) {
     setExpandedGoalIds((current) => {
@@ -144,8 +164,8 @@ export function PneLegalGoalsPage({
           <span className="eyebrow">Plano Nacional de Educação</span>
           <h1>Metas legais do PNE 2026-2036</h1>
           <p>
-            Acompanhamento das metas da Lei nº 15.388/2026 a partir dos indicadores
-            municipais disponíveis no painel.
+            Consulte as metas legais do novo ciclo e veja como elas se conectam
+            aos indicadores municipais disponíveis no painel.
           </p>
           {selectedMunicipio ? (
             <p className="legal-goals-hero__municipio">
@@ -154,16 +174,13 @@ export function PneLegalGoalsPage({
           ) : null}
         </div>
 
-        <aside className="legal-goals-law-card" aria-label="Base legal e validação">
+        <aside className="legal-goals-law-card" aria-label="Base legal">
           <span>Base legal</span>
           <strong>{PNE_2026_LEGAL_GOAL_MAPPING_METADATA.law}</strong>
           <p>
-            {PNE_2026_LEGAL_GOAL_MAPPING_METADATA.totalLegalGoals} metas legais na
-            matriz. Validação oficial linha a linha:{' '}
-            {PNE_2026_LEGAL_GOAL_MAPPING_METADATA.validatedAgainstOfficialLaw
-              ? 'concluída'
-              : 'pendente'}
-            .
+            {PNE_2026_LEGAL_GOAL_MAPPING_METADATA.totalLegalGoals} metas legais
+            do novo ciclo, com acompanhamento municipal quando há indicador
+            comparável disponível no painel.
           </p>
         </aside>
       </section>
@@ -175,37 +192,46 @@ export function PneLegalGoalsPage({
           value={summary.total}
         />
         <SummaryCard
-          detail="com pelo menos um vínculo direto"
-          label="Metas com indicador direto"
-          value={summary.withDirectIndicator}
+          detail="metas únicas com ao menos um indicador comparável"
+          label="Metas legais acompanhadas"
+          value={summary.tracked}
         />
         <SummaryCard
-          detail="inclui metas que também têm vínculo direto"
-          label="Cobertura parcial/aproximada"
-          value={summary.withPartialOrApproximateIndicator}
+          detail="melhor cobertura disponível para a meta"
+          label="Acompanhamento direto"
+          value={summary.direct}
         />
         <SummaryCard
-          detail="sem dado municipal correspondente"
-          label="Sem indicador municipal"
-          value={summary.withoutMunicipalIndicator}
+          detail="com indicador comparável, mas não integral"
+          label="Cobertura parcial"
+          value={summary.partial}
+        />
+        <SummaryCard
+          detail="sem distância/status interpretável"
+          label="Sem acompanhamento comparável"
+          value={summary.withoutComparableTracking}
         />
       </section>
 
       <section className="legal-goals-method-note" role="note">
-        <span>Nota metodológica</span>
-        <p>
-          Os textos legais devem ser validados linha a linha contra a fonte oficial antes
-          de publicação final. A correspondência entre metas e indicadores pode ser
-          direta, parcial ou aproximada.
-        </p>
+        <div>
+          <span>Aviso metodológico</span>
+          <p>
+            Indicadores de contexto não representam cumprimento da meta legal e
+            não exibem distância da meta. Uma meta legal pode ter mais de um
+            indicador associado; por isso o total de indicadores pode ser maior
+            que o total de metas acompanhadas.
+          </p>
+        </div>
+        <CoverageLegend />
       </section>
 
       {!selectedMunicipio ? (
         <section className="page-card legal-goals-empty-municipio">
           <h2>Selecione um município para acompanhar os indicadores relacionados</h2>
           <p>
-            A matriz legal já está disponível, mas os resultados atuais, distâncias e
-            projeções dependem da escolha de um município.
+            A matriz legal já está disponível, mas resultados atuais, distâncias
+            e projeções dependem da escolha de um município.
           </p>
           {onMunicipioChange ? (
             <div className="legal-goals-empty-municipio__selector">
@@ -223,8 +249,13 @@ export function PneLegalGoalsPage({
           <section className="legal-goals-filter-panel">
             <div className="legal-goals-filter-panel__heading">
               <div>
-                <span className="eyebrow">Matriz de correspondência</span>
-                <h2>Metas legais e indicadores municipais</h2>
+                <span className="eyebrow">Novo ciclo PNE 2026-2036</span>
+                <h2>Metas do novo ciclo e acompanhamento municipal</h2>
+                <p>
+                  A lista mostra metas com acompanhamento municipal comparável.
+                  Use os temas para navegar por área e a busca para localizar
+                  código, texto legal ou indicador.
+                </p>
               </div>
               <label className="legal-goals-search">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -241,52 +272,39 @@ export function PneLegalGoalsPage({
               </label>
             </div>
 
-            <div className="legal-goals-filters">
-              <label>
-                <span>Objetivo</span>
-                <select
-                  aria-label="Filtrar por objetivo"
-                  onChange={(event) => setObjectiveFilter(event.target.value)}
-                  value={objectiveFilter}
-                >
-                  <option value="todos">Todos os objetivos</option>
-                  {objectiveOptions.map((objectiveId) => (
-                    <option key={objectiveId} value={objectiveId}>
-                      Objetivo {objectiveId}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label>
-                <span>Cobertura</span>
-                <select
-                  aria-label="Filtrar por tipo de cobertura"
-                  onChange={(event) => setCoverageFilter(event.target.value)}
-                  value={coverageFilter}
-                >
-                  {COVERAGE_FILTERS.map((filter) => (
-                    <option key={filter.value} value={filter.value}>
-                      {filter.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+            <div className="legal-goals-theme-filter">
+              <span>Filtrar por tema</span>
+              <div className="legal-goals-theme-filter__chips" aria-label="Temas das metas">
+                {themeOptions.map((theme) => (
+                  <button
+                    aria-pressed={themeFilter === theme.value}
+                    className={themeFilter === theme.value ? 'is-active' : ''}
+                    key={theme.value}
+                    onClick={() => setThemeFilter(theme.value)}
+                    type="button"
+                  >
+                    {theme.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </section>
 
           <div className="legal-goals-results-meta">
-            <span>{filteredGoals.length} metas exibidas</span>
-            <p>{selectedMunicipio} · Lei nº 15.388/2026</p>
+            <span>{trackedGoals.length} metas acompanhadas exibidas</span>
+            <p>
+              {getSelectedThemeLabel(themeOptions, themeFilter)} · {selectedMunicipio} ·
+              Lei nº 15.388/2026
+            </p>
           </div>
 
-          {filteredGoals.length === 0 ? (
+          {trackedGoals.length === 0 ? (
             <section className="page-card legal-goals-no-results">
-              <p>Nenhuma meta legal encontrada para os filtros selecionados.</p>
+              <p>Nenhuma meta com acompanhamento municipal comparável encontrada para os filtros selecionados.</p>
             </section>
           ) : (
             <section className="legal-goals-accordion" aria-label="Metas legais do PNE 2026-2036">
-              {filteredGoals.map((goal) => (
+              {trackedGoals.map((goal) => (
                 <LegalGoalAccordionItem
                   goal={goal}
                   isExpanded={expandedGoalIds.has(goal.legalGoalId)}
@@ -300,6 +318,14 @@ export function PneLegalGoalsPage({
               ))}
             </section>
           )}
+
+          <UntrackedLegalGoals
+            goals={untrackedGoals}
+            isOpen={showUntrackedGoals}
+            itemByKey={itemByKey}
+            normalizedResults={normalizedResults}
+            onToggle={() => setShowUntrackedGoals((current) => !current)}
+          />
         </>
       )}
     </div>
@@ -316,6 +342,40 @@ function SummaryCard({ detail, label, value }) {
   )
 }
 
+function CoverageLegend() {
+  const legendItems = [
+    {
+      coverage: 'direta',
+      description: 'o indicador acompanha de forma próxima a meta legal.',
+      label: 'Acompanhamento direto',
+    },
+    {
+      coverage: 'parcial',
+      description: 'o indicador mede uma parte relevante da meta, mas não representa sozinho todo o texto legal.',
+      label: 'Cobertura parcial',
+    },
+    {
+      coverage: 'sem_comparavel',
+      description: 'ainda não há fonte municipal adequada para acompanhar a meta no painel.',
+      label: 'Sem acompanhamento municipal comparável',
+    },
+  ]
+
+  return (
+    <div className="legal-goals-legend" aria-label="Como ler os selos">
+      <strong>Como ler os selos</strong>
+      <div>
+        {legendItems.map((item) => (
+          <p key={item.coverage}>
+            <CoverageBadge coverage={item.coverage} label={item.label} />
+            <span>{item.description}</span>
+          </p>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function LegalGoalAccordionItem({
   goal,
   isExpanded,
@@ -326,6 +386,9 @@ function LegalGoalAccordionItem({
   projections,
 }) {
   const contentId = `legal-goal-panel-${goal.legalGoalId.replace('.', '-')}`
+  const goalCoverage = classifyGoalCoverage(goal, normalizedResults)
+  const comparableRelations = getComparableGoalRelations(goal, normalizedResults)
+  const goalThemeLabel = getGoalThemeSummary(goal, itemByKey)
 
   return (
     <article className={`legal-goal-card${isExpanded ? ' is-expanded' : ''}`}>
@@ -339,21 +402,24 @@ function LegalGoalAccordionItem({
         <span className="legal-goal-toggle__content">
           <span className="legal-goal-toggle__topline">
             <span className="legal-goal-code">Meta {goal.legalGoalId}</span>
-            <span className="legal-goal-objective">Objetivo {goal.objectiveId}</span>
+            <span className="legal-goal-theme">{goalThemeLabel}</span>
           </span>
           <span className="legal-goal-text">{goal.legalText}</span>
-          <CoverageBadgeList goal={goal} />
+          <span className="legal-goal-badge-row">
+            <CoverageBadge coverage={goalCoverage} />
+          </span>
         </span>
         <span className="legal-goal-chevron" aria-hidden="true" />
       </button>
 
       {isExpanded ? (
         <div className="legal-goal-card__body" id={contentId}>
-          {goal.relatedIndicators.length === 0 ? (
+          <p className="legal-goal-full-text">{goal.legalText}</p>
+          {comparableRelations.length === 0 ? (
             <NoMunicipalIndicator reason={goal.noMunicipalIndicatorReason} />
           ) : (
             <div className="legal-goal-indicator-list">
-              {goal.relatedIndicators.map((indicatorRelation) => (
+              {comparableRelations.map((indicatorRelation) => (
                 <LegalGoalIndicator
                   indicatorRelation={indicatorRelation}
                   item={itemByKey.get(indicatorRelation.indicatorId)}
@@ -371,26 +437,6 @@ function LegalGoalAccordionItem({
   )
 }
 
-function CoverageBadgeList({ goal }) {
-  const coverages = uniqueCoverageTypes(goal)
-
-  if (!coverages.length) {
-    return (
-      <span className="legal-goal-badge-row">
-        <CoverageBadge coverage="sem_indicador" label="Sem indicador municipal" />
-      </span>
-    )
-  }
-
-  return (
-    <span className="legal-goal-badge-row">
-      {coverages.map((coverage) => (
-        <CoverageBadge coverage={coverage} key={coverage} />
-      ))}
-    </span>
-  )
-}
-
 function CoverageBadge({ coverage, label }) {
   const displayLabel = label ?? COVERAGE_LABELS[coverage] ?? coverage
 
@@ -404,9 +450,61 @@ function CoverageBadge({ coverage, label }) {
 function NoMunicipalIndicator({ reason }) {
   return (
     <div className="legal-goal-no-indicator">
-      <span>Sem indicador municipal correspondente</span>
-      <p>{reason || 'Sem indicador municipal disponível atualmente na plataforma.'}</p>
+      <span>Sem indicador municipal disponível atualmente na plataforma.</span>
+      {reason ? <p>{reason}</p> : null}
     </div>
+  )
+}
+
+function UntrackedLegalGoals({ goals, isOpen, itemByKey, normalizedResults, onToggle }) {
+  if (!goals.length) return null
+
+  return (
+    <section className="legal-goals-untracked">
+      <button
+        aria-expanded={isOpen}
+        className="legal-goals-untracked__toggle"
+        onClick={onToggle}
+        type="button"
+      >
+        <span>
+          <strong>Metas sem acompanhamento municipal comparável</strong>
+          <em>{goals.length} metas nos filtros atuais</em>
+        </span>
+        <span className="legal-goal-chevron" aria-hidden="true" />
+      </button>
+
+      {isOpen ? (
+        <div className="legal-goals-untracked__list">
+          <p className="legal-goals-untracked__support">
+            Essas metas fazem parte da lei, mas ainda não possuem indicador
+            municipal adequado no painel. Em alguns casos, há dados contextuais
+            em Indicadores de Educação, mas eles não representam cumprimento da
+            meta legal.
+          </p>
+          {goals.map((goal) => (
+            <article className="legal-goals-untracked__item" key={goal.legalGoalId}>
+              <div className="legal-goals-untracked__heading">
+                <span className="legal-goal-code">Meta {goal.legalGoalId}</span>
+                <CoverageBadge coverage="sem_comparavel" />
+              </div>
+              <p className="legal-goals-untracked__text">{goal.legalText}</p>
+              <p className="legal-goals-untracked__reason">
+                {getUntrackedReasonLabel(goal, normalizedResults)}
+              </p>
+              {goal.relatedIndicators.length ? (
+                <p className="legal-goals-untracked__related">
+                  Dados relacionados:{' '}
+                  {goal.relatedIndicators
+                    .map((indicatorRelation) => itemByKey.get(indicatorRelation.indicatorId)?.label ?? indicatorRelation.indicatorId)
+                    .join(', ')}
+                </p>
+              ) : null}
+            </article>
+          ))}
+        </div>
+      ) : null}
+    </section>
   )
 }
 
@@ -414,9 +512,17 @@ function LegalGoalIndicator({ indicatorRelation, item, onNavigate, projection, r
   const hasCatalogItem = Boolean(item)
   const hasMunicipalResult = hasUsableMunicipalResult(indicatorRelation, result)
   const unit = resolveIndicatorUnit(item, result)
-  const showMeta = hasMunicipalResult && hasReferenceMeta(result)
-  const showDistance = hasMunicipalResult && hasComparableDistance(indicatorRelation, result)
-  const showProjection = hasMunicipalResult && hasProjection2036(indicatorRelation, projection)
+  const comparable = hasMunicipalResult && isComparableLegalIndicator(indicatorRelation, result)
+  const showDistance = comparable && hasComparableDistance(indicatorRelation, result)
+  const showProjection = comparable && hasProjection2036(indicatorRelation, projection)
+  const showStatus = comparable && hasReadableStatus(result)
+  const indicatorCoverage = getIndicatorCoverage(indicatorRelation, result)
+  const relationType = getRelationTypeLabel(indicatorRelation, result)
+  const methodologyWarning = getMethodologyWarning(indicatorRelation, result)
+  const indicatorTitle = hasCatalogItem
+    ? getIndicatorTitle(item, result)
+    : indicatorRelation.indicatorId
+  const relationCopy = buildRelationCopy(indicatorRelation, methodologyWarning)
   const sourceContext = {
     block: 'pne',
     cycle: PNE_2026_CYCLE,
@@ -430,15 +536,37 @@ function LegalGoalIndicator({ indicatorRelation, item, onNavigate, projection, r
       <header className="legal-goal-indicator__header">
         <div>
           <span className="legal-goal-indicator__eyebrow">
-            {item?.categoryLabel ?? 'Indicador relacionado'} · {indicatorRelation.indicatorId}
+            Indicador usado no painel · {item?.categoryLabel ?? 'Indicador relacionado'} · {indicatorRelation.indicatorId}
           </span>
-          <h3>{hasCatalogItem ? getIndicatorTitle(item, result) : indicatorRelation.indicatorId}</h3>
+          <h3>{indicatorTitle}</h3>
           {item?.desc ? <p>{item.desc}</p> : null}
         </div>
-        <CoverageBadge coverage={indicatorRelation.coverage} />
+        <CoverageBadge coverage={indicatorCoverage} />
       </header>
 
-      <p className="legal-goal-relation-note">{indicatorRelation.relationNote}</p>
+      <div className="legal-goal-relation-meta">
+        <span>Leitura no painel: <strong>{relationType}</strong></span>
+        {isPneContextProxyRelation(indicatorRelation, result) ? (
+          <span>Sem distância, status de meta ou projeção.</span>
+        ) : null}
+      </div>
+
+      <div className="legal-goal-explanation-grid">
+        <div className="legal-goal-explanation">
+          <span>Indicador usado no painel</span>
+          <p>{indicatorTitle}</p>
+        </div>
+        <div className="legal-goal-explanation">
+          <span>Por que este indicador foi associado</span>
+          <p>{relationCopy.rationale}</p>
+        </div>
+        {relationCopy.limit ? (
+          <div className="legal-goal-explanation legal-goal-explanation--limit">
+            <span>Limite da leitura</span>
+            <p>{relationCopy.limit}</p>
+          </div>
+        ) : null}
+      </div>
 
       {!hasCatalogItem ? (
         <div className="legal-goal-indicator__empty">
@@ -451,11 +579,14 @@ function LegalGoalIndicator({ indicatorRelation, item, onNavigate, projection, r
       ) : (
         <div className="legal-goal-metric-grid">
           <LegalMetric
-            detail={getCurrentMetricDetail(result)}
-            label={getCurrentMetricLabel(result)}
-            value={formatIndicatorValue(result.end_value, unit)}
+            label="Resultado atual"
+            value={formatCurrentValue(result, unit)}
           />
-          {showMeta ? (
+          <LegalMetric
+            label="Ano do resultado"
+            value={getReadableYear(result?.end_year) ?? '—'}
+          />
+          {comparable ? (
             <LegalMetric
               detail={result.meta_label ?? 'Meta de referência do indicador'}
               label="Meta de referência"
@@ -467,6 +598,13 @@ function LegalGoalIndicator({ indicatorRelation, item, onNavigate, projection, r
               label="Distância da meta"
               tone={result.atingida ? 'success' : 'warning'}
               value={formatDistance(result, unit)}
+            />
+          ) : null}
+          {showStatus ? (
+            <LegalMetric
+              label="Status da meta"
+              tone={result.atingida ? 'success' : 'warning'}
+              value={result.display.status}
             />
           ) : null}
           {showProjection ? (
@@ -506,55 +644,189 @@ function LegalMetric({ detail, label, tone = 'default', value }) {
   )
 }
 
-function buildCoverageSummary(goals) {
+function buildCoverageSummary(goals, results) {
   return goals.reduce(
     (summary, goal) => {
-      const coverageTypes = new Set(
-        goal.relatedIndicators.map((indicatorRelation) => indicatorRelation.coverage),
-      )
+      const coverage = classifyGoalCoverage(goal, results, { allowMatrixFallback: true })
 
       summary.total += 1
 
-      if (coverageTypes.has('direta')) {
-        summary.withDirectIndicator += 1
-      }
-
-      if (coverageTypes.has('parcial') || coverageTypes.has('aproximada')) {
-        summary.withPartialOrApproximateIndicator += 1
-      }
-
-      if (!coverageTypes.size) {
-        summary.withoutMunicipalIndicator += 1
+      if (coverage === 'direta') {
+        summary.direct += 1
+        summary.tracked += 1
+      } else if (coverage === 'parcial') {
+        summary.partial += 1
+        summary.tracked += 1
+      } else if (coverage === 'sem_comparavel') {
+        summary.withoutComparableTracking += 1
       }
 
       return summary
     },
     {
+      direct: 0,
+      partial: 0,
+      tracked: 0,
       total: 0,
-      withDirectIndicator: 0,
-      withPartialOrApproximateIndicator: 0,
-      withoutMunicipalIndicator: 0,
+      withoutComparableTracking: 0,
     },
   )
 }
 
-function matchesCoverageFilter(goal, coverageFilter) {
-  const coverageTypes = new Set(
-    goal.relatedIndicators.map((indicatorRelation) => indicatorRelation.coverage),
-  )
+function matchesThemeFilter(goal, themeFilter, itemByKey) {
+  if (themeFilter === ALL_THEMES_FILTER) return true
 
-  if (coverageFilter === 'direta') return coverageTypes.has('direta')
-  if (coverageFilter === 'parcial_aproximada') {
-    return coverageTypes.has('parcial') || coverageTypes.has('aproximada')
-  }
-  if (coverageFilter === 'sem_indicador') return coverageTypes.size === 0
-  return true
+  return (goal.relatedIndicators ?? []).some((indicatorRelation) => (
+    itemByKey.get(indicatorRelation.indicatorId)?.categoryKey === themeFilter
+  ))
 }
 
-function uniqueCoverageTypes(goal) {
-  return Array.from(
-    new Set(goal.relatedIndicators.map((indicatorRelation) => indicatorRelation.coverage)),
+function getGoalThemeLabels(goal, itemByKey) {
+  const labels = []
+  const seenLabels = new Set()
+  const relatedIndicators = goal.relatedIndicators ?? []
+
+  relatedIndicators.forEach((indicatorRelation) => {
+    const label = itemByKey.get(indicatorRelation.indicatorId)?.categoryLabel
+    if (!label || seenLabels.has(label)) return
+
+    seenLabels.add(label)
+    labels.push(label)
+  })
+
+  return labels
+}
+
+function getGoalThemeSummary(goal, itemByKey) {
+  const labels = getGoalThemeLabels(goal, itemByKey)
+
+  if (!labels.length) return UNMAPPED_THEME_LABEL
+  if (labels.length === 1) return labels[0]
+
+  const extraCount = labels.length - 1
+  return `${labels[0]} + ${extraCount} tema${extraCount > 1 ? 's' : ''}`
+}
+
+function getSelectedThemeLabel(themeOptions, themeFilter) {
+  return (
+    themeOptions.find((theme) => theme.value === themeFilter)?.label ??
+    'Todos os temas'
   )
+}
+
+function getUntrackedReasonLabel(goal, results) {
+  if (hasContextualRelatedData(goal, results)) {
+    return 'Possui apenas dado contextual'
+  }
+
+  const normalizedReason = normalizeText(goal.noMunicipalIndicatorReason)
+  if (
+    normalizedReason.includes('administrativa') ||
+    normalizedReason.includes('local')
+  ) {
+    return 'Depende de base administrativa/local'
+  }
+
+  return 'Sem fonte municipal anual adequada'
+}
+
+function buildRelationCopy(indicatorRelation, methodologyWarning) {
+  const relationNote = String(indicatorRelation?.relationNote ?? '').trim()
+  const noteParts = relationNote.split(';').map((part) => part.trim()).filter(Boolean)
+  const rationale = noteParts[0] || relationNote || 'Nota metodológica não disponível na matriz.'
+  const limitParts = noteParts.slice(1)
+
+  if (
+    methodologyWarning &&
+    !limitParts.some((part) => normalizeText(part) === normalizeText(methodologyWarning))
+  ) {
+    limitParts.push(methodologyWarning)
+  }
+
+  return {
+    limit: indicatorRelation?.coverage === 'direta'
+      ? ''
+      : limitParts.join(' ') || relationNote || methodologyWarning,
+    rationale,
+  }
+}
+
+function classifyGoalCoverage(goal, results, { allowMatrixFallback = false } = {}) {
+  const comparableRelations = getComparableGoalRelations(goal, results, { allowMatrixFallback })
+
+  if (!comparableRelations.length) return 'sem_comparavel'
+  if (comparableRelations.some((indicatorRelation) => indicatorRelation.coverage === 'direta')) {
+    return 'direta'
+  }
+  return 'parcial'
+}
+
+function getComparableGoalRelations(goal, results, { allowMatrixFallback = false } = {}) {
+  return (goal.relatedIndicators ?? []).filter((indicatorRelation) => (
+    isComparableGoalRelation(indicatorRelation, results, { allowMatrixFallback })
+  ))
+}
+
+function isComparableGoalRelation(indicatorRelation, results, { allowMatrixFallback = false } = {}) {
+  const result = results?.[indicatorRelation.indicatorId]
+
+  if (!result && allowMatrixFallback) {
+    return (
+      indicatorRelation.hasDistance !== false &&
+      !isPneContextProxyRelation(indicatorRelation)
+    )
+  }
+
+  return isPneComparableIndicator({
+    indicatorKey: indicatorRelation.indicatorId,
+    indicatorRelation,
+    result,
+  })
+}
+
+function hasContextualRelatedData(goal, results) {
+  return (goal.relatedIndicators ?? []).some((indicatorRelation) => (
+    isPneContextProxyRelation(indicatorRelation, results?.[indicatorRelation.indicatorId])
+  ))
+}
+
+function getIndicatorCoverage(indicatorRelation, result) {
+  if (!isPneContextProxyRelation(indicatorRelation, result)) {
+    return indicatorRelation.coverage === 'direta' ? 'direta' : 'parcial'
+  }
+
+  return isProxyMethodologicalRelation(indicatorRelation) ? 'proxy' : 'contexto'
+}
+
+function getRelationTypeLabel(indicatorRelation, result) {
+  if (isPneContextProxyRelation(indicatorRelation, result)) {
+    return isProxyMethodologicalRelation(indicatorRelation)
+      ? 'Contexto/proxy'
+      : 'Contexto'
+  }
+  if (indicatorRelation.coverage === 'direta') return 'Direta'
+  if (indicatorRelation.coverage === 'parcial') return 'Parcial'
+  if (indicatorRelation.coverage === 'aproximada') return 'Aproximada'
+  return indicatorRelation.coverage ?? 'Relacionada'
+}
+
+function getMethodologyWarning(indicatorRelation, result) {
+  const indicatorId = indicatorRelation.indicatorId
+
+  if (METHODOLOGY_WARNINGS_BY_KEY[indicatorId]) {
+    return METHODOLOGY_WARNINGS_BY_KEY[indicatorId]
+  }
+
+  if (isPneContextProxyRelation(indicatorRelation, result)) {
+    return 'Indicador exibido apenas como contexto metodológico; não representa cumprimento da meta legal.'
+  }
+
+  return ''
+}
+
+function isProxyMethodologicalRelation(indicatorRelation) {
+  const note = normalizeText(indicatorRelation?.relationNote)
+  return note.includes('proxy')
 }
 
 function hasUsableMunicipalResult(indicatorRelation, result) {
@@ -568,40 +840,43 @@ function hasUsableMunicipalResult(indicatorRelation, result) {
   return (result.series ?? []).some((point) => Number.isFinite(Number(point?.valor)))
 }
 
-function hasReferenceMeta(result) {
-  const meta = Number(result?.meta)
-  return Number.isFinite(meta)
+function isComparableLegalIndicator(indicatorRelation, result) {
+  return isPneComparableIndicator({
+    indicatorKey: indicatorRelation.indicatorId,
+    indicatorRelation,
+    result,
+  })
 }
 
 function hasComparableDistance(indicatorRelation, result) {
-  if (!indicatorRelation.hasDistance || !hasReferenceMeta(result)) return false
-
-  const status = normalizeText(result?.display?.status)
-  return !(
-    status.includes('visualizacao') ||
-    status.includes('informativo') ||
-    status.includes('indispon') ||
-    status.includes('sem dados') ||
-    status.includes('sem variacao')
-  )
+  if (!isComparableLegalIndicator(indicatorRelation, result)) return false
+  return Number.isFinite(Number(result?.distance))
 }
 
 function hasProjection2036(indicatorRelation, projection) {
   return (
-    indicatorRelation.hasProjection2036 &&
+    indicatorRelation.hasProjection2036 === true &&
     projection?.available === true &&
     Number.isFinite(Number(projection.projected_2036))
   )
 }
 
-function getCurrentMetricLabel(result) {
-  const year = getReadableYear(result?.end_year)
-  return year ? `Resultado municipal (${year})` : 'Resultado municipal'
+function hasReadableStatus(result) {
+  const status = result?.display?.status
+  if (!status) return false
+
+  const normalizedStatus = normalizeText(status)
+  return !(
+    normalizedStatus.includes('visualizacao') ||
+    normalizedStatus.includes('informativo') ||
+    normalizedStatus.includes('indispon') ||
+    normalizedStatus.includes('sem dados')
+  )
 }
 
-function getCurrentMetricDetail(result) {
-  const status = result?.display?.status
-  return status && !normalizeText(status).includes('visualizacao') ? status : null
+function formatCurrentValue(result, unit) {
+  if (result?.display?.end_value) return result.display.end_value
+  return formatIndicatorValue(result?.end_value, unit)
 }
 
 function formatDistance(result, unit) {

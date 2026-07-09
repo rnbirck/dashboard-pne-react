@@ -39,7 +39,7 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'creche',
         'parcial',
-        'Acompanha a cobertura da populacao de 0 a 3 anos que frequenta escola/creche; nao mede demanda manifesta por vaga em creche.',
+        'Acompanha a cobertura da população de 0 a 3 anos que frequenta escola/creche; não mede demanda manifesta por vaga em creche.',
         { hasProjection2036: true },
       ),
     ],
@@ -49,7 +49,7 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'pre_escola',
         'direta',
-        'Acompanha a populacao de 4 a 5 anos que frequenta escola/creche, alinhada a universalizacao da pre-escola.',
+        'Acompanha a população de 4 a 5 anos que frequenta escola/creche, alinhada à universalização da pré-escola.',
         { hasProjection2036: true },
       ),
     ],
@@ -59,7 +59,7 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'alfabetizacao',
         'direta',
-        'Acompanha estudantes alfabetizados na rede publica, usado como referencia municipal para alfabetizacao.',
+        'Acompanha estudantes alfabetizados na rede pública, usado como referência municipal para alfabetização.',
       ),
     ],
   },
@@ -68,13 +68,13 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'basico_6_17',
         'direta',
-        'Acompanha a frequencia a educacao basica da populacao de 6 a 17 anos.',
+        'Acompanha a frequência à educação básica da população de 6 a 17 anos.',
         { hasProjection2036: true },
       ),
       indicator(
         'basico_15_17',
         'parcial',
-        'Acompanha apenas o recorte de 15 a 17 anos, com frequencia escolar ou conclusao da educacao basica.',
+        'Acompanha apenas o recorte de 15 a 17 anos, com frequência escolar ou conclusão da educação básica.',
         { hasProjection2036: true },
       ),
     ],
@@ -84,7 +84,7 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'idade_regular_quinto',
         'direta',
-        'Acompanha a conclusao dos anos iniciais do ensino fundamental na idade regular.',
+        'Acompanha a conclusão dos anos iniciais do ensino fundamental na idade regular.',
       ),
     ],
   },
@@ -93,7 +93,7 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'idade_regular_nono',
         'direta',
-        'Acompanha a conclusao dos anos finais do ensino fundamental na idade regular.',
+        'Acompanha a conclusão dos anos finais do ensino fundamental na idade regular.',
       ),
     ],
   },
@@ -102,7 +102,7 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'idade_regular_medio',
         'direta',
-        'Acompanha a conclusao do ensino medio na idade regular.',
+        'Acompanha a conclusão do ensino médio na idade regular.',
       ),
     ],
   },
@@ -111,12 +111,12 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'saeb_matematica_anos_iniciais',
         'parcial',
-        'Acompanha aprendizagem em Matematica nos anos iniciais; nao cobre sozinho todas as dimensoes da meta.',
+        'Acompanha aprendizagem em Matemática nos anos iniciais; não cobre sozinho todas as dimensões da meta.',
       ),
       indicator(
         'saeb_portugues_anos_iniciais',
         'parcial',
-        'Acompanha aprendizagem em Portugues nos anos iniciais; nao cobre sozinho todas as dimensoes da meta.',
+        'Acompanha aprendizagem em Português nos anos iniciais; não cobre sozinho todas as dimensões da meta.',
       ),
     ],
   },
@@ -125,12 +125,12 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'saeb_matematica_anos_finais',
         'parcial',
-        'Acompanha aprendizagem em Matematica nos anos finais; nao cobre sozinho todas as dimensoes da meta.',
+        'Acompanha aprendizagem em Matemática nos anos finais; não cobre sozinho todas as dimensões da meta.',
       ),
       indicator(
         'saeb_portugues_anos_finais',
         'parcial',
-        'Acompanha aprendizagem em Portugues nos anos finais; nao cobre sozinho todas as dimensoes da meta.',
+        'Acompanha aprendizagem em Português nos anos finais; não cobre sozinho todas as dimensões da meta.',
       ),
     ],
   },
@@ -139,12 +139,12 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'saeb_matematica_ensino_medio',
         'parcial',
-        'Acompanha aprendizagem em Matematica no ensino medio; nao cobre sozinho todas as dimensoes da meta.',
+        'Acompanha aprendizagem em Matemática no ensino médio; não cobre sozinho todas as dimensões da meta.',
       ),
       indicator(
         'saeb_portugues_ensino_medio',
         'parcial',
-        'Acompanha aprendizagem em Portugues no ensino medio; nao cobre sozinho todas as dimensoes da meta.',
+        'Acompanha aprendizagem em Português no ensino médio; não cobre sozinho todas as dimensões da meta.',
       ),
     ],
   },
@@ -153,12 +153,12 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'basico_integral',
         'parcial',
-        'Acompanha a parcela de estudantes da educacao basica publica em jornada integral.',
+        'Acompanha a parcela de estudantes da educação básica pública em jornada integral.',
       ),
       indicator(
         'escolas_integral',
         'parcial',
-        'Acompanha a parcela de escolas publicas com alunos em jornada de tempo integral.',
+        'Acompanha a parcela de escolas públicas com alunos em jornada de tempo integral.',
       ),
     ],
   },
@@ -167,36 +167,38 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'internet',
         'aproximada',
-        'Indica acesso a internet nas escolas, mas nao mede alta velocidade, uso pedagogico ou redes internas wi-fi.',
+        'Indica acesso à internet nas escolas, mas não mede alta velocidade, uso pedagógico ou redes internas wi-fi.',
         { hasDistance: false },
       ),
       indicator(
         'internet_alunos',
         'aproximada',
-        'Indica disponibilidade de internet para alunos, mas nao mede alta velocidade ou adequacao pedagogica.',
+        'Indica disponibilidade de internet para alunos, mas não mede alta velocidade ou adequação pedagógica.',
         { hasDistance: false },
       ),
       indicator(
         'internet_aprendizagem',
         'parcial',
-        'Acompanha uso da internet em processos de ensino e aprendizagem, uma parte da meta de conectividade pedagogica.',
+        'Acompanha uso da internet em processos de ensino e aprendizagem, uma parte da meta de conectividade pedagógica.',
         { hasDistance: false },
       ),
       indicator(
         'rede_local',
         'aproximada',
-        'Indica existencia de rede local de computadores, mas nao mede rede interna wi-fi nem qualidade da conectividade.',
+        'Indica existência de rede local de computadores, mas não mede rede interna wi-fi nem qualidade da conectividade.',
         { hasDistance: false },
       ),
       indicator(
         'rede_wireless',
-        'parcial',
-        'Acompanha rede local sem fio, componente da meta de redes internas wi-fi.',
+        'aproximada',
+        'Proxy parcial de rede local sem fio; não mede qualidade, cobertura efetiva ou suficiência da conectividade interna.',
+        { hasDistance: false },
       ),
       indicator(
         'banda_larga',
-        'parcial',
-        'Acompanha oferta de internet banda larga, componente da conectividade de alta velocidade.',
+        'aproximada',
+        'Proxy parcial de conectividade; não mede velocidade efetiva, estabilidade ou qualidade de uso pedagógico.',
+        { hasDistance: false },
       ),
     ],
   },
@@ -205,7 +207,7 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'salas_climatizadas',
         'parcial',
-        'Acompanha salas de aula climatizadas; nao mede integralmente conforto termico de todos os estabelecimentos.',
+        'Proxy parcial de conforto térmico; não mede integralmente as condições mínimas de infraestrutura escolar, mas permanece com distância operacional de referência.',
       ),
     ],
   },
@@ -214,7 +216,7 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'educacao_ambiental',
         'direta',
-        'Acompanha escolas que promovem educacao ambiental.',
+        'Acompanha escolas que promovem educação ambiental.',
       ),
     ],
   },
@@ -222,8 +224,9 @@ const LEGAL_GOAL_RELATIONS = {
     relatedIndicators: [
       indicator(
         'aee',
-        'parcial',
-        'Acompanha oferta de AEE e salas de recursos em relacao ao total da educacao especial; nao mede todo o publico do AEE.',
+        'aproximada',
+        'Indicador de contexto/proxy; a fonte aberta atual não oferece denominador municipal seguro para medir diretamente todo o público do AEE.',
+        { hasDistance: false },
       ),
     ],
   },
@@ -232,7 +235,7 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'alfabetizacao_pop_15_mais',
         'direta',
-        'Acompanha a taxa de alfabetizacao da populacao de 15 anos ou mais.',
+        'Acompanha a taxa de alfabetização da população de 15 anos ou mais.',
       ),
     ],
   },
@@ -241,12 +244,12 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'fundamental_concluido_18_mais',
         'parcial',
-        'Acompanha populacao de 18 anos ou mais com ensino fundamental concluido; a meta legal usa populacao de 15 anos ou mais.',
+        'Acompanha população de 18 anos ou mais com ensino fundamental concluído; a meta legal usa população de 15 anos ou mais.',
       ),
       indicator(
         'fundamental_concluido_15_29',
         'direta',
-        'Acompanha a conclusao do ensino fundamental na populacao de 15 a 29 anos.',
+        'Acompanha a conclusão do ensino fundamental na população de 15 a 29 anos.',
       ),
     ],
   },
@@ -255,12 +258,12 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'medio_concluido_18_mais',
         'direta',
-        'Acompanha a populacao de 18 anos ou mais com ensino medio concluido.',
+        'Acompanha a população de 18 anos ou mais com ensino médio concluído.',
       ),
       indicator(
         'medio_concluido_18_29',
         'direta',
-        'Acompanha a conclusao do ensino medio na populacao de 18 a 29 anos.',
+        'Acompanha a conclusão do ensino médio na população de 18 a 29 anos.',
       ),
     ],
   },
@@ -269,12 +272,12 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'medio_tecnico',
         'parcial',
-        'Acompanha a participacao de matriculas do ensino medio articuladas a educacao profissional tecnica; nao mede qualidade nem permanencia.',
+        'Acompanha a participação de matrículas do ensino médio articuladas à educação profissional técnica sobre o total de matrículas do ensino médio; não mede qualidade nem permanência.',
       ),
       indicator(
         'medio_tecnico_participacao_publica',
         'parcial',
-        'Acompanha a participacao publica na expansao da EPT de nivel medio, uma parte da meta legal.',
+        'Acompanha a participação pública na expansão da EPT de nível médio, uma parte da meta legal.',
       ),
     ],
   },
@@ -283,7 +286,7 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'subsequente_expansao',
         'parcial',
-        'Acompanha expansao acumulada dos cursos tecnicos subsequentes; nao mede qualidade nem permanencia.',
+        'Acompanha expansão acumulada dos cursos técnicos subsequentes; não mede qualidade nem permanência.',
       ),
     ],
   },
@@ -292,7 +295,7 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'eja_integrada_educacao_profissional',
         'aproximada',
-        'Mostra o numero de matriculas da EJA integrada a educacao profissional, mas nao calcula a proporcao exigida pela meta.',
+        'Mostra o número de matrículas da EJA integrada à educação profissional, mas não calcula a proporção exigida pela meta.',
         { hasDistance: false },
       ),
     ],
@@ -302,17 +305,17 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'adequacao_ai',
         'parcial',
-        'Acompanha formacao adequada nos anos iniciais; cobre apenas um recorte da meta de formacao docente.',
+        'Acompanha formação adequada nos anos iniciais; cobre apenas um recorte da meta de formação docente.',
       ),
       indicator(
         'adequacao_af',
         'parcial',
-        'Acompanha formacao adequada nos anos finais; cobre apenas um recorte da meta de formacao docente.',
+        'Acompanha formação adequada nos anos finais; cobre apenas um recorte da meta de formação docente.',
       ),
       indicator(
         'adequacao_em',
         'parcial',
-        'Acompanha formacao adequada no ensino medio; cobre apenas um recorte da meta de formacao docente.',
+        'Acompanha formação adequada no ensino médio; cobre apenas um recorte da meta de formação docente.',
       ),
     ],
   },
@@ -321,7 +324,7 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'rendimento_magisterio',
         'parcial',
-        'Acompanha a relacao remuneratoria do magisterio frente a outros profissionais com nivel superior, sem detalhar cada etapa da educacao basica.',
+        'Acompanha a relação remuneratória do magistério frente a outros profissionais com nível superior, sem detalhar cada etapa da educação básica.',
       ),
     ],
   },
@@ -339,7 +342,7 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'pos_graduacao',
         'direta',
-        'Acompanha docentes da educacao basica com pos-graduacao.',
+        'Acompanha docentes da educação básica com pós-graduação.',
       ),
     ],
   },
@@ -348,7 +351,7 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'conselho_escolar',
         'direta',
-        'Acompanha escolas publicas da educacao basica com conselho escolar instituido e em funcionamento.',
+        'Acompanha escolas públicas da educação básica com conselho escolar instituído e em funcionamento.',
       ),
     ],
   },
@@ -357,7 +360,7 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'salas_acessiveis',
         'parcial',
-        'Acompanha acessibilidade em salas de aula, apenas uma dimensao das condicoes minimas de infraestrutura.',
+        'Proxy parcial de acessibilidade física; não mede todas as condições de inclusão e permanência previstas na meta, mas permanece com distância operacional de referência.',
       ),
     ],
   },

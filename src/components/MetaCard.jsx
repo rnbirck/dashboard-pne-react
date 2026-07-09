@@ -121,6 +121,9 @@ function getMetaCardStatus(result, comparable) {
   }
 
   if (result.atingida === true) {
+    if (result.direction === 'at_most') {
+      return { label: 'Dentro do limite', rawStatus, state: 'success', tone: 'success' }
+    }
     return { label: 'No ritmo', rawStatus, state: 'success', tone: 'success' }
   }
 
@@ -162,6 +165,11 @@ function getProgressPercent(result) {
   const meta = Number(result?.meta)
   if (!Number.isFinite(current) || !Number.isFinite(meta) || meta <= 0 || current < 0) {
     return null
+  }
+  if (result?.direction === 'at_most') {
+    if (current <= meta) return 100
+    if (current <= 0) return 100
+    return Math.max(0, Math.min(100, (meta / current) * 100))
   }
   return Math.max(0, Math.min(100, (current / meta) * 100))
 }
@@ -208,10 +216,16 @@ function getSparkline(series = []) {
 function getQuickReading(result, status) {
   if (status.state === 'missing') return 'Sem dado disponível para este município.'
   if (status.state === 'no-goal') return 'Indicador acompanhado como contexto, sem meta definida.'
+  if (status.state === 'success' && result?.direction === 'at_most') {
+    return 'Resultado dentro do limite maximo definido para a meta.'
+  }
   if (status.state === 'success') return 'Trajetória favorável para a referência acompanhada.'
 
   const variation = parseDisplayNumber(result?.display?.variation)
   if (status.state === 'danger') {
+    if (result?.direction === 'at_most') {
+      return 'Acima do limite maximo; requer reducao do indicador.'
+    }
     return variation < 0
       ? 'Recuo no período e distância relevante da meta.'
       : 'Distância relevante da meta; requer ação prioritária.'

@@ -25,6 +25,7 @@ from src.data_loader import (
     load_escolas_integral_data,
     load_ept_nivel_medio_data,
     load_infraestrutura_escolar_data,
+    load_medio_tecnico_data,
     load_pne_data,
     load_pne_2026_2036_metricas_data,
     load_pre_escola_data,
@@ -258,10 +259,6 @@ INFRA_ITEMS = [
         "count_column": "escolas_com_rede_wireless",
         "denominator_column": "qntd_escolas",
         "start_year": 2019,
-        "meta": META_INFRA_CONECTIVIDADE_2_ANO,
-        "meta_label": "Meta PNE 2028",
-        "tracks_goal": True,
-        "dynamic_meta": "infra_conectividade",
     },
     {
         "key": "banda_larga",
@@ -272,10 +269,6 @@ INFRA_ITEMS = [
         "count_column": "escolas_com_banda_larga",
         "denominator_column": "qntd_escolas",
         "start_year": TARGET_START_YEAR,
-        "meta": META_INFRA_CONECTIVIDADE_2_ANO,
-        "meta_label": "Meta PNE 2028",
-        "tracks_goal": True,
-        "dynamic_meta": "infra_conectividade",
     },
     {
         "key": "educacao_ambiental",
@@ -502,6 +495,8 @@ def _finalize_informative_result(result):
     updated["tracks_goal"] = False
     updated["meta"] = None
     updated["meta_label"] = INFORMATIVE_META_LABEL
+    updated["atingida"] = False
+    updated.pop("distance", None)
     return updated
 
 
@@ -900,8 +895,8 @@ def _calc_aee(municipio):
     result = _build_precomputed_result(
         municipio,
         "aee",
-        meta=META_AEE_5_ANO,
-        meta_label="Meta vigente do PNE",
+        meta=0.0,
+        meta_label=INFORMATIVE_META_LABEL,
     )
     if result is None:
         result = _build_ratio_result(
@@ -909,18 +904,12 @@ def _calc_aee(municipio):
             municipio,
             numerator="quantidade_aee",
             denominator="total_turmas_educacao_especial",
-            meta=META_AEE_5_ANO,
-            meta_label="Meta vigente do PNE",
+            meta=0.0,
+            meta_label=INFORMATIVE_META_LABEL,
             target_start_year=TARGET_START_YEAR,
             target_end_year=TARGET_END_YEAR,
         )
-    if not result.get("available"):
-        return result
-    return _apply_result_goal(
-        result,
-        _meta_aee_por_ano(result.get("end_year")),
-        "Meta vigente do PNE",
-    )
+    return _finalize_informative_result(result)
 
 
 def _calc_eja_integrada_educacao_profissional(municipio):
@@ -934,72 +923,59 @@ def _calc_eja_integrada_educacao_profissional(municipio):
         target_end_year=TARGET_END_YEAR,
     )
     if result.get("available"):
-        result["tracks_goal"] = False
-        result["meta"] = None
         result["value_mode"] = "count"
         result["display_value_mode"] = "count"
-        return result
+        return _finalize_informative_result(result)
 
-    result["tracks_goal"] = False
-    result["meta"] = None
-    return result
+    return _finalize_informative_result(result)
 
 
 def _calc_medio_tecnico(municipio):
-    ept_df = _safe_load(load_ept_nivel_medio_data)
-    if (
-        ept_df.empty
-        or "municipio" not in ept_df.columns
-        or "ano" not in ept_df.columns
-        or "mat_ept_nivel_medio_total" not in ept_df.columns
-        or "mat_integrado_total" not in ept_df.columns
-    ):
-        return _empty_result(META_MEDIO_TECNICO, meta_label="Meta PNE 2036")
+    df = _safe_load(load_medio_tecnico_data)
+    required_columns = {
+        "ano",
+        "municipio",
+        "mat_profissional_tecnico",
+        "mat_medio",
+    }
+    if df.empty or not required_columns.issubset(df.columns):
+        return _empty_informative_result()
 
-    ept_slice = ept_df[ept_df["municipio"] == municipio][
-        ["ano", "mat_integrado_total", "mat_ept_nivel_medio_total"]
-    ].copy()
-    if ept_slice.empty:
-        return _empty_result(META_MEDIO_TECNICO, meta_label="Meta PNE 2036")
+    dff = df[df["municipio"] == municipio].copy()
+    if dff.empty:
+        return _empty_informative_result()
 
-    ept_slice["ano"] = pd.to_numeric(ept_slice["ano"], errors="coerce")
-    ept_slice["mat_integrado_total"] = pd.to_numeric(
-        ept_slice["mat_integrado_total"], errors="coerce"
+    dff["ano"] = pd.to_numeric(dff["ano"], errors="coerce")
+    dff["mat_profissional_tecnico"] = pd.to_numeric(
+        dff["mat_profissional_tecnico"], errors="coerce"
     )
-    ept_slice["mat_ept_nivel_medio_total"] = pd.to_numeric(
-        ept_slice["mat_ept_nivel_medio_total"], errors="coerce"
-    )
+    dff["mat_medio"] = pd.to_numeric(dff["mat_medio"], errors="coerce")
+    dff = dff.dropna(subset=["ano", "mat_medio", "mat_profissional_tecnico"]).copy()
+    if dff.empty:
+        return _empty_informative_result()
 
-    yearly = ept_slice.groupby("ano", as_index=False).agg(
-        {
-            "mat_integrado_total": "sum",
-            "mat_ept_nivel_medio_total": "sum",
-        }
-    )
-    if yearly.empty:
-        return _empty_result(META_MEDIO_TECNICO, meta_label="Meta PNE 2036")
+    dff["mat_profissional_tecnico"] = dff["mat_profissional_tecnico"].clip(lower=0)
+    dff["mat_medio"] = dff["mat_medio"].clip(lower=0)
 
-    yearly["valor"] = (
-        yearly["mat_integrado_total"]
-        .div(
-            yearly["mat_ept_nivel_medio_total"].where(
-                yearly["mat_ept_nivel_medio_total"] != 0,
-                pd.NA,
-            )
-        )
-        .mul(100)
+    yearly = (
+        dff.groupby("ano", as_index=False)
+        .agg({"mat_profissional_tecnico": "sum", "mat_medio": "sum"})
+        .sort_values("ano")
     )
+    denominator = yearly["mat_medio"].where(yearly["mat_medio"] > 0, pd.NA)
+    yearly["valor"] = yearly["mat_profissional_tecnico"].div(denominator).mul(100)
     yearly = yearly.dropna(subset=["ano", "valor"])
     if yearly.empty:
-        return _empty_result(META_MEDIO_TECNICO, meta_label="Meta PNE 2036")
+        return _empty_informative_result()
 
-    return _build_result(
+    result = _build_result(
         yearly[["ano", "valor"]],
-        meta=META_MEDIO_TECNICO,
+        META_MEDIO_TECNICO,
         meta_label="Meta PNE 2036",
         target_start_year=TARGET_START_YEAR,
         target_end_year=TARGET_END_YEAR,
     )
+    return _finalize_informative_result(result)
 
 
 def _calc_medio_tecnico_participacao_publica(municipio):
@@ -1491,8 +1467,9 @@ INDICADORES = {
                 "label": "Oferta de AEE e salas de recursos na educação especial",
                 "sub": "",
                 "desc": "Participação das turmas ou salas de AEE em relação ao total da educação especial no município.",
-                "meta_label": "Meta vigente do PNE",
+                "meta_label": INFORMATIVE_META_LABEL,
                 "compute": _calc_aee,
+                "tracks_goal": False,
             },
             {
                 "key": "eja_integrada_educacao_profissional",
@@ -1508,9 +1485,10 @@ INDICADORES = {
                 "key": "medio_tecnico",
                 "label": "Matrículas do ensino médio integradas à educação profissional técnica",
                 "sub": "",
-                "desc": "Percentual de matrículas do ensino médio articuladas à educação profissional técnica.",
-                "meta_label": "Meta PNE 2036",
+                "desc": "Percentual de matrículas do ensino médio na forma integrada à educação profissional técnica.",
+                "meta_label": INFORMATIVE_META_LABEL,
                 "compute": _calc_medio_tecnico,
+                "tracks_goal": False,
             },
             {
                 "key": "medio_tecnico_participacao_publica",

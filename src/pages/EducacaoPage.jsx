@@ -18,6 +18,7 @@ import { DataSourceNote } from '../components/DataSourceNote'
 import { MetricCard } from '../components/MetricCard'
 import { StatusBadge } from '../components/StatusBadge'
 import { loadEducationMunicipio, loadEducationMunicipiosIndex } from '../data/educationData'
+import { PNE_CONTEXT_PROXY_INDICATOR_KEYS } from '../utils/pneDisplayRules'
 import { useAsyncData } from '../utils/useAsyncData'
 import {
   depLabel,
@@ -116,9 +117,48 @@ const MAIN_BLOCK_KEYS = {
 }
 
 const PANORAMA_THEME_KEYS = {
+  complementaresPne: 'pne_complementares',
   matriculas: 'matriculas',
   escolasSistemaS: 'escolasSistemaS',
 }
+
+const PNE_COMPLEMENTARY_GROUPS = [
+  {
+    key: 'atendimento_apoio',
+    label: 'Atendimento e apoio educacional',
+    indicatorKeys: ['aee'],
+  },
+  {
+    key: 'eja_profissional',
+    label: 'EJA e Educação Profissional',
+    indicatorKeys: ['eja_integrada_educacao_profissional'],
+  },
+  {
+    key: 'conectividade',
+    label: 'Conectividade escolar',
+    indicatorKeys: [
+      'internet',
+      'internet_alunos',
+      'internet_aprendizagem',
+      'internet_comunidade',
+      'acesso_internet_computador',
+      'acesso_internet_disp_pessoais',
+      'rede_local',
+      'rede_wireless',
+      'banda_larga',
+    ],
+  },
+  {
+    key: 'equipamentos',
+    label: 'Equipamentos para alunos',
+    indicatorKeys: ['desktop_aluno', 'comp_portatil_aluno', 'tablet_aluno'],
+  },
+  {
+    key: 'gestao',
+    label: 'Gestão e proposta pedagógica',
+    indicatorKeys: ['proposta_pedagogica'],
+  },
+]
 
 const FINANCING_MODULE_KEYS = {
   fundeb: 'fundeb',
@@ -266,7 +306,7 @@ function normalizeNavigationValue(value) {
     .replace(/[^a-z0-9]/g, '')
 }
 
-export function EducacaoPage({ initialMainBlock, municipioData, selectedMunicipio }) {
+export function EducacaoPage({ indicadores, initialMainBlock, municipioData, selectedMunicipio }) {
   const isFinancingPage = initialMainBlock === MAIN_BLOCK_KEYS.financiamento
   const isSidebarScopedPage = Boolean(initialMainBlock)
   const pageCopy = isFinancingPage ? FINANCIAL_PAGE_COPY : EDUCATION_PAGE_COPY
@@ -351,7 +391,13 @@ export function EducacaoPage({ initialMainBlock, municipioData, selectedMunicipi
   if (!dados) return null
 
   const model = buildEducationModel(dados.blocos ?? {})
-  const themes = model.themes
+  const pneComplementaryTheme = buildPneComplementaryTheme({
+    indicadores,
+    results: municipioData?.pne_2026_2036?.indicadores,
+  })
+  const themes = pneComplementaryTheme
+    ? [...model.themes, pneComplementaryTheme]
+    : model.themes
   const isSistemaSTheme = selectedThemeKey === PANORAMA_THEME_KEYS.escolasSistemaS && hasSistemaS
   const selectedTheme = isSistemaSTheme
     ? null
@@ -359,7 +405,7 @@ export function EducacaoPage({ initialMainBlock, municipioData, selectedMunicipi
   const themeItems = selectedTheme?.items ?? []
   const filteredItems = themeItems.filter((item) => {
     const query = searchQuery.trim().toLocaleLowerCase('pt-BR')
-    const queryMatches = !query || `${item.label} ${item.description} ${item.themeLabel} ${item.searchText ?? ''}`.toLocaleLowerCase('pt-BR').includes(query)
+    const queryMatches = !query || `${item.label} ${item.description} ${item.themeLabel} ${item.categoryLabel ?? ''} ${item.searchText ?? ''}`.toLocaleLowerCase('pt-BR').includes(query)
     return queryMatches
   })
   const activeIndicator = filteredItems.find((item) => item.key === selectedIndicatorKey) ?? null
@@ -371,6 +417,7 @@ export function EducacaoPage({ initialMainBlock, municipioData, selectedMunicipi
     ? filteredItems[activeIndicatorIndex + 1]
     : null
   const isShowingIndicatorDetail = Boolean(isDetailOpen && activeIndicator)
+  const isPneComplementaryTheme = selectedTheme?.key === PANORAMA_THEME_KEYS.complementaresPne
 
   function handleThemeSelect(themeKey) {
     setSelectedThemeKey(themeKey)
@@ -492,6 +539,12 @@ export function EducacaoPage({ initialMainBlock, municipioData, selectedMunicipi
               <div className="meta-grid-empty education-indicator-grid-empty">
                 <p>Nenhum indicador disponível para este tema ou busca.</p>
               </div>
+            ) : isPneComplementaryTheme ? (
+              <PneComplementaryGroupedGrid
+                items={filteredItems}
+                onSelect={handleIndicatorCardSelect}
+                selectedIndicatorKey={selectedIndicatorKey}
+              />
             ) : (
               <div className="education-indicator-card-grid">
                 {filteredItems.map((item) => (
@@ -740,6 +793,42 @@ function EducationQuickReading({ text, tone = 'default' }) {
     <div className={`interpretation-box education-quick-reading education-quick-reading--${tone}`}>
       <span>Leitura rápida</span>
       <p>{text}</p>
+    </div>
+  )
+}
+
+function PneComplementaryGroupedGrid({ items, onSelect, selectedIndicatorKey }) {
+  const groups = PNE_COMPLEMENTARY_GROUPS
+    .map((group) => ({
+      ...group,
+      items: items.filter((item) => item.pneComplementaryGroupKey === group.key),
+    }))
+    .filter((group) => group.items.length > 0)
+
+  return (
+    <div className="pne-complementary-groups">
+      <p className="pne-complementary-groups__note">
+        Indicadores contextuais relacionados ao PNE. Eles não exibem distância,
+        status de meta ou projeção, e não representam cumprimento de meta legal.
+      </p>
+      {groups.map((group) => (
+        <section className="pne-complementary-group" key={group.key}>
+          <div className="pne-complementary-group__heading">
+            <h3>{group.label}</h3>
+            <span>{group.items.length} indicadores</span>
+          </div>
+          <div className="education-indicator-card-grid">
+            {group.items.map((item) => (
+              <EducationIndicatorCard
+                indicator={item}
+                isSelected={item.key === selectedIndicatorKey}
+                key={item.key}
+                onSelect={() => onSelect(item.key)}
+              />
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   )
 }
@@ -1774,6 +1863,95 @@ function ColorRaceDetail({ item }) {
   )
 }
 
+function buildPneComplementaryTheme({ indicadores, results }) {
+  if (!results) return null
+
+  const itemByKey = buildPneCatalogItemMap(indicadores)
+  const items = PNE_COMPLEMENTARY_GROUPS.flatMap((group) =>
+    group.indicatorKeys.map((indicatorKey) => {
+      const result = results?.[indicatorKey]
+      const catalogItem = itemByKey.get(indicatorKey)
+
+      if (!PNE_CONTEXT_PROXY_INDICATOR_KEYS.has(indicatorKey)) return null
+      if (!hasPneComplementaryResult(result)) return null
+
+      const formatType = inferPneComplementaryFormatType(catalogItem, result)
+      const formatValueForType = getFormatter(formatType)
+      const currentDisplay = result.display?.end_value ?? formatValueForType(result.end_value)
+      const currentYear = result.end_year ?? getLatestSeriesYear(result.series)
+
+      return createIndicator({
+        key: indicatorKey,
+        label: catalogItem?.label ?? INFRA_METRIC_LABELS[indicatorKey] ?? indicatorKey,
+        description: catalogItem?.desc ?? 'Indicador contextual relacionado ao PNE.',
+        themeKey: PANORAMA_THEME_KEYS.complementaresPne,
+        themeLabel: 'Dados complementares do PNE',
+        themeShortLabel: 'Complementares PNE',
+        categoryLabel: group.label,
+        categories: [FILTER_KEYS.todos],
+        series: result.series ?? [],
+        currentValue: result.end_value,
+        currentYear,
+        formatType,
+        mainCutLabel: group.label,
+        pneComplementaryGroupKey: group.key,
+        quickReading: `Indicador contextual do PNE: ${currentDisplay} em ${currentYear ?? 'ano indisponível'}. Não representa cumprimento da meta legal.`,
+        searchText: [
+          indicatorKey,
+          group.label,
+          catalogItem?.sub,
+          catalogItem?.categoryLabel,
+          'contexto proxy complementar PNE',
+        ].filter(Boolean).join(' '),
+        statusLabel: 'Contexto',
+        statusTone: 'muted',
+      })
+    }),
+  ).filter(Boolean)
+
+  if (!items.length) return null
+
+  return {
+    key: PANORAMA_THEME_KEYS.complementaresPne,
+    label: 'Dados complementares do PNE',
+    shortLabel: 'Complementares PNE',
+    items,
+  }
+}
+
+function buildPneCatalogItemMap(indicadores) {
+  const categories = indicadores?.cycles?.pne_2026_2036?.categories ?? []
+  const entries = categories.flatMap((category) =>
+    (category.items ?? []).map((item) => [
+      item.key,
+      {
+        ...item,
+        categoryLabel: category.label,
+      },
+    ]),
+  )
+
+  return new Map(entries)
+}
+
+function hasPneComplementaryResult(result) {
+  if (!result || result.available === false) return false
+  if (Number.isFinite(Number(result.end_value))) return true
+  return (result.series ?? []).some((point) => Number.isFinite(Number(point?.valor)))
+}
+
+function inferPneComplementaryFormatType(catalogItem, result) {
+  const valueMode = catalogItem?.value_mode ?? result?.value_mode
+  if (valueMode === 'count' || valueMode === 'absolute') return 'number'
+  if (valueMode === 'ratio_percent' || valueMode === 'percent') return 'percent'
+  if (String(result?.display?.end_value ?? '').includes('%')) return 'percent'
+  return 'number'
+}
+
+function getLatestSeriesYear(series = []) {
+  return normalizeYearSeries(series).at(-1)?.ano ?? null
+}
+
 function buildEducationModel(blocos) {
   const mat = blocos.matriculas ?? {}
   const rede = blocos.rede_escolar ?? {}
@@ -2079,10 +2257,10 @@ function createIndicator(config) {
     notices: config.notices ?? [],
     explore: filterRenderableExplore(config.explore),
     stageFilterOptions: filterStageFilterOptions(config.stageFilterOptions),
-    quickReading: buildQuickReading({ currentDisplay: formatValueForType(currentValue), currentValue, currentYear, formatType: config.formatType, initialValue, initialYear, label: config.label, variation }),
+    quickReading: config.quickReading ?? buildQuickReading({ currentDisplay: formatValueForType(currentValue), currentValue, currentYear, formatType: config.formatType, initialValue, initialYear, label: config.label, variation }),
     scaleType: config.scaleType ?? inferScaleType(config),
-    statusLabel: status.label,
-    statusTone: status.tone,
+    statusLabel: config.statusLabel ?? status.label,
+    statusTone: config.statusTone ?? status.tone,
     variationDisplay: variation.display,
     variationTone: variation.tone,
   }

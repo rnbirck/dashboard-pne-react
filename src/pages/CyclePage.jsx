@@ -7,6 +7,7 @@ import { PNE_2026_INDICATOR_GOAL_REFS } from '../data/pne2026IndicatorGoalRefs'
 import { PNE_2014_INDICATOR_GOAL_REFS } from '../data/pne2014IndicatorGoalRefs'
 import { buildThematicGroups } from '../data/thematicGroups'
 import { normalizePopulationPercentResults } from '../utils/indicatorValues'
+import { filterPneComparableCategories } from '../utils/pneDisplayRules'
 
 const CYCLE_SOURCE_NOTE = 'INEP, Censo Escolar, SAEB, IBGE e bases oficiais consolidadas no painel.'
 
@@ -14,10 +15,6 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   const categories = useMemo(
     () => enrichGoalRefs(indicadores?.cycles?.[cycle]?.categories ?? [], cycle),
     [indicadores, cycle],
-  )
-  const thematicGroups = useMemo(
-    () => buildThematicGroups(categories),
-    [categories],
   )
   const [selectedGroupKey, setSelectedGroupKey] = useState('')
   const [selectedBasicEducationFilterKey, setSelectedBasicEducationFilterKey] = useState('todos')
@@ -27,7 +24,23 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   const detailViewRef = useRef(null)
   const gridScrollYRef = useRef(0)
   const shouldScrollToDetailTopRef = useRef(false)
-
+  const municipioResults = municipioData?.[cycle]?.indicadores ?? null
+  const allCycleItems = useMemo(
+    () => categories.flatMap((category) => category.items ?? []),
+    [categories],
+  )
+  const normalizedMunicipioResults = useMemo(
+    () => normalizePopulationPercentResults(municipioResults, allCycleItems),
+    [municipioResults, allCycleItems],
+  )
+  const comparableCategories = useMemo(
+    () => filterPneComparableCategories(categories, normalizedMunicipioResults),
+    [categories, normalizedMunicipioResults],
+  )
+  const thematicGroups = useMemo(
+    () => buildThematicGroups(comparableCategories),
+    [comparableCategories],
+  )
   const selectedGroup = useMemo(() => {
     if (!thematicGroups.length) return null
     return (
@@ -47,15 +60,6 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   const visibleGroupItems = useMemo(
     () => selectedBasicEducationFilter?.items ?? selectedGroup?.items ?? [],
     [selectedBasicEducationFilter, selectedGroup],
-  )
-  const municipioResults = municipioData?.[cycle]?.indicadores ?? null
-  const allCycleItems = useMemo(
-    () => categories.flatMap((category) => category.items ?? []),
-    [categories],
-  )
-  const normalizedMunicipioResults = useMemo(
-    () => normalizePopulationPercentResults(municipioResults, allCycleItems),
-    [municipioResults, allCycleItems],
   )
   const filteredGroupItems = useMemo(() => {
     const query = searchQuery.trim().toLocaleLowerCase('pt-BR')
@@ -81,8 +85,8 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     ? filteredGroupItems[activeIndex + 1]
     : null
   const cycleManagementStats = useMemo(
-    () => buildCycleManagementStats(categories, normalizedMunicipioResults),
-    [categories, normalizedMunicipioResults],
+    () => buildCycleManagementStats(comparableCategories, normalizedMunicipioResults),
+    [comparableCategories, normalizedMunicipioResults],
   )
   const isShowingDetail = Boolean(isDetailOpen && activeItem)
 
@@ -143,15 +147,15 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
         </div>
         <div className="cycle-hero-meta-group">
           <ManagementMetricCard
-            detail="denominador para atingidas e atenção"
+            detail="cards de acompanhamento exibidos para o município"
             label="Indicadores com meta"
             tone="info"
             value={cycleManagementStats.monitorableTotal}
           />
           <ManagementMetricCard
             detail={cycleManagementStats.monitorableTotal
-              ? `${cycleManagementStats.achievedPercent}% dentro dos indicadores com meta`
-              : 'sem indicadores com meta'}
+              ? `${cycleManagementStats.achievedPercent}% dentro dos indicadores acompanhados`
+              : 'sem indicadores acompanhados'}
             label="Metas atingidas"
             tone="success"
             value={cycleManagementStats.monitorableTotal
@@ -160,19 +164,13 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
           />
           <ManagementMetricCard
             detail={cycleManagementStats.monitorableTotal
-              ? `${cycleManagementStats.attentionPercent}% dentro dos indicadores com meta`
-              : 'sem indicadores com meta'}
+              ? `${cycleManagementStats.attentionPercent}% dentro dos indicadores acompanhados`
+              : 'sem indicadores acompanhados'}
             label="Exigem atenção"
             tone="attention"
             value={cycleManagementStats.monitorableTotal
               ? cycleManagementStats.attention
               : '-'}
-          />
-          <ManagementMetricCard
-            detail="fora do denominador dos indicadores com meta"
-            label="Indicadores sem meta"
-            tone="neutral"
-            value={cycleManagementStats.noComparison}
           />
         </div>
       </section>
@@ -288,7 +286,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
             </div>
 
             <div className="meta-grid-header">
-              <span>{filteredGroupItems.length} metas/indicadores</span>
+              <span>{filteredGroupItems.length} indicadores acompanhados</span>
               <p>{selectedMunicipio} · {title}</p>
             </div>
 
@@ -317,6 +315,13 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
             )}
 
             <DataSourceNote className="cycle-source-line" source={CYCLE_SOURCE_NOTE} />
+            {cycle === 'pne_2026_2036' ? (
+              <p className="cycle-complementary-note">
+                Dados complementares estão disponíveis em Indicadores de Educação.
+                Uma meta legal pode ter mais de um indicador associado; por isso o total
+                de indicadores pode ser maior que o total de metas acompanhadas.
+              </p>
+            ) : null}
           </>
         )}
       </section>
@@ -418,27 +423,12 @@ function buildCycleManagementStats(categories, municipioResults) {
     achievedPercent: 0,
     attention: 0,
     monitorableTotal: 0,
-    noComparison: 0,
   }
 
   const allCycleItems = categories.flatMap((category) => category.items ?? [])
 
   allCycleItems.forEach((item) => {
     const result = municipioResults?.[item.key]
-    const statusText = String(result?.display?.status ?? '').toLocaleLowerCase('pt-BR')
-    const isNoComparison =
-      !result ||
-      result.available === false ||
-      statusText.includes('visualiza') ||
-      statusText.includes('indispon') ||
-      statusText.includes('sem dados') ||
-      statusText.includes('sem variação') ||
-      statusText.includes('sem variacao')
-
-    if (isNoComparison) {
-      stats.noComparison += 1
-      return
-    }
 
     stats.monitorableTotal += 1
     if (result.atingida === true) {

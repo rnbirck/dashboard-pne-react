@@ -37,8 +37,13 @@ const CENSO_ESCOLAR_KEYS = new Set([
   'eja_integrada_educacao_profissional',
   'escolas_integral',
   'internet',
+  'internet_comunidade',
   'internet_alunos',
   'internet_aprendizagem',
+  'acesso_internet_computador',
+  'acesso_internet_disp_pessoais',
+  'banda_larga',
+  'comp_portatil_aluno',
   'medio_tecnico',
   'medio_tecnico_participacao_publica',
   'medio_tecnico_total',
@@ -52,6 +57,27 @@ const CENSO_ESCOLAR_KEYS = new Set([
   'tablet_aluno',
   'temporarios',
 ])
+
+const METHODOLOGY_NOTES_BY_KEY = {
+  aee: 'Indicador de contexto/proxy; a base aberta atual não oferece denominador municipal seguro para medir diretamente o público-alvo do AEE.',
+  eja_integrada_educacao_profissional: 'Indicador de contexto; mostra volume absoluto e não calcula a proporção legal da meta.',
+  internet: 'Indicador de contexto; não gera distância de meta legal por não medir velocidade, qualidade ou uso pedagógico.',
+  internet_alunos: 'Indicador de contexto; não gera distância de meta legal por não medir velocidade, qualidade ou uso pedagógico.',
+  internet_aprendizagem: 'Indicador de contexto; não gera distância de meta legal por não medir velocidade, qualidade ou uso pedagógico.',
+  internet_comunidade: 'Indicador de contexto; não gera distância de meta legal por não medir velocidade, qualidade ou uso pedagógico.',
+  acesso_internet_computador: 'Indicador de contexto; não gera distância de meta legal por não medir suficiência de equipamentos ou qualidade de conectividade.',
+  acesso_internet_disp_pessoais: 'Indicador de contexto; não gera distância de meta legal por depender de dispositivos pessoais e não medir oferta pública universal.',
+  rede_local: 'Indicador de contexto; não gera distância de meta legal por não medir qualidade ou cobertura efetiva da rede interna.',
+  rede_wireless: 'Proxy parcial de rede interna sem fio; sem distância de meta legal.',
+  banda_larga: 'Proxy parcial de conectividade; sem distância de meta legal por não medir velocidade efetiva ou qualidade.',
+  proposta_pedagogica: 'Indicador de contexto; a meta legal depende de política/processo local e não apenas da existência declarada de proposta pedagógica.',
+  desktop_aluno: 'Indicador de contexto; não mede suficiência de equipamentos por estudante.',
+  comp_portatil_aluno: 'Indicador de contexto; não mede suficiência de equipamentos por estudante.',
+  tablet_aluno: 'Indicador de contexto; não mede suficiência de equipamentos por estudante.',
+  salas_climatizadas: 'Proxy parcial de conforto térmico; não mede todo o padrão físico do estabelecimento.',
+  salas_acessiveis: 'Proxy parcial de acessibilidade; não mede toda a acessibilidade escolar, como circulação, atendimento, materiais, transporte e demais ambientes.',
+  pos_graduacao: 'Dado bruto preservado; há pontos históricos acima de 100% em poucos municípios, exigindo revisão humana de fonte/denominador.',
+}
 
 export function getDataSourceNote(context = {}) {
   const block = normalize(context.block ?? context.bloco)
@@ -80,47 +106,92 @@ export function getDataSourceNote(context = {}) {
     context.fonte,
     detailType,
   ].filter(Boolean).join(' '))
+  const methodologyNote = getMethodologyNote(indicatorKey, text, context)
 
   if (block === 'fundeb' || theme === 'fundeb') {
-    return SOURCE_FUNDEB
+    return withMethodology(SOURCE_FUNDEB, methodologyNote)
   }
 
   if (block === 'pnate' || theme === 'pnate') {
-    return SOURCE_PNATE
+    return withMethodology(SOURCE_PNATE, methodologyNote)
   }
 
   if (POPULATION_ATTENDANCE_KEYS.has(indicatorKey)) {
-    return SOURCE_POPULATION_ATTENDANCE
+    return withMethodology(SOURCE_POPULATION_ATTENDANCE, methodologyNote)
   }
 
   if (isCensoDemografico(indicatorKey, text)) {
-    return SOURCE_CENSO_DEMOGRAFICO
+    return withMethodology(SOURCE_CENSO_DEMOGRAFICO, methodologyNote)
+  }
+
+  if (CENSO_ESCOLAR_KEYS.has(indicatorKey)) {
+    return withMethodology(SOURCE_CENSO_ESCOLAR, methodologyNote)
   }
 
   if (isIdebSaeb(indicatorKey, text)) {
-    return SOURCE_IDEB_SAEB
+    return withMethodology(SOURCE_IDEB_SAEB, methodologyNote)
   }
 
   if (isEducationalIndicators(indicatorKey, text)) {
-    return SOURCE_EDUCATIONAL_INDICATORS
+    return withMethodology(SOURCE_EDUCATIONAL_INDICATORS, methodologyNote)
   }
 
   if (isAtuAlunosTurma(indicatorKey, theme, text)) {
-    return SOURCE_ATU
+    return withMethodology(SOURCE_ATU, methodologyNote)
   }
 
-  if (CENSO_ESCOLAR_KEYS.has(indicatorKey) || isCensoEscolarText(text)) {
-    return SOURCE_CENSO_ESCOLAR
+  if (isCensoEscolarText(text)) {
+    return withMethodology(SOURCE_CENSO_ESCOLAR, methodologyNote)
   }
 
   const declaredSource = sourceFromDeclaredMetadata(context, text)
-  if (declaredSource) return declaredSource
+  if (declaredSource) return withMethodology(declaredSource, methodologyNote)
 
   if (block === 'educacao' && EDUCATION_THEME_SOURCES[theme]) {
-    return EDUCATION_THEME_SOURCES[theme]
+    return withMethodology(EDUCATION_THEME_SOURCES[theme], methodologyNote)
   }
 
-  return ''
+  return withMethodology('', methodologyNote)
+}
+
+function getMethodologyNote(indicatorKey, text, context) {
+  const notes = []
+  const declaredNote = [
+    context.details?.methodology ??
+      context.details?.methodological_note ??
+      context.result?.methodology ??
+      context.methodology,
+  ].find(Boolean)
+
+  if (POPULATION_ATTENDANCE_KEYS.has(indicatorKey)) {
+    notes.push(
+      'Cobertura estimada; valores acima de 100% podem ocorrer por estimativas populacionais, mobilidade escolar e oferta localizada no município.',
+    )
+  }
+  if (isCensoDemografico(indicatorKey, text)) {
+    notes.push(
+      'Censo Demográfico e linha censitária, não série anual municipal.',
+    )
+  }
+  if (!CENSO_ESCOLAR_KEYS.has(indicatorKey) && isIdebSaeb(indicatorKey, text)) {
+    notes.push(
+      'SAEB/IDEB não é indicador anual; resultados por disciplina e etapa são leitura parcial da meta legal, não cumprimento integral.',
+    )
+  }
+  if (METHODOLOGY_NOTES_BY_KEY[indicatorKey]) {
+    notes.push(METHODOLOGY_NOTES_BY_KEY[indicatorKey])
+  }
+  if (declaredNote) {
+    notes.push(declaredNote)
+  }
+
+  return [...new Set(notes)].join(' ')
+}
+
+function withMethodology(source, note) {
+  if (!note) return source
+  if (!source) return `Nota metodológica: ${note}`
+  return `${source}. Nota metodológica: ${note}`
 }
 
 function sourceFromDeclaredMetadata(context, normalizedText) {

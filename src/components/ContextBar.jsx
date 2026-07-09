@@ -5,6 +5,7 @@ const PAGE_CRUMBS = {
   educacao: 'Indicadores de Educação',
   financeiros: 'Indicadores Financeiros da Educação',
   home: 'Home',
+  'pne-legal-goals': 'Metas legais do PNE 2026-2036',
   pne2014: 'Metas do PNE / Ciclo anterior',
   pne2026: 'Metas do PNE / Próximo ciclo',
 }

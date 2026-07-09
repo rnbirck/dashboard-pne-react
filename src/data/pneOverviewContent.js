@@ -326,9 +326,17 @@ export const pneOverviewContent = {
     eyebrow: 'COMO USAR NO PAINEL',
     title: 'Acompanhe o PNE pelo município',
     description:
-      'Use os ciclos do PNE e o diagnóstico municipal como três portas de entrada: trajetória recente, novo ciclo nacional e ponto de partida local.',
+      'Use os ciclos do PNE, as metas legais do novo ciclo e o diagnóstico municipal como portas de entrada para acompanhar a educação local.',
   },
   entryCards: [
+    {
+      actionLabel: 'Abrir metas legais 2026-2036',
+      description:
+        'Veja as metas da Lei nº 15.388/2026 e como elas se conectam aos indicadores municipais disponíveis no painel.',
+      indicator: 'Lei 2026',
+      page: 'pne-legal-goals',
+      title: 'Metas legais do novo ciclo',
+    },
     {
       actionLabel: 'Abrir ciclo anterior',
       description:

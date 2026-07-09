@@ -129,6 +129,7 @@ def _safe_display(
     errors: list[dict[str, Any]],
 ) -> dict[str, Any]:
     display: dict[str, Any] = {}
+    tracks_goal = shared._tracks_goal(item, result)
 
     def assign(field: str, fn: Any) -> None:
         try:
@@ -151,10 +152,11 @@ def _safe_display(
     )
     assign("end_value", lambda: shared._format_metric_value(item, result.get("end_value")))
     assign("variation", lambda: shared._variation_text(result, item))
-    assign(
-        "distance",
-        lambda: shared._format_metric_distance(item, result.get("distance")),
-    )
+    if tracks_goal:
+        assign(
+            "distance",
+            lambda: shared._format_metric_distance(item, result.get("distance")),
+        )
     assign("status", lambda: shared._status_theme(result).get("text"))
     assign("interpretation", lambda: shared._interpretation(item, result))
 
@@ -188,6 +190,8 @@ def _serialize_result(
         "series",
     )
     payload = {field: result.get(field) for field in fields if field in result}
+    if item is not None and not shared._tracks_goal(item, result):
+        payload.pop("distance", None)
 
     if item is not None:
         payload["display"] = _safe_display(

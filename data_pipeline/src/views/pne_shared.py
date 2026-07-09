@@ -794,9 +794,12 @@ def _interpretation(item, result):
         )
 
     if result["direction"] == GOAL_AT_MOST:
+        excesso = _format_metric_distance(item, abs(float(result["distance"]))).replace(
+            "+", ""
+        )
         return (
             f"Em {end_year}, o indicador ficou em {end_value}, acima do limite de "
-            f"{meta_value}. Ainda faltam {distance.replace('+', '')} para enquadrar o resultado na meta."
+            f"{meta_value}. E preciso reduzir {excesso} para enquadrar o resultado na meta."
         )
 
     return (
@@ -932,4 +935,3 @@ def _ranking_card(title, accent, items, metric_key):
             "height": "100%",
         },
     )
-

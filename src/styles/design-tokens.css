@@ -1,0 +1,212 @@
+/*
+ * Fonte unica de tokens visuais do Dashboard PNE.
+ *
+ * Os tokens que ja existiam em src/index.css foram preservados com os mesmos
+ * nomes e valores. Os tokens adicionais formalizam escalas ainda nao
+ * centralizadas; eles nao mudam a interface ate serem adotados pelos
+ * componentes durante as etapas aprovadas de migracao.
+ */
+
+:root {
+  /* Tipografia existente */
+  --font-sans: "Public Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+
+  /* Escala tipografica */
+  --font-size-2xs: 0.6875rem;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 2rem;
+  --font-size-4xl: 2.5rem;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  --line-height-tight: 1.2;
+  --line-height-snug: 1.35;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.65;
+
+  /* Identidade cromatica existente */
+  --green-brand-dark: #173328;
+  --green-primary: #3e7a5e;
+  --green-deep: #2e5f49;
+  --green-soft: #eaf1ec;
+  --green-accent: #6fb89a;
+
+  --bg-body: #efede6;
+  --bg-app: #f5f3ec;
+  --bg-context-bar: rgba(253, 252, 249, 0.92);
+  --surface-card: #ffffff;
+  --surface-muted: #f0ece2;
+
+  --border-card: #eae6db;
+  --border-line: #e6e2d8;
+  --border-faint: #f1ede3;
+
+  --text-strong: #1b1b18;
+  --text: #23231f;
+  --text-body: #565247;
+  --text-muted: #8c887c;
+  --text-soft: #6a6559;
+  --text-faint: #a6a296;
+  --text-inverted: #f4f8f5;
+
+  /* Tokens semanticos acessiveis para novas implementacoes. */
+  --text-secondary: var(--text-body);
+  --text-subtle: var(--text-soft);
+  --text-placeholder: #5f5b52;
+
+  /* Estados semanticos existentes */
+  --status-ok-ink: #2e5f49;
+  --status-ok-bg: #eaf1ec;
+  --status-ok-line: #3e7a5e;
+  --status-warn-ink: #8a6c29;
+  --status-warn-bg: #f6efdd;
+  --status-warn-line: #b08a34;
+  --status-far-ink: #94493a;
+  --status-far-bg: #f4e6e1;
+  --status-far-line: #a9543f;
+  --status-muted-ink: #8c887c;
+  --status-muted-bg: #f0ece2;
+  --status-muted-line: #a6a296;
+  --status-info-ink: var(--green-deep);
+  --status-info-bg: var(--green-soft);
+  --status-info-line: var(--green-primary);
+
+  /* Visualizacao de dados */
+  --chart-primary: #3e7a5e;
+  --chart-secondary: #8aa595;
+  --chart-grid: #eee9de;
+  --chart-axis: #a6a296;
+  --chart-axis-text: var(--text-soft);
+  --chart-series-1: var(--chart-primary);
+  --chart-series-2: #315f8c;
+  --chart-series-3: #9a6d2f;
+  --chart-series-4: #7a5a91;
+  --chart-series-5: #a9543f;
+  --chart-series-6: #5f7380;
+
+  /* Aliases de compatibilidade usados pela aplicacao atual */
+  --accent: var(--green-primary);
+  --accent-strong: var(--green-deep);
+  --accent-soft: var(--green-accent);
+  --accent-ghost: var(--green-soft);
+  --accent-ghost-2: #f4f8f5;
+  --brand-green-dark: var(--green-brand-dark);
+
+  --background: var(--bg-app);
+  --background-2: #fbfaf6;
+  --background-3: var(--surface-muted);
+
+  --border: rgba(80, 72, 48, 0.13);
+  --border-strong: rgba(62, 122, 94, 0.32);
+  --border-focus: rgba(62, 122, 94, 0.48);
+  --divider: var(--border-line);
+
+  --danger: var(--status-far-line);
+  --warning: var(--status-warn-line);
+  --success: var(--status-ok-line);
+
+  --surface: var(--surface-card);
+  --surface-strong: var(--surface-card);
+  --surface-soft: #fbfaf6;
+  --surface-warm: #fdfcf9;
+
+  /* Acoes e foco */
+  --action-primary-bg: var(--green-primary);
+  --action-primary-bg-hover: var(--green-deep);
+  --action-primary-text: var(--text-inverted);
+  --action-secondary-bg: var(--surface-card);
+  --action-secondary-text: var(--text);
+  --focus-ring-color: var(--green-primary);
+  --focus-ring: 0 0 0 3px rgba(62, 122, 94, 0.22);
+
+  /* Bordas */
+  --border-width: 1px;
+  --border-width-strong: 2px;
+  --border-default: var(--border-width) solid var(--border-card);
+  --border-divider: var(--border-width) solid var(--border-line);
+
+  /* Sombras existentes */
+  --shadow-sm: 0 1px 2px rgba(30, 30, 20, 0.03);
+  --shadow-md: 0 8px 18px rgba(30, 40, 30, 0.06);
+  --shadow-lg: 0 10px 22px rgba(30, 40, 30, 0.08);
+  --shadow-xl: 0 16px 34px rgba(30, 40, 30, 0.1);
+  --shadow-pop: 0 18px 42px rgba(30, 40, 30, 0.12);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+
+  /* Raios existentes */
+  --radius-xs: 5px;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 16px;
+  --radius-xl: 18px;
+  --radius-pill: 999px;
+
+  /* Escala de espacamento: base de 4px, ritmo principal de 8px */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Larguras, alturas e composicao existentes */
+  --sidebar-width: 264px;
+  --shell-max: 1380px;
+  --page-gap: 24px;
+  --section-gap: 24px;
+  --card-gap: 16px;
+  --pne-workspace-height: 790px;
+  --analysis-sidebar-width: clamp(260px, 19vw, 272px);
+
+  /* Larguras, alturas e composicao padronizadas */
+  --content-reading-max: 72ch;
+  --content-narrow-max: 760px;
+  --page-padding-inline: 34px;
+  --page-padding-inline-tablet: 24px;
+  --page-padding-inline-mobile: 16px;
+  --context-bar-height: 70px;
+  --control-height: 44px;
+  --control-height-lg: 48px;
+  --touch-target-min: 44px;
+  --table-row-height: 44px;
+  --chart-height-sm: 240px;
+  --chart-height-md: 300px;
+  --chart-height-lg: 360px;
+
+  /* Camadas */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal-backdrop: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+
+  /* Movimento */
+  --duration-fast: 120ms;
+  --duration-normal: 180ms;
+  --duration-slow: 240ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Gradientes existentes. Usar apenas quando codificarem hierarquia. */
+  --grad-page: linear-gradient(180deg, var(--bg-body) 0%, var(--bg-app) 100%);
+  --grad-card: linear-gradient(180deg, #ffffff 0%, #fffefa 100%);
+  --grad-card-hover: linear-gradient(180deg, #ffffff 0%, #fbfaf6 100%);
+  --grad-hero: linear-gradient(180deg, #ffffff 0%, #fbfaf6 100%);
+  --grad-pill-active: linear-gradient(180deg, var(--green-primary), var(--green-deep));
+  --grad-header: linear-gradient(180deg, rgba(23, 51, 40, 0.98), rgba(23, 51, 40, 1));
+}

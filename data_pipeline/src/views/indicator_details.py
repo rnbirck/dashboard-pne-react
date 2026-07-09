@@ -25,6 +25,7 @@ from src.data_loader import load_escolas_integral_data
 from src.data_loader import load_escolas_integral_por_dependencia_data
 from src.data_loader import load_infraestrutura_escolar_data
 from src.data_loader import load_infraestrutura_escolar_por_dependencia_data
+from src.data_loader import load_medio_tecnico_data
 from src.data_loader import load_matriculas_privadas_conveniadas
 from src.data_loader import load_pne_data
 from src.data_loader import load_pre_escola_data
@@ -951,74 +952,73 @@ def build_aee_details(municipio):
 
 
 def build_medio_tecnico_details(municipio):
-    df = _safe_load(load_ept_nivel_medio_data)
+    unavailable_payload = {
+        "title": "Matriculas do ensino medio integradas a educacao profissional tecnica",
+        "subtitle": (
+            "Percentual de matriculas do ensino medio integradas a educacao "
+            "profissional tecnica sobre o total de matriculas do ensino medio."
+        ),
+        "unit": "matriculas",
+        "calculation": {
+            "numerator_label": (
+                "Matriculas do ensino medio integradas a educacao profissional tecnica"
+            ),
+            "denominator_label": "Total de matriculas do ensino medio",
+        },
+    }
+    df = _safe_load(load_medio_tecnico_data)
     required_columns = {
         "ano",
         "municipio",
-        "mat_ept_nivel_medio_total",
-        "mat_ept_nivel_medio_publica",
-        "mat_integrado_total",
+        "mat_medio",
+        "mat_profissional_tecnico",
     }
     if df.empty or not required_columns.issubset(df.columns):
-        return None
+        return unavailable_payload
 
     dff = df[df["municipio"] == municipio].copy()
     if dff.empty:
-        return None
+        return unavailable_payload
 
     dff["ano"] = pd.to_numeric(dff["ano"], errors="coerce")
-    dff["mat_ept_nivel_medio_total"] = pd.to_numeric(
-        dff["mat_ept_nivel_medio_total"], errors="coerce"
+    dff["mat_medio"] = pd.to_numeric(dff["mat_medio"], errors="coerce")
+    dff["mat_profissional_tecnico"] = pd.to_numeric(
+        dff["mat_profissional_tecnico"], errors="coerce"
     )
-    dff["mat_ept_nivel_medio_publica"] = pd.to_numeric(
-        dff["mat_ept_nivel_medio_publica"], errors="coerce"
-    )
-    dff["mat_integrado_total"] = pd.to_numeric(
-        dff["mat_integrado_total"], errors="coerce"
-    )
-    dff = dff.dropna(
-        subset=[
-            "ano",
-            "mat_ept_nivel_medio_total",
-            "mat_ept_nivel_medio_publica",
-            "mat_integrado_total",
-        ]
-    ).copy()
+    dff = dff.dropna(subset=["ano", "mat_medio", "mat_profissional_tecnico"]).copy()
     if dff.empty:
-        return None
+        return unavailable_payload
 
     dff["ano"] = dff["ano"].astype(int)
-    dff["mat_ept_nivel_medio_total"] = dff["mat_ept_nivel_medio_total"].clip(lower=0)
-    dff["mat_ept_nivel_medio_publica"] = dff["mat_ept_nivel_medio_publica"].clip(lower=0)
-    dff["mat_integrado_total"] = dff["mat_integrado_total"].clip(lower=0)
-
-    total_by_year = (
-        dff.groupby("ano", as_index=False)["mat_ept_nivel_medio_total"]
-        .sum()
-        .rename(columns={"mat_ept_nivel_medio_total": "valor"})
-        .sort_values("ano")
-    )
-    total_by_year["valor"] = total_by_year["valor"].astype(int)
-    series_total = [
-        {"ano": int(row["ano"]), "valor": int(row["valor"])}
-        for _, row in total_by_year.iterrows()
-        if row["valor"] > 0
-    ]
+    dff["mat_medio"] = dff["mat_medio"].clip(lower=0)
+    dff["mat_profissional_tecnico"] = dff["mat_profissional_tecnico"].clip(lower=0)
 
     yearly_2026 = (
         dff.groupby("ano", as_index=False)
         .agg(
             {
-                "mat_integrado_total": "sum",
-                "mat_ept_nivel_medio_total": "max",
+                "mat_profissional_tecnico": "sum",
+                "mat_medio": "sum",
             }
         )
         .sort_values("ano")
     )
+    if yearly_2026.empty:
+        return unavailable_payload
+
+    yearly_2026["mat_profissional_tecnico"] = yearly_2026[
+        "mat_profissional_tecnico"
+    ].astype(int)
+    yearly_2026["mat_medio"] = yearly_2026["mat_medio"].astype(int)
+    series_total = [
+        {"ano": int(row["ano"]), "valor": int(row["mat_profissional_tecnico"])}
+        for _, row in yearly_2026.iterrows()
+        if row["mat_medio"] > 0
+    ]
     components_2026 = []
     for _, row in yearly_2026.iterrows():
-        numerador = row["mat_integrado_total"]
-        denominador = row["mat_ept_nivel_medio_total"]
+        numerador = row["mat_profissional_tecnico"]
+        denominador = row["mat_medio"]
         if pd.isna(numerador) or pd.isna(denominador) or denominador <= 0:
             continue
         numerador = int(numerador)
@@ -1037,14 +1037,7 @@ def build_medio_tecnico_details(municipio):
         series_components_by_cycle["pne_2026_2036"] = components_2026
 
     if not series_total or not series_components_by_cycle:
-        return None
-
-    series_dependencia = _build_column_based_dependency_series(df, municipio, {
-        "federal": "mat_ept_nivel_medio_federal",
-        "estadual": "mat_ept_nivel_medio_estadual",
-        "municipal": "mat_ept_nivel_medio_municipal",
-        "privada": "mat_ept_nivel_medio_privada",
-    })
+        return unavailable_payload
 
     payload = {
         "title": "Matrículas em EPT de nível médio",
@@ -1057,9 +1050,20 @@ def build_medio_tecnico_details(municipio):
         "series_total": series_total,
         "series_components_by_cycle": series_components_by_cycle,
     }
-
-    if series_dependencia:
-        payload["series_dependencia"] = series_dependencia
+    payload["title"] = (
+        "Matriculas do ensino medio integradas a educacao profissional tecnica"
+    )
+    payload["subtitle"] = (
+        "Percentual de matriculas do ensino medio integradas a educacao "
+        "profissional tecnica sobre o total de matriculas do ensino medio."
+    )
+    payload["unit"] = "matriculas"
+    payload["calculation"] = {
+        "numerator_label": (
+            "Matriculas do ensino medio integradas a educacao profissional tecnica"
+        ),
+        "denominator_label": "Total de matriculas do ensino medio",
+    }
 
     return payload
 
