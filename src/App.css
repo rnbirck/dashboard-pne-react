@@ -14025,6 +14025,728 @@
   }
 }
 
+/* Metas legais do PNE 2026-2036 */
+.legal-goals-page {
+  gap: 18px;
+}
+
+.legal-goals-hero {
+  padding: 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  gap: 22px;
+  align-items: stretch;
+  background:
+    linear-gradient(135deg, rgba(62, 122, 94, 0.08), transparent 46%),
+    #ffffff;
+}
+
+.legal-goals-hero__copy {
+  max-width: 940px;
+  display: grid;
+  align-content: center;
+  gap: 10px;
+}
+
+.legal-goals-hero h1 {
+  max-width: 22ch;
+  margin: 0;
+  color: var(--text-strong);
+  font-family: var(--font-serif);
+  font-size: clamp(1.85rem, 3.1vw, 3rem);
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.05;
+  text-wrap: balance;
+}
+
+.legal-goals-hero p {
+  max-width: 72ch;
+  margin: 0;
+  color: var(--text-body);
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.legal-goals-hero__municipio {
+  padding-top: 2px;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.legal-goals-hero__municipio strong {
+  color: var(--text-strong);
+}
+
+.legal-goals-law-card {
+  min-width: 0;
+  padding: 16px 18px;
+  border-left: 3px solid var(--green-primary);
+  border-radius: var(--radius-sm);
+  background: rgba(62, 122, 94, 0.055);
+  display: grid;
+  align-content: center;
+  gap: 8px;
+}
+
+.legal-goals-law-card span {
+  color: var(--green-deep);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.legal-goals-law-card strong {
+  color: var(--text-strong);
+  font-family: var(--font-serif);
+  font-size: 1.32rem;
+  font-weight: 680;
+  line-height: 1.1;
+}
+
+.legal-goals-law-card p {
+  color: var(--text-body);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.legal-goals-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.legal-goals-summary-card {
+  min-width: 0;
+  min-height: 118px;
+  padding: 15px;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  align-content: start;
+  gap: 7px;
+}
+
+.legal-goals-summary-card span {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 780;
+  letter-spacing: 0.03em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.legal-goals-summary-card strong {
+  color: var(--green-deep);
+  font-family: var(--font-serif);
+  font-size: 2.1rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.legal-goals-summary-card small {
+  color: var(--text-body);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.legal-goals-method-note {
+  padding: 13px 15px;
+  border: 1px solid rgba(62, 122, 94, 0.16);
+  border-left: 3px solid var(--green-primary);
+  border-radius: var(--radius-sm);
+  background: rgba(62, 122, 94, 0.05);
+  display: grid;
+  gap: 4px;
+}
+
+.legal-goals-method-note span {
+  color: var(--green-deep);
+  font-size: 0.72rem;
+  font-weight: 820;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.legal-goals-method-note p {
+  margin: 0;
+  color: var(--text-body);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.legal-goals-empty-municipio,
+.legal-goals-no-results {
+  padding: 28px;
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+
+.legal-goals-empty-municipio h2 {
+  max-width: 760px;
+  margin: 0;
+  color: var(--text-strong);
+  font-family: var(--font-serif);
+  font-size: clamp(1.32rem, 2vw, 1.75rem);
+  font-weight: 650;
+  letter-spacing: 0;
+  line-height: 1.18;
+}
+
+.legal-goals-empty-municipio p,
+.legal-goals-no-results p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--text-body);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.legal-goals-empty-municipio__selector {
+  width: min(360px, 100%);
+  margin-top: 4px;
+}
+
+.legal-goals-filter-panel {
+  padding: 16px;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  gap: 14px;
+}
+
+.legal-goals-filter-panel__heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.legal-goals-filter-panel__heading h2 {
+  margin: 4px 0 0;
+  color: var(--text-strong);
+  font-family: var(--font-serif);
+  font-size: 1.28rem;
+  font-weight: 650;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.legal-goals-search {
+  width: min(360px, 38vw);
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  color: var(--text-soft);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.legal-goals-search:focus-within {
+  border-color: var(--green-primary);
+  box-shadow: 0 0 0 3px rgba(62, 122, 94, 0.12);
+}
+
+.legal-goals-search svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.legal-goals-search input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 550;
+}
+
+.legal-goals-search input::placeholder {
+  color: var(--text-muted);
+}
+
+.legal-goals-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 260px));
+  gap: 12px;
+}
+
+.legal-goals-filters label {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.legal-goals-filters span {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 780;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.legal-goals-filters select {
+  min-height: 40px;
+  width: 100%;
+  padding: 0 12px;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+
+.legal-goals-filters select:focus-visible {
+  outline: 2px solid var(--green-primary);
+  outline-offset: 2px;
+}
+
+.legal-goals-results-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.legal-goals-results-meta span {
+  color: var(--text-strong);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.legal-goals-results-meta p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.legal-goals-accordion {
+  display: grid;
+  gap: 10px;
+}
+
+.legal-goal-card {
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.legal-goal-card:hover {
+  border-color: rgba(62, 122, 94, 0.28);
+  box-shadow: var(--shadow-md);
+}
+
+.legal-goal-card.is-expanded {
+  border-color: rgba(62, 122, 94, 0.34);
+  background: #fffefa;
+}
+
+.legal-goal-toggle {
+  width: 100%;
+  padding: 15px 16px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px;
+  gap: 14px;
+  align-items: center;
+  text-align: left;
+}
+
+.legal-goal-toggle:focus-visible {
+  outline: 2px solid var(--green-primary);
+  outline-offset: -2px;
+}
+
+.legal-goal-toggle__content {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.legal-goal-toggle__topline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.legal-goal-code {
+  width: fit-content;
+  padding: 5px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--green-soft);
+  color: var(--green-deep);
+  font-size: 0.76rem;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.legal-goal-objective {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 760;
+  line-height: 1;
+}
+
+.legal-goal-text {
+  color: var(--text-strong);
+  font-size: 0.94rem;
+  font-weight: 730;
+  line-height: 1.42;
+  text-wrap: pretty;
+}
+
+.legal-goal-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.coverage-badge {
+  width: fit-content;
+  padding: 5px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font-size: 0.7rem;
+  font-weight: 820;
+  line-height: 1;
+}
+
+.coverage-badge--direta {
+  border-color: rgba(62, 122, 94, 0.18);
+  background: rgba(62, 122, 94, 0.1);
+  color: var(--green-deep);
+}
+
+.coverage-badge--parcial {
+  border-color: rgba(176, 138, 52, 0.22);
+  background: rgba(176, 138, 52, 0.12);
+  color: #80611e;
+}
+
+.coverage-badge--aproximada {
+  border-color: rgba(91, 116, 145, 0.2);
+  background: rgba(91, 116, 145, 0.1);
+  color: #4d637b;
+}
+
+.coverage-badge--sem_indicador {
+  border-color: rgba(143, 139, 128, 0.2);
+  background: rgba(143, 139, 128, 0.12);
+  color: #6f6a60;
+}
+
+.legal-goal-chevron {
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(62, 122, 94, 0.24);
+  border-radius: var(--radius-pill);
+  background: rgba(62, 122, 94, 0.06);
+  position: relative;
+  transition: background 0.16s ease, transform 0.16s ease;
+}
+
+.legal-goal-chevron::before {
+  content: "";
+  position: absolute;
+  top: 9px;
+  left: 10px;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid var(--green-deep);
+  border-bottom: 2px solid var(--green-deep);
+  transform: rotate(45deg);
+  transition: top 0.16s ease, transform 0.16s ease;
+}
+
+.legal-goal-card.is-expanded .legal-goal-chevron {
+  background: var(--green-soft);
+}
+
+.legal-goal-card.is-expanded .legal-goal-chevron::before {
+  top: 11px;
+  transform: rotate(225deg);
+}
+
+.legal-goal-card__body {
+  padding: 0 16px 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.legal-goal-no-indicator,
+.legal-goal-indicator__empty {
+  padding: 12px 14px;
+  border: 1px dashed var(--border-card);
+  border-radius: var(--radius-sm);
+  background: #fbfaf6;
+  color: var(--text-muted);
+}
+
+.legal-goal-no-indicator {
+  display: grid;
+  gap: 4px;
+}
+
+.legal-goal-no-indicator span {
+  color: var(--text-strong);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.legal-goal-no-indicator p,
+.legal-goal-indicator__empty {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.48;
+}
+
+.legal-goal-indicator-list {
+  display: grid;
+  gap: 12px;
+}
+
+.legal-goal-indicator {
+  padding-top: 14px;
+  border-top: 1px solid var(--border-faint);
+  display: grid;
+  gap: 12px;
+}
+
+.legal-goal-indicator:first-child {
+  padding-top: 4px;
+  border-top: 0;
+}
+
+.legal-goal-indicator__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.legal-goal-indicator__header h3 {
+  margin: 4px 0 0;
+  color: var(--text-strong);
+  font-size: 1rem;
+  font-weight: 820;
+  letter-spacing: 0;
+  line-height: 1.22;
+}
+
+.legal-goal-indicator__header p {
+  max-width: 86ch;
+  margin: 6px 0 0;
+  color: var(--text-body);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.legal-goal-indicator__eyebrow {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 780;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.legal-goal-relation-note {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 3px solid rgba(62, 122, 94, 0.42);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: rgba(62, 122, 94, 0.045);
+  color: var(--text-body);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.legal-goal-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.legal-goal-metric {
+  min-width: 0;
+  min-height: 86px;
+  padding: 11px 12px;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  box-shadow: 0 3px 10px rgba(18, 45, 18, 0.04);
+  display: grid;
+  align-content: center;
+  gap: 5px;
+}
+
+.legal-goal-metric span {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+  line-height: 1.25;
+}
+
+.legal-goal-metric strong {
+  color: var(--text-strong);
+  font-size: 1.18rem;
+  font-weight: 850;
+  letter-spacing: 0;
+  line-height: 1.1;
+}
+
+.legal-goal-metric small {
+  color: var(--text-soft);
+  font-size: 0.7rem;
+  line-height: 1.3;
+}
+
+.legal-goal-metric--success {
+  border-color: rgba(62, 122, 94, 0.22);
+  background: linear-gradient(145deg, #ffffff, rgba(62, 122, 94, 0.055));
+  box-shadow: inset 3px 0 0 rgba(62, 122, 94, 0.46), 0 3px 10px rgba(18, 45, 18, 0.04);
+}
+
+.legal-goal-metric--success strong {
+  color: var(--green-deep);
+}
+
+.legal-goal-metric--warning {
+  border-color: rgba(176, 138, 52, 0.22);
+  background: linear-gradient(145deg, #ffffff, #fff9ed);
+  box-shadow: inset 3px 0 0 rgba(176, 138, 52, 0.46), 0 3px 10px rgba(18, 45, 18, 0.04);
+}
+
+.legal-goal-metric--warning strong {
+  color: #80611e;
+}
+
+.legal-goal-indicator__footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.legal-goal-indicator__footer .data-source-note {
+  margin: 0;
+}
+
+.legal-goal-open-cycle {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(62, 122, 94, 0.22);
+  border-radius: var(--radius-pill);
+  background: rgba(62, 122, 94, 0.055);
+  color: var(--green-deep);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 820;
+}
+
+.legal-goal-open-cycle:hover {
+  border-color: rgba(62, 122, 94, 0.34);
+  background: var(--green-soft);
+}
+
+.legal-goal-open-cycle:focus-visible {
+  outline: 2px solid var(--green-primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1180px) {
+  .legal-goals-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .legal-goal-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .legal-goals-hero,
+  .legal-goals-filter-panel__heading {
+    grid-template-columns: 1fr;
+  }
+
+  .legal-goals-hero {
+    display: grid;
+  }
+
+  .legal-goals-filter-panel__heading {
+    display: grid;
+    align-items: stretch;
+  }
+
+  .legal-goals-search {
+    width: 100%;
+  }
+}
+
+@media (max-width: 720px) {
+  .legal-goals-summary-grid,
+  .legal-goals-filters,
+  .legal-goal-metric-grid,
+  .legal-goal-indicator__header {
+    grid-template-columns: 1fr;
+  }
+
+  .legal-goals-results-meta,
+  .legal-goal-indicator__footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .legal-goal-toggle {
+    grid-template-columns: minmax(0, 1fr) 28px;
+    padding: 14px;
+  }
+}
+
+@media (max-width: 620px) {
+  .legal-goals-hero,
+  .legal-goals-empty-municipio {
+    padding: 18px;
+  }
+
+  .legal-goals-hero h1 {
+    font-size: 1.9rem;
+  }
+
+  .legal-goal-card__body {
+    padding-inline: 14px;
+  }
+}
+
 /* =========================
    Education indicators cards - PNE visual alignment
    ========================= */

@@ -13,6 +13,7 @@ const NAV_BLOCKS = [
       { key: 'pne-overview', label: 'O que é o PNE', target: 'pne-overview' },
       { key: 'pne2014', label: 'PNE 2014-2024', target: 'pne2014' },
       { key: 'pne2026', label: 'PNE 2026-2036', target: 'pne2026' },
+      { key: 'pne-legal-goals', label: 'Metas da Lei', target: 'pne-legal-goals' },
       { key: 'diagnostico', label: 'Diagnóstico municipal', target: 'diagnostico' },
     ],
     target: 'pne-overview',
@@ -31,7 +32,7 @@ const NAV_BLOCKS = [
   },
 ]
 
-const PNE_PAGES = new Set(['pne-overview', 'pne2014', 'pne2026', 'diagnostico'])
+const PNE_PAGES = new Set(['pne-overview', 'pne2014', 'pne2026', 'pne-legal-goals', 'diagnostico'])
 
 export function Header({ activePage, onNavigate }) {
   return (
