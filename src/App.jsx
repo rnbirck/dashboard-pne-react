@@ -16,6 +16,8 @@ import { Diagnostico } from './pages/Diagnostico'
 import { EducacaoPage } from './pages/EducacaoPage'
 import { MunicipalitySelector } from './components/MunicipalitySelector'
 import { Home } from './pages/Home'
+import { PneLegalGoalsPage } from './pages/PneLegalGoalsPage'
+import { PneOverviewPage } from './pages/PneOverviewPage'
 import { useAsyncData } from './utils/useAsyncData'
 
 function App() {
@@ -134,6 +136,22 @@ function PageContent({
     )
   }
 
+  if (activePage === 'pne-overview') {
+    return <PneOverviewPage onNavigate={onNavigate} />
+  }
+
+  if (activePage === 'pne-legal-goals' && !selectedMunicipio) {
+    return (
+      <PneLegalGoalsPage
+        indicadores={indicadores}
+        municipios={municipios}
+        onMunicipioChange={setSelectedMunicipio}
+        onNavigate={onNavigate}
+        selectedMunicipio={selectedMunicipio}
+      />
+    )
+  }
+
   if (!selectedMunicipio) {
     return (
       <EmptyMunicipioState
@@ -181,6 +199,19 @@ function PageContent({
     )
   }
 
+  if (activePage === 'pne-legal-goals') {
+    return (
+      <PneLegalGoalsPage
+        indicadores={indicadores}
+        municipioData={municipioData}
+        municipios={municipios}
+        onMunicipioChange={setSelectedMunicipio}
+        onNavigate={onNavigate}
+        selectedMunicipio={selectedMunicipio}
+      />
+    )
+  }
+
   if (activePage === 'diagnostico') {
     return (
       <Diagnostico
@@ -194,6 +225,17 @@ function PageContent({
   if (activePage === 'educacao') {
     return (
       <EducacaoPage
+        initialMainBlock="panoramaEducacional"
+        municipioData={municipioData}
+        selectedMunicipio={selectedMunicipio}
+      />
+    )
+  }
+
+  if (activePage === 'financeiros') {
+    return (
+      <EducacaoPage
+        initialMainBlock="financiamentoEducacao"
         municipioData={municipioData}
         selectedMunicipio={selectedMunicipio}
       />

@@ -17,7 +17,6 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
   const slug = municipioData?.slug
   const fallbackDetails = municipioData?.indicator_details?.[indicatorKey] ?? null
   const [details, setDetails] = useState(null)
-  const [isOpen, setIsOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('')
   const [sharedPrivadas, setSharedPrivadas] = useState(null)
 
@@ -124,8 +123,10 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
         availableOptions.push({
           key: 'enrollment-history',
           label: isCensusIndicator ? 'Histórico' : 'Histórico de matrículas',
+          description: 'Evolu\u00e7\u00e3o anual da s\u00e9rie complementar usada para contextualizar o indicador.',
           content: (
             <ComplementaryEnrollmentChart
+              showHeading={false}
               series={filteredTotal}
               title={details.title || 'Matrículas em creche'}
               unit={details.unit || 'Matrículas'}
@@ -138,8 +139,10 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
         availableOptions.push({
           key: 'administrative-dependency',
           label: 'Dependência administrativa',
+          description: 'Distribui\u00e7\u00e3o por rede ou depend\u00eancia administrativa ao longo do ciclo.',
           content: (
             <AdministrativeDependencyChart
+              showHeading={false}
               series={filteredDependencia}
               unit={details.dependency_unit || details.unit}
               valueType={details.dependency_value_type}
@@ -153,11 +156,13 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
         availableOptions.push({
           key: 'calculation-numbers',
           label: 'Dados usados no cálculo',
+          description: 'Numerador, denominador e percentual que comp\u00f5em o indicador selecionado.',
           content: (
             <CalculationComponentsTable
               denominatorLabel={denominatorLabel}
               numeratorLabel={numeratorLabel}
               rows={filteredComponents}
+              showHeading={false}
             />
           ),
         })
@@ -168,7 +173,9 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
       availableOptions.push({
         key: 'trend-projection',
         label: 'Projeção tendencial',
-        content: <IndicatorProjectionPanel projection={projection} />,
+        description: 'Cen\u00e1rio estimativo para planejamento, sem car\u00e1ter de previs\u00e3o oficial.',
+        badge: 'Estimativa',
+        content: <IndicatorProjectionPanel projection={projection} showTitle={false} />,
       })
     }
 
@@ -189,7 +196,6 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
   ])
 
   useEffect(() => {
-    setIsOpen(false)
     setActiveTab(options[0]?.key ?? '')
   }, [indicatorKey, options])
 
@@ -199,42 +205,20 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
 
   const activeOption = options.find((option) => option.key === activeTab) ?? options[0]
   const contentId = `indicator-explore-more-${indicatorKey || 'detail'}`
-  const optionsDescription = buildOptionsDescription(options)
 
   return (
-    <section className={`complementary-data${isOpen ? ' is-open' : ''}`} aria-label="Explorar mais">
-      <button
-        type="button"
-        className="complementary-data__trigger"
-        aria-controls={contentId}
-        aria-expanded={isOpen}
-        onClick={() => setIsOpen((current) => !current)}
-      >
+    <section className="complementary-data is-open" aria-label="Dados de apoio da meta">
+      <div className="complementary-data__trigger">
         <span className="complementary-data__summary">
-          <span className="complementary-data__title">Explorar mais</span>
+          <span className="complementary-data__eyebrow">Aprofundamento</span>
+          <span className="complementary-data__title">Dados de apoio da meta</span>
           <span className="complementary-data__description">
-            {optionsDescription}
-          </span>
-          <span className="complementary-data__action">
-            Clique para explorar dados complementares
-          </span>
-          <span className="complementary-data__chips" aria-hidden="true">
-            {options.map((option) => (
-              <span className="complementary-data__chip" key={option.key}>
-                {option.label}
-              </span>
-            ))}
+            Séries auxiliares, recortes e memória de cálculo para interpretar este indicador com mais contexto.
           </span>
         </span>
-        <span className="complementary-data__chevron" aria-hidden="true" />
-      </button>
+      </div>
 
-      {isOpen ? (
-        <div className="complementary-data__body" id={contentId}>
-          <div className="complementary-data__heading">
-            <span className="eyebrow">{details.title || 'Dados complementares'}</span>
-            {details.subtitle ? <p>{details.subtitle}</p> : null}
-          </div>
+      <div className="complementary-data__body" id={contentId}>
           {options.length > 1 ? (
             <div className="complementary-data__tabs" role="tablist" aria-label="Opções de exploração">
               {options.map((option) => (
@@ -246,12 +230,19 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
                   aria-selected={activeOption?.key === option.key}
                   onClick={() => setActiveTab(option.key)}
                 >
-                  {option.label}
+                  <span>{option.label}</span>
+                  {option.badge ? (
+                    <span className="complementary-data__tab-badge">{option.badge}</span>
+                  ) : null}
                 </button>
               ))}
             </div>
           ) : null}
           <div className="complementary-data__panel" role="tabpanel">
+            <div className="complementary-data__panel-heading">
+              <h5>{activeOption?.label}</h5>
+              {activeOption?.description ? <p>{activeOption.description}</p> : null}
+            </div>
             {activeOption?.content}
             <DataSourceNote
               context={{
@@ -272,8 +263,7 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
             activeTab={activeTab}
             totalPrivadaRede={totalPrivadaRede}
           />
-        </div>
-      ) : null}
+      </div>
     </section>
   )
 }
@@ -445,10 +435,10 @@ function PrivadasConveniadasSection({ data, numberFormatter, indicatorKey, activ
   )
 }
 
-function CalculationComponentsTable({ denominatorLabel, numeratorLabel, rows }) {
+function CalculationComponentsTable({ denominatorLabel, numeratorLabel, rows, showHeading = true }) {
   return (
     <div className="complementary-components">
-      <h5>Dados usados no cálculo</h5>
+      {showHeading ? <h5>Dados usados no cálculo</h5> : null}
       <div className="complementary-components__table-wrap">
         <table className="complementary-components__table">
           <thead>
@@ -503,14 +493,6 @@ function rowHasRealValue(row) {
 function countRowsWithValue(rows, key) {
   if (!Array.isArray(rows)) return 0
   return rows.filter((row) => Number.isFinite(Number(row?.[key]))).length
-}
-
-function buildOptionsDescription(options) {
-  const labels = options.map((option) => option.label.toLocaleLowerCase('pt-BR'))
-  if (labels.length === 0) return 'Dados complementares disponíveis'
-  if (labels.length === 1) return labels[0]
-  if (labels.length === 2) return `${labels[0]} e ${labels[1]}`
-  return `${labels.slice(0, -1).join(', ')} e ${labels[labels.length - 1]}`
 }
 
 function resolveCycleRange(cycle, result, details) {

@@ -66,7 +66,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
 
   if (!item) {
     return (
-      <section className="detail-panel empty-panel" ref={ref}>
+      <section className="detail-panel detail-panel--empty empty-panel" ref={ref}>
         <p>Selecione um indicador para ver os detalhes.</p>
       </section>
     )
@@ -74,7 +74,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
 
   if (!result) {
     return (
-      <section className="detail-panel empty-panel" ref={ref}>
+      <section className="detail-panel detail-panel--empty empty-panel" ref={ref}>
         <p>Este indicador não possui série histórica disponível para este município no ciclo vigente.</p>
       </section>
     )
@@ -95,11 +95,19 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
   const normalizedStatus = String(status).toLocaleLowerCase('pt-BR')
   const isInformative =
     normalizedStatus.includes('visualiza') || normalizedStatus.includes('informativo')
+  const isDangerStatus =
+    normalizedStatus.includes('distante') ||
+    normalizedStatus.includes('crítico') ||
+    normalizedStatus.includes('critico') ||
+    normalizedStatus.includes('não atingida') ||
+    normalizedStatus.includes('nao atingida')
   const tone = isInformative
     ? 'muted'
     : result.atingida
       ? 'success'
-      : result.available
+      : isDangerStatus
+        ? 'danger'
+        : result.available
         ? 'warning'
         : 'muted'
   const isComparable = isComparableIndicator(result)
@@ -138,6 +146,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
   const formattedStart = formatIndicatorValue(goalResult.start_value, unit)
   const formattedEnd = formatIndicatorValue(goalResult.end_value, unit)
   const variation = roundPpString(getDisplayValue(result.display, 'variation'), ppOptions)
+  const compactVariation = formatCompactVariation(variation)
   const hasStartYear = typeof startYear === 'number' && startYear > 0
   const hasEndYear = typeof endYear === 'number' && endYear > 0
   const isSingleYear = isSingleYearIndicator(result)
@@ -166,9 +175,17 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
     startYear,
     variation,
   })
+  const historySummary = buildHistoryChartSummary({
+    atingida: goalResult.atingida,
+    distanceValue,
+    endYear,
+    formattedEnd,
+    isComparable,
+    metaValue,
+  })
 
   return (
-    <section className="detail-panel" ref={ref}>
+    <section className={`detail-panel detail-panel--${tone}`} ref={ref}>
       <div className="detail-heading">
         <div className="detail-heading__copy">
           <span className="eyebrow">Indicador selecionado</span>
@@ -185,7 +202,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
             </div>
           )}
         </div>
-        <StatusBadge status={status} tone={tone} />
+        <StatusBadge displayStatus={getDetailStatusLabel(status)} status={status} tone={tone} />
       </div>
 
       {isSingleYear ? (
@@ -223,7 +240,11 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
             {hasEndYear && (
               <MetricCard label={`Valor atual (${endYear})`} value={formattedEnd} size="large" />
             )}
-            <MetricCard label="Variação" value={variation} />
+            <MetricCard
+              detail={getVariationDetail(variation, startYear)}
+              label="Variação"
+              value={compactVariation}
+            />
             <MetricCard label={result.meta_label ?? 'Meta'} value={metaValue} />
             <MetricCard
               label="Distância da meta"
@@ -239,7 +260,11 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
             {hasEndYear && (
               <MetricCard label={`Valor atual (${endYear})`} value={formattedEnd} size="large" />
             )}
-            <MetricCard label="Variação" value={variation} />
+            <MetricCard
+              detail={getVariationDetail(variation, startYear)}
+              label="Variação"
+              value={compactVariation}
+            />
             <MetricCard label="Tipo" value="Informativo" tone="muted" />
           </div>
         )
@@ -253,7 +278,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
       )}
 
       {quickReading && (
-        <div className="interpretation-box">
+        <div className={`interpretation-box interpretation-box--${tone}`}>
           <span>Leitura rápida</span>
           <p>{quickReading}</p>
           {isSingleYear && (
@@ -267,14 +292,18 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
       {hasSeries && (
         <div className="indicator-chart-card">
           <IndicatorHistoryChart
+            adaptiveDomain
+            chartHeight={340}
             endYear={endYear}
+            essentialLabels
             item={item}
             meta={isComparable ? goalResult.meta : null}
             result={isAccExpansion ? flooredResult : result}
             series={displaySeries}
             showMetaLine={isComparable}
             startYear={startYear}
-            title={getIndicatorTitle(item, result)}
+            subtitle="Série histórica do ciclo selecionado, com meta de referência quando aplicável."
+            title={historySummary}
             unit={unit}
             floorNegativeValues={isAccExpansion}
           />
@@ -339,10 +368,26 @@ function GoalProgress({ result, unit }) {
   const meta = Number(result.meta)
   const isOverLimit = Number.isFinite(end) && Number.isFinite(meta) && end > meta && result.atingida === false
   const markersAreClose = Math.abs(progress.current - progress.meta) < 8
-  const currentTone = result.atingida ? 'success' : result.atingida === false ? 'warning' : 'muted'
+  const statusText = String(result?.display?.status ?? '').toLocaleLowerCase('pt-BR')
+  const currentTone = result.atingida
+    ? 'success'
+    : statusText.includes('distante') ||
+        statusText.includes('crítico') ||
+        statusText.includes('critico') ||
+        statusText.includes('não atingida') ||
+        statusText.includes('nao atingida')
+      ? 'danger'
+      : result.atingida === false
+        ? 'warning'
+        : 'muted'
   const metaLabelOffsetPct = markersAreClose
     ? Math.min(progress.meta + 14, 95)
     : progress.meta
+  const markerEdgeClass = progress.current >= 92
+    ? ' goal-progress__marker--edge-end'
+    : progress.current <= 8
+      ? ' goal-progress__marker--edge-start'
+      : ''
 
   return (
     <section
@@ -384,7 +429,7 @@ function GoalProgress({ result, unit }) {
           Meta {metaMarkerLabel}
         </span>
         <span
-          className={`goal-progress__marker goal-progress__marker--${currentTone}`}
+          className={`goal-progress__marker goal-progress__marker--${currentTone}${markerEdgeClass}`}
           style={{ left: `${progress.current}%` }}
         >
           <em>{endValue}</em>
@@ -392,6 +437,52 @@ function GoalProgress({ result, unit }) {
       </div>
     </section>
   )
+}
+
+function formatCompactVariation(value) {
+  if (!hasReadableValue(value)) return value ?? '-'
+  const numeric = parseDisplayNumber(value)
+  if (!Number.isFinite(numeric)) return value
+
+  const normalized = String(value).toLocaleLowerCase('pt-BR')
+  const signedValue = normalized.includes('queda')
+    ? -Math.abs(numeric)
+    : normalized.includes('alta') || normalized.includes('+')
+      ? Math.abs(numeric)
+      : numeric
+  const formatted = Math.abs(signedValue).toLocaleString('pt-BR', {
+    maximumFractionDigits: 1,
+  })
+  const sign = signedValue > 0 ? '+' : signedValue < 0 ? '-' : ''
+
+  return `${sign}${formatted} p.p.`
+}
+
+function getVariationDetail(value, startYear) {
+  const normalized = String(value ?? '').toLocaleLowerCase('pt-BR')
+  const yearSuffix = hasReadableYear(startYear) ? ` desde ${startYear}` : ''
+
+  if (normalized.includes('alta')) return `alta${yearSuffix}`
+  if (normalized.includes('queda')) return `queda${yearSuffix}`
+  if (parseDisplayNumber(value) === 0) return 'sem variação relevante'
+  return undefined
+}
+
+function getDetailStatusLabel(status) {
+  const normalizedStatus = String(status).toLocaleLowerCase('pt-BR')
+  if (normalizedStatus.includes('visualiza') || normalizedStatus.includes('informativo')) {
+    return 'Informativo'
+  }
+  if (normalizedStatus.includes('indispon') || normalizedStatus.includes('sem dados')) {
+    return 'Sem dado'
+  }
+  if (normalizedStatus.includes('não atingida') || normalizedStatus.includes('nao atingida')) {
+    return 'Não atingida'
+  }
+  if (normalizedStatus.includes('meta atingida') || normalizedStatus.includes('atingida')) {
+    return 'Atingida'
+  }
+  return status
 }
 
 export function isAvailableIndicator(result) {
@@ -491,8 +582,60 @@ function getBoundaryYear(result, boundary) {
 function getDistanceTone(result, isComparable) {
   if (!isComparable) return 'muted'
   if (result?.atingida === true) return 'success'
+  const status = String(result?.display?.status ?? '').toLocaleLowerCase('pt-BR')
+  if (
+    status.includes('distante') ||
+    status.includes('crítico') ||
+    status.includes('critico') ||
+    status.includes('não atingida') ||
+    status.includes('nao atingida')
+  ) {
+    return 'danger'
+  }
   if (result?.atingida === false) return 'warning'
   return 'muted'
+}
+
+function buildHistoryChartSummary({
+  atingida,
+  distanceValue,
+  endYear,
+  formattedEnd,
+  isComparable,
+  metaValue,
+}) {
+  if (!hasReadableValue(formattedEnd) || !hasReadableYear(endYear)) {
+    return 'Histórico do indicador'
+  }
+
+  if (!isComparable || !hasReadableValue(metaValue)) {
+    return `${formattedEnd} em ${endYear} — indicador informativo, sem meta de referência.`
+  }
+
+  const normalizedDistance = String(distanceValue ?? '').toLocaleLowerCase('pt-BR')
+  const parsedDistanceNumber = parseDisplayNumber(distanceValue)
+  let distanceNumber = parsedDistanceNumber
+  if (Number.isFinite(parsedDistanceNumber)) {
+    if (normalizedDistance.includes('abaixo') || atingida === false) {
+      distanceNumber = -Math.abs(parsedDistanceNumber)
+    } else if (normalizedDistance.includes('acima') || atingida === true) {
+      distanceNumber = Math.abs(parsedDistanceNumber)
+    }
+  }
+  const distanceAbs = formatAbsPp(distanceValue)
+
+  if (Number.isFinite(distanceNumber) && Math.abs(distanceNumber) < 0.05) {
+    return `${formattedEnd} em ${endYear} — no nível da meta de ${metaValue}.`
+  }
+
+  if (Number.isFinite(distanceNumber) && hasReadableValue(distanceAbs)) {
+    const relation = distanceNumber > 0
+      ? `${distanceAbs} acima da meta de ${metaValue}`
+      : `a ${distanceAbs} da meta de ${metaValue}`
+    return `${formattedEnd} em ${endYear} — ${relation}.`
+  }
+
+  return `${formattedEnd} em ${endYear} — meta de referência: ${metaValue}.`
 }
 
 function buildQuickReading({

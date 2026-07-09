@@ -711,7 +711,7 @@ export function VaarPanel({ vaarData }) {
 
   if (!hasData) {
     return (
-      <div className="vaar-panel">
+      <div className="vaar-panel financial-vaar-panel">
         <div className="vaar-empty">
           <p>Dados da complementação VAAR não disponíveis para este município.</p>
         </div>
@@ -720,7 +720,7 @@ export function VaarPanel({ vaarData }) {
   }
 
   return (
-    <div className="vaar-panel">
+    <div className="vaar-panel financial-vaar-panel">
       <VaarWhatIs />
       <VaarResult2026 summary={summary} lastYear={lastYear} />
       <VaarExplanation2026 summary={summary} learningRow={latestLearning} attendanceRow={latestAttendance} lastYear={lastYear} />

@@ -12,11 +12,13 @@ const CHART_WIDTH = 980
 const CHART_HEIGHT_INFORMATIVE = 280
 const CHART_HEIGHT_NORMAL = 300
 const CHART_HEIGHT_NEGATIVE = 330
-const PADDING = { bottom: 44, left: 64, right: 68, top: 38 }
+const PADDING = { bottom: 44, left: 64, right: 86, top: 38 }
 
 export function IndicatorHistoryChart({
+  adaptiveDomain = false,
   chartHeight,
   endYear,
+  essentialLabels = false,
   formatDataLabel: formatDataLabelProp,
   formatYAxis: formatYAxisProp,
   item,
@@ -28,6 +30,7 @@ export function IndicatorHistoryChart({
   showMetaLine = true,
   showMissingPoints,
   startYear,
+  subtitle,
   title = 'Histórico do indicador',
   unit: unitProp,
   yTickCount,
@@ -53,9 +56,11 @@ export function IndicatorHistoryChart({
         startYear,
         yTickCount,
         floorNegativeValues,
+        adaptiveDomain,
+        essentialLabels,
         chartHeightOverride: chartHeight,
       }),
-    [chartHeight, endYear, formatDataLabelProp, formatYAxisProp, labelMode, meta, missingLabel, resolvedUnit, series, showMetaLine, showMissingPoints, startYear, yTickCount, floorNegativeValues],
+    [chartHeight, endYear, formatDataLabelProp, formatYAxisProp, labelMode, meta, missingLabel, resolvedUnit, series, showMetaLine, showMissingPoints, startYear, yTickCount, floorNegativeValues, adaptiveDomain, essentialLabels],
   )
 
   const validCount = chart.points.filter(p => p.valid !== false).length
@@ -69,6 +74,7 @@ export function IndicatorHistoryChart({
         <div>
           <span className="eyebrow">Histórico do indicador</span>
           <h4>{title}</h4>
+          {subtitle ? <p className="history-chart__subtitle">{subtitle}</p> : null}
         </div>
       </div>
 
@@ -117,12 +123,14 @@ export function IndicatorHistoryChart({
 
           <g className="chart-axis">
             <line
+              className="chart-axis__x"
               x1={PADDING.left}
               x2={CHART_WIDTH - PADDING.right}
               y1={chart.height - PADDING.bottom}
               y2={chart.height - PADDING.bottom}
             />
             <line
+              className="chart-axis__y"
               x1={PADDING.left}
               x2={PADDING.left}
               y1={PADDING.top}
@@ -161,10 +169,11 @@ export function IndicatorHistoryChart({
           <g className="chart-points">
             {chart.points.filter(p => p.valid !== false).map((point) => (
               <circle
+                className={point.isLast ? 'is-last' : undefined}
                 cx={point.x}
                 cy={point.y}
                 key={point.year}
-                r={activePoint?.year === point.year ? 5 : 4}
+                r={activePoint?.year === point.year ? 5.5 : point.isLast ? 5 : 4}
                 onBlur={() => setActivePoint(null)}
                 onFocus={() => setActivePoint(point)}
                 onMouseEnter={() => setActivePoint(point)}
@@ -250,7 +259,9 @@ export function IndicatorHistoryChart({
 }
 
 function buildChartModel({
+  adaptiveDomain,
   endYear,
+  essentialLabels,
   formatDataLabel,
   formatYAxis,
   labelMode,
@@ -298,13 +309,22 @@ function buildChartModel({
   const isPercent = resolvedUnit === 'percent'
   const isIndex = resolvedUnit === 'index'
   const isYears = resolvedUnit === 'years'
-  const domain = getStableVisualDomain({
-    values: metaValue !== null ? [...values, metaValue] : values,
-    meta: metaValue,
-    isPercent,
-    isIndex,
-    isYears,
-  })
+  const domainValues = metaValue !== null ? [...values, metaValue] : values
+  const domain = adaptiveDomain
+    ? getAdaptiveHistoryDomain({
+        values: domainValues,
+        meta: metaValue,
+        isPercent,
+        isIndex,
+        isYears,
+      })
+    : getStableVisualDomain({
+        values: domainValues,
+        meta: metaValue,
+        isPercent,
+        isIndex,
+        isYears,
+      })
   const allYears = points.map((point) => point.year)
   const minYear = Math.min(...allYears)
   const maxYear = Math.max(...allYears)
@@ -326,6 +346,11 @@ function buildChartModel({
     y: point.valid !== false ? yScale(point.value) : PADDING.top + plotHeight / 2,
   }))
   const scaledValidPoints = scaledPoints.filter((p) => p.valid !== false)
+  const lastValidYear = scaledValidPoints[scaledValidPoints.length - 1]?.year
+  const displayPoints = scaledPoints.map((point) => ({
+    ...point,
+    isLast: point.valid !== false && point.year === lastValidYear,
+  }))
   const linePath = showMissingPoints
     ? buildBrokenLinePath(scaledPoints)
     : scaledPoints
@@ -341,13 +366,15 @@ function buildChartModel({
     ? null
     : `${linePath} L${last.x.toFixed(1)} ${zeroY.toFixed(1)} L${first.x.toFixed(1)} ${zeroY.toFixed(1)} Z`
 
-  const yTicksRaw = isPercent
-    ? stablePercentTicks(domain) ?? [domain.min, domain.max]
-    : isIndex
-      ? stableIndexTicks(domain) ?? [domain.min, domain.max]
-      : isYears
-        ? stableYearsTicks(domain) ?? [domain.min, domain.max]
-        : stableAbsoluteTicks(domain) ?? [domain.min, domain.max]
+  const yTicksRaw = domain.adaptive
+    ? buildAdaptiveTicks(domain)
+    : isPercent
+      ? stablePercentTicks(domain) ?? [domain.min, domain.max]
+      : isIndex
+        ? stableIndexTicks(domain) ?? [domain.min, domain.max]
+        : isYears
+          ? stableYearsTicks(domain) ?? [domain.min, domain.max]
+          : stableAbsoluteTicks(domain) ?? [domain.min, domain.max]
   let yTicks = yTicksRaw
     .filter((value) => value >= domain.min - 0.0001 && value <= domain.max + 0.0001)
     .map((value) => ({ value, y: yScale(value) }))
@@ -394,7 +421,7 @@ function buildChartModel({
   const formatValue = (value) => formatIndicatorValue(value, resolvedUnit)
   const formatLabel = formatDataLabel || formatValue
   const labelsForCompute = labelMode === 'all' ? scaledValidPoints : scaledPoints
-  const dataLabels = computeDataLabels(labelsForCompute, metaLine, formatLabel, chartHeight, labelMode)
+  const dataLabels = computeDataLabels(labelsForCompute, metaLine, formatLabel, chartHeight, labelMode, essentialLabels)
 
   const missingPointLabels = showMissingPoints
     ? scaledPoints.filter((p) => p.valid === false).map((p) => ({ year: p.year, x: p.x, y: chartHeight - PADDING.bottom + 18 }))
@@ -412,7 +439,7 @@ function buildChartModel({
     linePath,
     metaLine,
     missingPointLabels,
-    points: scaledPoints,
+    points: displayPoints,
     xTicks: showMissingPoints ? pickAllYearTicks(scaledPoints) : pickYearTicks(scaledPoints),
     yTicks,
     yearMarkers,
@@ -444,6 +471,90 @@ function normalizeSeries(series = [], floorNegativeValues = false, showMissingPo
       return Number.isFinite(point.year) && point.valid
     })
     .sort((a, b) => a.year - b.year)
+}
+
+function getAdaptiveHistoryDomain({ values, meta, isPercent = false, isIndex = false, isYears = false }) {
+  if (isIndex || isYears) {
+    return getStableVisualDomain({ values, meta, isPercent, isIndex, isYears })
+  }
+
+  const numericValues = (values ?? []).filter(Number.isFinite)
+  const numericMeta = Number.isFinite(meta) ? [meta] : []
+  const all = [...numericValues, ...numericMeta]
+
+  if (!all.length) {
+    return getStableVisualDomain({ values, meta, isPercent, isIndex, isYears })
+  }
+
+  const dataMin = Math.min(...all)
+  const dataMax = Math.max(...all)
+
+  if (isPercent && dataMin >= 0 && dataMax <= 100) {
+    const dataOnlyMax = numericValues.length ? Math.max(...numericValues) : dataMax
+    const metaIsCeiling = Number.isFinite(meta) && meta >= dataOnlyMax
+    const maxWithHeadroom = metaIsCeiling
+      ? dataMax
+      : Math.max(dataMax * 1.08, 10)
+    return {
+      adaptive: true,
+      isPercent: true,
+      max: Math.min(100, Math.max(5, Math.ceil(maxWithHeadroom / 5) * 5)),
+      min: 0,
+    }
+  }
+
+  if (dataMin >= 0) {
+    return {
+      adaptive: true,
+      isPercent: false,
+      max: roundUpAdaptive(dataMax * 1.1),
+      min: 0,
+    }
+  }
+
+  return getStableVisualDomain({ values, meta, isPercent, isIndex, isYears })
+}
+
+function buildAdaptiveTicks(domain) {
+  const step = domain.isPercent
+    ? pickAdaptivePercentStep(domain.max)
+    : pickAdaptiveAbsoluteStep(domain.max - domain.min)
+  const ticks = []
+
+  for (let value = domain.min; value <= domain.max + 0.0001; value += step) {
+    ticks.push(Number(value.toFixed(2)))
+  }
+
+  if (!ticks.includes(domain.max)) {
+    ticks.push(domain.max)
+  }
+
+  return ticks
+}
+
+function pickAdaptivePercentStep(max) {
+  if (max <= 20) return 5
+  if (max <= 50) return 10
+  if (max <= 80) return 20
+  return 25
+}
+
+function pickAdaptiveAbsoluteStep(span) {
+  if (span <= 0) return 1
+  const magnitude = 10 ** Math.floor(Math.log10(Math.max(span, 1)))
+  if (span / magnitude <= 2) return magnitude / 2
+  if (span / magnitude <= 5) return magnitude
+  return magnitude * 2
+}
+
+function roundUpAdaptive(value) {
+  if (!Number.isFinite(value) || value <= 0) return 1
+  const magnitude = 10 ** Math.floor(Math.log10(value))
+  const normalized = value / magnitude
+  if (normalized <= 1) return magnitude
+  if (normalized <= 2) return 2 * magnitude
+  if (normalized <= 5) return 5 * magnitude
+  return 10 * magnitude
 }
 
 function buildBrokenLinePath(scaledPoints) {
@@ -491,7 +602,7 @@ function pickYearTicks(points) {
   return [first, middle, last]
 }
 
-function computeDataLabels(points, metaLine, formatValue, chartHeight, labelMode) {
+function computeDataLabels(points, metaLine, formatValue, chartHeight, labelMode, essentialLabels = false) {
   if (points.length === 0) return []
 
   const plotLeft = PADDING.left
@@ -500,11 +611,23 @@ function computeDataLabels(points, metaLine, formatValue, chartHeight, labelMode
   const plotBottom = chartHeight - PADDING.bottom
 
   const LABEL_OFFSET_Y = 14
-  const MIN_DISTANCE_Y = 20
-  const MIN_DISTANCE_X = 36
+  const MIN_DISTANCE_Y = 24
+  const MIN_DISTANCE_X = 44
 
   const lastPoint = points[points.length - 1]
   const firstPoint = points[0]
+
+  if (essentialLabels) {
+    return computeEssentialDataLabels({
+      firstPoint,
+      lastPoint,
+      metaLine,
+      plotBottom,
+      plotLeft,
+      plotRight,
+      plotTop,
+    })
+  }
 
   const candidates = []
 
@@ -557,20 +680,6 @@ function computeDataLabels(points, metaLine, formatValue, chartHeight, labelMode
         y: pickLabelY(p.y, plotTop, plotBottom, LABEL_OFFSET_Y),
         year: p.year,
       })
-    }
-
-    // Cruzamentos (prioridade 3)
-    if (metaLine && Number.isFinite(metaLine.value)) {
-      const metaVal = metaLine.value
-      for (let i = 1; i < points.length; i++) {
-        const prev = points[i - 1]
-        const curr = points[i]
-        const crossedUp = prev.value < metaVal && curr.value >= metaVal
-        const crossedDown = prev.value > metaVal && curr.value <= metaVal
-        if (crossedUp || crossedDown) {
-          addCandidate(curr, 3, 'cross')
-        }
-      }
     }
 
     addCandidate(maxPoint, 5, 'max')
@@ -682,6 +791,112 @@ function computeDataLabels(points, metaLine, formatValue, chartHeight, labelMode
       if (!stillTooClose) {
         filtered.push(metaCandidate)
       }
+    }
+  }
+
+  return filtered
+}
+
+function computeEssentialDataLabels({
+  firstPoint,
+  lastPoint,
+  metaLine,
+  plotBottom,
+  plotLeft,
+  plotRight,
+  plotTop,
+}) {
+  const labels = []
+  const LABEL_OFFSET_Y = 16
+  const MIN_DISTANCE_Y = 24
+  const MIN_DISTANCE_X = 52
+  const RIGHT_COLLISION_X = 112
+
+  const metaIsNearLast =
+    metaLine &&
+    lastPoint &&
+    Math.abs(lastPoint.x - (plotRight - 2)) < RIGHT_COLLISION_X &&
+    Math.abs(lastPoint.y - metaLine.y) < 52
+
+  const addPointLabel = (point, priority, type, isLast = false) => {
+    if (!point) return
+    const isNearRight = point.x > plotRight - 30
+    const isNearLeft = point.x < plotLeft + 30
+    const anchor = isLast
+      ? isNearRight ? 'end' : 'start'
+      : isNearLeft ? 'start' : 'middle'
+    const x = isLast
+      ? isNearRight ? point.x - 10 : point.x + 10
+      : isNearLeft ? point.x + 8 : point.x
+    const y = isLast && metaIsNearLast
+      ? clampNumber(point.y - LABEL_OFFSET_Y, plotTop + 14, plotBottom - 10)
+      : clampNumber(pickLabelY(point.y, plotTop, plotBottom, LABEL_OFFSET_Y), plotTop + 14, plotBottom - 10)
+
+    labels.push({
+      anchor,
+      isLast,
+      isMeta: false,
+      priority,
+      type,
+      value: point.value,
+      x: clampNumber(x, plotLeft + 8, plotRight - 8),
+      y,
+      year: point.year,
+    })
+  }
+
+  addPointLabel(lastPoint, 1, 'last', true)
+
+  if (firstPoint?.year !== lastPoint?.year) {
+    addPointLabel(firstPoint, 3, 'first')
+  }
+
+  if (metaLine) {
+    const lastLabel = labels.find((label) => label.isLast)
+    const metaLabelCandidates = [
+      metaLine.y + 18,
+      metaLine.y - 14,
+      metaLine.y + 32,
+      metaLine.y - 28,
+    ]
+      .map((y) => clampNumber(y, plotTop + 14, plotBottom - 10))
+      .filter((y, index, arr) => arr.indexOf(y) === index)
+
+    const preferredMetaY = metaIsNearLast
+      ? metaLabelCandidates.find((candidateY) => (
+          !lastLabel || Math.abs(candidateY - lastLabel.y) >= MIN_DISTANCE_Y
+        ))
+      : metaLine.y < plotTop + 30
+        ? metaLabelCandidates[0]
+        : metaLine.y > plotBottom - 20
+          ? metaLabelCandidates[1]
+          : metaLabelCandidates[1]
+
+    const metaLabelY = preferredMetaY ?? metaLabelCandidates[0]
+
+    labels.push({
+      anchor: 'end',
+      isLast: false,
+      isMeta: true,
+      priority: 5,
+      type: 'meta',
+      value: metaLine.value,
+      x: plotRight - 2,
+      y: clampNumber(metaLabelY, plotTop + 14, plotBottom - 10),
+      year: 'meta',
+    })
+  }
+
+  const ordered = labels.sort((a, b) => a.priority - b.priority)
+  const filtered = []
+  for (const label of ordered) {
+    const tooClose = filtered.some((existing) => {
+      const dy = Math.abs(existing.y - label.y)
+      const dx = Math.abs(existing.x - label.x)
+      return dy < MIN_DISTANCE_Y && dx < MIN_DISTANCE_X
+    })
+    if (!tooClose || label.isLast || label.isMeta) {
+      filtered.push(label)
     }
   }
 

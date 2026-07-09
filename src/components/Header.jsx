@@ -1,54 +1,95 @@
-import { MunicipalitySelector } from './MunicipalitySelector'
-
-const NAV_ITEMS = [
-  { key: 'home', label: 'Início', icon: HomeIcon },
-  { key: 'pne2014', label: 'PNE 2014-2024', icon: CalendarIcon },
-  { key: 'pne2026', label: 'PNE 2026-2036', icon: CalendarIcon },
-  { key: 'educacao', label: 'Indicadores', icon: EducationIcon },
-  { key: 'diagnostico', label: 'Diagnóstico', icon: DocumentIcon },
+const NAV_BLOCKS = [
+  {
+    icon: HomeIcon,
+    key: 'home',
+    label: 'Home',
+    target: 'home',
+  },
+  {
+    icon: TargetIcon,
+    key: 'pne',
+    label: 'Plano Nacional de Educação',
+    subitems: [
+      { key: 'pne-overview', label: 'O que é o PNE', target: 'pne-overview' },
+      { key: 'pne2014', label: 'PNE 2014-2024', target: 'pne2014' },
+      { key: 'pne2026', label: 'PNE 2026-2036', target: 'pne2026' },
+      { key: 'pne-legal-goals', label: 'Metas da Lei', target: 'pne-legal-goals' },
+      { key: 'diagnostico', label: 'Diagnóstico municipal', target: 'diagnostico' },
+    ],
+    target: 'pne-overview',
+  },
+  {
+    icon: EducationIcon,
+    key: 'educacao',
+    label: 'Indicadores de Educação',
+    target: 'educacao',
+  },
+  {
+    icon: FinanceIcon,
+    key: 'financeiros',
+    label: 'Indicadores Financeiros da Educação',
+    target: 'financeiros',
+  },
 ]
 
-export function Header({ activePage, municipios, onNavigate, onMunicipioChange, selectedMunicipio }) {
+const PNE_PAGES = new Set(['pne-overview', 'pne2014', 'pne2026', 'pne-legal-goals', 'diagnostico'])
+
+export function Header({ activePage, onNavigate }) {
   return (
-    <header className="app-header">
+    <header className="app-header" aria-label="Navegação do Dashboard PNE">
       <div className="brand-lockup">
-        <div className="brand-name" aria-label="SESI-FIERGS">
-          <span>SESI</span>
-          <span>FIERGS</span>
+        <div className="brand-name" aria-label="Dashboard PNE">
+          <span>E</span>
         </div>
-        <div className="brand-divider" aria-hidden="true" />
         <div className="brand-copy">
-          <span className="brand-eyebrow">PLATAFORMA</span>
-          <h1>Monitoramento Municipal da Educação</h1>
-          <p>Indicadores, metas e diagnóstico municipal</p>
+          <span className="brand-eyebrow">Dashboard PNE</span>
+          <h1>Acompanhamento municipal</h1>
+          <p>Indicadores e financiamento</p>
         </div>
       </div>
 
       <nav className="top-nav" aria-label="Navegação principal">
-        {NAV_ITEMS.map((item) => {
+        {NAV_BLOCKS.map((item) => {
           const Icon = item.icon
+          const isActive = item.key === 'pne'
+            ? PNE_PAGES.has(activePage)
+            : item.key === activePage
+
           return (
-            <button
-              className={item.key === activePage ? 'nav-item is-active' : 'nav-item'}
-              key={item.key}
-              type="button"
-              onClick={() => onNavigate(item.key)}
-            >
-              <Icon />
-              <span>{item.label}</span>
-            </button>
+            <div className="nav-group" key={item.key}>
+              <button
+                className={isActive ? 'nav-item is-active' : 'nav-item'}
+                type="button"
+                onClick={() => onNavigate(item.target)}
+                aria-current={isActive ? 'page' : undefined}
+              >
+                <span className="nav-item__dot" aria-hidden="true" />
+                <Icon />
+                <span>{item.label}</span>
+              </button>
+
+              {item.subitems ? (
+                <div className="nav-subitems" aria-label="Subitens do Plano Nacional de Educação">
+                  {item.subitems.map((subitem) => (
+                    <button
+                      className={
+                        subitem.key === activePage
+                          ? 'nav-subitem is-active'
+                          : 'nav-subitem'
+                      }
+                      key={subitem.key}
+                      type="button"
+                      onClick={() => onNavigate(subitem.target)}
+                    >
+                      {subitem.label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
           )
         })}
       </nav>
-
-      <div className="header-selector">
-        <MunicipalitySelector
-          municipios={municipios}
-          selectedMunicipio={selectedMunicipio}
-          onChange={onMunicipioChange}
-          placeholder="Buscar município"
-        />
-      </div>
     </header>
   )
 }
@@ -62,20 +103,12 @@ function HomeIcon() {
   )
 }
 
-function CalendarIcon() {
+function TargetIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="4" y="5" width="16" height="16" rx="2" />
-      <path d="M8 3v4M16 3v4M4 10h16M9 14h2M13 14h2" />
-    </svg>
-  )
-}
-
-function DocumentIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M7 3h7l4 4v14H7z" />
-      <path d="M14 3v5h5M9.5 13h5M9.5 17h5" />
+      <circle cx="12" cy="12" r="8" />
+      <circle cx="12" cy="12" r="4" />
+      <path d="m14.5 9.5 4-4M18.5 5.5h-4v4" />
     </svg>
   )
 }
@@ -85,6 +118,16 @@ function EducationIcon() {
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M22 10L12 5 2 10l10 5 10-5z" />
       <path d="M6 12v5c0 1 3 2.5 6 2.5s6-1.5 6-2.5v-5" />
+    </svg>
+  )
+}
+
+function FinanceIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 18h16" />
+      <path d="M7 18V9h3v9M12 18V5h3v13M17 18v-6h3v6" />
+      <path d="M4 6h3" />
     </svg>
   )
 }

@@ -1,4 +1,5 @@
 import { useMunicipality } from '../context/MunicipalityContext'
+import { ContextBar } from './ContextBar'
 import { Header } from './Header'
 
 export function Layout({
@@ -11,15 +12,18 @@ export function Layout({
 
   return (
     <div className="dashboard-shell">
-      <div className="dashboard-frame">
-        <Header
+      <Header
+        activePage={activePage}
+        onNavigate={onNavigate}
+      />
+
+      <div className="dashboard-main">
+        <ContextBar
           activePage={activePage}
           municipios={municipios}
           selectedMunicipio={selectedMunicipio}
           onMunicipioChange={setSelectedMunicipio}
-          onNavigate={onNavigate}
         />
-
         <main className="content-area">{children}</main>
       </div>
     </div>

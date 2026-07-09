@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 
 const CHART_WIDTH = 980
-const CHART_HEIGHT = 300
+const CHART_HEIGHT = 260
 const PADDING = { bottom: 44, left: 64, right: 68, top: 38 }
 
 const percentFormatter = new Intl.NumberFormat('pt-BR', {
@@ -9,10 +9,11 @@ const percentFormatter = new Intl.NumberFormat('pt-BR', {
   minimumFractionDigits: 1,
 })
 
-export function IndicatorProjectionPanel({ projection }) {
+export function IndicatorProjectionPanel({ projection, showTitle = true }) {
   const [activePoint, setActivePoint] = useState(null)
 
   const chart = useMemo(() => buildProjectionChart(projection), [projection])
+  const lastChartPointYear = chart.points.filter((point) => point.valid !== false).slice(-1)[0]?.year
 
   if (!projection?.available) {
     return (
@@ -36,7 +37,7 @@ export function IndicatorProjectionPanel({ projection }) {
   return (
     <div className="complementary-projection">
       <div className="complementary-projection__header">
-        <h5>Projeção tendencial até 2036</h5>
+        {showTitle ? <h5>Projeção tendencial até 2036</h5> : null}
         <p className="complementary-projection__method">
           Este cenário estima como o indicador pode evoluir até 2036, considerando o
           comportamento recente das matrículas e a tendência populacional projetada para
@@ -111,7 +112,7 @@ export function IndicatorProjectionPanel({ projection }) {
                   y1={chart.metaLine.y} y2={chart.metaLine.y}
                 />
                 <text
-                  x={CHART_WIDTH - PADDING.right - 4} y={chart.metaLine.y - 6}
+                  x={CHART_WIDTH - PADDING.right - 6} y={chart.metaLine.labelY}
                   textAnchor="end" className="chart-meta-label"
                 >
                   Meta {percentFormatter.format(target)}%
@@ -120,8 +121,8 @@ export function IndicatorProjectionPanel({ projection }) {
             )}
 
             <g className="chart-axis">
-              <line x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={CHART_HEIGHT - PADDING.bottom} y2={CHART_HEIGHT - PADDING.bottom} />
-              <line x1={PADDING.left} x2={PADDING.left} y1={PADDING.top} y2={CHART_HEIGHT - PADDING.bottom} />
+              <line className="chart-axis__x" x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={CHART_HEIGHT - PADDING.bottom} y2={CHART_HEIGHT - PADDING.bottom} />
+              <line className="chart-axis__y" x1={PADDING.left} x2={PADDING.left} y1={PADDING.top} y2={CHART_HEIGHT - PADDING.bottom} />
             </g>
 
             <g clipPath="url(#proj-clip)">
@@ -134,8 +135,9 @@ export function IndicatorProjectionPanel({ projection }) {
               {chart.points.filter(p => p.valid !== false).map((point) => (
                 <circle
                   key={point.year}
+                  className={point.year === lastChartPointYear ? 'is-last' : undefined}
                   cx={point.x} cy={point.y}
-                  r={activePoint?.year === point.year ? 5 : 3.5}
+                  r={activePoint?.year === point.year ? 5 : point.year === lastChartPointYear ? 4.5 : 3.5}
                   onMouseEnter={() => setActivePoint(point)}
                   onMouseLeave={() => setActivePoint(null)}
                   onFocus={() => setActivePoint(point)}
@@ -232,7 +234,7 @@ function buildProjectionChart(projection) {
   const minVal = Math.min(...values)
   const maxVal = Math.max(...values)
   const domainMin = minVal >= 0 ? 0 : Math.floor(minVal / 10) * 10
-  const domainMax = Math.min(Math.max(Math.ceil(maxVal / 10) * 10, 100), 105)
+  const domainMax = Math.min(100, Math.max(10, Math.ceil((maxVal * 1.1) / 10) * 10))
 
   const plotWidth = CHART_WIDTH - PADDING.left - PADDING.right
   const plotHeight = CHART_HEIGHT - PADDING.top - PADDING.bottom
@@ -278,14 +280,18 @@ function buildProjectionChart(projection) {
     ? `${fullLinePath} L${lastPt.x.toFixed(1)} ${zeroY.toFixed(1)} L${firstPt.x.toFixed(1)} ${zeroY.toFixed(1)} Z`
     : ''
 
-  const yStep = 10
+  const yStep = pickProjectionTickStep(domainMax - domainMin)
   const yTicks = []
   for (let v = Math.max(0, Math.floor(domainMin / yStep) * yStep); v <= domainMax; v += yStep) {
     yTicks.push({ value: v, y: yScale(v), label: `${v}%` })
   }
 
   const metaLine = target != null
-    ? { value: target, y: Math.max(PADDING.top, Math.min(yScale(target), CHART_HEIGHT - PADDING.bottom)) }
+    ? buildProjectionMetaLine({
+        points: allScaledValid,
+        value: target,
+        y: Math.max(PADDING.top, Math.min(yScale(target), CHART_HEIGHT - PADDING.bottom)),
+      })
     : null
 
   const yearStep = Math.max(1, Math.floor((maxYear - minYear) / 8))
@@ -308,5 +314,42 @@ function buildProjectionChart(projection) {
     historicalPath,
     projectionPath,
     xTicks,
+  }
+}
+
+function pickProjectionTickStep(span) {
+  if (span <= 20) return 5
+  if (span <= 50) return 10
+  if (span <= 80) return 20
+  return 25
+}
+
+function buildProjectionMetaLine({ points, value, y }) {
+  const plotTop = PADDING.top
+  const plotBottom = CHART_HEIGHT - PADDING.bottom
+  const labelX = CHART_WIDTH - PADDING.right - 6
+  let labelY = y - 12
+
+  if (y < plotTop + 24) {
+    labelY = y + 20
+  } else if (y > plotBottom - 18) {
+    labelY = y - 14
+  }
+
+  const rightSideCollision = points.some((point) => (
+    point.valid !== false &&
+    Math.abs(point.x - labelX) < 132 &&
+    Math.abs(point.y - labelY) < 22
+  ))
+
+  if (rightSideCollision) {
+    const hasRoomAbove = y - 28 > plotTop
+    labelY = hasRoomAbove ? y - 28 : y + 28
+  }
+
+  return {
+    labelY: Math.max(plotTop + 14, Math.min(labelY, plotBottom - 12)),
+    value,
+    y,
   }
 }

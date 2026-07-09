@@ -1,8 +1,21 @@
 import { useMemo, useState } from 'react'
 import { CategoryTabs } from './CategoryTabs'
 import { DataSourceNote } from './DataSourceNote'
+import {
+  FinancialChartFrame,
+  FinancialDetailHeader,
+  FinancialDetailNavigation,
+  FinancialIndicatorCard,
+  FinancialMetricGrid,
+  FinancialQuickReading,
+} from './FinancialIndicatorPrimitives'
 import { IndicatorHistoryChart } from './IndicatorHistoryChart'
-import { getSiopeOfficialGroup, loadSiopeDashboardData, SIOPE_DASHBOARD_YEARS } from '../data/siopeIndicators'
+import {
+  getSiopeOfficialGroup,
+  loadSiopeDashboardData,
+  SIOPE_DASHBOARD_YEARS,
+  SIOPE_INDICATOR_READING_GUIDES,
+} from '../data/siopeIndicators'
 import { useAsyncData } from '../utils/useAsyncData'
 
 const EM = '\u2014'
@@ -10,6 +23,29 @@ const SIOPE_SOURCE_NOTE = 'SIOPE / FNDE. Para cada ano, foi considerado o dado d
 const MUNICIPALITY_2025_MISSING_NOTE =
   'Este município ainda não possui dados de 2025 no SIOPE. Exibindo o último ano disponível.'
 const MISSING_VALUE_NOTE = 'Este município não possui dado para este indicador neste ano.'
+const SIOPE_SECTION_SUBTITLE =
+  'Receitas, despesas, mínimos legais, FUNDEB, gasto por aluno e saldos declarados ao SIOPE/FNDE.'
+
+const SIOPE_LEGAL_STATUS_RULES = {
+  aplicacao_mde_percentual: {
+    limit: 25,
+    passLabel: 'Cumpriu mínimo',
+    failLabel: 'Abaixo do mínimo',
+    type: 'min',
+  },
+  fundeb_remuneracao_profissionais_percentual: {
+    limit: 70,
+    passLabel: 'Cumpriu mínimo',
+    failLabel: 'Abaixo do mínimo',
+    type: 'min',
+  },
+  fundeb_nao_aplicado_percentual: {
+    limit: 10,
+    passLabel: 'Dentro do limite',
+    failLabel: 'Acima do limite',
+    type: 'max',
+  },
+}
 
 function hasNumber(value) {
   return value !== null && value !== undefined && Number.isFinite(Number(value))
@@ -77,12 +113,6 @@ function getIndicatorTypeLabel(indicator) {
   return 'Número'
 }
 
-function getIndicatorBadgeClass(indicator) {
-  return indicator?.unidade === 'percentual'
-    ? 'indicator-stage-badge indicator-stage-badge--pct'
-    : 'indicator-stage-badge'
-}
-
 function getMunicipiosList(municipios) {
   if (Array.isArray(municipios)) return municipios
   return Object.values(municipios ?? {})
@@ -145,6 +175,122 @@ function latestAvailable(series) {
     .sort((a, b) => Number(b.ano) - Number(a.ano))[0] ?? null
 }
 
+function firstAvailable(series) {
+  return [...series]
+    .filter((point) => hasNumber(point.valor))
+    .sort((a, b) => Number(a.ano) - Number(b.ano))[0] ?? null
+}
+
+function formatVariationDisplay(raw, unidade) {
+  if (!hasNumber(raw)) return EM
+  const numeric = Number(raw)
+  const sign = numeric > 0 ? '+' : ''
+  if (unidade === 'percentual') {
+    return `${sign}${numeric.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} p.p.`
+  }
+  return `${sign}${numeric.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`
+}
+
+function calculateSiopeVariation(first, latest, unidade) {
+  if (!hasNumber(first?.valor) || !hasNumber(latest?.valor)) {
+    return { display: EM, raw: null, tone: 'muted' }
+  }
+
+  const diff = Number(latest.valor) - Number(first.valor)
+  const raw = unidade === 'percentual'
+    ? diff
+    : Number(first.valor) === 0
+      ? null
+      : (diff / Math.abs(Number(first.valor))) * 100
+
+  return {
+    display: raw === null ? EM : formatVariationDisplay(raw, unidade),
+    raw,
+    tone: raw === null ? 'muted' : raw > 0 ? 'success' : raw < 0 ? 'warning' : 'muted',
+  }
+}
+
+function getLegalStatus(indicator, latest) {
+  const rule = SIOPE_LEGAL_STATUS_RULES[indicator?.slug]
+  if (!rule || !hasNumber(latest?.valor)) return null
+
+  const value = Number(latest.valor)
+  const isCompliant = rule.type === 'min'
+    ? value >= rule.limit
+    : value <= rule.limit
+
+  return {
+    label: isCompliant ? rule.passLabel : rule.failLabel,
+    tone: isCompliant ? 'success' : 'warning',
+  }
+}
+
+function getFinancialStatus(latest, variation, indicator) {
+  if (!hasNumber(latest?.valor)) return { label: 'Sem dados', tone: 'muted' }
+  const legalStatus = getLegalStatus(indicator, latest)
+  if (legalStatus) return legalStatus
+  if (variation.raw === null) return { label: 'Com dados', tone: 'info' }
+  if (variation.raw > 0) return { label: 'Aumentou', tone: 'info' }
+  if (variation.raw < 0) return { label: 'Reduziu', tone: 'info' }
+  return { label: 'Estável', tone: 'muted' }
+}
+
+function buildHistorySummary(model) {
+  if (!model.initialYear || !model.currentYear || model.initialYear === model.currentYear) return ''
+  return `Série de ${model.initialYear} a ${model.currentYear}: ${model.initialDisplay} no início e ${model.currentDisplay} no dado mais recente.`
+}
+
+function buildQuickReading(model) {
+  if (!model.currentYear || model.currentDisplay === EM) {
+    return 'O município não possui dado disponível para este indicador no período carregado.'
+  }
+  if (model.variationDisplay === EM) {
+    return `O indicador mais recente disponível é de ${model.currentYear}.`
+  }
+  const movement = model.variationTone === 'success'
+    ? 'aumento'
+    : model.variationTone === 'warning'
+      ? 'redução'
+      : 'estabilidade'
+  return `O indicador mais recente disponível é de ${model.currentYear}; a série aponta ${movement} no período observado.`
+}
+
+function buildSiopeIndicatorModel(indicator, municipality, activeGroup) {
+  const series = buildIndicatorSeries(municipality, indicator)
+  const latest = latestAvailable(series)
+  const first = firstAvailable(series)
+  const variation = calculateSiopeVariation(first, latest, indicator.unidade)
+  const status = getFinancialStatus(latest, variation, indicator)
+  const readingGuide = SIOPE_INDICATOR_READING_GUIDES[indicator.slug] ?? {}
+  const model = {
+    description: indicator.descricao_curta,
+    initialDisplay: first ? formatSiopeValue(first.valor, indicator.unidade) : EM,
+    initialYear: first?.ano ?? null,
+    key: indicator.slug,
+    label: indicator.nome_dashboard,
+    moduleLabel: 'SIOPE / FNDE',
+    currentDisplay: latest ? formatSiopeValue(latest.valor, indicator.unidade) : EM,
+    currentYear: latest?.ano ?? null,
+    sourceLabel: latest?.ano ? `SIOPE/FNDE ${latest.ano}` : 'SIOPE/FNDE',
+    statusLabel: status.label,
+    statusTone: status.tone,
+    unitLabel: getIndicatorTypeLabel(indicator),
+    variationDisplay: variation.display,
+    variationLabel: first?.ano ? `Variação desde ${first.ano}` : 'Variação no período',
+    variationTone: variation.tone,
+    series: series.map((point) => ({ ano: point.ano, valor: point.valor })),
+    raw: indicator,
+    readingGuide,
+    groupLabel: activeGroup?.label,
+  }
+
+  return {
+    ...model,
+    historySummary: buildHistorySummary(model),
+    quickReading: buildQuickReading(model),
+  }
+}
+
 function buildSummaryCards(indicators, municipality) {
   return indicators
     .filter((indicator) => indicator.usar_no_resumo)
@@ -185,10 +331,51 @@ function SiopeEmpty({ children }) {
   )
 }
 
+function SiopeReadingGuide({ fallback, guide }) {
+  const items = [
+    { label: 'O que mede', text: guide?.oQueMede ?? fallback },
+    { label: 'Como interpretar', text: guide?.comoInterpretar },
+    { label: 'Atenção na leitura', text: guide?.atencaoLeitura },
+  ].filter((item) => item.text)
+
+  if (!items.length) return null
+
+  return (
+    <div className="educacao-indicator-reference financial-indicator-reference siope-reading-guide">
+      {items.map((item) => (
+        <div className="siope-reading-guide__item" key={item.label}>
+          <span>{item.label}</span>
+          <p>{item.text}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function SiopeHistoricalData({ children }) {
+  if (!children) return null
+
+  return (
+    <section className="educacao-explore education-support-data financial-support-data siope-history-table-section">
+      <div className="educacao-explore__heading">
+        <div>
+          <span className="educacao-explore__eyebrow">Série histórica em tabela</span>
+          <h3>Dados históricos</h3>
+          <p>Série anual declarada no SIOPE para o indicador selecionado.</p>
+        </div>
+      </div>
+      <div className="educacao-explore__panel siope-history-table-panel">
+        {children}
+      </div>
+    </section>
+  )
+}
+
 export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio }) {
   const state = useAsyncData(() => loadSiopeDashboardData(), [])
   const [selectedGroupKey, setSelectedGroupKey] = useState('')
   const [selectedIndicatorKey, setSelectedIndicatorKey] = useState('')
+  const [isDetailOpen, setIsDetailOpen] = useState(false)
 
   const model = useMemo(() => {
     const catalogIndicators = state.data?.catalogo?.indicadores ?? []
@@ -203,18 +390,18 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio }) {
   }, [idMunicipio, selectedMunicipio, state.data])
 
   if (!selectedMunicipio) {
-    return <SiopeEmpty>Selecione um município para consultar os indicadores do SIOPE.</SiopeEmpty>
+    return <SiopeEmpty>Selecione um município para consultar os dados declarados ao SIOPE/FNDE.</SiopeEmpty>
   }
 
   if (state.loading) {
-    return <div className="page-stack"><p className="state-box state-box--loading">Carregando indicadores SIOPE...</p></div>
+    return <div className="page-stack"><p className="state-box state-box--loading">Carregando dados do SIOPE/FNDE...</p></div>
   }
 
   if (state.error) {
     return (
       <div className="page-stack">
         <div className="state-box state-box--error">
-          <strong>Erro ao carregar SIOPE</strong>
+          <strong>Erro ao carregar SIOPE/FNDE</strong>
           <span>{state.error}</span>
         </div>
       </div>
@@ -222,7 +409,7 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio }) {
   }
 
   if (!model.municipality) {
-    return <SiopeEmpty>Dados do SIOPE não disponíveis para este município.</SiopeEmpty>
+    return <SiopeEmpty>Dados do SIOPE/FNDE não disponíveis para este município.</SiopeEmpty>
   }
 
   const activeGroupKey = model.groups.some((group) => group.key === selectedGroupKey)
@@ -230,7 +417,9 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio }) {
     : model.groups[0]?.key
   const activeGroup = model.groups.find((group) => group.key === activeGroupKey) ?? model.groups[0]
   const activeIndicators = activeGroup?.items ?? []
-  const selectedIndicator = activeIndicators.find((indicator) => indicator.slug === selectedIndicatorKey) ?? activeIndicators[0]
+  const indicatorModels = activeIndicators.map((indicator) => buildSiopeIndicatorModel(indicator, model.municipality, activeGroup))
+  const selectedIndicatorModel = indicatorModels.find((indicator) => indicator.key === selectedIndicatorKey) ?? indicatorModels[0]
+  const selectedIndicator = selectedIndicatorModel?.raw
   const series = selectedIndicator
     ? buildIndicatorSeries(model.municipality, selectedIndicator)
     : []
@@ -239,22 +428,36 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio }) {
   const summaryCards = buildSummaryCards(model.catalogIndicators, model.municipality)
   const municipalityMissing2025 = !hasMunicipalityDataForYear(model.municipality, 2025)
   const selectedIndicatorHasMissingValues = series.some((point) => !point.hasValue)
+  const selectedIndex = selectedIndicatorModel
+    ? indicatorModels.findIndex((indicator) => indicator.key === selectedIndicatorModel.key)
+    : -1
+  const previousIndicator = selectedIndex > 0 ? indicatorModels[selectedIndex - 1] : null
+  const nextIndicator = selectedIndex >= 0 && selectedIndex < indicatorModels.length - 1
+    ? indicatorModels[selectedIndex + 1]
+    : null
 
   function handleGroupSelect(groupKey) {
     setSelectedGroupKey(groupKey)
     setSelectedIndicatorKey('')
+    setIsDetailOpen(false)
+  }
+
+  function handleIndicatorSelect(indicatorKey) {
+    setSelectedIndicatorKey(indicatorKey)
+    setIsDetailOpen(true)
+  }
+
+  function handleBackToGrid() {
+    setIsDetailOpen(false)
   }
 
   return (
     <div className="siope-panel">
       <section className="page-card siope-info-box" aria-labelledby="siope-title">
         <div className="siope-info-box__header">
-          <span className="eyebrow">SIOPE</span>
-          <h2 id="siope-title">Indicadores Financeiros e Educacionais do SIOPE</h2>
-          <p>
-            Acompanhamento dos principais indicadores declarados ao SIOPE no 6º bimestre de cada ano, com foco em
-            aplicação mínima, FUNDEB, gasto por aluno, receitas e resultado financeiro.
-          </p>
+          <span className="eyebrow">SIOPE / FNDE</span>
+          <h2 id="siope-title">Aplicação dos Recursos da Educação</h2>
+          <p>{SIOPE_SECTION_SUBTITLE}</p>
           <DataSourceNote source={SIOPE_SOURCE_NOTE} />
         </div>
       </section>
@@ -278,10 +481,10 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio }) {
 
       <section className="page-card siope-group-selector">
         <div className="cycle-category-bar">
-          <span className="eyebrow">Grupos SIOPE</span>
+          <span className="eyebrow">Eixos de análise</span>
           <div className="cycle-category-bar__controls">
             <CategoryTabs
-              ariaLabel="Grupos de indicadores SIOPE"
+              ariaLabel="Eixos de análise dos recursos da educação"
               categories={model.groups}
               selectedCategory={activeGroupKey}
               onSelectCategory={handleGroupSelect}
@@ -290,97 +493,126 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio }) {
         </div>
       </section>
 
-      <section className="page-card fundeb-workspace siope-workspace">
-        <div className="fundeb-workspace-layout educacao-analysis-layout">
-          <aside className="indicator-sidebar">
-            <div className="indicator-sidebar__heading">
-              <h3>Indicadores</h3>
-              <span>{activeIndicators.length}</span>
-            </div>
-            <div className="indicator-list">
-              {activeIndicators.map((indicator) => (
-                <button
-                  className={indicator.slug === selectedIndicator?.slug ? 'indicator-row is-active' : 'indicator-row'}
-                  key={indicator.slug}
-                  type="button"
-                  onClick={() => setSelectedIndicatorKey(indicator.slug)}
-                >
-                  <span className="indicator-row__label">{indicator.nome_dashboard}</span>
-                  <span className="indicator-row__description">{indicator.descricao_curta}</span>
-                  <span className="indicator-row__badges">
-                    <span className={getIndicatorBadgeClass(indicator)}>
-                      {getIndicatorTypeLabel(indicator)}
-                    </span>
-                  </span>
-                </button>
+      {isDetailOpen && selectedIndicatorModel && selectedIndicator ? (
+        <div className="financial-detail-view education-detail-view">
+          <FinancialDetailNavigation
+            activeIndex={selectedIndex}
+            nextIndicator={nextIndicator}
+            onBack={handleBackToGrid}
+            onNext={handleIndicatorSelect}
+            onPrevious={handleIndicatorSelect}
+            previousIndicator={previousIndicator}
+            total={indicatorModels.length}
+          />
+          <section className="detail-panel educacao-detail-panel financial-detail-panel siope-detail">
+            <FinancialDetailHeader indicator={selectedIndicatorModel} />
+            <SiopeReadingGuide
+              fallback={selectedIndicatorModel.description}
+              guide={selectedIndicatorModel.readingGuide}
+            />
+            <FinancialMetricGrid indicator={selectedIndicatorModel} />
+            <FinancialQuickReading text={selectedIndicatorModel.quickReading} tone={selectedIndicatorModel.statusTone} />
+
+            {selectedIndicatorHasMissingValues ? (
+              <p className="fundeb-indicator-note siope-register-alert">
+                <strong>Registro:</strong> {MISSING_VALUE_NOTE}
+              </p>
+            ) : null}
+
+            <FinancialChartFrame
+              subtitle={`${selectedIndicatorModel.label} · ${selectedIndicatorModel.groupLabel}`}
+              summary={selectedIndicatorModel.historySummary}
+              source={<DataSourceNote className="fundeb-data-source siope-chart-source" source={SIOPE_SOURCE_NOTE} />}
+            >
+              {validSeries.length >= 2 ? (
+                <IndicatorHistoryChart
+                  chartHeight={340}
+                  endYear={2025}
+                  formatDataLabel={(value) => formatCompactDataLabel(value, selectedIndicator.unidade)}
+                  formatYAxis={selectedIndicator.unidade === 'reais' ? formatCompactCurrency : undefined}
+                  item={{ label: selectedIndicator.nome_dashboard }}
+                  labelMode="all"
+                  missingLabel={EM}
+                  result={null}
+                  series={chartSeries}
+                  showMetaLine={false}
+                  showMissingPoints={true}
+                  startYear={2021}
+                  title={selectedIndicator.nome_dashboard}
+                  unit={getIndicatorUnit(selectedIndicator)}
+                  yTickCount={5}
+                />
+              ) : (
+                <div className="fundeb-empty fundeb-empty--chart">
+                  <p>Não há pontos suficientes para exibir o gráfico deste indicador.</p>
+                </div>
+              )}
+            </FinancialChartFrame>
+
+            <SiopeHistoricalData>
+              <div className="fundeb-table-card financial-support-table">
+                <div className="fundeb-table-card__header siope-table-card__header">
+                  <div>
+                    <h4>Valores por ano</h4>
+                  </div>
+                </div>
+                <div className="fundeb-table-wrap">
+                  <table className="fundeb-table">
+                    <thead>
+                      <tr>
+                        <th>Ano</th>
+                        <th>Valor</th>
+                        <th>Registro</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {series.map((point) => (
+                        <tr key={point.ano}>
+                          <td>{point.ano}</td>
+                          <td>{formatSiopeValue(point.valor, selectedIndicator.unidade)}</td>
+                          <td>{point.hasValue ? 'Com dados' : EM}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <DataSourceNote className="fundeb-data-source" source={SIOPE_SOURCE_NOTE} />
+              </div>
+            </SiopeHistoricalData>
+          </section>
+          <FinancialDetailNavigation
+            activeIndex={selectedIndex}
+            isBottom
+            nextIndicator={nextIndicator}
+            onBack={handleBackToGrid}
+            onNext={handleIndicatorSelect}
+            onPrevious={handleIndicatorSelect}
+            previousIndicator={previousIndicator}
+            total={indicatorModels.length}
+          />
+        </div>
+      ) : (
+        <section className="financial-indicator-grid-shell">
+          <div className="meta-grid-header education-indicator-grid-header">
+            <span>{indicatorModels.length} indicadores</span>
+            <p>{activeGroup?.label ?? 'Eixo de análise'} · {model.municipality.municipio}</p>
+          </div>
+          {indicatorModels.length ? (
+            <div className="financial-indicator-card-grid">
+              {indicatorModels.map((indicator) => (
+                <FinancialIndicatorCard
+                  indicator={indicator}
+                  isSelected={indicator.key === selectedIndicatorKey}
+                  key={indicator.key}
+                  onSelect={() => handleIndicatorSelect(indicator.key)}
+                />
               ))}
             </div>
-          </aside>
-
-          <div className="fundeb-detail siope-detail">
-            {selectedIndicator ? (
-              <>
-                <div className="fundeb-detail-header">
-                  <div>
-                    <span className="eyebrow">Indicador selecionado</span>
-                    <h3>{selectedIndicator.nome_dashboard}</h3>
-                    <p className="fundeb-indicator-description">{selectedIndicator.descricao_curta}</p>
-                  </div>
-                  <span className={getIndicatorBadgeClass(selectedIndicator)}>
-                    {getIndicatorTypeLabel(selectedIndicator)}
-                  </span>
-                </div>
-
-                {selectedIndicator.interpretacao ? (
-                  <p className="fundeb-indicator-note siope-indicator-note">
-                    <strong>Leitura:</strong> {selectedIndicator.interpretacao}
-                  </p>
-                ) : null}
-
-                {selectedIndicatorHasMissingValues ? (
-                  <p className="fundeb-indicator-note siope-register-alert">
-                    <strong>Registro:</strong> {MISSING_VALUE_NOTE}
-                  </p>
-                ) : null}
-
-                <div className="fundeb-visual-grid">
-                  <div className="fundeb-chart-card siope-chart-card">
-                    {validSeries.length >= 2 ? (
-                      <IndicatorHistoryChart
-                        chartHeight={340}
-                        endYear={2025}
-                        formatDataLabel={(value) => formatCompactDataLabel(value, selectedIndicator.unidade)}
-                        formatYAxis={selectedIndicator.unidade === 'reais' ? formatCompactCurrency : undefined}
-                        item={{ label: selectedIndicator.nome_dashboard }}
-                        labelMode="all"
-                        missingLabel={EM}
-                        result={null}
-                        series={chartSeries}
-                        showMetaLine={false}
-                        showMissingPoints={true}
-                        startYear={2021}
-                        title={selectedIndicator.nome_dashboard}
-                        unit={getIndicatorUnit(selectedIndicator)}
-                        yTickCount={5}
-                      />
-                    ) : (
-                      <div className="fundeb-empty fundeb-empty--chart">
-                        <p>Não há pontos suficientes para exibir o gráfico deste indicador.</p>
-                      </div>
-                    )}
-                    <DataSourceNote
-                      className="fundeb-data-source siope-chart-source"
-                      source={SIOPE_SOURCE_NOTE}
-                    />
-                  </div>
-                </div>
-              </>
-            ) : (
-              <SiopeEmpty>Nenhum indicador disponível neste grupo.</SiopeEmpty>
-            )}
-          </div>
-        </div>
-      </section>
+          ) : (
+            <SiopeEmpty>Nenhum indicador disponível neste eixo.</SiopeEmpty>
+          )}
+        </section>
+      )}
     </div>
   )
 }

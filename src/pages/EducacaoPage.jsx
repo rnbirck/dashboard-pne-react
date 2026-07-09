@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { CategoryTabs } from '../components/CategoryTabs'
 import { FundebPanel } from '../components/FundebPanel'
 import { PnatePanel } from '../components/PnatePanel'
@@ -9,6 +9,7 @@ import { FUNDEB_INDICATORS } from '../data/fundebIndicators'
 import { PNATE_INDICATORS } from '../data/pnateIndicators'
 import { SIOPE_SELECTED_INDICATORS_COUNT } from '../data/siopeIndicators'
 import { EducationBarChart } from '../components/EducationBarChart'
+import { EducationIndicatorCard } from '../components/EducationIndicatorCard'
 import { EducationLineChart } from '../components/EducationLineChart'
 import { EducationStackedBarChart } from '../components/EducationStackedBarChart'
 import { EducationSummaryCard } from '../components/EducationSummaryCard'
@@ -130,20 +131,34 @@ const MAIN_INDICATOR_BLOCKS = [
   {
     key: MAIN_BLOCK_KEYS.panorama,
     title: 'Panorama Educacional',
-    description: 'Matrículas, escolas, alunos por turma, docentes, fluxo, aprendizagem, matrículas técnicas e escolas do Sistema S.',
+    description: 'Matrículas, escolas, alunos por turma, docentes, fluxo, aprendizagem e matrículas técnicas.',
   },
   {
     key: MAIN_BLOCK_KEYS.financiamento,
     title: 'Financiamento da Educação',
-    description: 'SIOPE, FUNDEB, complementação VAAR, PNATE, receitas, despesas, condicionalidades e resultados.',
+    description: 'SIOPE, FUNDEB, VAAR, PNATE, receitas, despesas, aplicação de recursos e resultados financeiros.',
   },
 ]
+
+const EDUCATION_PAGE_COPY = {
+  description: 'Matrículas, escolas, docentes, fluxo, aprendizagem e matrículas técnicas do município.',
+  emptyDescription: 'Os indicadores educacionais são carregados após a seleção do município. Use o seletor no topo da página.',
+  eyebrow: 'Indicadores de Educação',
+  title: 'Indicadores de Educação',
+}
+
+const FINANCIAL_PAGE_COPY = {
+  description: 'SIOPE, FUNDEB, VAAR, PNATE, receitas, despesas, aplicação de recursos e resultados financeiros.',
+  emptyDescription: 'Os indicadores financeiros são carregados após a seleção do município. Use o seletor no topo da página.',
+  eyebrow: 'Indicadores Financeiros da Educação',
+  title: 'Indicadores Financeiros da Educação',
+}
 
 const FINANCING_MODULES = [
   {
     key: FINANCING_MODULE_KEYS.siope,
-    title: 'Indicadores SIOPE',
-    description: 'Aplicação mínima, FUNDEB, gasto por aluno, receitas e resultado financeiro.',
+    title: 'Aplicação dos Recursos',
+    description: 'Receitas, despesas, mínimos legais, FUNDEB, gasto por aluno e saldos declarados ao SIOPE/FNDE.',
     count: `${SIOPE_SELECTED_INDICATORS_COUNT} indicadores`,
   },
   {
@@ -251,7 +266,10 @@ function normalizeNavigationValue(value) {
     .replace(/[^a-z0-9]/g, '')
 }
 
-export function EducacaoPage({ municipioData, selectedMunicipio }) {
+export function EducacaoPage({ initialMainBlock, municipioData, selectedMunicipio }) {
+  const isFinancingPage = initialMainBlock === MAIN_BLOCK_KEYS.financiamento
+  const isSidebarScopedPage = Boolean(initialMainBlock)
+  const pageCopy = isFinancingPage ? FINANCIAL_PAGE_COPY : EDUCATION_PAGE_COPY
   const eduIndexState = useAsyncData(() => loadEducationMunicipiosIndex(), [])
   const eduMunMap = useMemo(() => {
     const list = eduIndexState.data?.municipios ?? []
@@ -263,12 +281,29 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
     return loadEducationMunicipio(selectedId)
   }, [selectedId])
 
-  const initialNavigation = useMemo(() => getInitialEducationNavigation(), [])
+  const initialNavigation = useMemo(
+    () => ({
+      ...getInitialEducationNavigation(),
+      ...(initialMainBlock ? { mainBlock: initialMainBlock } : {}),
+    }),
+    [initialMainBlock],
+  )
   const [selectedMainBlock, setSelectedMainBlock] = useState(initialNavigation.mainBlock)
   const [selectedThemeKey, setSelectedThemeKey] = useState(initialNavigation.panoramaTheme)
   const [selectedFinancingModule, setSelectedFinancingModule] = useState(initialNavigation.financingModule)
   const [selectedIndicatorKey, setSelectedIndicatorKey] = useState('')
+  const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const detailViewRef = useRef(null)
+  const indicatorGridScrollYRef = useRef(0)
+
+  useEffect(() => {
+    if (!initialMainBlock || initialMainBlock === selectedMainBlock) return
+    setSelectedMainBlock(initialMainBlock)
+    setSelectedIndicatorKey('')
+    setIsDetailOpen(false)
+    setSearchQuery('')
+  }, [initialMainBlock, selectedMainBlock])
 
   const dados = munDataState.data
   const sistemaS = dados?.blocos?.sistema_s ?? {}
@@ -287,9 +322,9 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
       <div className="page-stack educacao-page">
         <section className="page-card educacao-hero">
           <div>
-            <span className="eyebrow">Indicadores da Educação</span>
-            <h1>Indicadores da Educação</h1>
-            <p>Matrículas, escolas, docentes, fluxo, aprendizagem e matrículas técnicas do município.</p>
+            <span className="eyebrow">{pageCopy.eyebrow}</span>
+            <h1>{pageCopy.title}</h1>
+            <p>{pageCopy.description}</p>
           </div>
         </section>
         <section className="empty-state">
@@ -299,7 +334,7 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
             </svg>
           </div>
           <h2>Selecione um município</h2>
-          <p>Os indicadores educacionais são carregados após a seleção do município. Use o seletor no topo da página.</p>
+          <p>{pageCopy.emptyDescription}</p>
         </section>
       </div>
     )
@@ -316,29 +351,31 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
   if (!dados) return null
 
   const model = buildEducationModel(dados.blocos ?? {})
-  const sistemaSTheme = {
-    key: PANORAMA_THEME_KEYS.escolasSistemaS,
-    label: 'Escolas do Sistema S',
-    shortLabel: 'Sistema S',
-    count: 4,
-    items: [],
-  }
-  const themes = hasSistemaS ? [...model.themes, sistemaSTheme] : model.themes
-  const selectedTheme = themes.find((theme) => theme.key === selectedThemeKey) ?? themes[0]
-  const isSistemaSTheme = selectedTheme?.key === PANORAMA_THEME_KEYS.escolasSistemaS
+  const themes = model.themes
+  const isSistemaSTheme = selectedThemeKey === PANORAMA_THEME_KEYS.escolasSistemaS && hasSistemaS
+  const selectedTheme = isSistemaSTheme
+    ? null
+    : (themes.find((theme) => theme.key === selectedThemeKey) ?? themes[0])
   const themeItems = selectedTheme?.items ?? []
   const filteredItems = themeItems.filter((item) => {
     const query = searchQuery.trim().toLocaleLowerCase('pt-BR')
     const queryMatches = !query || `${item.label} ${item.description} ${item.themeLabel} ${item.searchText ?? ''}`.toLocaleLowerCase('pt-BR').includes(query)
     return queryMatches
   })
-  const activeIndicator = filteredItems.length
-    ? (filteredItems.find((item) => item.key === selectedIndicatorKey) ?? filteredItems[0])
+  const activeIndicator = filteredItems.find((item) => item.key === selectedIndicatorKey) ?? null
+  const activeIndicatorIndex = activeIndicator
+    ? filteredItems.findIndex((item) => item.key === activeIndicator.key)
+    : -1
+  const previousIndicator = activeIndicatorIndex > 0 ? filteredItems[activeIndicatorIndex - 1] : null
+  const nextIndicator = activeIndicatorIndex >= 0 && activeIndicatorIndex < filteredItems.length - 1
+    ? filteredItems[activeIndicatorIndex + 1]
     : null
+  const isShowingIndicatorDetail = Boolean(isDetailOpen && activeIndicator)
 
   function handleThemeSelect(themeKey) {
     setSelectedThemeKey(themeKey)
     setSelectedIndicatorKey('')
+    setIsDetailOpen(false)
     setSearchQuery('')
   }
 
@@ -346,6 +383,7 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
     if (mainBlock === selectedMainBlock) return
     setSelectedMainBlock(mainBlock)
     setSelectedIndicatorKey('')
+    setIsDetailOpen(false)
     setSearchQuery('')
     if (mainBlock === MAIN_BLOCK_KEYS.panorama) {
       const validKeys = themes.map((t) => t.key)
@@ -359,12 +397,57 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
     setSelectedFinancingModule(moduleKey)
   }
 
+  function scrollToIndicatorDetail() {
+    window.requestAnimationFrame(() => {
+      detailViewRef.current?.scrollIntoView({ block: 'start', behavior: 'auto' })
+    })
+  }
+
+  function handleIndicatorCardSelect(indicatorKey) {
+    indicatorGridScrollYRef.current = window.scrollY
+    setSelectedIndicatorKey(indicatorKey)
+    setIsDetailOpen(true)
+    scrollToIndicatorDetail()
+  }
+
+  function handleBackToIndicators() {
+    setIsDetailOpen(false)
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: indicatorGridScrollYRef.current, behavior: 'auto' })
+    })
+  }
+
+  function handleAdjacentIndicator(indicatorKey) {
+    setSelectedIndicatorKey(indicatorKey)
+    setIsDetailOpen(true)
+    scrollToIndicatorDetail()
+  }
+
   function renderPanoramaScope() {
     return (
       <>
-        <div className="cycle-category-bar">
-          <span className="eyebrow">Temas de análise</span>
-          <div className="cycle-category-bar__controls">
+        {!isShowingIndicatorDetail ? (
+          <div className="cycle-filter-panel educacao-filter-panel">
+            <div className="cycle-filter-panel__heading">
+              <div>
+                <span className="eyebrow">Temas de análise</span>
+                <h2>{selectedTheme?.label ?? 'Indicadores de educação'}</h2>
+              </div>
+              <label className="cycle-search">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="11" cy="11" r="6.5" />
+                  <path d="m16 16 4 4" />
+                </svg>
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Buscar indicador..."
+                  aria-label="Buscar indicador"
+                />
+              </label>
+            </div>
+
             <CategoryTabs
               ariaLabel="Temas da educação"
               categories={themes}
@@ -372,37 +455,56 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
               onSelectCategory={handleThemeSelect}
             />
           </div>
-        </div>
+        ) : null}
         {isSistemaSTheme ? (
           <SistemaSPanel blocos={dados.blocos} />
-        ) : (
-        <div className="cycle-layout educacao-analysis-layout">
-          <aside className="indicator-sidebar">
-            <div className="indicator-sidebar__heading">
-              <h3>Indicadores</h3>
-              <span>{filteredItems.length}</span>
-            </div>
-            <label className="indicator-search">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="11" cy="11" r="6.5" />
-                <path d="m16 16 4 4" />
-              </svg>
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Buscar indicador..."
-                aria-label="Buscar indicador"
-              />
-            </label>
-            <EducationIndicatorList
-              items={filteredItems}
-              selectedIndicator={activeIndicator?.key}
-              onSelectIndicator={setSelectedIndicatorKey}
+        ) : isShowingIndicatorDetail ? (
+          <div className="education-detail-view" ref={detailViewRef}>
+            <EducationDetailNavigation
+              activeIndex={activeIndicatorIndex}
+              nextIndicator={nextIndicator}
+              onBack={handleBackToIndicators}
+              onNext={handleAdjacentIndicator}
+              onPrevious={handleAdjacentIndicator}
+              previousIndicator={previousIndicator}
+              total={filteredItems.length}
             />
-          </aside>
-          <EducationIndicatorDetail indicator={activeIndicator} blocos={dados.blocos} />
-        </div>
+            <EducationIndicatorDetail indicator={activeIndicator} blocos={dados.blocos} />
+            <EducationDetailNavigation
+              activeIndex={activeIndicatorIndex}
+              isBottom
+              nextIndicator={nextIndicator}
+              onBack={handleBackToIndicators}
+              onNext={handleAdjacentIndicator}
+              onPrevious={handleAdjacentIndicator}
+              previousIndicator={previousIndicator}
+              total={filteredItems.length}
+            />
+          </div>
+        ) : (
+          <div className="education-indicator-grid-shell">
+            <div className="meta-grid-header education-indicator-grid-header">
+              <span>{filteredItems.length} indicadores</span>
+              <p>{selectedMunicipio} · {selectedTheme?.shortLabel ?? selectedTheme?.label}</p>
+            </div>
+
+            {filteredItems.length === 0 ? (
+              <div className="meta-grid-empty education-indicator-grid-empty">
+                <p>Nenhum indicador disponível para este tema ou busca.</p>
+              </div>
+            ) : (
+              <div className="education-indicator-card-grid">
+                {filteredItems.map((item) => (
+                  <EducationIndicatorCard
+                    indicator={item}
+                    isSelected={item.key === selectedIndicatorKey}
+                    key={item.key}
+                    onSelect={() => handleIndicatorCardSelect(item.key)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </>
     )
@@ -471,12 +573,13 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
     <div className="page-stack educacao-page">
       <section className="page-card educacao-hero">
         <div className="educacao-hero__intro">
-          <span className="eyebrow">Indicadores da Educação</span>
-          <h1>Indicadores da Educação</h1>
-          <p>Matrículas, escolas, docentes, fluxo, aprendizagem e matrículas técnicas do município.</p>
+          <span className="eyebrow">{pageCopy.eyebrow}</span>
+          <h1>{pageCopy.title}</h1>
+          <p>{pageCopy.description}</p>
           <p className="educacao-hero__municipality">Município em foco: <strong>{selectedMunicipio}</strong></p>
         </div>
 
+        {!isSidebarScopedPage ? (
         <div className="educacao-scope-selector">
           <div className="educacao-scope-selector__intro">
             <span className="eyebrow educacao-scope-selector__heading">Escolha o bloco de indicadores</span>
@@ -507,6 +610,7 @@ export function EducacaoPage({ municipioData, selectedMunicipio }) {
             })}
           </div>
         </div>
+        ) : null}
       </section>
 
       {selectedMainBlock === MAIN_BLOCK_KEYS.panorama && !isSistemaSTheme && <EducationOverviewCards overview={model.overview} />}
@@ -534,34 +638,44 @@ function EducationOverviewCards({ overview }) {
   )
 }
 
-function EducationIndicatorList({ items, selectedIndicator, onSelectIndicator }) {
-  if (!items.length) {
-    return (
-      <div className="indicator-sidebar__empty educacao-sidebar-empty">
-        <p>Nenhum indicador disponível para este filtro.</p>
-      </div>
-    )
-  }
-
+function EducationDetailNavigation({
+  activeIndex,
+  isBottom = false,
+  nextIndicator,
+  onBack,
+  onNext,
+  onPrevious,
+  previousIndicator,
+  total,
+}) {
   return (
-    <div className="indicator-list">
-      {items.map((item) => (
+    <div className={`cycle-detail-nav education-detail-nav${isBottom ? ' cycle-detail-nav--bottom education-detail-nav--bottom' : ''}`}>
+      <button className="cycle-back-button" type="button" onClick={onBack}>
+        &larr; Voltar para indicadores
+      </button>
+      <div className="cycle-detail-nav__sequence" aria-label="Navegar entre indicadores filtrados">
         <button
-          className={item.key === selectedIndicator ? 'indicator-row is-active' : 'indicator-row'}
-          key={item.key}
+          className="cycle-step-button"
           type="button"
-          onClick={() => onSelectIndicator(item.key)}
-          title={item.label}
+          onClick={() => previousIndicator && onPrevious(previousIndicator.key)}
+          disabled={!previousIndicator}
         >
-          <span className="indicator-row__label">{item.label}</span>
-          <span className="indicator-row__badges">
-            {item.statusLabel !== 'Com dados' ? (
-              <StatusBadge className="indicator-status" displayStatus={item.statusLabel} status={item.statusLabel} tone={item.statusTone} />
-            ) : null}
-            <span className="indicator-stage-badge">{item.categoryLabel}</span>
-          </span>
+          <span>&lsaquo;</span>
+          Indicador anterior
         </button>
-      ))}
+        <span className="cycle-detail-nav__position">
+          {activeIndex + 1} de {total}
+        </span>
+        <button
+          className="cycle-step-button"
+          type="button"
+          onClick={() => nextIndicator && onNext(nextIndicator.key)}
+          disabled={!nextIndicator}
+        >
+          Próximo indicador
+          <span>&rsaquo;</span>
+        </button>
+      </div>
     </div>
   )
 }
@@ -592,7 +706,58 @@ function IndicatorSegmentedControl({ options, selectedKey, onSelect, ariaLabel }
   )
 }
 
-function IndicatorChartHeader({ title, subtitle, hasWideSegmented = false, children }) {
+function EducationDetailHeader({ indicator, description }) {
+  return (
+    <div className="detail-heading educacao-detail-heading">
+      <div className="detail-heading__copy">
+        <span className="eyebrow">Indicador selecionado</span>
+        <h3>{indicator.label}</h3>
+        {description ? <p>{description}</p> : null}
+      </div>
+      <div className="educacao-detail-heading__badges">
+        <span className="indicator-stage-badge">{indicator.themeShortLabel ?? indicator.themeLabel}</span>
+        <StatusBadge status={indicator.statusLabel} tone={indicator.statusTone} />
+      </div>
+    </div>
+  )
+}
+
+function IndicatorReferenceBox({ description }) {
+  if (!description) return null
+
+  return (
+    <div className="educacao-indicator-reference">
+      <span>O que este indicador mede</span>
+      <p>{description}</p>
+    </div>
+  )
+}
+
+function EducationQuickReading({ text, tone = 'default' }) {
+  if (!text) return null
+
+  return (
+    <div className={`interpretation-box education-quick-reading education-quick-reading--${tone}`}>
+      <span>Leitura rápida</span>
+      <p>{text}</p>
+    </div>
+  )
+}
+
+function buildHistorySummary(series, formatLabel = (value) => String(value)) {
+  const points = normalizeYearSeries(series ?? [])
+    .filter((point) => !isMissing(point.valor) && point.ano)
+    .sort((a, b) => Number(a.ano) - Number(b.ano))
+
+  if (points.length < 2) return ''
+
+  const firstPoint = points[0]
+  const lastPoint = points[points.length - 1]
+
+  return `Série de ${firstPoint.ano} a ${lastPoint.ano}: ${formatLabel(firstPoint.valor)} no início e ${formatLabel(lastPoint.valor)} no dado mais recente.`
+}
+
+function IndicatorChartHeader({ title, subtitle, eyebrow = 'Série histórica', summary, hasWideSegmented = false, children }) {
   return (
     <div
       className={
@@ -602,8 +767,10 @@ function IndicatorChartHeader({ title, subtitle, hasWideSegmented = false, child
       }
     >
       <div className="indicator-chart-title-group">
+        {eyebrow ? <span className="indicator-chart-eyebrow">{eyebrow}</span> : null}
         <h3>{title}</h3>
         <p>{subtitle}</p>
+        {summary ? <p className="indicator-chart-summary">{summary}</p> : null}
       </div>
 
       {children}
@@ -642,17 +809,13 @@ function EducationIndicatorDetail({ indicator, blocos }) {
   const showStageFilter = stageOptions.length > 1
   const hasManyStageOptions = stageOptions.length > 4
   const stageFilterLabel = indicator.stageFilterLabel ?? 'Etapa exibida'
+  const chartSummary = buildHistorySummary(displayIndicator.series, displayIndicator.formatValue)
 
   return (
     <section className="detail-panel educacao-detail-panel">
-      <div className="detail-heading">
-        <div className="detail-heading__copy">
-          <span className="eyebrow">Indicador selecionado</span>
-          <h3>{indicator.label}</h3>
-          <p>{indicator.description}</p>
-        </div>
-        <StatusBadge status={indicator.statusLabel} tone={indicator.statusTone} />
-      </div>
+      <EducationDetailHeader indicator={indicator} description={indicator.description} />
+
+      <IndicatorReferenceBox description={indicator.description} />
 
       <div className="metric-grid metric-grid--three">
         <MetricCard label="Valor inicial" value={indicator.initialDisplay} detail={indicator.initialYear ? `Ano ${indicator.initialYear}` : null} />
@@ -660,15 +823,13 @@ function EducationIndicatorDetail({ indicator, blocos }) {
         <MetricCard label="Variação" value={indicator.variationDisplay} tone={indicator.variationTone} />
       </div>
 
-      <div className="interpretation-box">
-        <span>Leitura rápida</span>
-        <p>{indicator.quickReading}</p>
-      </div>
+      <EducationQuickReading text={indicator.quickReading} tone={indicator.statusTone} />
 
       <div className="indicator-chart-card educacao-main-chart-card">
         <IndicatorChartHeader
           title="Histórico do indicador"
           subtitle={`${displayIndicator.label} · Recorte exibido: ${displayIndicator.mainCutLabel}`}
+          summary={chartSummary}
           hasWideSegmented={hasManyStageOptions}
         >
           {showStageFilter ? (
@@ -703,7 +864,9 @@ function EducationIndicatorDetail({ indicator, blocos }) {
         )}
       </div>
 
-      <EducationIndicatorBreakdown indicator={displayIndicator} />
+      {displayIndicator.explore.length ? (
+        <EducationIndicatorBreakdown indicator={displayIndicator} />
+      ) : null}
     </section>
   )
 }
@@ -766,6 +929,7 @@ function extractDepData(por_rede, dep) {
 }
 
 function InfraDetailPanel({ indicator, blocos }) {
+  const detailDescription = indicator.description || 'Condições de conectividade, tecnologia e ambiente físico das escolas.'
   const redeBloco = blocos?.rede_escolar ?? {}
   const infra = redeBloco.infraestrutura ?? {}
   const infraResumo = infra.resumo_ultimo_ano ?? {}
@@ -854,14 +1018,9 @@ function InfraDetailPanel({ indicator, blocos }) {
   // ── Render ───────────────────────────────────────────────────────────
   return (
     <section className="detail-panel educacao-detail-panel">
-      <div className="detail-heading">
-        <div className="detail-heading__copy">
-          <span className="eyebrow">Indicador selecionado</span>
-          <h3>{indicator.label}</h3>
-          <p>Condições de conectividade, tecnologia e ambiente físico das escolas.</p>
-        </div>
-        <StatusBadge status={indicator.statusLabel} tone={indicator.statusTone} />
-      </div>
+      <EducationDetailHeader indicator={indicator} description={detailDescription} />
+
+      <IndicatorReferenceBox description={detailDescription} />
 
       <div className="infra-panorama-card">
         <span className="infra-panorama-title">
@@ -962,11 +1121,16 @@ function EducationIndicatorBreakdown({ indicator }) {
   const activeItem = detailItems.find((item) => item.key === selectedDetailKey) ?? detailItems[0] ?? null
   const hasTabs = detailItems.length > 1
 
+  if (!detailItems.length) return null
+
   return (
-    <section className="educacao-explore">
+    <section className="educacao-explore education-support-data">
       <div className="educacao-explore__heading">
-        <span>Detalhamento do indicador</span>
-        <p>Veja como o indicador se distribui por etapa, rede ou localização, quando esses recortes estiverem disponíveis.</p>
+        <div>
+          <span className="educacao-explore__eyebrow">Aprofundamento</span>
+          <h3>Dados de apoio do indicador</h3>
+          <p>Recortes por etapa, rede, localização ou perfil, quando disponíveis na estrutura atual.</p>
+        </div>
       </div>
 
       {hasTabs ? (
@@ -975,6 +1139,8 @@ function EducationIndicatorBreakdown({ indicator }) {
             <button
               className={`educacao-detail-tab${activeItem?.key === item.key ? ' is-active' : ''}`}
               key={item.key}
+              role="tab"
+              aria-selected={activeItem?.key === item.key}
               type="button"
               onClick={() => setSelectedDetailKey(item.key)}
             >
@@ -984,15 +1150,9 @@ function EducationIndicatorBreakdown({ indicator }) {
         </div>
       ) : null}
 
-      {activeItem ? (
-        <div className="educacao-explore__panel">
-          <ExploreItem indicator={indicator} item={activeItem} />
-        </div>
-      ) : (
-        <div className="detail-empty-state">
-          <p>Não há detalhamento adicional disponível para este indicador.</p>
-        </div>
-      )}
+      <div className="educacao-explore__panel">
+        <ExploreItem indicator={indicator} item={activeItem} />
+      </div>
     </section>
   )
 }
@@ -1036,17 +1196,14 @@ function TurmasPanoramaPanel({ indicator, blocos }) {
   const currentYear = lastPoint?.ano ?? null
   const variation = calculateVariation(initialValue, currentValue, selectedMetricKey === 'turmas' || selectedMetricKey === 'docentes' ? 'number' : 'ratio')
   const hasMainSeries = displaySeries.length >= 2
+  const quickReading = `Em ${currentYear ?? '—'}, o município registra ${!isMissing(currentValue) ? activeMetric.formatLabel(currentValue) : EM} em ${activeMetric.label.toLowerCase()} no recorte ${cutLabel}.`
+  const chartSummary = buildHistorySummary(displaySeries, activeMetric.formatLabel)
 
   return (
     <section className="detail-panel educacao-detail-panel">
-      <div className="detail-heading">
-        <div className="detail-heading__copy">
-          <span className="eyebrow">Indicador selecionado</span>
-          <h3>{indicator.label}</h3>
-          <p>{indicator.description}</p>
-        </div>
-        <StatusBadge status={indicator.statusLabel} tone={indicator.statusTone} />
-      </div>
+      <EducationDetailHeader indicator={indicator} description={indicator.description} />
+
+      <IndicatorReferenceBox description={indicator.description} />
 
       <div className="indicator-control-bar">
         <div className="indicator-control-bar__copy">
@@ -1067,15 +1224,13 @@ function TurmasPanoramaPanel({ indicator, blocos }) {
         <MetricCard label="Variação" value={variation.display} tone={variation.tone} />
       </div>
 
-      <div className="interpretation-box">
-        <span>Leitura rápida</span>
-        <p>Em {currentYear ?? '—'}, o município registra {!isMissing(currentValue) ? activeMetric.formatLabel(currentValue) : EM} em {activeMetric.label.toLowerCase()} no recorte {cutLabel}.</p>
-      </div>
+      <EducationQuickReading text={quickReading} tone={indicator.statusTone} />
 
       <div className="indicator-chart-card educacao-main-chart-card">
         <IndicatorChartHeader
           title="Histórico do indicador"
           subtitle={`${activeMetric.label} · Recorte exibido: ${cutLabel}`}
+          summary={chartSummary}
         />
         {hasMainSeries ? (
           <>
@@ -1102,16 +1257,7 @@ function TurmasPanoramaPanel({ indicator, blocos }) {
 
       {displayExplore.length ? (
         <EducationIndicatorBreakdown indicator={{ ...indicator, explore: displayExplore }} />
-      ) : (
-        <div className="educacao-explore">
-          <div className="educacao-explore__heading">
-            <span>Detalhamento do indicador</span>
-          </div>
-          <div className="detail-empty-state">
-            <p>Este recorte não está disponível para o município selecionado.</p>
-          </div>
-        </div>
-      )}
+      ) : null}
     </section>
   )
 }
@@ -1911,7 +2057,7 @@ function createIndicator(config) {
   const initialYear = first?.ano ?? null
   const formatValueForType = getFormatter(config.formatType)
   const variation = calculateVariation(initialValue, currentValue, config.formatType)
-  const status = getIndicatorStatus(currentValue, series)
+  const status = getIndicatorStatus(currentValue, series, variation)
 
   return {
     ...config,
@@ -3258,10 +3404,12 @@ function calculateVariation(initialValue, currentValue, formatType) {
   return { display: `${percent > 0 ? '+' : ''}${formatPercent(percent)}`, tone: diff > 0 ? 'success' : diff < 0 ? 'warning' : 'muted', raw: percent }
 }
 
-function getIndicatorStatus(currentValue, series) {
-  if (isMissing(currentValue)) return { label: 'Sem dado', tone: 'muted' }
-  if (series.length < 2) return { label: 'Série parcial', tone: 'info' }
-  return { label: 'Com dados', tone: 'success' }
+function getIndicatorStatus(currentValue, series, variation) {
+  if (isMissing(currentValue)) return { label: 'Sem dados', tone: 'muted' }
+  if (series.length < 2 || variation?.raw === null) return { label: 'Com dados', tone: 'info' }
+  if (variation.raw > 0) return { label: 'Alta', tone: 'success' }
+  if (variation.raw < 0) return { label: 'Queda', tone: 'warning' }
+  return { label: 'Estável', tone: 'muted' }
 }
 
 function buildQuickReading({ currentDisplay, currentValue, currentYear, formatType, initialValue, initialYear, label, variation }) {
