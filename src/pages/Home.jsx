@@ -1,9 +1,10 @@
 import { SourceLine } from '../components/SourceLine'
 import { StatCard } from '../components/StatCard'
+import { InteractionChevron } from '../components/InteractionChevron'
 
 const ENTRY_CARDS = [
   {
-    detail: 'Ciclo anterior, próximo ciclo e situação do município.',
+    detail: 'Ciclo encerrado, ciclo vigente e situação do município.',
     eyebrow: 'Metas do PNE',
     icon: TargetIcon,
     key: 'pne2026',
@@ -77,7 +78,7 @@ export function Home({ onNavigate, selectedMunicipio }) {
           const Icon = card.icon
           return (
             <button
-              className="home-entry-card"
+              className="home-entry-card interaction-card--navigation"
               key={card.key}
               type="button"
               onClick={() => onNavigate?.(card.key)}
@@ -87,7 +88,10 @@ export function Home({ onNavigate, selectedMunicipio }) {
               </span>
               <span className="home-entry-card__eyebrow">{card.eyebrow}</span>
               <strong>{card.title}</strong>
-              <span>{card.detail}</span>
+              <span className="home-entry-card__footer">
+                <span>{card.detail}</span>
+                <InteractionChevron className="interaction-chevron--navigation" />
+              </span>
             </button>
           )
         })}

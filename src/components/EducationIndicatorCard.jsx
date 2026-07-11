@@ -1,11 +1,12 @@
 import { StatusBadge } from './StatusBadge'
 import { isMissing } from '../utils/educationFormatters'
+import { InteractionChevron } from './InteractionChevron'
 
 const EM = '\u2014'
 const SPARKLINE_WIDTH = 320
 const SPARKLINE_HEIGHT = 56
 
-export function EducationIndicatorCard({ indicator, isSelected = false, onSelect }) {
+export function EducationIndicatorCard({ buttonRef, indicator, isSelected = false, onSelect }) {
   const sparkline = getSparkline(indicator.series)
   const statusTone = indicator.statusTone ?? 'default'
   const periodLabel = indicator.initialYear && indicator.currentYear
@@ -14,10 +15,12 @@ export function EducationIndicatorCard({ indicator, isSelected = false, onSelect
 
   return (
     <button
-      className={`education-indicator-card education-indicator-card--${statusTone}${isSelected ? ' is-selected' : ''}`}
+      className={`education-indicator-card interaction-card--explorable education-indicator-card--${statusTone}${isSelected ? ' is-selected' : ''}`}
+      ref={buttonRef}
       type="button"
       onClick={onSelect}
       aria-label={`Abrir detalhe do indicador ${indicator.label}`}
+      aria-pressed={isSelected}
       title={indicator.label}
     >
       <span className="education-indicator-card__topline">
@@ -52,16 +55,20 @@ export function EducationIndicatorCard({ indicator, isSelected = false, onSelect
               r="3.4"
             />
           </svg>
+          <span className="education-indicator-card__sparkline-period">
+            {sparkline.firstYear}–{sparkline.lastYear}
+          </span>
         </span>
       ) : (
         <span className="education-indicator-card__sparkline education-indicator-card__sparkline--empty">
-          Sem histórico suficiente
+          Histórico não disponível.
         </span>
       )}
 
       <span className="education-indicator-card__footer">
         <span>{indicator.categoryLabel ?? 'Geral'}</span>
         {indicator.mainCutLabel ? <span>{indicator.mainCutLabel}</span> : null}
+        <InteractionChevron />
       </span>
     </button>
   )
@@ -103,5 +110,13 @@ function getSparkline(series = []) {
   const lastPoint = scaledPoints[scaledPoints.length - 1]
   const areaPath = `${linePath} L${lastPoint.x.toFixed(1)} ${baseline.toFixed(1)} L${firstPoint.x.toFixed(1)} ${baseline.toFixed(1)} Z`
 
-  return isMissing(min) || isMissing(max) ? null : { areaPath, linePath, lastPoint }
+  return isMissing(min) || isMissing(max)
+    ? null
+    : {
+        areaPath,
+        firstYear: points[0].year,
+        lastPoint,
+        lastYear: points[points.length - 1].year,
+        linePath,
+      }
 }

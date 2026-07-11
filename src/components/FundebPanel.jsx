@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
+import { useDetailViewNavigation } from '../hooks/useDetailViewNavigation'
 import { FUNDEB_INDICATORS, formatFundebValue, getLimiteReferencia } from '../data/fundebIndicators'
 import { DataSourceNote } from './DataSourceNote'
 import { IndicatorHistoryChart } from '../components/IndicatorHistoryChart'
+import { ChartEmptyState } from './ChartPrimitives'
 import { EducationSummaryCard } from './EducationSummaryCard'
 import {
   FinancialChartFrame,
@@ -227,6 +229,10 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
   const [selectedKey, setSelectedKey] = useState(FUNDEB_INDICATORS[0].key)
   const [searchQuery, setSearchQuery] = useState('')
   const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const detailNavigation = useDetailViewNavigation({
+    activeKey: selectedKey,
+    isOpen: isDetailOpen,
+  })
 
   const selectedIndicator = useMemo(
     () => FUNDEB_INDICATORS.find((ind) => ind.key === selectedKey) ?? FUNDEB_INDICATORS[0],
@@ -278,12 +284,18 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
     : null
 
   function handleIndicatorSelect(indicatorKey) {
+    detailNavigation.prepareDetail(indicatorKey, {
+      captureGridPosition: !isDetailOpen,
+    })
     setSelectedKey(indicatorKey)
     setIsDetailOpen(true)
   }
 
   function handleBackToGrid() {
+    const returnKey = selectedKey
     setIsDetailOpen(false)
+    setSelectedKey('')
+    detailNavigation.restoreGrid(returnKey)
   }
 
   if (!hasFundebData) {
@@ -354,7 +366,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
       </section>
 
       {isDetailOpen && selectedIndicatorModel ? (
-        <div className="financial-detail-view education-detail-view">
+        <div className="financial-detail-view education-detail-view" ref={detailNavigation.detailViewRef}>
           <FinancialDetailNavigation
             activeIndex={selectedIndex}
             nextIndicator={nextIndicator}
@@ -408,9 +420,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
                   yTickCount={5}
                 />
               ) : (
-                <div className="fundeb-empty fundeb-empty--chart">
-                  <p>Não há pontos suficientes para exibir o gráfico deste indicador.</p>
-                </div>
+                <ChartEmptyState message="Histórico não disponível." />
               )}
             </FinancialChartFrame>
 
@@ -517,8 +527,9 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
                 ) : (
                   indicatorModels.map((indicator) => (
                     <FinancialIndicatorCard
+                      buttonRef={(node) => detailNavigation.registerCard(indicator.key, node)}
                       indicator={indicator}
-                      isSelected={indicator.key === selectedKey}
+                      isSelected={isDetailOpen && indicator.key === selectedKey}
                       key={indicator.key}
                       onSelect={() => handleIndicatorSelect(indicator.key)}
                     />
@@ -574,9 +585,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
                 )}
 
                 {validSeries.length <= 1 && series.length >= 2 && (
-                  <div className="fundeb-empty fundeb-empty--chart">
-                    <p>Apenas um ano com dado disponível — não há pontos suficientes para exibir o gráfico. Consulte a tabela ao lado.</p>
-                  </div>
+                  <ChartEmptyState message="Histórico não disponível." />
                 )}
 
                 {series.length >= 1 && (

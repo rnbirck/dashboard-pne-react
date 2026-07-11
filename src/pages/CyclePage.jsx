@@ -1,17 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CategoryTabs } from '../components/CategoryTabs'
 import { DataSourceNote } from '../components/DataSourceNote'
+import { DetailNavigation } from '../components/DetailNavigation'
 import { IndicatorDetail } from '../components/IndicatorDetail'
 import { MetaCard } from '../components/MetaCard'
 import { PNE_2026_INDICATOR_GOAL_REFS } from '../data/pne2026IndicatorGoalRefs'
 import { PNE_2014_INDICATOR_GOAL_REFS } from '../data/pne2014IndicatorGoalRefs'
 import { buildThematicGroups } from '../data/thematicGroups'
 import { normalizePopulationPercentResults } from '../utils/indicatorValues'
+import { getPneCycleCopy } from '../utils/pneCycleCopy'
 import { filterPneComparableCategories } from '../utils/pneDisplayRules'
+import { useDetailViewNavigation } from '../hooks/useDetailViewNavigation'
 
 const CYCLE_SOURCE_NOTE = 'INEP, Censo Escolar, SAEB, IBGE e bases oficiais consolidadas no painel.'
 
 export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio, title }) {
+  const cycleCopy = getPneCycleCopy(cycle)
   const categories = useMemo(
     () => enrichGoalRefs(indicadores?.cycles?.[cycle]?.categories ?? [], cycle),
     [indicadores, cycle],
@@ -21,9 +25,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   const [selectedIndicatorKey, setSelectedIndicatorKey] = useState('')
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const detailViewRef = useRef(null)
-  const gridScrollYRef = useRef(0)
-  const shouldScrollToDetailTopRef = useRef(false)
+  const previousCycleRef = useRef(cycle)
   const municipioResults = municipioData?.[cycle]?.indicadores ?? null
   const allCycleItems = useMemo(
     () => categories.flatMap((category) => category.items ?? []),
@@ -88,16 +90,34 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     () => buildCycleManagementStats(comparableCategories, normalizedMunicipioResults),
     [comparableCategories, normalizedMunicipioResults],
   )
-  const isShowingDetail = Boolean(isDetailOpen && activeItem)
+  const isCycleTransition = previousCycleRef.current !== cycle
+  const isShowingDetail = Boolean(!isCycleTransition && isDetailOpen && activeItem)
+  const detailNavigation = useDetailViewNavigation({
+    activeKey: activeIndicatorKey,
+    isOpen: isShowingDetail,
+  })
 
   useEffect(() => {
-    if (!isShowingDetail || !shouldScrollToDetailTopRef.current) return
+    if (previousCycleRef.current === cycle) return
 
-    shouldScrollToDetailTopRef.current = false
-    window.requestAnimationFrame(() => {
-      detailViewRef.current?.scrollIntoView({ block: 'start', behavior: 'auto' })
-    })
-  }, [activeItem?.key, isShowingDetail])
+    previousCycleRef.current = cycle
+    const nextGroup = thematicGroups.find((group) => group.key === selectedGroupKey)
+      ?? thematicGroups[0]
+      ?? null
+    const filterIsValid = nextGroup?.filters?.some(
+      (filter) => filter.key === selectedBasicEducationFilterKey,
+    )
+
+    setSelectedGroupKey(nextGroup?.key ?? '')
+    setSelectedBasicEducationFilterKey(filterIsValid ? selectedBasicEducationFilterKey : 'todos')
+    setSelectedIndicatorKey('')
+    setIsDetailOpen(false)
+  }, [
+    cycle,
+    selectedBasicEducationFilterKey,
+    selectedGroupKey,
+    thematicGroups,
+  ])
 
   function handleGroupSelect(groupKey) {
     setSelectedGroupKey(groupKey)
@@ -115,21 +135,20 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   }
 
   function handleCardSelect(itemKey) {
-    gridScrollYRef.current = window.scrollY
-    shouldScrollToDetailTopRef.current = true
+    detailNavigation.prepareDetail(itemKey, { captureGridPosition: true })
     setSelectedIndicatorKey(itemKey)
     setIsDetailOpen(true)
   }
 
   function handleBackToGrid() {
+    const returnKey = activeIndicatorKey
     setIsDetailOpen(false)
-    window.requestAnimationFrame(() => {
-      window.scrollTo({ top: gridScrollYRef.current, behavior: 'auto' })
-    })
+    setSelectedIndicatorKey('')
+    detailNavigation.restoreGrid(returnKey)
   }
 
   function handleAdjacentMeta(itemKey) {
-    shouldScrollToDetailTopRef.current = true
+    detailNavigation.prepareDetail(itemKey)
     setSelectedIndicatorKey(itemKey)
     setIsDetailOpen(true)
   }
@@ -138,8 +157,9 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     <div className="page-stack cycle-page">
       <section className="page-card cycle-hero">
         <div>
-          <span className="eyebrow">Ciclo de monitoramento</span>
+          <span className="eyebrow">{cycleCopy.eyebrow}</span>
           <h1>{title}</h1>
+          <p>{cycleCopy.supportText}</p>
           <p>
             Município em foco:{' '}
             <strong style={{ color: 'var(--text-strong)' }}>{selectedMunicipio}</strong>
@@ -147,16 +167,16 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
         </div>
         <div className="cycle-hero-meta-group">
           <ManagementMetricCard
-            detail="cards de acompanhamento exibidos para o município"
-            label="Indicadores com meta"
+            detail={cycleCopy.summary.totalDetail}
+            label={cycleCopy.summary.totalLabel}
             tone="info"
             value={cycleManagementStats.monitorableTotal}
           />
           <ManagementMetricCard
             detail={cycleManagementStats.monitorableTotal
-              ? `${cycleManagementStats.achievedPercent}% dentro dos indicadores acompanhados`
-              : 'sem indicadores acompanhados'}
-            label="Metas atingidas"
+              ? `${cycleManagementStats.achievedPercent}% ${cycleCopy.summary.detailLabel}`
+              : cycleCopy.summary.emptyDetail}
+            label={cycleCopy.summary.achievedLabel}
             tone="success"
             value={cycleManagementStats.monitorableTotal
               ? cycleManagementStats.achieved
@@ -164,9 +184,9 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
           />
           <ManagementMetricCard
             detail={cycleManagementStats.monitorableTotal
-              ? `${cycleManagementStats.attentionPercent}% dentro dos indicadores acompanhados`
-              : 'sem indicadores acompanhados'}
-            label="Exigem atenção"
+              ? `${cycleManagementStats.attentionPercent}% ${cycleCopy.summary.detailLabel}`
+              : cycleCopy.summary.emptyDetail}
+            label={cycleCopy.summary.belowLabel}
             tone="attention"
             value={cycleManagementStats.monitorableTotal
               ? cycleManagementStats.attention
@@ -177,69 +197,38 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
 
       <section className="cycle-workspace cycle-card-workspace">
         {isShowingDetail ? (
-          <div className="cycle-detail-view" ref={detailViewRef}>
-            <div className="cycle-detail-nav">
-              <button className="cycle-back-button" type="button" onClick={handleBackToGrid}>
-                &larr; Voltar para metas
-              </button>
-              <div className="cycle-detail-nav__sequence" aria-label="Navegar entre metas filtradas">
-                <button
-                  className="cycle-step-button"
-                  type="button"
-                  onClick={() => previousItem && handleAdjacentMeta(previousItem.key)}
-                  disabled={!previousItem}
-                >
-                  <span>&lsaquo;</span>
-                  Meta anterior
-                </button>
-                <span className="cycle-detail-nav__position">
-                  {activeIndex + 1} de {filteredGroupItems.length}
-                </span>
-                <button
-                  className="cycle-step-button"
-                  type="button"
-                  onClick={() => nextItem && handleAdjacentMeta(nextItem.key)}
-                  disabled={!nextItem}
-                >
-                  Próxima meta
-                  <span>&rsaquo;</span>
-                </button>
-              </div>
-            </div>
+          <div className="cycle-detail-view" ref={detailNavigation.detailViewRef}>
+            <DetailNavigation
+              activeIndex={activeIndex}
+              itemLabel="Meta"
+              itemPlural="metas"
+              nextItem={nextItem}
+              nextLabel="Próxima meta"
+              onBack={handleBackToGrid}
+              onNext={handleAdjacentMeta}
+              onPrevious={handleAdjacentMeta}
+              previousItem={previousItem}
+              total={filteredGroupItems.length}
+            />
             <IndicatorDetail
               cycle={cycle}
               item={activeItem}
               municipioData={municipioData}
               result={activeResult}
             />
-            <div className="cycle-detail-nav cycle-detail-nav--bottom">
-              <button className="cycle-back-button" type="button" onClick={handleBackToGrid}>
-                &larr; Voltar para metas
-              </button>
-              <div className="cycle-detail-nav__sequence" aria-label="Navegar entre metas filtradas">
-                <button
-                  className="cycle-step-button"
-                  type="button"
-                  onClick={() => previousItem && handleAdjacentMeta(previousItem.key)}
-                  disabled={!previousItem}
-                >
-                  <span>&lsaquo;</span>
-                  Meta anterior
-                </button>
-                <span className="cycle-detail-nav__position">
-                  {activeIndex + 1} de {filteredGroupItems.length}
-                </span>
-                <button
-                  className="cycle-step-button"
-                  type="button"
-                  onClick={() => nextItem && handleAdjacentMeta(nextItem.key)}
-                  disabled={!nextItem}
-                >
-                  Pr&oacute;xima meta
-                  <span>&rsaquo;</span>
-                </button>
-              </div>
-            </div>
+            <DetailNavigation
+              activeIndex={activeIndex}
+              isBottom
+              itemLabel="Meta"
+              itemPlural="metas"
+              nextItem={nextItem}
+              nextLabel="Próxima meta"
+              onBack={handleBackToGrid}
+              onNext={handleAdjacentMeta}
+              onPrevious={handleAdjacentMeta}
+              previousItem={previousItem}
+              total={filteredGroupItems.length}
+            />
           </div>
         ) : (
           <>
@@ -286,7 +275,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
             </div>
 
             <div className="meta-grid-header">
-              <span>{filteredGroupItems.length} indicadores acompanhados</span>
+              <span>{filteredGroupItems.length} {cycleCopy.gridCountLabel}</span>
               <p>{selectedMunicipio} · {title}</p>
             </div>
 
@@ -298,8 +287,9 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
               <div className="meta-card-grid">
                 {filteredGroupItems.map((item) => (
                   <MetaCard
+                    buttonRef={(node) => detailNavigation.registerCard(item.key, node)}
                     cycle={cycle}
-                    isSelected={item.key === selectedIndicatorKey}
+                    isSelected={isDetailOpen && item.key === selectedIndicatorKey}
                     item={item}
                     key={item.key}
                     onSelect={() => handleCardSelect(item.key)}
@@ -351,7 +341,7 @@ function enrichGoalRefs(categories, cycle) {
 
 function ManagementMetricCard({ detail, label, tone, value }) {
   return (
-    <div className={`cycle-hero-meta cycle-hero-meta--${tone}`}>
+    <div className={`cycle-hero-meta interaction-card--informative cycle-hero-meta--${tone}`}>
       <small>{label}</small>
       <span>{value}</span>
       <em>{detail}</em>

@@ -9,11 +9,14 @@ import {
   resolveIndicatorUnit,
   roundPpString,
 } from '../utils/format'
+import { getPneCycleCopy, isClosedPneCycle } from '../utils/pneCycleCopy'
+import { InteractionChevron } from './InteractionChevron'
 
 const SPARKLINE_WIDTH = 320
 const SPARKLINE_HEIGHT = 48
 
 export function MetaCard({
+  buttonRef,
   cycle,
   isSelected = false,
   item,
@@ -21,9 +24,10 @@ export function MetaCard({
   result,
   stageLabel,
 }) {
+  const cycleCopy = getPneCycleCopy(cycle)
   const unit = resolveIndicatorUnit(item, result)
   const comparable = isComparableIndicator(result)
-  const status = getMetaCardStatus(result, comparable)
+  const status = getMetaCardStatus(result, comparable, cycleCopy)
   const currentValue = result ? formatIndicatorValue(result.end_value, unit) : '—'
   const metaValue = comparable ? formatMetaValue(result, unit) : 'Sem meta'
   const progress = comparable ? getProgressPercent(result) : null
@@ -32,7 +36,7 @@ export function MetaCard({
     ? roundPpString(result?.display?.distance ?? '—')
     : roundPpString(result?.display?.variation ?? '—')
   const supportLabel = comparable ? 'Distância' : 'Variação'
-  const quickReading = getQuickReading(result, status)
+  const quickReading = getQuickReading(result, status, cycle)
   const identifier = item?.metaRef ? `Meta ${item.metaRef}` : 'Indicador'
   const title = getIndicatorTitle(item, result)
   const goalReference = getGoalReference(cycle, item)
@@ -40,15 +44,22 @@ export function MetaCard({
 
   return (
     <button
-      className={`meta-card meta-card--${status.state}${isNextCycle ? ' meta-card--next-cycle' : ''}${isSelected ? ' is-selected' : ''}`}
+      className={`meta-card interaction-card--explorable meta-card--${status.state}${isNextCycle ? ' meta-card--next-cycle' : ''}${isSelected ? ' is-selected' : ''}`}
+      ref={buttonRef}
       type="button"
       onClick={onSelect}
+      aria-label={`Abrir detalhe do indicador ${title}`}
       aria-pressed={isSelected}
       title={title}
     >
       <span className="meta-card__topline">
         <span className="meta-card__identifier">{identifier}</span>
-        <StatusBadge displayStatus={status.label} status={status.rawStatus} tone={status.tone} />
+        <StatusBadge
+          displayStatus={status.label}
+          status={status.rawStatus}
+          title={status.label}
+          tone={status.tone}
+        />
       </span>
 
       <span className="meta-card__title">{title}</span>
@@ -78,32 +89,42 @@ export function MetaCard({
       </span>
 
       {sparkline ? (
-        <span className="meta-card__sparkline" aria-hidden="true">
-          <svg viewBox={`0 0 ${SPARKLINE_WIDTH} ${SPARKLINE_HEIGHT}`}>
+        <span
+          className="meta-card__sparkline"
+          role="img"
+          aria-label={`Série histórica de ${sparkline.firstYear} a ${sparkline.lastYear}`}
+        >
+          <svg aria-hidden="true" viewBox={`0 0 ${SPARKLINE_WIDTH} ${SPARKLINE_HEIGHT}`}>
             <path className="meta-card__sparkline-area" d={sparkline.areaPath} />
             <path className="meta-card__sparkline-line" d={sparkline.linePath} />
             <circle
               className="meta-card__sparkline-end"
               cx={sparkline.lastPoint.x}
               cy={sparkline.lastPoint.y}
-              r="3.2"
+              r="3.6"
             />
           </svg>
+          <span className="meta-card__sparkline-period" aria-hidden="true">
+            {sparkline.firstYear}–{sparkline.lastYear}
+          </span>
         </span>
       ) : (
-        <span className="meta-card__sparkline meta-card__sparkline--empty" aria-hidden="true" />
+        <span className="meta-card__sparkline meta-card__sparkline--empty" aria-hidden="true">
+          <span className="meta-card__sparkline-empty-label">Histórico não disponível.</span>
+        </span>
       )}
 
       <span className="meta-card__reading">{quickReading}</span>
 
       <span className="meta-card__footer">
         {stageLabel ? <span>{stageLabel}</span> : null}
+        <InteractionChevron />
       </span>
     </button>
   )
 }
 
-function getMetaCardStatus(result, comparable) {
+function getMetaCardStatus(result, comparable, cycleCopy) {
   const rawStatus = result?.display?.status ?? ''
   const normalized = String(rawStatus).toLocaleLowerCase('pt-BR')
 
@@ -113,7 +134,7 @@ function getMetaCardStatus(result, comparable) {
     normalized.includes('indispon') ||
     normalized.includes('sem dados')
   ) {
-    return { label: 'Sem dados', rawStatus, state: 'missing', tone: 'muted' }
+    return { label: cycleCopy.status.missing, rawStatus, state: 'missing', tone: 'muted' }
   }
 
   if (!comparable || normalized.includes('visualiza') || normalized.includes('informativo')) {
@@ -121,30 +142,26 @@ function getMetaCardStatus(result, comparable) {
   }
 
   if (result.atingida === true) {
-    if (result.direction === 'at_most') {
-      return { label: 'Dentro do limite', rawStatus, state: 'success', tone: 'success' }
-    }
-    return { label: 'No ritmo', rawStatus, state: 'success', tone: 'success' }
+    return { label: cycleCopy.status.achieved, rawStatus, state: 'success', tone: 'success' }
   }
 
-  if (
+  const isDanger =
     normalized.includes('distante') ||
     normalized.includes('crítico') ||
     normalized.includes('critico') ||
     normalized.includes('não atingida') ||
     normalized.includes('nao atingida')
-  ) {
+
+  if (result.atingida === false) {
     return {
-      label: normalized.includes('não atingida') || normalized.includes('nao atingida')
-        ? 'Não atingida'
-        : 'Distante',
+      label: cycleCopy.status.below,
       rawStatus,
-      state: 'danger',
-      tone: 'danger',
+      state: isDanger ? 'danger' : 'warning',
+      tone: isDanger ? 'danger' : 'warning',
     }
   }
 
-  return { label: 'Atenção', rawStatus, state: 'warning', tone: 'warning' }
+  return { label: cycleCopy.status.missing, rawStatus, state: 'missing', tone: 'muted' }
 }
 
 function getGoalReference(cycle, item) {
@@ -210,37 +227,40 @@ function getSparkline(series = []) {
   const lastPoint = scaledPoints[scaledPoints.length - 1]
   const areaPath = `${linePath} L${lastPoint.x.toFixed(1)} ${baseline.toFixed(1)} L${firstPoint.x.toFixed(1)} ${baseline.toFixed(1)} Z`
 
-  return { areaPath, linePath, lastPoint }
+  return {
+    areaPath,
+    firstYear: points[0].year,
+    lastPoint,
+    lastYear: points[points.length - 1].year,
+    linePath,
+  }
 }
 
-function getQuickReading(result, status) {
-  if (status.state === 'missing') return 'Sem dado disponível para este município.'
+function getQuickReading(result, status, cycle) {
+  const cycleCopy = getPneCycleCopy(cycle)
+  const isClosedCycle = isClosedPneCycle(cycle)
+
+  if (status.state === 'missing') return `${cycleCopy.status.missing}.`
   if (status.state === 'no-goal') return 'Indicador acompanhado como contexto, sem meta definida.'
-  if (status.state === 'success' && result?.direction === 'at_most') {
-    return 'Resultado dentro do limite maximo definido para a meta.'
-  }
-  if (status.state === 'success') return 'Trajetória favorável para a referência acompanhada.'
 
-  const variation = parseDisplayNumber(result?.display?.variation)
-  if (status.state === 'danger') {
+  if (result?.atingida === true) {
     if (result?.direction === 'at_most') {
-      return 'Acima do limite maximo; requer reducao do indicador.'
+      return isClosedCycle
+        ? 'Resultado consolidado dentro do limite definido para a meta.'
+        : 'O valor mais recente está dentro do limite definido para a meta no momento.'
     }
-    return variation < 0
-      ? 'Recuo no período e distância relevante da meta.'
-      : 'Distância relevante da meta; requer ação prioritária.'
+    return isClosedCycle
+      ? 'Resultado consolidado na referência definida para o ciclo.'
+      : 'O valor mais recente atinge a referência no momento.'
   }
-  if (variation > 0) return 'Avança, mas o ritmo ainda exige atenção.'
-  if (variation < 0) return 'Recuo no período; exige atenção para retomada.'
-  return 'Ritmo insuficiente para aproximação da meta.'
-}
 
-function parseDisplayNumber(value) {
-  const match = String(value ?? '').match(/[-+]?\d+(?:[,.]\d+)?/)
-  if (!match) return Number.NaN
-  const numeric = Number(match[0].replace(',', '.'))
-  if (!Number.isFinite(numeric)) return Number.NaN
-  const normalized = String(value ?? '').toLocaleLowerCase('pt-BR')
-  if (normalized.includes('queda')) return -Math.abs(numeric)
-  return numeric
+  if (result?.direction === 'at_most') {
+    return isClosedCycle
+      ? 'Resultado consolidado acima do limite definido para a meta.'
+      : 'O valor mais recente ainda está acima do limite definido para a meta.'
+  }
+
+  return isClosedCycle
+    ? 'Resultado consolidado abaixo da meta definida para o ciclo.'
+    : 'O valor mais recente ainda não atinge a referência.'
 }

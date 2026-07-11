@@ -3,7 +3,7 @@ export function StatCard({ detail, eyebrow, onClick, title }) {
 
   return (
     <Component
-      className={`stat-card${onClick ? ' stat-card--action' : ''}`}
+      className={`stat-card ${onClick ? 'stat-card--action interaction-card--navigation' : 'interaction-card--informative'}`}
       onClick={onClick}
       type={onClick ? 'button' : undefined}
     >

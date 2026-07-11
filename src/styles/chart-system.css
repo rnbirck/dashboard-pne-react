@@ -1,0 +1,419 @@
+/* Shared chart language. Data, scales and chart geometry remain component-owned. */
+.indicator-chart-card,
+.financial-chart-card,
+.fundeb-chart-card,
+.siope-chart-card,
+.education-chart,
+.complementary-chart__canvas {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+.indicator-chart-card,
+.financial-chart-card,
+.fundeb-chart-card,
+.siope-chart-card {
+  border-color: var(--border-card);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  box-shadow: none;
+}
+
+.indicator-chart-card .history-chart,
+.financial-chart-card .history-chart,
+.fundeb-chart-card .history-chart,
+.siope-chart-card .history-chart {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.cycle-page .indicator-chart-card .history-chart,
+.education-detail-view .financial-chart-card .history-chart {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.history-chart,
+.education-chart,
+.complementary-chart__canvas {
+  border-color: var(--border-card);
+  background: var(--surface-card);
+  box-shadow: none;
+}
+
+.indicator-chart-card,
+.financial-chart-card,
+.fundeb-chart-card,
+.siope-chart-card,
+.education-chart {
+  padding: var(--space-5);
+}
+
+.educacao-main-chart-card .education-chart {
+  padding: 0;
+}
+
+.education-detail-view .educacao-main-chart-card .education-chart {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.complementary-projection__legend {
+  margin-top: var(--space-2);
+}
+
+.history-chart__heading h4,
+.education-chart__title,
+.indicator-chart-title-group h3 {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.history-chart__subtitle,
+.indicator-chart-title-group p,
+.complementary-chart__heading small {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.history-chart svg text,
+.education-chart svg text,
+.complementary-chart svg text {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-grid line,
+.complementary-chart__gridline {
+  stroke: var(--chart-grid);
+  stroke-width: 1;
+}
+
+.chart-axis line,
+.complementary-chart__axis {
+  stroke: var(--chart-axis);
+  stroke-width: 1;
+}
+
+.chart-grid text,
+.chart-x-labels text,
+.chart-axis-label,
+.chart-x-label,
+.chart-bar-cat,
+.complementary-chart__tick,
+.complementary-chart__x-label {
+  fill: var(--chart-axis-text);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+}
+
+.education-chart .chart-axis-label,
+.education-chart .chart-x-label,
+.education-chart .chart-bar-cat,
+.education-chart .chart-x-label--angled,
+.education-chart .chart-bar-label,
+.education-chart .chart-bar-value {
+  font-size: 12px;
+}
+
+.education-detail-view .education-chart .chart-axis-label,
+.education-detail-view .education-chart .chart-x-label,
+.education-detail-view .education-chart .chart-bar-cat,
+.education-detail-view .education-chart .chart-x-label--angled,
+.education-detail-view .education-chart .chart-bar-label,
+.education-detail-view .education-chart .chart-bar-value,
+.education-detail-view .education-chart .chart-point-label,
+.education-detail-view .education-chart .chart-point-label.is-last {
+  font-size: 12px;
+}
+
+.education-detail-view .history-chart .chart-grid text,
+.education-detail-view .history-chart .chart-x-labels text {
+  fill: var(--chart-axis-text);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+}
+
+.education-detail-view .history-chart .chart-point-label,
+.education-detail-view .history-chart .chart-point-label.is-last,
+.education-detail-view .history-chart .chart-meta-label {
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+}
+
+.education-detail-view .history-chart .chart-data-labels .chart-point-label,
+.education-detail-view .history-chart .chart-data-labels .chart-point-label.is-last,
+.education-detail-view .history-chart .chart-data-labels .chart-meta-label,
+.cycle-page .history-chart .chart-data-labels .chart-point-label,
+.cycle-page .history-chart .chart-data-labels .chart-point-label.is-last,
+.cycle-page .history-chart .chart-data-labels .chart-meta-label {
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+}
+
+.chart-point-label,
+.chart-point-label.is-last,
+.chart-meta-label,
+.chart-bar-label,
+.chart-bar-value,
+.complementary-chart__value-label {
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+}
+
+.chart-line,
+.projection-line,
+.complementary-chart__line {
+  stroke: var(--chart-primary);
+  stroke-width: 2.25;
+}
+
+.chart-area,
+.projection-area,
+.complementary-chart__area {
+  fill: var(--chart-primary);
+  opacity: 0.08;
+}
+
+.projection-line--dashed {
+  stroke: var(--chart-primary);
+  stroke-width: 2;
+  stroke-dasharray: 7 6;
+}
+
+.chart-meta-line line {
+  stroke: var(--chart-series-3);
+  stroke-width: 1.75;
+  stroke-dasharray: 7 5;
+}
+
+.chart-meta-line text,
+.chart-meta-label {
+  fill: var(--chart-series-3);
+}
+
+.chart-points circle,
+.complementary-chart__point {
+  stroke: var(--chart-primary);
+  stroke-width: 2;
+}
+
+.chart-mark {
+  outline: none;
+}
+
+.chart-mark:focus-visible {
+  filter: drop-shadow(0 0 3px rgba(62, 122, 94, 0.48));
+  stroke: var(--focus-ring-color);
+  stroke-width: 3;
+}
+
+.complementary-projection .chart-mark.is-transition {
+  fill: var(--surface-card);
+  stroke-width: 3;
+}
+
+.chart-tooltip {
+  position: absolute;
+  z-index: var(--z-tooltip);
+  min-width: 144px;
+  max-width: min(280px, calc(100% - 24px));
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  gap: var(--space-1);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--line-height-snug);
+  pointer-events: none;
+  text-align: left;
+  white-space: normal;
+}
+
+.chart-tooltip .chart-tooltip__label {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.chart-tooltip .chart-tooltip__reading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.chart-tooltip .chart-tooltip__series {
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-regular);
+}
+
+.chart-tooltip .chart-tooltip__reading b {
+  color: var(--text-strong);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+.chart-legend,
+.education-stacked-legend,
+.complementary-chart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-snug);
+}
+
+.chart-legend .chart-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.chart-legend .chart-legend__marker {
+  width: 12px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--chart-legend-color);
+  flex: 0 0 auto;
+}
+
+.chart-legend .chart-legend__marker--dashed {
+  height: 0;
+  border-top: 2px dashed var(--chart-legend-color);
+  border-radius: 0;
+  background: transparent;
+}
+
+.chart-empty-state,
+.education-chart-empty,
+.history-chart__empty,
+.fundeb-empty--chart {
+  min-height: var(--chart-height-sm);
+  padding: var(--space-6);
+  border: var(--border-divider);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  text-align: center;
+}
+
+.chart-empty-state p,
+.education-chart-empty p {
+  margin: 0;
+}
+
+.meta-card__sparkline,
+.education-indicator-card__sparkline,
+.financial-indicator-card__sparkline {
+  min-width: 0;
+  height: 52px;
+  display: grid;
+  grid-template-rows: 36px 16px;
+  align-items: end;
+  opacity: 1;
+}
+
+.meta-card__sparkline svg,
+.education-indicator-card__sparkline svg,
+.financial-indicator-card__sparkline svg {
+  width: 100%;
+  height: 36px;
+}
+
+.meta-card__sparkline-line,
+.education-indicator-card__sparkline-line,
+.financial-indicator-card__sparkline-line {
+  stroke-width: 2.25;
+}
+
+.meta-card__sparkline-area,
+.education-indicator-card__sparkline-area,
+.financial-indicator-card__sparkline-area {
+  opacity: 0.06;
+}
+
+.meta-card__sparkline-end,
+.education-indicator-card__sparkline-end,
+.financial-indicator-card__sparkline-end {
+  fill: var(--surface-card);
+  stroke: currentColor;
+  stroke-width: 2.2;
+}
+
+.education-indicator-card__sparkline-period,
+.financial-indicator-card__sparkline-period {
+  justify-self: end;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+}
+
+.education-indicator-card__sparkline--empty,
+.financial-indicator-card__sparkline--empty {
+  min-height: 52px;
+  grid-template-rows: 1fr;
+  border-color: var(--border-card);
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.meta-card__sparkline--empty {
+  min-height: 52px;
+  display: grid;
+  place-items: center;
+  border: var(--border-divider);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  opacity: 1;
+}
+
+.meta-card__sparkline--empty::before {
+  display: none;
+}
+
+.meta-card__sparkline-empty-label {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-mark,
+  .chart-points circle,
+  .complementary-chart__point,
+  .complementary-chart__dependency-point,
+  .complementary-chart__bar-segment {
+    transition: none;
+  }
+}

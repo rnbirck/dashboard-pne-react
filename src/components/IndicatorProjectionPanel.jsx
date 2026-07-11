@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { ChartEmptyState, ChartLegend, ChartTooltip } from './ChartPrimitives'
+import { closeChartTooltipOnEscape } from '../utils/chartVisuals'
 
 const CHART_WIDTH = 980
 const CHART_HEIGHT = 260
@@ -14,13 +16,12 @@ export function IndicatorProjectionPanel({ projection, showTitle = true }) {
 
   const chart = useMemo(() => buildProjectionChart(projection), [projection])
   const lastChartPointYear = chart.points.filter((point) => point.valid !== false).slice(-1)[0]?.year
+  const transitionYear = chart.points.filter((point) => point.valid !== false && !point.isProjected).slice(-1)[0]?.year
 
   if (!projection?.available) {
     return (
       <div className="complementary-projection">
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-          Projeção não disponível para este indicador.
-        </p>
+        <ChartEmptyState message="Não há valores para o período selecionado." />
       </div>
     )
   }
@@ -74,7 +75,16 @@ export function IndicatorProjectionPanel({ projection, showTitle = true }) {
       </div>
 
       {chart.points.length > 0 && (
-        <div className="history-chart__canvas" style={{ marginTop: '16px' }}>
+        <>
+          <ChartLegend
+            className="complementary-projection__legend"
+            items={[
+              { key: 'observed', label: transitionYear ? `Observado até ${transitionYear}` : 'Observado', color: 'var(--chart-primary)' },
+              { key: 'projected', label: 'Projetado até 2036', color: 'var(--chart-primary)', dashed: true },
+              ...(target != null ? [{ key: 'target', label: 'Meta PNE 2036', color: 'var(--chart-series-3)', dashed: true }] : []),
+            ]}
+          />
+          <div className="history-chart__canvas complementary-projection__chart">
           <svg
             viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
             role="img"
@@ -135,13 +145,15 @@ export function IndicatorProjectionPanel({ projection, showTitle = true }) {
               {chart.points.filter(p => p.valid !== false).map((point) => (
                 <circle
                   key={point.year}
-                  className={point.year === lastChartPointYear ? 'is-last' : undefined}
+                  aria-label={`${point.isProjected ? 'Projetado' : 'Observado'} ${point.year}: ${percentFormatter.format(point.value)}%`}
+                  className={`chart-mark${point.year === transitionYear ? ' is-transition' : ''}${point.year === lastChartPointYear ? ' is-last' : ''}`}
                   cx={point.x} cy={point.y}
-                  r={activePoint?.year === point.year ? 5 : point.year === lastChartPointYear ? 4.5 : 3.5}
+                  r={activePoint?.year === point.year ? 5.5 : point.year === transitionYear ? 5 : point.year === lastChartPointYear ? 4.5 : 3.5}
                   onMouseEnter={() => setActivePoint(point)}
                   onMouseLeave={() => setActivePoint(null)}
                   onFocus={() => setActivePoint(point)}
                   onBlur={() => setActivePoint(null)}
+                  onKeyDown={(event) => closeChartTooltipOnEscape(event, () => setActivePoint(null))}
                   tabIndex="0"
                 >
                   <title>{`${point.year}: ${percentFormatter.format(point.value)}%`}</title>
@@ -164,8 +176,11 @@ export function IndicatorProjectionPanel({ projection, showTitle = true }) {
           </svg>
 
           {activePoint && (
-            <div
+            <ChartTooltip
               className="history-chart__tooltip"
+              label={activePoint.year}
+              series={activePoint.isProjected ? 'Projetado' : 'Observado'}
+              value={activePoint.valid === false ? '—' : `${percentFormatter.format(activePoint.value)}%`}
               style={{
                 left: `${Math.min(92, Math.max(10, (activePoint.x / CHART_WIDTH) * 100))}%`,
                 top: `${(activePoint.y / CHART_HEIGHT) * 100}%`,
@@ -173,12 +188,10 @@ export function IndicatorProjectionPanel({ projection, showTitle = true }) {
                   ? 'translate(-50%, 12px)'
                   : 'translate(-50%, calc(-100% - 12px))',
               }}
-            >
-              <strong>{activePoint.year}</strong>
-              <span>{activePoint.valid === false ? '—' : `${percentFormatter.format(activePoint.value)}%`}</span>
-            </div>
+            />
           )}
-        </div>
+          </div>
+        </>
       )}
 
       <div className="complementary-projection__reading">

@@ -13,12 +13,14 @@ import {
   roundPpString,
 } from '../utils/format'
 import { normalizePopulationPercentResults } from '../utils/indicatorValues'
+import { getPneCycleCopy } from '../utils/pneCycleCopy'
 import {
   isPneComparableIndicator,
   isPneContextProxyRelation,
 } from '../utils/pneDisplayRules'
 
 const PNE_2026_CYCLE = 'pne_2026_2036'
+const PNE_2026_COPY = getPneCycleCopy(PNE_2026_CYCLE)
 const EMPTY_ARRAY = []
 
 const METHODOLOGY_WARNINGS_BY_KEY = {
@@ -161,10 +163,10 @@ export function PneLegalGoalsPage({
     <div className="page-stack legal-goals-page">
       <section className="page-card legal-goals-hero">
         <div className="legal-goals-hero__copy">
-          <span className="eyebrow">Plano Nacional de Educação</span>
+          <span className="eyebrow">Plano Nacional de Educação · ciclo vigente</span>
           <h1>Metas legais do PNE 2026-2036</h1>
           <p>
-            Consulte as metas legais do novo ciclo e veja como elas se conectam
+            Consulte as metas legais do ciclo vigente e veja como elas se conectam
             aos indicadores municipais disponíveis no painel.
           </p>
           {selectedMunicipio ? (
@@ -179,7 +181,7 @@ export function PneLegalGoalsPage({
           <strong>{PNE_2026_LEGAL_GOAL_MAPPING_METADATA.law}</strong>
           <p>
             {PNE_2026_LEGAL_GOAL_MAPPING_METADATA.totalLegalGoals} metas legais
-            do novo ciclo, com acompanhamento municipal quando há indicador
+            do ciclo vigente, com acompanhamento municipal quando há indicador
             comparável disponível no painel.
           </p>
         </aside>
@@ -249,10 +251,11 @@ export function PneLegalGoalsPage({
           <section className="legal-goals-filter-panel">
             <div className="legal-goals-filter-panel__heading">
               <div>
-                <span className="eyebrow">Novo ciclo PNE 2026-2036</span>
-                <h2>Metas do novo ciclo e acompanhamento municipal</h2>
+                <span className="eyebrow">Ciclo vigente · acompanhamento atual</span>
+                <h2>Metas do ciclo vigente e acompanhamento municipal</h2>
                 <p>
-                  A lista mostra metas com acompanhamento municipal comparável.
+                  A lista mostra a situação observada até o ano mais recente disponível,
+                  sem representar uma previsão de cumprimento em 2036.
                   Use os temas para navegar por área e a busca para localizar
                   código, texto legal ou indicador.
                 </p>
@@ -574,16 +577,16 @@ function LegalGoalIndicator({ indicatorRelation, item, onNavigate, projection, r
         </div>
       ) : !hasMunicipalResult ? (
         <div className="legal-goal-indicator__empty">
-          Sem resultado municipal disponível para este indicador no município selecionado.
+          Sem leitura municipal disponível para este indicador no ciclo vigente.
         </div>
       ) : (
         <div className="legal-goal-metric-grid">
           <LegalMetric
-            label="Resultado atual"
+            label="Valor mais recente"
             value={formatCurrentValue(result, unit)}
           />
           <LegalMetric
-            label="Ano do resultado"
+            label="Ano de referência"
             value={getReadableYear(result?.end_year) ?? '—'}
           />
           {comparable ? (
@@ -602,9 +605,9 @@ function LegalGoalIndicator({ indicatorRelation, item, onNavigate, projection, r
           ) : null}
           {showStatus ? (
             <LegalMetric
-              label="Status da meta"
+              label="Situação no momento"
               tone={result.atingida ? 'success' : 'warning'}
-              value={result.display.status}
+              value={result.atingida ? PNE_2026_COPY.status.achieved : PNE_2026_COPY.status.below}
             />
           ) : null}
           {showProjection ? (
@@ -626,7 +629,7 @@ function LegalGoalIndicator({ indicatorRelation, item, onNavigate, projection, r
             onClick={() => onNavigate('pne2026')}
             type="button"
           >
-            Abrir página do ciclo 2026-2036
+            Abrir página do ciclo vigente 2026-2036
           </button>
         ) : null}
       </div>

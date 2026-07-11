@@ -55,7 +55,7 @@ export const pneOverviewContent = {
       description:
         'São referências qualitativas e quantitativas usadas para verificar se as mudanças previstas estão sendo alcançadas.',
       panelUse:
-        'Aparecem nos cards e nas telas de detalhe como parâmetros para acompanhar distância, tendência e situação municipal.',
+        'Aparecem nos cards e nas telas de detalhe como parâmetros para compreender distância, histórico e situação municipal.',
     },
     {
       title: 'Estratégias',
@@ -223,7 +223,7 @@ export const pneOverviewContent = {
       {
         title: 'Metas',
         body:
-          'Referências qualitativas e quantitativas que ajudam a medir alcance, ritmo e distância em relação ao que foi pactuado.',
+        'Referências qualitativas e quantitativas que ajudam a compreender o resultado observado e a distância em relação ao que foi pactuado.',
       },
       {
         title: 'Estratégias',
@@ -237,7 +237,7 @@ export const pneOverviewContent = {
       title: 'Como as metas aparecem no painel',
       reference: 'Art. 2º, inciso III',
       summary:
-        'As páginas PNE 2014-2024 e PNE 2026-2036 apresentam metas e indicadores como referências de acompanhamento.',
+        'A página PNE 2014-2024 apresenta resultados consolidados, enquanto a página PNE 2026-2036 acompanha a situação observada no ciclo vigente.',
       panelUse:
         'Os cards permitem entrar no detalhe, verificar histórico, referência do PNE e dados de apoio quando disponíveis.',
     },
@@ -319,14 +319,14 @@ export const pneOverviewContent = {
       summary:
         'A lei prevê elaboração periódica de planos de ação educacional com planejamento de políticas, programas, ações e recursos.',
       municipalUse:
-        'Os indicadores do painel ajudam a transformar diagnóstico em priorização, execução e acompanhamento do próximo ciclo.',
+        'Os indicadores do painel ajudam a transformar diagnóstico em priorização, execução e acompanhamento do ciclo vigente.',
     },
   ],
   entrySection: {
     eyebrow: 'COMO USAR NO PAINEL',
     title: 'Acompanhe o PNE pelo município',
     description:
-      'Use os ciclos do PNE, as metas legais do novo ciclo e o diagnóstico municipal como portas de entrada para acompanhar a educação local.',
+      'Use o ciclo encerrado, o ciclo vigente, as metas legais e o diagnóstico municipal como portas de entrada para compreender a educação local.',
   },
   entryCards: [
     {
@@ -335,21 +335,21 @@ export const pneOverviewContent = {
         'Veja as metas da Lei nº 15.388/2026 e como elas se conectam aos indicadores municipais disponíveis no painel.',
       indicator: 'Lei 2026',
       page: 'pne-legal-goals',
-      title: 'Metas legais do novo ciclo',
+      title: 'Metas legais do ciclo vigente',
     },
     {
-      actionLabel: 'Abrir ciclo anterior',
+      actionLabel: 'Abrir ciclo encerrado',
       description:
-        'Consulte metas e indicadores do PNE 2014-2024 para entender a trajetória recente e o legado do ciclo anterior no município.',
-      indicator: 'Histórico',
+        'Consulte os resultados consolidados do PNE 2014-2024 e o legado do ciclo encerrado no município.',
+      indicator: 'Ciclo encerrado',
       page: 'pne2014',
       title: 'PNE 2014-2024',
     },
     {
-      actionLabel: 'Abrir próximo ciclo',
+      actionLabel: 'Abrir ciclo vigente',
       description:
-        'Acesse as referências do PNE 2026-2036 e acompanhe como o novo ciclo organiza metas nacionais para leitura municipal.',
-      indicator: 'Novo ciclo',
+        'Acesse as referências do PNE 2026-2036 e acompanhe a situação observada no ciclo vigente.',
+      indicator: 'Ciclo vigente',
       page: 'pne2026',
       title: 'PNE 2026-2036',
     },

@@ -1,13 +1,13 @@
 import { MunicipalitySelector } from './MunicipalitySelector'
 
 const PAGE_CRUMBS = {
-  diagnostico: 'Metas do PNE / Situação do município',
+  diagnostico: 'Metas do PNE / Ciclo vigente / Diagnóstico municipal',
   educacao: 'Indicadores de Educação',
   financeiros: 'Indicadores Financeiros da Educação',
   home: 'Home',
-  'pne-legal-goals': 'Metas legais do PNE 2026-2036',
-  pne2014: 'Metas do PNE / Ciclo anterior',
-  pne2026: 'Metas do PNE / Próximo ciclo',
+  'pne-legal-goals': 'Metas legais do PNE 2026-2036 / Ciclo vigente',
+  pne2014: 'Metas do PNE / Ciclo encerrado / Resultado consolidado',
+  pne2026: 'Metas do PNE / Ciclo vigente / Acompanhamento atual',
 }
 
 export function ContextBar({

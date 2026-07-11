@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { closeChartTooltipOnEscape } from '../utils/chartVisuals'
+import { ChartTooltip } from './ChartPrimitives'
 
 const CHART_WIDTH = 980
 const CHART_HEIGHT = 260
@@ -152,7 +154,7 @@ export function ComplementaryEnrollmentChart({ series, showHeading = true, title
           {scaledPoints.map((p, index) => (
             <circle
               aria-label={`${p.year}: ${formatNumber(p.value)} ${unit}`}
-              className={`complementary-chart__point${activePoint?.year === p.year ? ' is-active' : ''}${index === scaledPoints.length - 1 ? ' is-last' : ''}`}
+              className={`chart-mark complementary-chart__point${activePoint?.year === p.year ? ' is-active' : ''}${index === scaledPoints.length - 1 ? ' is-last' : ''}`}
               cx={p.x}
               cy={p.y}
               key={p.year}
@@ -160,6 +162,7 @@ export function ComplementaryEnrollmentChart({ series, showHeading = true, title
               onFocus={() => setActivePoint(p)}
               onMouseEnter={() => setActivePoint(p)}
               onMouseLeave={() => setActivePoint(null)}
+              onKeyDown={(event) => closeChartTooltipOnEscape(event, () => setActivePoint(null))}
               r={activePoint?.year === p.year ? 5 : 4}
               tabIndex="0"
             />
@@ -201,8 +204,11 @@ export function ComplementaryEnrollmentChart({ series, showHeading = true, title
           })}
         </svg>
         {activePoint ? (
-          <div
+          <ChartTooltip
             className="complementary-chart__tooltip"
+            label={activePoint.year}
+            series={title}
+            value={`${formatNumber(activePoint.value)} ${unit.toLocaleLowerCase('pt-BR')}`}
             style={{
               left: `${Math.min(92, Math.max(10, (activePoint.x / CHART_WIDTH) * 100))}%`,
               top: `${(activePoint.y / CHART_HEIGHT) * 100}%`,
@@ -211,10 +217,7 @@ export function ComplementaryEnrollmentChart({ series, showHeading = true, title
                   ? 'translate(-50%, 12px)'
                   : 'translate(-50%, calc(-100% - 12px))',
             }}
-          >
-            <strong>{activePoint.year}</strong>
-            <span>{formatNumber(activePoint.value)} {unit.toLocaleLowerCase('pt-BR')}</span>
-          </div>
+          />
         ) : null}
       </div>
     </section>

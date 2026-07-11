@@ -5,7 +5,10 @@ import {
   resolveIndicatorUnit,
 } from '../utils/format'
 import { getDataSourceNote } from '../utils/dataSourceNotes'
+import { getPneCycleCopy } from '../utils/pneCycleCopy'
 import { isPneComparableIndicator } from '../utils/pneDisplayRules'
+
+const PNE_2026_COPY = getPneCycleCopy('pne_2026_2036')
 
 function isAccumulativeExpansionLabel(label) {
   const text = String(label ?? '').toLocaleLowerCase('pt-BR')
@@ -102,7 +105,7 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
   if (!data && analysis.summary.total === 0) {
     return (
       <section className="detail-panel empty-panel">
-        <p>Não há diagnóstico para {municipio}.</p>
+        <p>{PNE_2026_COPY.status.missing} para {municipio} no ciclo vigente.</p>
       </section>
     )
   }
@@ -112,10 +115,10 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
       <section className="diagnostic-overview" id="diagnostic-summary">
         <header className="diagnostic-overview__header">
           <div>
-            <p className="diagnostic-overview__context">PNE 2026–2036 · diagnóstico municipal</p>
+            <p className="diagnostic-overview__context">PNE 2026–2036 · ciclo vigente · acompanhamento atual</p>
             <h2>{municipio}: metas, lacunas e prioridades</h2>
             <p className="diagnostic-overview__intro">
-              Uma leitura para orientar decisões da gestão e comunicar resultados com a mesma base de evidências.
+              Situação observada até o ano mais recente disponível. Esta leitura não representa uma previsão de cumprimento em 2036.
             </p>
           </div>
           <div className="diagnostic-overview__actions" aria-label="Ações do diagnóstico">
@@ -156,14 +159,14 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
               value={analysis.summary.total}
             />
             <SummaryMetric
-              helper="Resultados na referência"
-              label="Metas atingidas"
+              helper="Situação observada no último ano disponível"
+              label="Atingem a meta no momento"
               tone="success"
               value={analysis.summary.achieved}
             />
             <SummaryMetric
-              helper="Lacunas que pedem acompanhamento"
-              label="Abaixo da meta"
+              helper="Situação observada no último ano disponível"
+              label="Ainda não atingem a meta"
               tone="danger"
               value={analysis.summary.below}
             />
@@ -241,7 +244,7 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
           <header className="diagnostic-section__heading">
             <div>
               <h3>Pressão por tema</h3>
-              <p>Distribuição das metas atingidas e das lacunas em cada dimensão acompanhada.</p>
+              <p>Distribuição dos indicadores que atingem ou ainda não atingem a meta no momento.</p>
             </div>
             <span>Visão estrutural</span>
           </header>
@@ -254,12 +257,12 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
 
         <InsightCard
           className="diagnostic-insight--advances"
-          description="Resultados que já alcançaram a referência ou estão próximos dela e devem ser preservados."
+          description="Resultados que atingem a referência no momento ou estão próximos dela, segundo o último ano disponível."
           icon="trendUp"
           emptyMessage="Nenhum avanço comparável foi identificado neste recorte."
           items={filteredBestPosition}
           showCategoryChip={showCategoryChip}
-          title="Avanços a preservar"
+          title="Resultados atuais a preservar"
           tone="success"
         />
       </section>
@@ -269,7 +272,7 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
 
 function SummaryMetric({ helper, label, tone = 'default', value }) {
   return (
-    <div className={`diagnostic-scoreboard__item diagnostic-scoreboard__item--${tone}`}>
+    <div className={`diagnostic-scoreboard__item interaction-card--informative diagnostic-scoreboard__item--${tone}`}>
       <dt>{label}</dt>
       <dd>{value}</dd>
       <small>{helper}</small>
@@ -410,7 +413,7 @@ function AreaMiniCard({ area }) {
     : '-'
 
   return (
-    <div className="diagnostic-area-mini-card">
+    <div className="diagnostic-area-mini-card interaction-card--informative">
       <div className="diagnostic-area-mini-card__header">
         <div className="diagnostic-area-mini-card__title">
           <IconBubble icon={area.key} tone="success" />
@@ -424,11 +427,11 @@ function AreaMiniCard({ area }) {
           <strong>{area.total}</strong>
         </div>
         <div className="diagnostic-area-mini-card__metric">
-          <span>Atingidas</span>
+          <span>Atingem agora</span>
           <strong className="is-success">{area.achieved}</strong>
         </div>
         <div className="diagnostic-area-mini-card__metric">
-          <span>Abaixo</span>
+          <span>Ainda não</span>
           <strong className="is-danger">{area.below}</strong>
         </div>
       </div>
@@ -711,9 +714,9 @@ function buildLargestGaps(indicators, excludedIndicators = []) {
 
 function formatAchievedPositionNote(indicator) {
   if (Number.isFinite(indicator.distance) && indicator.distance > 0) {
-    return `Atingida ${formatDistance(indicator)}`
+    return `Atinge a meta no momento ${formatDistance(indicator)}`
   }
-  return 'Atingida'
+  return PNE_2026_COPY.status.achieved
 }
 
 function isCloseToGoal(indicator) {
@@ -785,7 +788,7 @@ function buildPriorityReading(indicator) {
   if (score >= 0.25) {
     return `Ainda falta cerca de ${shareLabel}% da própria meta; o indicador deve entrar no planejamento e no monitoramento periódico.`
   }
-  return `A lacuna equivale a cerca de ${shareLabel}% da própria meta; acompanhar a trajetória evita perda de ritmo.`
+  return `A lacuna equivale a cerca de ${shareLabel}% da própria meta; o indicador deve permanecer no acompanhamento periódico.`
 }
 
 function buildExecutiveSummary(analysis) {
@@ -798,10 +801,14 @@ function buildExecutiveSummary(analysis) {
   const pressureText = pressureArea?.below > 0
     ? `maior pressão em ${pressureArea.label}`
     : 'sem área crítica destacada'
-  const achievedLabel = summary.achieved === 1 ? 'meta atingida' : 'metas atingidas'
-  const attentionLabel = summary.below === 1 ? 'exige atenção' : 'exigem atenção'
+  const achievedLabel = summary.achieved === 1
+    ? 'indicador atinge a meta no momento'
+    : 'indicadores atingem a meta no momento'
+  const belowLabel = summary.below === 1
+    ? 'indicador ainda não atinge a meta'
+    : 'indicadores ainda não atingem a meta'
 
-  return `${summary.total} indicadores com meta analisados; ${summary.achieved} ${achievedLabel} e ${summary.below} ${attentionLabel}; ${pressureText}.`
+  return `${summary.total} indicadores com meta analisados; ${summary.achieved} ${achievedLabel} e ${summary.below} ${belowLabel}; ${pressureText}.`
 }
 
 function buildAccountabilitySummary(analysis, municipio) {
@@ -810,8 +817,12 @@ function buildAccountabilitySummary(analysis, municipio) {
     return `${municipio} ainda não possui indicadores com dado municipal e meta comparável suficientes para uma síntese pública neste ciclo.`
   }
 
-  const achievedLabel = summary.achieved === 1 ? 'meta foi atingida' : 'metas foram atingidas'
-  const belowLabel = summary.below === 1 ? 'indicador permanece abaixo da meta' : 'indicadores permanecem abaixo da meta'
+  const achievedLabel = summary.achieved === 1
+    ? 'indicador atinge a meta no momento'
+    : 'indicadores atingem a meta no momento'
+  const belowLabel = summary.below === 1
+    ? 'indicador ainda não atinge a meta'
+    : 'indicadores ainda não atingem a meta'
   const priorityText = priorities[0]
     ? `O principal ponto de atenção é ${priorities[0].label}, com distância de ${endSentence(priorities[0].distanceLabel)}`
     : 'Não foi identificado ponto de atenção comparável neste recorte.'
@@ -831,6 +842,7 @@ function buildAccountabilityText(analysis, municipio) {
   return [
     `DIAGNÓSTICO MUNICIPAL — ${municipio}`,
     'PNE 2026–2036',
+    'Ciclo vigente · acompanhamento atual',
     '',
     buildAccountabilitySummary(analysis, municipio),
     '',
@@ -858,17 +870,17 @@ function endSentence(text) {
 function buildAreaReading({ achieved, below, comparableTotal, total }) {
   if (!total || !comparableTotal) return 'Sem indicadores com meta comparável.'
   if (achieved >= below) {
-    return 'Predomínio de metas atingidas.'
+    return 'Predomínio de indicadores que atingem a meta no momento.'
   }
   if (below > achieved && achieved > 0) {
     return 'Resultado misto.'
   }
-  return 'Predomínio abaixo da meta.'
+  return 'Predomínio de indicadores que ainda não atingem a meta.'
 }
 
 function getIndicatorStatusLabel(status) {
-  if (status === 'achieved') return 'Meta atingida'
-  return 'Abaixo da meta'
+  if (status === 'achieved') return PNE_2026_COPY.status.achieved
+  return PNE_2026_COPY.status.below
 }
 
 function formatIndicatorValueForPriority(indicator) {
@@ -908,17 +920,17 @@ function buildReadings(summary, areas, priorities) {
   } else {
     let toneText
     if (achievedShare >= 0.55) {
-      toneText = 'predominância de metas atingidas'
+      toneText = 'predominância de indicadores que atingem a meta no momento'
     } else if (achievedShare >= 0.25) {
       toneText = 'desempenho heterogêneo entre temas'
     } else {
-      toneText = 'predominância de indicadores abaixo da meta'
+      toneText = 'predominância de indicadores que ainda não atingem a meta'
     }
-    overview = `${summary.total} indicadores com meta: ${summary.achieved} metas atingidas e ${summary.below} exigem atenção. O quadro indica ${toneText}.`
+    overview = `${summary.total} indicadores com meta: ${summary.achieved} atingem a meta no momento e ${summary.below} ainda não atingem a meta. O quadro indica ${toneText}.`
   }
 
   const bestAreaText = bestArea?.achieved > 0
-    ? `${bestArea.label}: ${bestArea.achieved} de ${bestArea.comparableTotal} indicadores com meta atingem a referência.`
+    ? `${bestArea.label}: ${bestArea.achieved} de ${bestArea.comparableTotal} indicadores atingem a referência no momento.`
     : 'Não há indicadores com meta suficientes para destacar uma área favorável.'
 
   const belowAreaText = belowArea?.below > 0
@@ -951,27 +963,27 @@ function buildAreaDiagnosis({ achieved, below, comparableTotal }) {
 
   if (achievedShare >= 0.5) {
     return {
-      statusLabel: 'Favorável',
+      statusLabel: 'Maioria atinge no momento',
       statusTone: 'success',
     }
   }
 
   if (belowShare >= 0.75 || achieved === 0) {
     return {
-      statusLabel: 'Abaixo da meta',
+      statusLabel: 'Maioria ainda não atinge',
       statusTone: 'danger',
     }
   }
 
   if (achieved > 0 && below > 0) {
     return {
-      statusLabel: 'Misto',
+      statusLabel: 'Situação atual mista',
       statusTone: 'mixed',
     }
   }
 
   return {
-    statusLabel: 'Abaixo da meta',
+    statusLabel: 'Maioria ainda não atinge',
     statusTone: 'danger',
   }
 }
@@ -984,7 +996,7 @@ function buildBestAreaIndicator(indicators) {
   if (achieved) {
     return {
       ...achieved,
-      summary: `Meta atingida, ${formatDistance(achieved)}`,
+      summary: `Atinge a meta no momento, ${formatDistance(achieved)}`,
     }
   }
 

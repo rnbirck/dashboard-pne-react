@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { EducationLineChart } from './EducationLineChart'
+import { ChartEmptyState } from './ChartPrimitives'
 import { MetricCard } from './MetricCard'
 import { EducationSummaryCard } from './EducationSummaryCard'
 import { formatNumber, isMissing } from '../utils/educationFormatters'
@@ -223,9 +224,7 @@ export function SistemaSPanel({ blocos }) {
                 title={null}
               />
             ) : (
-              <div className="detail-empty-state">
-                <p>Não há série histórica suficiente para exibir o histórico do indicador.</p>
-              </div>
+              <ChartEmptyState message="Histórico não disponível." />
             )}
           </div>
 

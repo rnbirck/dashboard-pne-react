@@ -7,6 +7,8 @@ import {
   stableYearsTicks,
 } from '../utils/visualDomain'
 import { formatIndicatorValue, resolveIndicatorUnit } from '../utils/format'
+import { closeChartTooltipOnEscape } from '../utils/chartVisuals'
+import { ChartTooltip } from './ChartPrimitives'
 
 const CHART_WIDTH = 980
 const CHART_HEIGHT_INFORMATIVE = 280
@@ -25,6 +27,7 @@ export function IndicatorHistoryChart({
   labelMode,
   meta,
   missingLabel = '—',
+  referenceLabel = 'Referência',
   result,
   series,
   showMetaLine = true,
@@ -169,7 +172,8 @@ export function IndicatorHistoryChart({
           <g className="chart-points">
             {chart.points.filter(p => p.valid !== false).map((point) => (
               <circle
-                className={point.isLast ? 'is-last' : undefined}
+                aria-label={`Município, ${point.year}: ${chart.formatValue(point.value)}`}
+                className={`chart-mark${point.isLast ? ' is-last' : ''}`}
                 cx={point.x}
                 cy={point.y}
                 key={point.year}
@@ -178,6 +182,7 @@ export function IndicatorHistoryChart({
                 onFocus={() => setActivePoint(point)}
                 onMouseEnter={() => setActivePoint(point)}
                 onMouseLeave={() => setActivePoint(null)}
+                onKeyDown={(event) => closeChartTooltipOnEscape(event, () => setActivePoint(null))}
                 tabIndex="0"
               >
                 <title>{`${point.year}: ${chart.formatValue(point.value)}`}</title>
@@ -210,7 +215,7 @@ export function IndicatorHistoryChart({
                       : 'chart-point-label'
                 }
               >
-                {label.isMeta ? `Meta ${chart.formatValue(label.value)}` : (chart.formatDataLabel ? chart.formatDataLabel(label.value) : chart.formatValue(label.value))}
+                {label.isMeta ? `${referenceLabel} ${chart.formatValue(label.value)}` : (chart.formatDataLabel ? chart.formatDataLabel(label.value) : chart.formatValue(label.value))}
               </text>
             ))}
           </g>
@@ -238,8 +243,11 @@ export function IndicatorHistoryChart({
         </svg>
 
         {activePoint && (
-          <div
+          <ChartTooltip
             className="history-chart__tooltip"
+            label={activePoint.year}
+            series="Município"
+            value={activePoint.valid === false ? missingLabel : chart.formatValue(activePoint.value)}
             style={{
               left: `${Math.min(92, Math.max(10, (activePoint.x / CHART_WIDTH) * 100))}%`,
               top: `${(activePoint.y / chart.height) * 100}%`,
@@ -248,10 +256,7 @@ export function IndicatorHistoryChart({
                   ? 'translate(-50%, 12px)'
                   : 'translate(-50%, calc(-100% - 12px))',
             }}
-          >
-            <strong>{activePoint.year}</strong>
-            <span>{activePoint.valid === false ? missingLabel : chart.formatValue(activePoint.value)}</span>
-          </div>
+          />
         )}
       </div>
     </section>

@@ -18,18 +18,21 @@ import {
 } from '../utils/visualDomain'
 import { IndicatorComplementaryData } from './IndicatorComplementaryData'
 import { IndicatorHistoryChart } from './IndicatorHistoryChart'
+import { ChartEmptyState } from './ChartPrimitives'
 import { isDemographicCensusIndicator, buildDisplayIndicatorSeries } from '../utils/indicatorSeries'
 import { loadIndicatorDetail } from '../data/staticData'
 import { DataSourceNote } from './DataSourceNote'
 import { MetricCard } from './MetricCard'
 import { PNE_2026_GOAL_TEXTS } from '../data/pne2026GoalTexts'
 import { PNE_2014_GOAL_TEXTS } from '../data/pne2014GoalTexts'
+import { getPneCycleCopy, isClosedPneCycle } from '../utils/pneCycleCopy'
 import { StatusBadge } from './StatusBadge'
 
 export const IndicatorDetail = forwardRef(function IndicatorDetail(
   { cycle, item, municipioData, result },
   ref,
 ) {
+  const cycleCopy = getPneCycleCopy(cycle)
   const [loadedDetails, setLoadedDetails] = useState(null)
   const fallbackDetails = municipioData?.indicator_details?.[item?.key] ?? null
   const details = loadedDetails ?? fallbackDetails
@@ -75,7 +78,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
   if (!result) {
     return (
       <section className="detail-panel detail-panel--empty empty-panel" ref={ref}>
-        <p>Este indicador não possui série histórica disponível para este município no ciclo vigente.</p>
+        <p>{cycleCopy.emptyResult}</p>
       </section>
     )
   }
@@ -167,6 +170,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
     : null
   const quickReading = buildQuickReading({
     atingida: goalResult.atingida,
+    cycle,
     distanceValue,
     direction: goalResult.direction,
     endYear,
@@ -190,8 +194,8 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
     <section className={`detail-panel detail-panel--${tone}`} ref={ref}>
       <div className="detail-heading">
         <div className="detail-heading__copy">
-          <span className="eyebrow">Indicador selecionado</span>
-          <h3>{getIndicatorTitle(item, result)}</h3>
+          <span className="eyebrow">{cycleCopy.detailEyebrow}</span>
+          <h3 data-detail-title tabIndex={-1}>{getIndicatorTitle(item, result)}</h3>
           {item.sub && <p>{item.sub}</p>}
           {item.desc && <p>{appendStageExplanations(item.desc)}</p>}
           {legalGoal && (
@@ -204,7 +208,12 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
             </div>
           )}
         </div>
-        <StatusBadge displayStatus={getDetailStatusLabel(status)} status={status} tone={tone} />
+        <StatusBadge
+          displayStatus={getDetailStatusLabel({ cycle, isComparable, result, status })}
+          status={status}
+          title={getDetailStatusLabel({ cycle, isComparable, result, status })}
+          tone={tone}
+        />
       </div>
 
       {isSingleYear ? (
@@ -221,7 +230,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
             />
             <MetricCard
               label="Situação"
-              value={result.atingida ? 'Atingida' : 'Não atingida'}
+              value={result.atingida ? cycleCopy.status.achieved : cycleCopy.status.below}
               tone={distanceTone}
             />
           </div>
@@ -240,7 +249,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
               <MetricCard label={`Valor inicial (${startYear})`} value={formattedStart} />
             )}
             {hasEndYear && (
-              <MetricCard label={`Valor atual (${endYear})`} value={formattedEnd} size="large" />
+              <MetricCard label={cycleCopy.valueLabel(endYear)} value={formattedEnd} size="large" />
             )}
             <MetricCard
               detail={getVariationDetail(variation, startYear)}
@@ -260,7 +269,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
               <MetricCard label={`Valor inicial (${startYear})`} value={formattedStart} />
             )}
             {hasEndYear && (
-              <MetricCard label={`Valor atual (${endYear})`} value={formattedEnd} size="large" />
+              <MetricCard label={cycleCopy.valueLabel(endYear)} value={formattedEnd} size="large" />
             )}
             <MetricCard
               detail={getVariationDetail(variation, startYear)}
@@ -274,6 +283,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
 
       {showGoalProgress && (
         <GoalProgress
+          label={cycleCopy.progressLabel}
           result={goalResult}
           unit={unit}
         />
@@ -300,11 +310,14 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
             essentialLabels
             item={item}
             meta={isComparable ? goalResult.meta : null}
+            referenceLabel={isClosedPneCycle(cycle) ? 'Referência final' : 'Referência 2036'}
             result={isAccExpansion ? flooredResult : result}
             series={displaySeries}
             showMetaLine={isComparable}
             startYear={startYear}
-            subtitle="Série histórica do ciclo selecionado, com meta de referência quando aplicável."
+            subtitle={isClosedPneCycle(cycle)
+              ? 'Série histórica consolidada do ciclo encerrado, com meta de referência quando aplicável.'
+              : 'Série histórica do ciclo vigente, com meta de referência quando aplicável.'}
             title={historySummary}
             unit={unit}
             floorNegativeValues={isAccExpansion}
@@ -324,9 +337,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
 
       {!hasSeries && !isInformative && (
         <>
-          <div className="detail-empty-state">
-            <p>Este indicador não possui série histórica disponível para este município no ciclo vigente.</p>
-          </div>
+          <ChartEmptyState message="Histórico não disponível." />
           <DataSourceNote
             context={{
               block: 'pne',
@@ -362,7 +373,7 @@ function appendStageExplanations(desc) {
   return desc
 }
 
-function GoalProgress({ result, unit }) {
+function GoalProgress({ label, result, unit }) {
   const endValue = formatIndicatorValue(result.end_value, unit)
   const metaMarkerLabel = formatMetaValue(result, unit)
   const progress = calculateGoalProgress(result, unit)
@@ -394,10 +405,10 @@ function GoalProgress({ result, unit }) {
   return (
     <section
       className={`goal-progress${isOverLimit ? ' goal-progress--over-limit' : ''}`}
-      aria-label="Acompanhamento da meta"
+      aria-label={label}
     >
       <div className="goal-progress__heading">
-        <span>Acompanhamento da meta</span>
+        <span>{label}</span>
       </div>
       <div className="goal-progress__track">
         {isOverLimit ? (
@@ -470,21 +481,30 @@ function getVariationDetail(value, startYear) {
   return undefined
 }
 
-function getDetailStatusLabel(status) {
+function getDetailStatusLabel({ cycle, isComparable, result, status }) {
+  const cycleCopy = getPneCycleCopy(cycle)
   const normalizedStatus = String(status).toLocaleLowerCase('pt-BR')
   if (normalizedStatus.includes('visualiza') || normalizedStatus.includes('informativo')) {
     return 'Informativo'
   }
-  if (normalizedStatus.includes('indispon') || normalizedStatus.includes('sem dados')) {
-    return 'Sem dado'
+  if (
+    !result ||
+    result.available === false ||
+    normalizedStatus.includes('indispon') ||
+    normalizedStatus.includes('sem dados')
+  ) {
+    return cycleCopy.status.missing
   }
-  if (normalizedStatus.includes('não atingida') || normalizedStatus.includes('nao atingida')) {
-    return 'Não atingida'
+  if (!isComparable) {
+    return 'Informativo'
   }
-  if (normalizedStatus.includes('meta atingida') || normalizedStatus.includes('atingida')) {
-    return 'Atingida'
+  if (result.atingida === true) {
+    return cycleCopy.status.achieved
   }
-  return status
+  if (result.atingida === false) {
+    return cycleCopy.status.below
+  }
+  return cycleCopy.status.missing
 }
 
 export function isAvailableIndicator(result) {
@@ -650,6 +670,7 @@ function buildHistoryChartSummary({
 
 function buildQuickReading({
   atingida,
+  cycle,
   distanceValue,
   direction,
   endYear,
@@ -661,6 +682,7 @@ function buildQuickReading({
 }) {
   if (!hasReadableValue(formattedEnd) || !hasReadableYear(endYear)) return ''
 
+  const isClosedCycle = isClosedPneCycle(cycle)
   const variationAbs = formatAbsPp(variation)
   const distanceAbs = formatAbsPp(distanceValue)
   const hasVariation = hasReadableValue(variationAbs)
@@ -671,45 +693,62 @@ function buildQuickReading({
   const isStable = Number.isFinite(variationNumber) && Math.abs(variationNumber) < 0.5
 
   if (!isComparable || !hasMeta) {
-    return `Em ${endYear}, o município registra ${formattedEnd}. Este indicador é acompanhado como informação de contexto, sem meta definida para comparação.`
+    const periodText = isClosedCycle
+      ? `No resultado consolidado de ${endYear}`
+      : `Em ${endYear}`
+    return `${periodText}, o município registra ${formattedEnd}. Este indicador é apresentado como informação de contexto, sem meta definida para comparação.`
   }
 
   if (direction === 'at_most') {
     if (atingida === true) {
-      return `Em ${endYear}, o municipio registra ${formattedEnd}, dentro do limite maximo de ${metaValue}.`
+      return isClosedCycle
+        ? `No resultado consolidado de ${endYear}, o município registra ${formattedEnd}, dentro do limite máximo de ${metaValue}.`
+        : `Em ${endYear}, o município registra ${formattedEnd}, dentro do limite máximo de ${metaValue} no momento.`
     }
     const distance = hasDistance
-      ? `, ${distanceAbs} acima do limite maximo de ${metaValue}`
-      : `, acima do limite maximo de ${metaValue}`
-    return `Em ${endYear}, o municipio registra ${formattedEnd}${distance}. E preciso reduzir o indicador para enquadrar o resultado na meta.`
+      ? `, ${distanceAbs} acima do limite máximo de ${metaValue}`
+      : `, acima do limite máximo de ${metaValue}`
+    return isClosedCycle
+      ? `No resultado consolidado de ${endYear}, o município registra ${formattedEnd}${distance}.`
+      : `Em ${endYear}, o município registra ${formattedEnd}${distance}; portanto, ainda não atinge a meta no momento.`
   }
 
   if (isStable && hasStartYear && hasVariation) {
-    return `Em ${endYear}, o município registra ${formattedEnd}. O indicador permaneceu próximo ao nível observado em ${startYear}, com variação de ${variationAbs} no período.`
+    const periodText = isClosedCycle
+      ? `No resultado consolidado de ${endYear}`
+      : `Em ${endYear}`
+    return `${periodText}, o município registra ${formattedEnd}. O indicador permaneceu próximo ao nível observado em ${startYear}, com variação de ${variationAbs} no período.`
   }
 
   if (atingida === true) {
     const evolution = hasStartYear && hasVariation && Number.isFinite(variationNumber)
       ? variationNumber >= 0
-        ? ` Em relação a ${startYear}, houve avanço de ${variationAbs}, indicando evolução positiva no período.`
-        : ` Em relação a ${startYear}, houve queda de ${variationAbs}, mas o indicador permanece na referência esperada.`
+        ? ` Em relação a ${startYear}, houve aumento de ${variationAbs} no período.`
+        : ` Em relação a ${startYear}, houve queda de ${variationAbs} no período.`
       : ''
-    return `Em ${endYear}, o município registra ${formattedEnd}, alcançando a referência de ${metaValue}.${evolution}`
+    return isClosedCycle
+      ? `No resultado consolidado de ${endYear}, o município registra ${formattedEnd}, atingindo a meta de ${metaValue}.${evolution}`
+      : `Em ${endYear}, o município registra ${formattedEnd} e atinge a meta de ${metaValue} no momento.${evolution}`
   }
 
   if (atingida === false) {
     const distance = hasDistance
-      ? `, ainda ${distanceAbs} abaixo da referência de ${metaValue}`
+      ? `, ${distanceAbs} abaixo da referência de ${metaValue}`
       : `, abaixo da referência de ${metaValue}`
     const evolution = hasStartYear && hasVariation && Number.isFinite(variationNumber)
       ? variationNumber >= 0
-        ? ` Apesar do avanço de ${variationAbs} desde ${startYear}, o indicador ainda exige atenção para alcançar a meta.`
-        : ` Houve queda de ${variationAbs} desde ${startYear}, e o indicador exige atenção para se aproximar da referência.`
-      : ' O indicador ainda exige atenção para alcançar a meta.'
-    return `Em ${endYear}, o município registra ${formattedEnd}${distance}.${evolution}`
+        ? ` Em relação a ${startYear}, houve aumento de ${variationAbs} no período.`
+        : ` Em relação a ${startYear}, houve queda de ${variationAbs} no período.`
+      : ''
+    return isClosedCycle
+      ? `No resultado consolidado de ${endYear}, o município registra ${formattedEnd}${distance}; a meta não foi atingida.${evolution}`
+      : `Em ${endYear}, o município registra ${formattedEnd}${distance} e ainda não atinge a meta no momento.${evolution}`
   }
 
-  return `Em ${endYear}, o município registra ${formattedEnd}. A referência de comparação é ${metaValue}.`
+  const periodText = isClosedCycle
+    ? `No resultado consolidado de ${endYear}`
+    : `Em ${endYear}`
+  return `${periodText}, o município registra ${formattedEnd}. A referência de comparação é ${metaValue}.`
 }
 
 function hasReadableValue(value) {

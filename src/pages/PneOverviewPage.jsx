@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { InteractionChevron } from '../components/InteractionChevron'
 import { pneOverviewContent } from '../data/pneOverviewContent'
 
 function ExpandableCard({ isOpen, item, onToggle, pairIndex }) {
@@ -206,7 +207,7 @@ export function PneOverviewPage({ onNavigate }) {
         <div className="pne-entry-grid">
           {entryCards.map((entry) => (
             <button
-              className="pne-entry-card"
+              className="pne-entry-card interaction-card--navigation"
               key={entry.page}
               type="button"
               onClick={() => onNavigate?.(entry.page)}
@@ -217,7 +218,10 @@ export function PneOverviewPage({ onNavigate }) {
               </span>
               <span className="pne-entry-card__title">{entry.title}</span>
               <p>{entry.description}</p>
-              <strong>{entry.actionLabel}</strong>
+              <span className="pne-entry-card__footer">
+                <strong>{entry.actionLabel}</strong>
+                <InteractionChevron className="interaction-chevron--navigation" />
+              </span>
             </button>
           ))}
         </div>

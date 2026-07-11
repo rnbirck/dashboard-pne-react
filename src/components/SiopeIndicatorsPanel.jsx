@@ -10,6 +10,7 @@ import {
   FinancialQuickReading,
 } from './FinancialIndicatorPrimitives'
 import { IndicatorHistoryChart } from './IndicatorHistoryChart'
+import { ChartEmptyState } from './ChartPrimitives'
 import {
   getSiopeOfficialGroup,
   loadSiopeDashboardData,
@@ -17,6 +18,7 @@ import {
   SIOPE_INDICATOR_READING_GUIDES,
 } from '../data/siopeIndicators'
 import { useAsyncData } from '../utils/useAsyncData'
+import { useDetailViewNavigation } from '../hooks/useDetailViewNavigation'
 
 const EM = '\u2014'
 const SIOPE_SOURCE_NOTE = 'SIOPE / FNDE. Para cada ano, foi considerado o dado declarado no 6º bimestre.'
@@ -310,7 +312,7 @@ function SiopeSummaryCard({ card }) {
   const { indicator, latest } = card
 
   return (
-    <article className="education-card siope-summary-card">
+    <article className="education-card interaction-card--informative siope-summary-card">
       <span className="education-card__label">{indicator.nome_dashboard}</span>
       <strong className="education-card__value education-card__value--compact">
         {formatSiopeValue(latest?.valor, indicator.unidade)}
@@ -376,6 +378,10 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio }) {
   const [selectedGroupKey, setSelectedGroupKey] = useState('')
   const [selectedIndicatorKey, setSelectedIndicatorKey] = useState('')
   const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const detailNavigation = useDetailViewNavigation({
+    activeKey: selectedIndicatorKey,
+    isOpen: isDetailOpen,
+  })
 
   const model = useMemo(() => {
     const catalogIndicators = state.data?.catalogo?.indicadores ?? []
@@ -443,12 +449,18 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio }) {
   }
 
   function handleIndicatorSelect(indicatorKey) {
+    detailNavigation.prepareDetail(indicatorKey, {
+      captureGridPosition: !isDetailOpen,
+    })
     setSelectedIndicatorKey(indicatorKey)
     setIsDetailOpen(true)
   }
 
   function handleBackToGrid() {
+    const returnKey = selectedIndicatorKey
     setIsDetailOpen(false)
+    setSelectedIndicatorKey('')
+    detailNavigation.restoreGrid(returnKey)
   }
 
   return (
@@ -494,7 +506,7 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio }) {
       </section>
 
       {isDetailOpen && selectedIndicatorModel && selectedIndicator ? (
-        <div className="financial-detail-view education-detail-view">
+        <div className="financial-detail-view education-detail-view" ref={detailNavigation.detailViewRef}>
           <FinancialDetailNavigation
             activeIndex={selectedIndex}
             nextIndicator={nextIndicator}
@@ -543,9 +555,7 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio }) {
                   yTickCount={5}
                 />
               ) : (
-                <div className="fundeb-empty fundeb-empty--chart">
-                  <p>Não há pontos suficientes para exibir o gráfico deste indicador.</p>
-                </div>
+                <ChartEmptyState message="Histórico não disponível." />
               )}
             </FinancialChartFrame>
 
@@ -601,8 +611,9 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio }) {
             <div className="financial-indicator-card-grid">
               {indicatorModels.map((indicator) => (
                 <FinancialIndicatorCard
+                  buttonRef={(node) => detailNavigation.registerCard(indicator.key, node)}
                   indicator={indicator}
-                  isSelected={indicator.key === selectedIndicatorKey}
+                  isSelected={isDetailOpen && indicator.key === selectedIndicatorKey}
                   key={indicator.key}
                   onSelect={() => handleIndicatorSelect(indicator.key)}
                 />

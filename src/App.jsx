@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
+import './styles/chart-system.css'
 import { MunicipalityProvider, useMunicipality } from './context/MunicipalityContext'
 import { ErrorState } from './components/ErrorState'
 import { Layout } from './components/Layout'

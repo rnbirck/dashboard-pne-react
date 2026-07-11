@@ -1,14 +1,16 @@
 import { useMemo, useState } from 'react'
+import { closeChartTooltipOnEscape } from '../utils/chartVisuals'
+import { ChartLegend, ChartTooltip } from './ChartPrimitives'
 
 const CHART_WIDTH = 980
 const CHART_HEIGHT = 260
 const PADDING = { top: 28, right: 28, bottom: 58, left: 64 }
 
 const ALL_DEPENDENCY_KEYS = [
-  { key: 'federal', label: 'Federal', color: '#3E7A5E', opacity: 0.42 },
-  { key: 'estadual', label: 'Estadual', color: '#3E7A5E', opacity: 0.58 },
-  { key: 'municipal', label: 'Municipal', color: '#3E7A5E', opacity: 0.9 },
-  { key: 'privada', label: 'Privada', color: '#B08A34', opacity: 0.86 },
+  { key: 'federal', label: 'Federal', color: 'var(--chart-series-1)', opacity: 1 },
+  { key: 'estadual', label: 'Estadual', color: 'var(--chart-series-2)', opacity: 1 },
+  { key: 'municipal', label: 'Municipal', color: 'var(--chart-series-3)', opacity: 1 },
+  { key: 'privada', label: 'Privada', color: 'var(--chart-series-4)', opacity: 1 },
 ]
 
 function formatNumber(value, unit) {
@@ -110,17 +112,9 @@ export function AdministrativeDependencyChart({
           <span className="eyebrow">{title}</span>
         </div>
       ) : null}
-      <div className="complementary-chart__legend complementary-chart__legend--top">
-        {activeKeys.map((dep) => (
-          <span key={dep.key} className="complementary-chart__legend-item">
-            <span
-              className="complementary-chart__legend-swatch"
-              style={{ backgroundColor: dep.color, opacity: dep.opacity }}
-            />
-            {dep.label}
-          </span>
-        ))}
-      </div>
+      {activeKeys.length > 1 ? (
+        <ChartLegend className="complementary-chart__legend complementary-chart__legend--top" items={activeKeys} />
+      ) : null}
       <div className="complementary-chart__canvas">
         <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} role="img" aria-label={`${title}: histórico do indicador por dependência administrativa`}>
           {[0.25, 0.5, 0.75].map((ratio) => {
@@ -207,7 +201,7 @@ export function AdministrativeDependencyChart({
                     {allPoints.filter((p) => Number.isFinite(p.value)).map((point) => (
                       <circle
                         aria-label={`${point.dependency} ${point.year}: ${formatTooltipValue(point.value)}`}
-                        className={`complementary-chart__dependency-point${activePoint?.dependency === point.dependency && activePoint?.year === point.year ? ' is-active' : ''}${point.year === maxYear ? ' is-last' : ''}`}
+                        className={`chart-mark complementary-chart__dependency-point${activePoint?.dependency === point.dependency && activePoint?.year === point.year ? ' is-active' : ''}${point.year === maxYear ? ' is-last' : ''}`}
                         cx={point.x}
                         cy={point.y}
                         fill={point.color}
@@ -217,6 +211,7 @@ export function AdministrativeDependencyChart({
                         onFocus={() => setActivePoint(point)}
                         onMouseEnter={() => setActivePoint(point)}
                         onMouseLeave={clearActive}
+                        onKeyDown={(event) => closeChartTooltipOnEscape(event, clearActive)}
                         r={activePoint?.dependency === point.dependency && activePoint?.year === point.year ? 5 : point.year === maxYear ? 4.3 : 3.8}
                         tabIndex="0"
                       />
@@ -268,7 +263,7 @@ export function AdministrativeDependencyChart({
                     const segment = (
                       <rect
                         aria-label={`${dep.label} ${row.year}: ${formatTooltipValue(value)}`}
-                        className={`complementary-chart__bar-segment${isActive ? ' is-active' : ''}`}
+                        className={`chart-mark complementary-chart__bar-segment${isActive ? ' is-active' : ''}`}
                         fill={dep.color}
                         height={barHeight}
                         key={dep.key}
@@ -276,6 +271,7 @@ export function AdministrativeDependencyChart({
                         onFocus={() => setActivePoint(point)}
                         onMouseEnter={() => setActivePoint(point)}
                         onMouseLeave={clearActive}
+                        onKeyDown={(event) => closeChartTooltipOnEscape(event, clearActive)}
                         opacity={isActive ? 1 : Math.max(dep.opacity, rawBarHeight < 3 ? 0.55 : dep.opacity)}
                         rx={3}
                         tabIndex="0"
@@ -304,8 +300,11 @@ export function AdministrativeDependencyChart({
           )}
         </svg>
         {activePoint ? (
-          <div
+          <ChartTooltip
             className="complementary-chart__tooltip"
+            label={activePoint.year}
+            series={activePoint.dependency}
+            value={formatTooltipValue(activePoint.value)}
             style={{
               left: `${Math.min(92, Math.max(10, (activePoint.x / CHART_WIDTH) * 100))}%`,
               top: `${(activePoint.y / CHART_HEIGHT) * 100}%`,
@@ -314,10 +313,7 @@ export function AdministrativeDependencyChart({
                   ? 'translate(-50%, 12px)'
                   : 'translate(-50%, calc(-100% - 12px))',
             }}
-          >
-            <strong>{activePoint.year}</strong>
-            <span>{activePoint.dependency}: {formatTooltipValue(activePoint.value)}</span>
-          </div>
+          />
         ) : null}
       </div>
     </section>

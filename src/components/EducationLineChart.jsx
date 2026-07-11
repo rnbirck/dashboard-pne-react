@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { isMissing, normalizeYearSeries } from '../utils/educationFormatters'
+import { closeChartTooltipOnEscape, resolveChartColor } from '../utils/chartVisuals'
+import { ChartEmptyState, ChartTooltip } from './ChartPrimitives'
 
 const CHART_WIDTH = 760
 const CHART_HEIGHT = 300
@@ -15,12 +17,11 @@ export function EducationLineChart({
 }) {
   const [activePoint, setActivePoint] = useState(null)
   const chart = useMemo(() => buildChart(series, scaleType), [scaleType, series])
+  const resolvedColor = resolveChartColor(color)
 
   if (!chart || chart.points.length < 2) {
     return (
-      <div className="education-chart-empty">
-        <p>Não há dados suficientes para exibir o gráfico.</p>
-      </div>
+      <ChartEmptyState message="Histórico não disponível." />
     )
   }
 
@@ -32,25 +33,32 @@ export function EducationLineChart({
           <g className="chart-grid">
             {chart.yTicks.map((tick, i) => (
               <g key={`y-${i}`}>
-                <line x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={tick.y} y2={tick.y} stroke="#e8ede4" strokeWidth="1" />
+                <line x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={tick.y} y2={tick.y} stroke="var(--chart-grid)" strokeWidth="1" />
                 <text x={PADDING.left - 10} y={tick.y + 4} textAnchor="end" className="chart-axis-label">{tick.label}</text>
               </g>
             ))}
           </g>
-          <line x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={CHART_HEIGHT - PADDING.bottom} y2={CHART_HEIGHT - PADDING.bottom} stroke="#c4ccc0" strokeWidth="1" />
-          <line x1={PADDING.left} x2={PADDING.left} y1={PADDING.top} y2={CHART_HEIGHT - PADDING.bottom} stroke="#c4ccc0" strokeWidth="1" />
-          <path d={chart.linePath} fill="none" stroke={color} strokeWidth="2.5" strokeLinejoin="round" />
-          <path d={chart.areaPath} fill={color} fillOpacity="0.08" />
+          <line x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={CHART_HEIGHT - PADDING.bottom} y2={CHART_HEIGHT - PADDING.bottom} stroke="var(--chart-axis)" strokeWidth="1" />
+          <line x1={PADDING.left} x2={PADDING.left} y1={PADDING.top} y2={CHART_HEIGHT - PADDING.bottom} stroke="var(--chart-axis)" strokeWidth="1" />
+          <path d={chart.linePath} fill="none" stroke={resolvedColor} strokeWidth="2.25" strokeLinejoin="round" />
+          <path d={chart.areaPath} fill={resolvedColor} fillOpacity="0.08" />
           {chart.points.map((point, i) => (
             <g key={`pt-${i}`}>
               <circle
+                aria-label={`${title || 'Município'}, ${point.year}: ${formatLabel(point.value)}`}
+                className={`chart-mark${point.isLast ? ' is-last' : ''}`}
                 cx={point.x} cy={point.y} r={activePoint?.year === point.year ? 5 : 3.5}
-                className={point.isLast ? 'is-last' : undefined}
-                fill={color}
+                fill={resolvedColor}
+                onBlur={() => setActivePoint(null)}
+                onFocus={() => setActivePoint(point)}
+                onKeyDown={(event) => closeChartTooltipOnEscape(event, () => setActivePoint(null))}
                 onMouseEnter={() => setActivePoint(point)}
                 onMouseLeave={() => setActivePoint(null)}
+                tabIndex="0"
                 style={{ cursor: 'pointer' }}
-              />
+              >
+                <title>{`${title || 'Município'}, ${point.year}: ${formatLabel(point.value)}`}</title>
+              </circle>
               {showPointLabels && point.showLabel ? (
                 <text
                   x={point.x}
@@ -66,10 +74,13 @@ export function EducationLineChart({
           ))}
         </svg>
         {activePoint && (
-          <div className="education-chart__tooltip" style={{ left: `${Math.min(90, Math.max(10, (activePoint.x / CHART_WIDTH) * 100))}%`, top: `${(activePoint.y / CHART_HEIGHT) * 100}%` }}>
-            <strong>{activePoint.year}</strong>
-            <span>{formatLabel(activePoint.value)}</span>
-          </div>
+          <ChartTooltip
+            className="education-chart__tooltip"
+            label={activePoint.year}
+            series={title || 'Município'}
+            value={formatLabel(activePoint.value)}
+            style={{ left: `${Math.min(90, Math.max(10, (activePoint.x / CHART_WIDTH) * 100))}%`, top: `${(activePoint.y / CHART_HEIGHT) * 100}%` }}
+          />
         )}
       </div>
     </div>

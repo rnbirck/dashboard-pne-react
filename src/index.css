@@ -1,9 +1,9 @@
 @import './styles/design-tokens.css';
 
 :root {
-
   font-family: var(--font-sans);
-  font-feature-settings: "tnum";
+  font-feature-settings: "tnum" 1;
+  font-variant-numeric: tabular-nums;
   color: var(--text);
   background: var(--background);
   font-synthesis: none;
@@ -29,6 +29,9 @@ body {
   font-size: 14px;
   line-height: 1.5;
   letter-spacing: 0;
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-regular);
+  font-variant-numeric: tabular-nums;
 }
 
 #root {
@@ -52,6 +55,8 @@ input,
 select,
 textarea {
   font: inherit;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
   color: inherit;
 }
 
@@ -59,11 +64,29 @@ button {
   letter-spacing: 0;
 }
 
-h1, h2, h3, h4 {
+h1, h2, h3, h4, h5, h6 {
   letter-spacing: 0;
   line-height: 1.2;
   margin: 0;
   text-wrap: balance;
+}
+
+h1 {
+  font-family: var(--font-serif);
+  font-weight: var(--font-weight-bold);
+}
+
+h2, h3, h4, h5, h6 {
+  font-family: var(--font-sans);
+}
+
+small {
+  font-size: var(--font-size-xs);
+}
+
+table,
+svg text {
+  font-variant-numeric: tabular-nums;
 }
 
 a {

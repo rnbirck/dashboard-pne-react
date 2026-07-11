@@ -5,7 +5,7 @@ export function EducationSummaryCard({ label, value, year, detail, tone = 'defau
   const toneClass = tone !== 'default' ? `education-card--${tone}` : ''
   const valueSizeClass = valueSize !== 'default' ? ` education-card__value--${valueSize}` : ''
   return (
-    <div className={`education-card ${toneClass}`}>
+    <div className={`education-card interaction-card--informative ${toneClass}`}>
       <span className="education-card__label">{label}</span>
       <strong className={`education-card__value${valueSizeClass}`}>{displayValue}</strong>
       {year !== undefined && year !== null && (

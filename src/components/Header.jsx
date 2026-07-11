@@ -12,8 +12,8 @@ const NAV_BLOCKS = [
     subitems: [
       { key: 'pne-overview', label: 'O que é o PNE', target: 'pne-overview' },
       { key: 'pne-legal-goals', label: 'Metas legais', target: 'pne-legal-goals' },
-      { key: 'pne2014', label: 'PNE 2014-2024', target: 'pne2014' },
-      { key: 'pne2026', label: 'PNE 2026-2036', target: 'pne2026' },
+      { key: 'pne2014', label: 'PNE 2014–2024', target: 'pne2014' },
+      { key: 'pne2026', label: 'PNE 2026–2036', target: 'pne2026' },
       { key: 'diagnostico', label: 'Diagnóstico municipal', target: 'diagnostico' },
     ],
     target: 'pne-overview',

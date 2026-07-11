@@ -1,14 +1,24 @@
 import { StatusBadge } from './StatusBadge'
+import { getPneCycleCopy } from '../utils/pneCycleCopy'
 
-export function IndicatorList({ items, selectedIndicator, onSelectIndicator, results, stageFilters }) {
+export function IndicatorList({ cycle = 'pne_2026_2036', items, selectedIndicator, onSelectIndicator, results, stageFilters }) {
+  const cycleCopy = getPneCycleCopy(cycle)
   return (
     <div className="indicator-list">
       {items.map((item) => {
         const result = results?.[item.key]
-        const statusLabel = result?.available
-          ? result?.display?.status ?? (result?.atingida ? 'Meta atingida' : 'Meta não atingida')
-          : 'Informativo'
-        const normalizedStatus = String(statusLabel).toLocaleLowerCase('pt-BR')
+        const rawStatus = result?.display?.status ?? ''
+        const normalizedStatus = String(rawStatus).toLocaleLowerCase('pt-BR')
+        const isInformative = normalizedStatus.includes('visualiza') || normalizedStatus.includes('informativo')
+        const statusLabel = isInformative
+          ? 'Informativo'
+          : result?.available === false || !result
+            ? cycleCopy.status.missing
+            : result?.atingida === true
+              ? cycleCopy.status.achieved
+              : result?.atingida === false
+                ? cycleCopy.status.below
+                : cycleCopy.status.missing
         const tone = normalizedStatus.includes('visualiza') || normalizedStatus.includes('informativo')
           ? 'info'
           : result?.atingida
@@ -16,7 +26,6 @@ export function IndicatorList({ items, selectedIndicator, onSelectIndicator, res
             : result?.available
               ? 'warning'
               : 'muted'
-        const compactStatus = getCompactStatusLabel(statusLabel)
         const stageLabel = getStageTagLabel(item.key, stageFilters)
         return (
           <button
@@ -32,7 +41,7 @@ export function IndicatorList({ items, selectedIndicator, onSelectIndicator, res
             <span className="indicator-row__badges">
               <StatusBadge
                 className="indicator-status"
-                displayStatus={compactStatus}
+                displayStatus={statusLabel}
                 status={statusLabel}
                 title={statusLabel}
                 tone={tone}
@@ -48,20 +57,6 @@ export function IndicatorList({ items, selectedIndicator, onSelectIndicator, res
       })}
     </div>
   )
-}
-
-function getCompactStatusLabel(statusLabel) {
-  const normalizedStatus = String(statusLabel).toLocaleLowerCase('pt-BR')
-  if (normalizedStatus.includes('visualiza') || normalizedStatus.includes('informativo')) {
-    return 'Informativo'
-  }
-  if (normalizedStatus.includes('não atingida') || normalizedStatus.includes('nao atingida')) {
-    return 'Não atingida'
-  }
-  if (normalizedStatus.includes('meta atingida')) {
-    return 'Atingida'
-  }
-  return statusLabel
 }
 
 function getStageTagLabel(itemKey, stageFilters) {

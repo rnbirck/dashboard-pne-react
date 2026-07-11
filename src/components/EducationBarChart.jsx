@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { isMissing } from '../utils/educationFormatters'
+import { closeChartTooltipOnEscape, resolveChartColor } from '../utils/chartVisuals'
+import { ChartEmptyState, ChartTooltip } from './ChartPrimitives'
 
 const CHART_WIDTH = 820
 const BAR_GAP = 12
@@ -15,6 +17,7 @@ export function EducationBarChart({
   preserveOrder = false,
 }) {
   const [activeBar, setActiveBar] = useState(null)
+  const resolvedColor = resolveChartColor(color)
   const chart = useMemo(
     () => orientation === 'vertical'
       ? buildVerticalBars(data, formatLabel, preserveOrder)
@@ -24,9 +27,7 @@ export function EducationBarChart({
 
   if (!chart || chart.bars.length === 0) {
     return (
-      <div className="education-chart-empty">
-        <p>Não há dados suficientes para exibir o gráfico.</p>
-      </div>
+      <ChartEmptyState />
     )
   }
 
@@ -41,27 +42,35 @@ export function EducationBarChart({
             <g className="chart-grid">
               {chart.yTicks.map((tick, i) => (
                 <g key={`y-${i}`}>
-                  <line x1={chart.padding.left} x2={chart.width - chart.padding.right} y1={tick.y} y2={tick.y} stroke="#e8ede4" strokeWidth="1" />
+                  <line x1={chart.padding.left} x2={chart.width - chart.padding.right} y1={tick.y} y2={tick.y} stroke="var(--chart-grid)" strokeWidth="1" />
                   <text x={chart.padding.left - 10} y={tick.y + 4} textAnchor="end" className="chart-axis-label">{tick.label}</text>
                 </g>
               ))}
             </g>
-            <line x1={chart.padding.left} x2={chart.width - chart.padding.right} y1={chart.height - chart.padding.bottom} y2={chart.height - chart.padding.bottom} stroke="#c4ccc0" strokeWidth="1" />
-            <line x1={chart.padding.left} x2={chart.padding.left} y1={chart.padding.top} y2={chart.height - chart.padding.bottom} stroke="#c4ccc0" strokeWidth="1" />
+            <line x1={chart.padding.left} x2={chart.width - chart.padding.right} y1={chart.height - chart.padding.bottom} y2={chart.height - chart.padding.bottom} stroke="var(--chart-axis)" strokeWidth="1" />
+            <line x1={chart.padding.left} x2={chart.padding.left} y1={chart.padding.top} y2={chart.height - chart.padding.bottom} stroke="var(--chart-axis)" strokeWidth="1" />
             {chart.bars.map((bar, i) => (
               <g key={`bar-${i}`}>
                 <rect
+                  aria-label={`${bar.fullCategory}: ${formatLabel(bar.rawValue)}`}
+                  className="chart-mark"
                   x={bar.x}
                   y={bar.y}
                   width={bar.width}
                   height={bar.height}
-                  fill={color}
+                  fill={resolvedColor}
                   fillOpacity={activeBar?.index === i ? '1' : '0.86'}
                   rx="4"
+                  onBlur={() => setActiveBar(null)}
+                  onFocus={() => setActiveBar(bar)}
+                  onKeyDown={(event) => closeChartTooltipOnEscape(event, () => setActiveBar(null))}
                   onMouseEnter={() => setActiveBar(bar)}
                   onMouseLeave={() => setActiveBar(null)}
+                  tabIndex="0"
                   style={{ cursor: 'pointer', transition: 'fill-opacity 0.12s' }}
-                />
+                >
+                  <title>{`${bar.fullCategory}: ${formatLabel(bar.rawValue)}`}</title>
+                </rect>
                 <text x={bar.x + bar.width / 2} y={bar.y - 6} textAnchor="middle" className="chart-bar-label">{bar.label}</text>
                 <text
                   x={bar.x + bar.width / 2}
@@ -76,16 +85,16 @@ export function EducationBarChart({
             ))}
           </svg>
           {activeBar && (
-            <div
+            <ChartTooltip
               className="education-chart__tooltip education-chart__tooltip--bar"
+              label={activeBar.fullCategory}
+              series={title}
+              value={formatLabel(activeBar.rawValue)}
               style={{
                 left: `${Math.min(86, Math.max(14, (activeBar.centerX / chart.width) * 100))}%`,
                 top: `${Math.min(80, Math.max(12, (activeBar.y / chart.height) * 100))}%`,
               }}
-            >
-              <strong>{activeBar.fullCategory}</strong>
-              <span>{formatLabel(activeBar.rawValue)}</span>
-            </div>
+            />
           )}
         </div>
       </div>
@@ -100,7 +109,7 @@ export function EducationBarChart({
           <g className="chart-grid">
             {chart.xTicks.map((tick, i) => (
               <g key={`x-${i}`}>
-                <line x1={tick.x} x2={tick.x} y1={PADDING.top - 4} y2={chartHeight - PADDING.bottom + 4} stroke="#e8ede4" strokeWidth="1" />
+                <line x1={tick.x} x2={tick.x} y1={PADDING.top - 4} y2={chartHeight - PADDING.bottom + 4} stroke="var(--chart-grid)" strokeWidth="1" />
                 <text x={tick.x} y={chartHeight - 3} textAnchor="middle" className="chart-axis-label">{tick.label}</text>
               </g>
             ))}
@@ -109,33 +118,41 @@ export function EducationBarChart({
             <g key={`bar-${i}`}>
               <text x={PADDING.left - 12} y={bar.y + 15} textAnchor="end" className="chart-bar-cat">{bar.category}</text>
               <rect
+                aria-label={`${bar.fullCategory}: ${formatLabel(bar.rawValue)}`}
+                className="chart-mark"
                 x={PADDING.left}
                 y={bar.y}
                 width={bar.width}
                 height={BAR_ROW_HEIGHT - BAR_GAP}
-                fill={color}
+                fill={resolvedColor}
                 fillOpacity={activeBar?.index === i ? '1' : '0.86'}
                 rx="4"
+                onBlur={() => setActiveBar(null)}
+                onFocus={() => setActiveBar(bar)}
+                onKeyDown={(event) => closeChartTooltipOnEscape(event, () => setActiveBar(null))}
                 onMouseEnter={() => setActiveBar(bar)}
                 onMouseLeave={() => setActiveBar(null)}
+                tabIndex="0"
                 style={{ cursor: 'pointer', transition: 'fill-opacity 0.12s' }}
-              />
+              >
+                <title>{`${bar.fullCategory}: ${formatLabel(bar.rawValue)}`}</title>
+              </rect>
               <text x={PADDING.left + bar.width + 8} y={bar.y + 15} textAnchor="start" className="chart-bar-label">{bar.label}</text>
             </g>
           ))}
-          <line x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={chartHeight - PADDING.bottom} y2={chartHeight - PADDING.bottom} stroke="#c4ccc0" strokeWidth="1" />
+          <line x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={chartHeight - PADDING.bottom} y2={chartHeight - PADDING.bottom} stroke="var(--chart-axis)" strokeWidth="1" />
         </svg>
         {activeBar && (
-          <div
+          <ChartTooltip
             className="education-chart__tooltip education-chart__tooltip--bar"
+            label={activeBar.fullCategory}
+            series={title}
+            value={formatLabel(activeBar.rawValue)}
             style={{
               left: `${Math.min(88, Math.max(18, ((PADDING.left + activeBar.width) / CHART_WIDTH) * 100))}%`,
               top: `${Math.min(82, Math.max(14, ((activeBar.y + 8) / chartHeight) * 100))}%`,
             }}
-          >
-            <strong>{activeBar.fullCategory}</strong>
-            <span>{formatLabel(activeBar.rawValue)}</span>
-          </div>
+          />
         )}
       </div>
     </div>

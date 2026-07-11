@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { CategoryTabs } from '../components/CategoryTabs'
 import { FundebPanel } from '../components/FundebPanel'
 import { PnatePanel } from '../components/PnatePanel'
@@ -10,6 +10,7 @@ import { PNATE_INDICATORS } from '../data/pnateIndicators'
 import { SIOPE_SELECTED_INDICATORS_COUNT } from '../data/siopeIndicators'
 import { EducationBarChart } from '../components/EducationBarChart'
 import { EducationIndicatorCard } from '../components/EducationIndicatorCard'
+import { DetailNavigation } from '../components/DetailNavigation'
 import { EducationLineChart } from '../components/EducationLineChart'
 import { EducationStackedBarChart } from '../components/EducationStackedBarChart'
 import { EducationSummaryCard } from '../components/EducationSummaryCard'
@@ -17,9 +18,13 @@ import { EducationTable } from '../components/EducationTable'
 import { DataSourceNote } from '../components/DataSourceNote'
 import { MetricCard } from '../components/MetricCard'
 import { StatusBadge } from '../components/StatusBadge'
+import { ChartEmptyState, ChartLegend, ChartTooltip } from '../components/ChartPrimitives'
 import { loadEducationMunicipio, loadEducationMunicipiosIndex } from '../data/educationData'
 import { PNE_CONTEXT_PROXY_INDICATOR_KEYS } from '../utils/pneDisplayRules'
 import { useAsyncData } from '../utils/useAsyncData'
+import { scrollPageToTop } from '../utils/navigationScroll'
+import { useDetailViewNavigation } from '../hooks/useDetailViewNavigation'
+import { chartSeriesColor, closeChartTooltipOnEscape } from '../utils/chartVisuals'
 import {
   depLabel,
   etapaLabel,
@@ -334,8 +339,10 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
   const [selectedIndicatorKey, setSelectedIndicatorKey] = useState('')
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const detailViewRef = useRef(null)
-  const indicatorGridScrollYRef = useRef(0)
+  const detailNavigation = useDetailViewNavigation({
+    activeKey: selectedIndicatorKey,
+    isOpen: isDetailOpen,
+  })
 
   useEffect(() => {
     if (!initialMainBlock || initialMainBlock === selectedMainBlock) return
@@ -441,33 +448,30 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
   }
 
   function handleFinancingModuleSelect(moduleKey) {
+    if (moduleKey === selectedFinancingModule) return
     setSelectedFinancingModule(moduleKey)
-  }
-
-  function scrollToIndicatorDetail() {
     window.requestAnimationFrame(() => {
-      detailViewRef.current?.scrollIntoView({ block: 'start', behavior: 'auto' })
+      scrollPageToTop()
     })
   }
 
   function handleIndicatorCardSelect(indicatorKey) {
-    indicatorGridScrollYRef.current = window.scrollY
+    detailNavigation.prepareDetail(indicatorKey, { captureGridPosition: true })
     setSelectedIndicatorKey(indicatorKey)
     setIsDetailOpen(true)
-    scrollToIndicatorDetail()
   }
 
   function handleBackToIndicators() {
+    const returnKey = selectedIndicatorKey
     setIsDetailOpen(false)
-    window.requestAnimationFrame(() => {
-      window.scrollTo({ top: indicatorGridScrollYRef.current, behavior: 'auto' })
-    })
+    setSelectedIndicatorKey('')
+    detailNavigation.restoreGrid(returnKey)
   }
 
   function handleAdjacentIndicator(indicatorKey) {
+    detailNavigation.prepareDetail(indicatorKey)
     setSelectedIndicatorKey(indicatorKey)
     setIsDetailOpen(true)
-    scrollToIndicatorDetail()
   }
 
   function renderPanoramaScope() {
@@ -506,7 +510,7 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
         {isSistemaSTheme ? (
           <SistemaSPanel blocos={dados.blocos} />
         ) : isShowingIndicatorDetail ? (
-          <div className="education-detail-view" ref={detailViewRef}>
+          <div className="education-detail-view" ref={detailNavigation.detailViewRef}>
             <EducationDetailNavigation
               activeIndex={activeIndicatorIndex}
               nextIndicator={nextIndicator}
@@ -543,14 +547,16 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
               <PneComplementaryGroupedGrid
                 items={filteredItems}
                 onSelect={handleIndicatorCardSelect}
+                registerCard={detailNavigation.registerCard}
                 selectedIndicatorKey={selectedIndicatorKey}
               />
             ) : (
               <div className="education-indicator-card-grid">
                 {filteredItems.map((item) => (
                   <EducationIndicatorCard
+                    buttonRef={(node) => detailNavigation.registerCard(item.key, node)}
                     indicator={item}
-                    isSelected={item.key === selectedIndicatorKey}
+                    isSelected={isDetailOpen && item.key === selectedIndicatorKey}
                     key={item.key}
                     onSelect={() => handleIndicatorCardSelect(item.key)}
                   />
@@ -702,34 +708,17 @@ function EducationDetailNavigation({
   total,
 }) {
   return (
-    <div className={`cycle-detail-nav education-detail-nav${isBottom ? ' cycle-detail-nav--bottom education-detail-nav--bottom' : ''}`}>
-      <button className="cycle-back-button" type="button" onClick={onBack}>
-        &larr; Voltar para indicadores
-      </button>
-      <div className="cycle-detail-nav__sequence" aria-label="Navegar entre indicadores filtrados">
-        <button
-          className="cycle-step-button"
-          type="button"
-          onClick={() => previousIndicator && onPrevious(previousIndicator.key)}
-          disabled={!previousIndicator}
-        >
-          <span>&lsaquo;</span>
-          Indicador anterior
-        </button>
-        <span className="cycle-detail-nav__position">
-          {activeIndex + 1} de {total}
-        </span>
-        <button
-          className="cycle-step-button"
-          type="button"
-          onClick={() => nextIndicator && onNext(nextIndicator.key)}
-          disabled={!nextIndicator}
-        >
-          Próximo indicador
-          <span>&rsaquo;</span>
-        </button>
-      </div>
-    </div>
+    <DetailNavigation
+      activeIndex={activeIndex}
+      className={`education-detail-nav${isBottom ? ' education-detail-nav--bottom' : ''}`}
+      isBottom={isBottom}
+      nextItem={nextIndicator}
+      onBack={onBack}
+      onNext={onNext}
+      onPrevious={onPrevious}
+      previousItem={previousIndicator}
+      total={total}
+    />
   )
 }
 
@@ -764,7 +753,7 @@ function EducationDetailHeader({ indicator, description }) {
     <div className="detail-heading educacao-detail-heading">
       <div className="detail-heading__copy">
         <span className="eyebrow">Indicador selecionado</span>
-        <h3>{indicator.label}</h3>
+        <h3 data-detail-title tabIndex={-1}>{indicator.label}</h3>
         {description ? <p>{description}</p> : null}
       </div>
       <div className="educacao-detail-heading__badges">
@@ -797,7 +786,7 @@ function EducationQuickReading({ text, tone = 'default' }) {
   )
 }
 
-function PneComplementaryGroupedGrid({ items, onSelect, selectedIndicatorKey }) {
+function PneComplementaryGroupedGrid({ items, onSelect, registerCard, selectedIndicatorKey }) {
   const groups = PNE_COMPLEMENTARY_GROUPS
     .map((group) => ({
       ...group,
@@ -820,6 +809,7 @@ function PneComplementaryGroupedGrid({ items, onSelect, selectedIndicatorKey }) 
           <div className="education-indicator-card-grid">
             {group.items.map((item) => (
               <EducationIndicatorCard
+                buttonRef={(node) => registerCard(item.key, node)}
                 indicator={item}
                 isSelected={item.key === selectedIndicatorKey}
                 key={item.key}
@@ -947,9 +937,7 @@ function EducationIndicatorDetail({ indicator, blocos }) {
             <DataSourceNote context={dataSourceContextForEducation(displayIndicator)} />
           </>
         ) : (
-          <div className="detail-empty-state">
-            <p>Não há série histórica suficiente para exibir o histórico do indicador.</p>
-          </div>
+          <ChartEmptyState message="Histórico não disponível." />
         )}
       </div>
 
@@ -1338,9 +1326,7 @@ function TurmasPanoramaPanel({ indicator, blocos }) {
             />
           </>
         ) : (
-          <div className="detail-empty-state">
-            <p>Não há série histórica suficiente para exibir o histórico do indicador.</p>
-          </div>
+          <ChartEmptyState message="Histórico não disponível." />
         )}
       </div>
 
@@ -1629,35 +1615,31 @@ function AgeRangeDetail({ item }) {
 }
 
 function AgeRangeComparisonChart({ categories, data, years, title, formatLabel }) {
+  const [activeBar, setActiveBar] = useState(null)
   const chart = buildAgeRangeComparisonChart(data, categories, years, formatLabel)
 
   if (!chart || !chart.rows.length || !chart.categories.length) {
-    return <div className="education-chart-empty"><p>Não há dados suficientes para exibir o gráfico.</p></div>
+    return <ChartEmptyState />
   }
 
   return (
     <div className="education-chart education-age-comparison-chart">
       <h4 className="education-chart__title">{title}</h4>
-      <div className="education-stacked-legend">
-        {chart.categories.map((category) => (
-          <span key={category.key}>
-            <i style={{ background: category.color }} />
-            {category.label}
-          </span>
-        ))}
-      </div>
+      {chart.categories.length > 1 ? (
+        <ChartLegend className="education-stacked-legend" items={chart.categories} />
+      ) : null}
       <div className="education-chart__canvas">
         <svg viewBox={`0 0 ${chart.width} ${chart.height}`} role="img" aria-label={title}>
           <g className="chart-grid">
             {chart.yTicks.map((tick, i) => (
               <g key={`y-${i}`}>
-                <line x1={chart.padding.left} x2={chart.width - chart.padding.right} y1={tick.y} y2={tick.y} stroke="#e8ede4" strokeWidth="1" />
+                <line x1={chart.padding.left} x2={chart.width - chart.padding.right} y1={tick.y} y2={tick.y} stroke="var(--chart-grid)" strokeWidth="1" />
                 <text x={chart.padding.left - 10} y={tick.y + 4} textAnchor="end" className="chart-axis-label">{tick.label}</text>
               </g>
             ))}
           </g>
-          <line x1={chart.padding.left} x2={chart.width - chart.padding.right} y1={chart.height - chart.padding.bottom} y2={chart.height - chart.padding.bottom} stroke="#c4ccc0" strokeWidth="1" />
-          <line x1={chart.padding.left} x2={chart.padding.left} y1={chart.padding.top} y2={chart.height - chart.padding.bottom} stroke="#c4ccc0" strokeWidth="1" />
+          <line x1={chart.padding.left} x2={chart.width - chart.padding.right} y1={chart.height - chart.padding.bottom} y2={chart.height - chart.padding.bottom} stroke="var(--chart-axis)" strokeWidth="1" />
+          <line x1={chart.padding.left} x2={chart.padding.left} y1={chart.padding.top} y2={chart.height - chart.padding.bottom} stroke="var(--chart-axis)" strokeWidth="1" />
           {chart.rows.map((row) => (
             <g key={row.year}>
               {row.bars.map((bar) => (
@@ -1665,14 +1647,24 @@ function AgeRangeComparisonChart({ categories, data, years, title, formatLabel }
                   {!isMissing(bar.value) ? (
                     <>
                       <rect
+                        aria-label={`${bar.category}, ${bar.year}: ${bar.label}`}
+                        className="chart-mark"
                         x={bar.x}
                         y={bar.y}
                         width={bar.width}
                         height={bar.height}
                         fill={bar.color}
-                        fillOpacity="0.86"
+                        fillOpacity={activeBar?.key === bar.key && activeBar?.year === bar.year ? '1' : '0.86'}
+                        onBlur={() => setActiveBar(null)}
+                        onFocus={() => setActiveBar(bar)}
+                        onKeyDown={(event) => closeChartTooltipOnEscape(event, () => setActiveBar(null))}
+                        onMouseEnter={() => setActiveBar(bar)}
+                        onMouseLeave={() => setActiveBar(null)}
                         rx="3"
-                      />
+                        tabIndex="0"
+                      >
+                        <title>{`${bar.category}, ${bar.year}: ${bar.label}`}</title>
+                      </rect>
                       <text
                         x={bar.labelX}
                         y={bar.labelY}
@@ -1689,6 +1681,18 @@ function AgeRangeComparisonChart({ categories, data, years, title, formatLabel }
             </g>
           ))}
         </svg>
+        {activeBar ? (
+          <ChartTooltip
+            className="education-chart__tooltip education-chart__tooltip--bar"
+            label={activeBar.year}
+            series={activeBar.category}
+            value={activeBar.label}
+            style={{
+              left: `${Math.min(90, Math.max(10, ((activeBar.x + activeBar.width / 2) / chart.width) * 100))}%`,
+              top: `${Math.min(82, Math.max(12, (activeBar.y / chart.height) * 100))}%`,
+            }}
+          />
+        ) : null}
       </div>
     </div>
   )
@@ -2866,9 +2870,9 @@ function buildAgeRangeComparisonChart(data, categories, years, formatLabel) {
   const width = 960
   const height = 430
   const padding = { top: 44, right: 36, bottom: 58, left: 78 }
-  const visibleCategories = categories.filter((category) => (
-    data.some((row) => !isMissing(row.values?.[category.key]))
-  ))
+  const visibleCategories = categories
+    .filter((category) => data.some((row) => !isMissing(row.values?.[category.key])))
+    .map((category, index) => ({ ...category, color: chartSeriesColor(index) }))
   if (!visibleCategories.length) return null
 
   const values = data.flatMap((row) => visibleCategories.map((category) => row.values?.[category.key]))
@@ -2897,7 +2901,9 @@ function buildAgeRangeComparisonChart(data, categories, years, formatLabel) {
         const height = !isMissing(value) ? Math.max(1, yScale(0) - y) : 0
         return {
           key: category.key,
+          category: category.label,
           color: category.color,
+          year: row.year,
           value,
           x: xBase + categoryIndex * (barWidth + gap),
           y,

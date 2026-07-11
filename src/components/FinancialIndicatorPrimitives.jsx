@@ -1,20 +1,24 @@
 import { MetricCard } from './MetricCard'
 import { StatusBadge } from './StatusBadge'
+import { DetailNavigation } from './DetailNavigation'
+import { InteractionChevron } from './InteractionChevron'
 
 const EM = '\u2014'
 const SPARKLINE_WIDTH = 320
 const SPARKLINE_HEIGHT = 56
 
-export function FinancialIndicatorCard({ indicator, isSelected = false, onSelect }) {
+export function FinancialIndicatorCard({ buttonRef, indicator, isSelected = false, onSelect }) {
   const sparkline = getSparkline(indicator.series)
   const statusTone = indicator.statusTone ?? 'default'
 
   return (
     <button
-      className={`financial-indicator-card financial-indicator-card--${statusTone}${isSelected ? ' is-selected' : ''}`}
+      className={`financial-indicator-card interaction-card--explorable financial-indicator-card--${statusTone}${isSelected ? ' is-selected' : ''}`}
+      ref={buttonRef}
       type="button"
       onClick={onSelect}
       aria-label={`Abrir detalhe do indicador ${indicator.label}`}
+      aria-pressed={isSelected}
       title={indicator.label}
     >
       <span className="financial-indicator-card__topline">
@@ -47,16 +51,20 @@ export function FinancialIndicatorCard({ indicator, isSelected = false, onSelect
               r="3.4"
             />
           </svg>
+          <span className="financial-indicator-card__sparkline-period">
+            {sparkline.firstYear}–{sparkline.lastYear}
+          </span>
         </span>
       ) : (
         <span className="financial-indicator-card__sparkline financial-indicator-card__sparkline--empty">
-          Sem histórico suficiente
+          Histórico não disponível.
         </span>
       )}
 
       <span className="financial-indicator-card__footer">
         <span>{indicator.unitLabel ?? 'Indicador'}</span>
         {indicator.sourceLabel ? <span>{indicator.sourceLabel}</span> : null}
+        <InteractionChevron />
       </span>
     </button>
   )
@@ -73,34 +81,17 @@ export function FinancialDetailNavigation({
   isBottom = false,
 }) {
   return (
-    <div className={`cycle-detail-nav financial-detail-nav${isBottom ? ' cycle-detail-nav--bottom financial-detail-nav--bottom' : ''}`}>
-      <button className="cycle-back-button" type="button" onClick={onBack}>
-        &larr; Voltar para indicadores financeiros
-      </button>
-      <div className="cycle-detail-nav__sequence" aria-label="Navegar entre indicadores financeiros filtrados">
-        <button
-          className="cycle-step-button"
-          type="button"
-          onClick={() => previousIndicator && onPrevious(previousIndicator.key)}
-          disabled={!previousIndicator}
-        >
-          <span>&lsaquo;</span>
-          Indicador anterior
-        </button>
-        <span className="cycle-detail-nav__position">
-          {activeIndex + 1} de {total}
-        </span>
-        <button
-          className="cycle-step-button"
-          type="button"
-          onClick={() => nextIndicator && onNext(nextIndicator.key)}
-          disabled={!nextIndicator}
-        >
-          Próximo indicador
-          <span>&rsaquo;</span>
-        </button>
-      </div>
-    </div>
+    <DetailNavigation
+      activeIndex={activeIndex}
+      className={`financial-detail-nav${isBottom ? ' financial-detail-nav--bottom' : ''}`}
+      isBottom={isBottom}
+      nextItem={nextIndicator}
+      onBack={onBack}
+      onNext={onNext}
+      onPrevious={onPrevious}
+      previousItem={previousIndicator}
+      total={total}
+    />
   )
 }
 
@@ -109,7 +100,7 @@ export function FinancialDetailHeader({ indicator }) {
     <div className="detail-heading educacao-detail-heading financial-detail-heading">
       <div className="detail-heading__copy">
         <span className="eyebrow">Indicador selecionado</span>
-        <h3>{indicator.label}</h3>
+        <h3 data-detail-title tabIndex={-1}>{indicator.label}</h3>
         {indicator.description ? <p>{indicator.description}</p> : null}
       </div>
       <div className="educacao-detail-heading__badges financial-detail-heading__badges">
@@ -238,5 +229,11 @@ function getSparkline(series = []) {
   const lastPoint = scaledPoints[scaledPoints.length - 1]
   const areaPath = `${linePath} L${lastPoint.x.toFixed(1)} ${baseline.toFixed(1)} L${firstPoint.x.toFixed(1)} ${baseline.toFixed(1)} Z`
 
-  return { areaPath, linePath, lastPoint }
+  return {
+    areaPath,
+    firstYear: points[0].year,
+    lastPoint,
+    lastYear: points[points.length - 1].year,
+    linePath,
+  }
 }

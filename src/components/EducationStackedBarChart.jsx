@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { isMissing } from '../utils/educationFormatters'
+import { chartSeriesColor, closeChartTooltipOnEscape } from '../utils/chartVisuals'
+import { ChartEmptyState, ChartLegend, ChartTooltip } from './ChartPrimitives'
 
 const CHART_WIDTH = 820
 const CHART_HEIGHT = 340
@@ -17,39 +19,34 @@ export function EducationStackedBarChart({
 
   if (!chart || chart.rows.length === 0 || chart.categories.length === 0) {
     return (
-      <div className="education-chart-empty">
-        <p>Não há dados suficientes para exibir o gráfico.</p>
-      </div>
+      <ChartEmptyState />
     )
   }
 
   return (
     <div className="education-chart education-chart--stacked">
       {title && <h4 className="education-chart__title">{title}</h4>}
-      <div className="education-stacked-legend">
-        {chart.categories.map((category) => (
-          <span key={category.key}>
-            <i style={{ background: category.color }} />
-            {category.label}
-          </span>
-        ))}
-      </div>
+      {chart.categories.length > 1 ? (
+        <ChartLegend className="education-stacked-legend" items={chart.categories} />
+      ) : null}
       <div className="education-chart__canvas">
         <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} role="img" aria-label={title || 'Gráfico de barras empilhadas'}>
           <g className="chart-grid">
             {chart.yTicks.map((tick, i) => (
               <g key={`y-${i}`}>
-                <line x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={tick.y} y2={tick.y} stroke="#e8ede4" strokeWidth="1" />
+                <line x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={tick.y} y2={tick.y} stroke="var(--chart-grid)" strokeWidth="1" />
                 <text x={PADDING.left - 10} y={tick.y + 4} textAnchor="end" className="chart-axis-label">{tick.label}</text>
               </g>
             ))}
           </g>
-          <line x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={CHART_HEIGHT - PADDING.bottom} y2={CHART_HEIGHT - PADDING.bottom} stroke="#c4ccc0" strokeWidth="1" />
-          <line x1={PADDING.left} x2={PADDING.left} y1={PADDING.top} y2={CHART_HEIGHT - PADDING.bottom} stroke="#c4ccc0" strokeWidth="1" />
+          <line x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={CHART_HEIGHT - PADDING.bottom} y2={CHART_HEIGHT - PADDING.bottom} stroke="var(--chart-axis)" strokeWidth="1" />
+          <line x1={PADDING.left} x2={PADDING.left} y1={PADDING.top} y2={CHART_HEIGHT - PADDING.bottom} stroke="var(--chart-axis)" strokeWidth="1" />
           {chart.rows.map((row) => (
             <g key={row.year}>
               {row.segments.map((segment) => (
                 <rect
+                  aria-label={`${segment.label}, ${row.year}: ${formatLabel(segment.value)}`}
+                  className="chart-mark"
                   key={`${row.year}-${segment.key}`}
                   x={segment.x}
                   y={segment.y}
@@ -58,26 +55,32 @@ export function EducationStackedBarChart({
                   fill={segment.color}
                   fillOpacity={activeSegment?.year === row.year && activeSegment?.key === segment.key ? '1' : '0.86'}
                   rx="3"
+                  onBlur={() => setActiveSegment(null)}
+                  onFocus={() => setActiveSegment(segment)}
+                  onKeyDown={(event) => closeChartTooltipOnEscape(event, () => setActiveSegment(null))}
                   onMouseEnter={() => setActiveSegment(segment)}
                   onMouseLeave={() => setActiveSegment(null)}
+                  tabIndex="0"
                   style={{ cursor: 'pointer', transition: 'fill-opacity 0.12s' }}
-                />
+                >
+                  <title>{`${segment.label}, ${row.year}: ${formatLabel(segment.value)}`}</title>
+                </rect>
               ))}
               <text x={row.x + row.width / 2} y={CHART_HEIGHT - 18} textAnchor="middle" className="chart-x-label">{row.year}</text>
             </g>
           ))}
         </svg>
         {activeSegment && (
-          <div
+          <ChartTooltip
             className="education-chart__tooltip education-chart__tooltip--bar"
+            label={activeSegment.year}
+            series={activeSegment.label}
+            value={formatLabel(activeSegment.value)}
             style={{
               left: `${Math.min(88, Math.max(12, ((activeSegment.x + activeSegment.width / 2) / CHART_WIDTH) * 100))}%`,
               top: `${Math.min(82, Math.max(12, (activeSegment.y / CHART_HEIGHT) * 100))}%`,
             }}
-          >
-            <strong>{activeSegment.label} · {activeSegment.year}</strong>
-            <span>{formatLabel(activeSegment.value)}</span>
-          </div>
+          />
         )}
       </div>
     </div>
@@ -87,9 +90,9 @@ export function EducationStackedBarChart({
 function buildStackedChart(data, categories) {
   if (!Array.isArray(data) || !Array.isArray(categories) || !data.length || !categories.length) return null
 
-  const visibleCategories = categories.filter((category) => (
-    data.some((row) => !isMissing(row.values?.[category.key]))
-  ))
+  const visibleCategories = categories
+    .filter((category) => data.some((row) => !isMissing(row.values?.[category.key])))
+    .map((category, index) => ({ ...category, color: chartSeriesColor(index) }))
   if (!visibleCategories.length) return null
 
   const normalizedRows = data
