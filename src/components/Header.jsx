@@ -43,7 +43,7 @@ export function Header({ activePage, onNavigate }) {
         </div>
         <div className="brand-copy">
           <span className="brand-eyebrow">Dashboard PNE</span>
-          <h1>Acompanhamento municipal</h1>
+          <strong className="brand-title">Acompanhamento municipal</strong>
           <p>Indicadores e financiamento</p>
         </div>
       </div>

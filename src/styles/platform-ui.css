@@ -1,0 +1,627 @@
+/*
+ * Shared interface grammar for the Dashboard PNE.
+ *
+ * Four control families are used across every module:
+ * - search/select fields;
+ * - filter options;
+ * - segmented choices and tabs;
+ * - local detail navigation.
+ */
+
+@media screen {
+  .content-area,
+  .content-area button,
+  .content-area input,
+  .content-area select,
+  .content-area textarea {
+    font-family: var(--font-sans);
+  }
+
+  .brand-title {
+    display: block;
+    color: var(--text-inverted);
+    font-family: var(--font-sans);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-tight);
+  }
+
+  .content-area h1,
+  .content-area .home-hero__content h1,
+  .content-area .cycle-hero h1,
+  .content-area .educacao-hero h1,
+  .content-area .legal-goals-hero h1,
+  .content-area .pne-overview-hero h1,
+  .content-area .fundeb-hero h1,
+  .content-area .diagnostic-overview h1 {
+    margin-block: 0;
+    color: var(--text-strong);
+    font-family: var(--font-serif);
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+
+  .content-area h2,
+  .content-area .pne-overview-section__heading h2,
+  .content-area .pne-overview-intro h2,
+  .content-area .education-summary-title {
+    color: var(--text-strong);
+    font-family: var(--font-sans);
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: -0.01em;
+    line-height: var(--line-height-tight);
+    text-wrap: balance;
+  }
+
+  .content-area h3,
+  .content-area .detail-heading h3,
+  .content-area .fundeb-detail-header h3 {
+    color: var(--text-strong);
+    font-family: var(--font-sans);
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: -0.01em;
+    line-height: var(--line-height-snug);
+    text-wrap: balance;
+  }
+
+  .content-area .cycle-page .detail-heading h2 {
+    color: var(--text-strong);
+    font-family: var(--font-sans);
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: -0.01em;
+    line-height: var(--line-height-tight);
+  }
+
+  .content-area h4,
+  .content-area h5 {
+    color: var(--text-strong);
+    font-family: var(--font-sans);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-snug);
+  }
+
+  .content-area :where(.eyebrow, .section-eyebrow, .hero-eyebrow),
+  .content-area :where(.educacao-explore__eyebrow, .indicator-chart-eyebrow),
+  .content-area :where(.indicator-control-bar__label, .indicator-stage-segmented-label) {
+    color: var(--green-deep);
+    font-family: var(--font-sans);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.02em;
+    line-height: var(--line-height-snug);
+    text-transform: none;
+  }
+
+  .content-area :where(
+    .home-entry-card__eyebrow,
+    .stat-card__eyebrow,
+    .education-summary-card__label,
+    .legal-goals-summary-card > span,
+    .metric-card__label,
+    .diagnostic-scoreboard__item dt
+  ) {
+    color: var(--text-soft);
+    font-family: var(--font-sans);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.02em;
+    line-height: var(--line-height-snug);
+    text-transform: none;
+  }
+
+  .content-area .indicator-goal-reference > span,
+  .content-area .educacao-indicator-reference > span,
+  .content-area .financial-indicator-reference > span,
+  .content-area .interpretation-box > span,
+  .content-area .complementary-data__eyebrow {
+    color: var(--green-deep);
+    font-family: var(--font-sans);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.02em;
+    line-height: var(--line-height-snug);
+    text-transform: none;
+  }
+
+  .content-area :where(.page-card, .detail-panel, .cycle-filter-panel, .legal-goals-filter-panel) {
+    border-color: var(--border-card);
+    border-radius: var(--radius-md);
+    background: var(--surface-card);
+  }
+
+  /* Search fields and selectors */
+  .content-area :where(.platform-search-field, .indicator-search),
+  .content-area :where(.filter-control, .educacao-age-detail__control) select,
+  .content-area :where(.filter-control, .educacao-age-detail__control) input,
+  .platform-selector .municipio-selector__field {
+    min-height: var(--control-height);
+    border: var(--border-width) solid var(--control-border);
+    border-radius: var(--control-radius);
+    background: var(--control-surface);
+    box-shadow: none;
+  }
+
+  .content-area :where(.platform-search-field, .indicator-search) {
+    padding-inline: var(--space-3);
+    color: var(--text-subtle);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .content-area :where(.platform-search-field, .indicator-search):focus-within,
+  .platform-selector .municipio-selector__field:focus-within,
+  .content-area :where(.filter-control, .educacao-age-detail__control) select:focus-visible,
+  .content-area :where(.filter-control, .educacao-age-detail__control) input:focus-visible {
+    border-color: var(--control-border-selected);
+    outline: 0;
+    box-shadow: var(--focus-ring);
+  }
+
+  .content-area :where(.platform-search-field, .indicator-search) svg {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+  }
+
+  .content-area :where(.platform-search-field, .indicator-search) input,
+  .platform-selector .municipio-selector__input,
+  .content-area :where(.filter-control, .educacao-age-detail__control) select,
+  .content-area :where(.filter-control, .educacao-age-detail__control) input {
+    min-height: calc(var(--control-height) - 2px);
+    color: var(--control-text);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-regular);
+    line-height: var(--line-height-normal);
+  }
+
+  .content-area :where(.platform-search-field, .indicator-search) input::placeholder,
+  .platform-selector .municipio-selector__input::placeholder {
+    color: var(--text-placeholder);
+    opacity: 1;
+  }
+
+  .platform-selector .municipio-selector__label,
+  .content-area :where(.filter-control, .educacao-age-detail__control) > span {
+    color: var(--text-soft);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.02em;
+    text-transform: none;
+  }
+
+  /* Filter panels and wrapping options */
+  .content-area .platform-filter-panel {
+    padding: var(--space-6);
+    border: var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--surface-card);
+    box-shadow: none;
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .content-area .platform-filter-list {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .content-area .platform-filter-option {
+    width: auto;
+    min-height: var(--control-height);
+    padding: 9px var(--space-3);
+    border: var(--border-width) solid var(--control-border);
+    border-radius: var(--control-radius);
+    background: var(--control-surface-muted);
+    box-shadow: none;
+    color: var(--control-text);
+    cursor: pointer;
+    display: inline-flex;
+    flex: 0 1 auto;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-snug);
+    text-align: left;
+    transform: none;
+    transition:
+      border-color var(--duration-fast) var(--ease-out),
+      background-color var(--duration-fast) var(--ease-out),
+      color var(--duration-fast) var(--ease-out);
+  }
+
+  .content-area .platform-filter-option:hover {
+    border-color: var(--border-strong);
+    background: var(--control-surface);
+    color: var(--text-strong);
+    box-shadow: none;
+    transform: none;
+  }
+
+  .content-area .platform-filter-option:is(.is-active, [aria-pressed="true"]) {
+    border-color: var(--control-border-selected);
+    background: var(--control-surface-selected);
+    color: var(--control-text-selected);
+    box-shadow: inset 0 0 0 1px rgba(62, 122, 94, 0.1);
+  }
+
+  .content-area .platform-filter-option :where(.category-tab__count, .diagnostic-theme-filter__count) {
+    min-width: 24px;
+    height: 24px;
+    padding-inline: 7px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: var(--surface-card);
+    color: inherit;
+    display: inline-grid;
+    place-items: center;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .content-area .platform-filter-group {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .content-area .platform-filter-group > span {
+    color: var(--text-soft);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  /* Segmented controls */
+  .content-area .platform-segmented-control {
+    width: fit-content;
+    max-width: 100%;
+    margin: 0;
+    padding: var(--space-1);
+    border: var(--border-default);
+    border-radius: var(--control-radius);
+    background: var(--surface-muted);
+    box-shadow: none;
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+  }
+
+  .content-area .platform-segmented-option {
+    min-height: 36px;
+    padding: 7px var(--space-3);
+    border: var(--border-width) solid transparent;
+    border-radius: calc(var(--control-radius) - 2px);
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-body);
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-snug);
+    transform: none;
+  }
+
+  .content-area .platform-segmented-option:hover {
+    background: rgba(255, 255, 255, 0.58);
+    color: var(--text-strong);
+  }
+
+  .content-area .platform-segmented-option:is(.is-active, [aria-pressed="true"]) {
+    border-color: var(--control-border);
+    background: var(--control-surface);
+    color: var(--control-text-selected);
+    box-shadow: var(--shadow-sm);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  /* Tabs */
+  .content-area .platform-tab-list {
+    width: fit-content;
+    max-width: 100%;
+    margin: 0;
+    padding: var(--space-1);
+    border: var(--border-default);
+    border-radius: var(--control-radius);
+    background: var(--surface-muted);
+    display: flex;
+    align-items: stretch;
+    gap: var(--space-1);
+    overflow-x: auto;
+  }
+
+  .content-area .platform-tab {
+    min-height: var(--control-height);
+    padding: 8px var(--space-4);
+    border: var(--border-width) solid transparent;
+    border-radius: calc(var(--control-radius) - 2px);
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-body);
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-snug);
+    white-space: nowrap;
+  }
+
+  .content-area .platform-tab:hover {
+    background: rgba(255, 255, 255, 0.58);
+    color: var(--text-strong);
+  }
+
+  .content-area .platform-tab:is(.is-active, [aria-selected="true"]) {
+    border-color: var(--control-border);
+    background: var(--control-surface);
+    color: var(--control-text-selected);
+    box-shadow: var(--shadow-sm);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  /* High-level scope and module selectors */
+  .content-area :where(.platform-scope-options, .platform-module-tabs) {
+    padding: var(--space-1);
+    border: var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--surface-muted);
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .content-area .platform-scope-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .content-area .platform-module-tabs {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .content-area :where(.platform-scope-option, .platform-module-tab) {
+    min-height: 88px;
+    padding: var(--space-4);
+    border: var(--border-width) solid transparent;
+    border-radius: calc(var(--radius-md) - 4px);
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-body);
+    cursor: pointer;
+    text-align: left;
+    transform: none;
+  }
+
+  .content-area :where(.platform-scope-option, .platform-module-tab):hover {
+    border-color: var(--control-border);
+    background: rgba(255, 255, 255, 0.58);
+    box-shadow: none;
+    transform: none;
+  }
+
+  .content-area :where(.platform-scope-option, .platform-module-tab).is-active,
+  .content-area .platform-scope-option[aria-pressed="true"],
+  .content-area .platform-module-tab[aria-selected="true"] {
+    border-color: var(--control-border-selected);
+    background: var(--control-surface);
+    color: var(--control-text-selected);
+    box-shadow: inset 0 0 0 1px rgba(62, 122, 94, 0.08);
+  }
+
+  .content-area :where(.educacao-scope-card__title, .educacao-module-card__title) {
+    color: var(--text-strong);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-snug);
+  }
+
+  .content-area :where(.educacao-scope-card__description, .educacao-module-card__description) {
+    color: var(--text-body);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-regular);
+    line-height: var(--line-height-normal);
+  }
+
+  /* Local navigation */
+  .content-area .platform-detail-navigation {
+    min-height: var(--control-height);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  .content-area .platform-detail-navigation__sequence {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .content-area .platform-navigation-button,
+  .content-area .platform-anchor-option {
+    min-height: var(--control-height);
+    padding: 9px var(--space-3);
+    border: var(--border-width) solid var(--control-border);
+    border-radius: var(--control-radius);
+    background: var(--control-surface);
+    box-shadow: none;
+    color: var(--control-text);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-snug);
+    text-decoration: none;
+    transform: none;
+  }
+
+  .content-area .platform-navigation-button:hover,
+  .content-area .platform-anchor-option:hover {
+    border-color: var(--border-strong);
+    background: var(--control-surface-muted);
+    color: var(--text-strong);
+    box-shadow: none;
+    transform: none;
+  }
+
+  .content-area .platform-navigation-button:disabled {
+    border-color: var(--border-faint);
+    background: var(--surface-soft);
+    color: var(--text-muted);
+    cursor: not-allowed;
+    opacity: 0.72;
+  }
+
+  .content-area .platform-anchor-navigation {
+    width: fit-content;
+    max-width: 100%;
+    padding: var(--space-1);
+    border: var(--border-default);
+    border-radius: var(--control-radius);
+    background: var(--surface-muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+  }
+
+  .content-area .platform-anchor-navigation .platform-anchor-option {
+    border-color: transparent;
+    background: transparent;
+  }
+
+  .content-area .platform-anchor-navigation .platform-anchor-option.is-active {
+    border-color: var(--control-border);
+    background: var(--control-surface);
+    color: var(--control-text-selected);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .content-area .platform-control-bar {
+    padding: var(--space-4);
+    border: var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--surface-soft);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+
+  /* Cards and common interactive states */
+  .content-area :where(.meta-card, .education-indicator-card, .financial-indicator-card) {
+    border-color: var(--border-card);
+    border-radius: var(--radius-md);
+    background: var(--surface-card);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .content-area :where(.meta-card, .education-indicator-card, .financial-indicator-card):hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-1px);
+  }
+
+  .content-area :where(.meta-card, .education-indicator-card, .financial-indicator-card).is-selected,
+  .content-area :where(.meta-card, .education-indicator-card, .financial-indicator-card)[aria-pressed="true"] {
+    border-color: var(--control-border-selected);
+    background: var(--surface-card);
+    box-shadow: inset 0 0 0 1px var(--border-focus);
+    transform: none;
+  }
+
+  .content-area :where(.meta-card__title, .education-indicator-card__title, .financial-indicator-card__title) {
+    color: var(--text-strong);
+    font-family: var(--font-sans);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-snug);
+  }
+
+  .content-area :where(.meta-card__value-row, .education-indicator-card__value, .financial-indicator-card__value-row),
+  .content-area :where(.metric-card__value, .education-summary-card__value) {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .content-area .status-badge {
+    min-height: 24px;
+    padding: 4px 9px;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-sans);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0;
+    line-height: var(--line-height-snug);
+    text-transform: none;
+  }
+
+  .content-area :where(
+    .platform-filter-option,
+    .platform-segmented-option,
+    .platform-tab,
+    .platform-scope-option,
+    .platform-module-tab,
+    .platform-navigation-button,
+    .platform-anchor-option
+  ):focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 2px;
+    box-shadow: var(--focus-ring);
+  }
+}
+
+@media screen and (max-width: 1080px) {
+  .content-area .platform-module-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .content-area .platform-control-bar,
+  .content-area .platform-detail-navigation {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .content-area .platform-detail-navigation__sequence {
+    justify-content: space-between;
+    width: 100%;
+  }
+}
+
+@media screen and (max-width: 620px) {
+  .content-area .platform-scope-options,
+  .content-area .platform-module-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .content-area .platform-filter-list {
+    flex-wrap: nowrap;
+    padding-bottom: var(--space-1);
+    overflow-x: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .platform-filter-option,
+  .platform-segmented-option,
+  .platform-tab,
+  .platform-scope-option,
+  .platform-module-tab,
+  .platform-navigation-button,
+  .platform-anchor-option {
+    transition: none;
+  }
+}

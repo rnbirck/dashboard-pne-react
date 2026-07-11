@@ -116,7 +116,7 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
         <header className="diagnostic-overview__header">
           <div>
             <p className="diagnostic-overview__context">PNE 2026–2036 · ciclo vigente · acompanhamento atual</p>
-            <h2>{municipio}: metas, lacunas e prioridades</h2>
+            <h1>{municipio}: metas, lacunas e prioridades</h1>
             <p className="diagnostic-overview__intro">
               Situação observada até o ano mais recente disponível. Esta leitura não representa uma previsão de cumprimento em 2036.
             </p>
@@ -178,23 +178,23 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
         </div>
       </section>
 
-      <nav className="diagnostic-anchor-nav" aria-label="Navegação interna do diagnóstico">
+      <nav className="diagnostic-anchor-nav platform-anchor-navigation" aria-label="Navegação interna do diagnóstico">
         <a
-          className={activeAnchor === 'summary' ? 'is-active' : ''}
+          className={`platform-anchor-option${activeAnchor === 'summary' ? ' is-active' : ''}`}
           href="#diagnostic-summary"
           onClick={() => setActiveAnchor('summary')}
         >
           Panorama
         </a>
         <a
-          className={activeAnchor === 'priorities' ? 'is-active' : ''}
+          className={`platform-anchor-option${activeAnchor === 'priorities' ? ' is-active' : ''}`}
           href="#diagnostic-priorities"
           onClick={() => setActiveAnchor('priorities')}
         >
           Prioridades
         </a>
         <a
-          className={activeAnchor === 'themes' ? 'is-active' : ''}
+          className={`platform-anchor-option${activeAnchor === 'themes' ? ' is-active' : ''}`}
           href="#diagnostic-themes"
           onClick={() => setActiveAnchor('themes')}
         >
@@ -202,7 +202,7 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
         </a>
       </nav>
 
-      <section className="diagnostic-theme-filter" aria-label="Filtrar prioridades e avanços por tema">
+      <section className="diagnostic-theme-filter platform-filter-panel" aria-label="Filtrar prioridades e avanços por tema">
         <div className="diagnostic-theme-filter__header">
           <div>
             <span>Recorte das prioridades e dos avanços</span>
@@ -210,10 +210,11 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
           </div>
           <strong>{filteredIndicators.length} com meta</strong>
         </div>
-        <div className="diagnostic-theme-filter__grid">
+        <div className="diagnostic-theme-filter__grid platform-filter-list">
           <button
             type="button"
-            className={`diagnostic-theme-filter__card${selectedFilter === 'all' ? ' is-active' : ''}`}
+            aria-pressed={selectedFilter === 'all'}
+            className={`diagnostic-theme-filter__card platform-filter-option${selectedFilter === 'all' ? ' is-active' : ''}`}
             onClick={() => setSelectedFilter('all')}
           >
             <span>Todas</span>
@@ -224,7 +225,8 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
               key={area.key}
               type="button"
               title={area.fullLabel ?? area.label}
-              className={`diagnostic-theme-filter__card${selectedFilter === area.key ? ' is-active' : ''}`}
+              aria-pressed={selectedFilter === area.key}
+              className={`diagnostic-theme-filter__card platform-filter-option${selectedFilter === area.key ? ' is-active' : ''}`}
               onClick={() => setSelectedFilter(area.key)}
             >
               <span>{area.label}</span>

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import './styles/chart-system.css'
+import './styles/pne-cycle-experience.css'
+import './styles/platform-ui.css'
 import { MunicipalityProvider, useMunicipality } from './context/MunicipalityContext'
 import { ErrorState } from './components/ErrorState'
 import { Layout } from './components/Layout'
@@ -183,7 +185,7 @@ function PageContent({
         indicadores={indicadores}
         municipioData={municipioData}
         selectedMunicipio={selectedMunicipio}
-        title="PNE 2014-2024"
+        title="PNE 2014–2024"
       />
     )
   }
@@ -195,7 +197,7 @@ function PageContent({
         indicadores={indicadores}
         municipioData={municipioData}
         selectedMunicipio={selectedMunicipio}
-        title="PNE 2026-2036"
+        title="PNE 2026–2036"
       />
     )
   }

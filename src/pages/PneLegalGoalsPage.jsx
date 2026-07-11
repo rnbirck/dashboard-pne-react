@@ -164,7 +164,7 @@ export function PneLegalGoalsPage({
       <section className="page-card legal-goals-hero">
         <div className="legal-goals-hero__copy">
           <span className="eyebrow">Plano Nacional de Educação · ciclo vigente</span>
-          <h1>Metas legais do PNE 2026-2036</h1>
+          <h1>Metas legais do PNE 2026–2036</h1>
           <p>
             Consulte as metas legais do ciclo vigente e veja como elas se conectam
             aos indicadores municipais disponíveis no painel.
@@ -248,7 +248,7 @@ export function PneLegalGoalsPage({
         </section>
       ) : (
         <>
-          <section className="legal-goals-filter-panel">
+          <section className="legal-goals-filter-panel platform-filter-panel">
             <div className="legal-goals-filter-panel__heading">
               <div>
                 <span className="eyebrow">Ciclo vigente · acompanhamento atual</span>
@@ -260,7 +260,7 @@ export function PneLegalGoalsPage({
                   código, texto legal ou indicador.
                 </p>
               </div>
-              <label className="legal-goals-search">
+              <label className="legal-goals-search platform-search-field">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <circle cx="11" cy="11" r="6.5" />
                   <path d="m16 16 4 4" />
@@ -275,13 +275,13 @@ export function PneLegalGoalsPage({
               </label>
             </div>
 
-            <div className="legal-goals-theme-filter">
+            <div className="legal-goals-theme-filter platform-filter-group">
               <span>Filtrar por tema</span>
-              <div className="legal-goals-theme-filter__chips" aria-label="Temas das metas">
+              <div className="legal-goals-theme-filter__chips platform-filter-list" aria-label="Temas das metas">
                 {themeOptions.map((theme) => (
                   <button
                     aria-pressed={themeFilter === theme.value}
-                    className={themeFilter === theme.value ? 'is-active' : ''}
+                    className={`platform-filter-option${themeFilter === theme.value ? ' is-active' : ''}`}
                     key={theme.value}
                     onClick={() => setThemeFilter(theme.value)}
                     type="button"

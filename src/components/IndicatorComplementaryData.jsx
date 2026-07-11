@@ -220,11 +220,11 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
 
       <div className="complementary-data__body" id={contentId}>
           {options.length > 1 ? (
-            <div className="complementary-data__tabs" role="tablist" aria-label="Opções de exploração">
+            <div className="complementary-data__tabs platform-tab-list" role="tablist" aria-label="Opções de exploração">
               {options.map((option) => (
                 <button
                   type="button"
-                  className={`complementary-data__tab${activeOption?.key === option.key ? ' is-active' : ''}`}
+                  className={`complementary-data__tab platform-tab${activeOption?.key === option.key ? ' is-active' : ''}`}
                   key={option.key}
                   role="tab"
                   aria-selected={activeOption?.key === option.key}

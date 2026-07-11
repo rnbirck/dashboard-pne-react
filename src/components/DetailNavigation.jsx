@@ -14,18 +14,18 @@ export function DetailNavigation({
 }) {
   return (
     <div
-      className={`cycle-detail-nav detail-navigation${isBottom ? ' cycle-detail-nav--bottom detail-navigation--bottom' : ''}${className ? ` ${className}` : ''}`}
+      className={`cycle-detail-nav detail-navigation platform-detail-navigation${isBottom ? ' cycle-detail-nav--bottom detail-navigation--bottom' : ''}${className ? ` ${className}` : ''}`}
     >
-      <button className="cycle-back-button" type="button" onClick={onBack}>
+      <button className="cycle-back-button platform-navigation-button" type="button" onClick={onBack}>
         <span aria-hidden="true">&larr;</span>
         Voltar aos indicadores
       </button>
       <div
-        className="cycle-detail-nav__sequence"
+        className="cycle-detail-nav__sequence platform-detail-navigation__sequence"
         aria-label={`Navegar entre ${itemPlural} filtrados`}
       >
         <button
-          className="cycle-step-button"
+          className="cycle-step-button platform-navigation-button"
           type="button"
           onClick={() => previousItem && onPrevious(previousItem.key)}
           disabled={!previousItem}
@@ -37,7 +37,7 @@ export function DetailNavigation({
           {activeIndex + 1} de {total}
         </span>
         <button
-          className="cycle-step-button"
+          className="cycle-step-button platform-navigation-button"
           type="button"
           onClick={() => nextItem && onNext(nextItem.key)}
           disabled={!nextItem}

@@ -1,0 +1,327 @@
+/*
+ * Desktop-first hierarchy for the PNE 2014–2024 and PNE 2026–2036 pages.
+ * The selectors are scoped to CyclePage so other dashboard modules keep their
+ * current composition.
+ */
+
+@media screen and (min-width: 1081px) {
+  .cycle-page {
+    gap: var(--space-6);
+  }
+
+  .cycle-page .cycle-hero {
+    display: grid;
+    grid-template-columns: minmax(330px, 0.85fr) minmax(0, 1.35fr);
+    gap: var(--space-8);
+    align-items: stretch;
+    min-height: 176px;
+    padding: var(--space-8);
+    border-color: var(--border-card);
+    background: var(--surface-card);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .cycle-page .cycle-hero__copy {
+    display: grid;
+    align-content: center;
+    gap: var(--space-2);
+  }
+
+  .cycle-page .cycle-hero h1 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  .cycle-page .cycle-hero__copy > p:not(.cycle-hero__context) {
+    max-width: 58ch;
+    margin: var(--space-1) 0 0;
+    color: var(--text-body);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-normal);
+  }
+
+  .cycle-page .cycle-hero__context {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    margin: var(--space-3) 0 0;
+  }
+
+  .cycle-page .cycle-hero__context span {
+    color: var(--text-soft);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .cycle-page .cycle-hero__context strong {
+    color: var(--text-strong);
+    font-size: var(--font-size-sm);
+  }
+
+  .cycle-page .cycle-hero-meta-group {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    overflow: hidden;
+    border: var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--surface-soft);
+  }
+
+  .cycle-page .cycle-hero-meta {
+    min-width: 0;
+    padding: var(--space-5);
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    align-content: center;
+    gap: var(--space-2);
+  }
+
+  .cycle-page .cycle-hero-meta + .cycle-hero-meta {
+    border-left: var(--border-divider);
+  }
+
+  .cycle-page .cycle-hero-meta > .cycle-hero-meta__label {
+    color: var(--text-soft);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0;
+    line-height: var(--line-height-snug);
+    text-transform: none;
+  }
+
+  .cycle-page .cycle-hero-meta__value {
+    color: var(--text-strong);
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .cycle-page .cycle-hero-meta--success .cycle-hero-meta__value {
+    color: var(--status-ok-ink);
+  }
+
+  .cycle-page .cycle-hero-meta--attention .cycle-hero-meta__value {
+    color: var(--status-far-ink);
+  }
+
+  .cycle-page .cycle-hero-meta__detail {
+    color: var(--text-body);
+    font-size: var(--font-size-xs);
+    font-style: normal;
+    font-weight: var(--font-weight-regular);
+    line-height: var(--line-height-snug);
+  }
+
+  .cycle-page .cycle-filter-panel {
+    padding: var(--space-6);
+    gap: var(--space-4);
+    border-color: var(--border-card);
+    background: var(--surface-card);
+    box-shadow: none;
+  }
+
+  .cycle-page .cycle-filter-panel .category-tabs {
+    gap: var(--space-2);
+  }
+
+  .cycle-page .cycle-filter-panel .category-tab {
+    min-height: var(--control-height);
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--surface-soft);
+  }
+
+  .cycle-page .cycle-filter-panel .category-tab.is-active {
+    border-color: var(--green-primary);
+    background: var(--green-soft);
+    box-shadow: inset 0 0 0 1px rgba(62, 122, 94, 0.12);
+  }
+
+  .cycle-page .cycle-filter-panel .basic-education-filter-wrap {
+    padding: var(--space-3) 0 0;
+    border: 0;
+    border-top: var(--border-divider);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .cycle-page .cycle-detail-view {
+    gap: var(--space-4);
+  }
+
+  .cycle-page .detail-panel {
+    gap: var(--space-6);
+    min-height: 0;
+    padding: var(--space-8);
+    border-color: var(--border-card);
+    background: var(--surface-card);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .cycle-page .detail-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-6);
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .cycle-page .detail-heading__copy {
+    gap: var(--space-2);
+  }
+
+  .cycle-page .detail-heading h2 {
+    max-width: 32ch;
+    margin: 0;
+    color: var(--text-strong);
+    font-family: var(--font-serif);
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: -0.02em;
+    line-height: 1.12;
+    text-wrap: balance;
+  }
+
+  .cycle-page .detail-heading__copy > p {
+    max-width: 72ch;
+    color: var(--text-body);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-normal);
+  }
+
+  .cycle-page .detail-heading .indicator-goal-reference {
+    max-width: 78ch;
+    margin-top: var(--space-3);
+    padding: var(--space-4);
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: var(--green-soft);
+    box-shadow: none;
+  }
+
+  .cycle-page .metric-grid,
+  .cycle-page .metric-grid--four,
+  .cycle-page .metric-grid--two {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0;
+    overflow: hidden;
+    border: var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--surface-card);
+  }
+
+  .cycle-page .metric-grid--four {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .cycle-page .metric-grid--two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cycle-page .metric-card {
+    min-height: 104px;
+    padding: var(--space-4);
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    justify-content: center;
+  }
+
+  .cycle-page .metric-card + .metric-card {
+    border-left: var(--border-divider);
+  }
+
+  .cycle-page .metric-card--large {
+    background: var(--green-soft);
+  }
+
+  .cycle-page .metric-card--warning,
+  .cycle-page .metric-card--danger {
+    background: var(--status-far-bg);
+  }
+
+  .cycle-page .metric-card--success {
+    background: var(--status-ok-bg);
+  }
+
+  .cycle-page .metric-card--muted {
+    background: var(--status-muted-bg);
+  }
+
+  .cycle-page .metric-card__label {
+    color: var(--text-soft);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0;
+    line-height: var(--line-height-snug);
+    text-transform: none;
+  }
+
+  .cycle-page .metric-card__value {
+    color: var(--text-strong);
+    font-size: var(--font-size-xl);
+    line-height: var(--line-height-tight);
+  }
+
+  .cycle-page .metric-card--large .metric-card__value {
+    font-size: var(--font-size-3xl);
+  }
+
+  .cycle-page .goal-progress {
+    padding: var(--space-4) var(--space-5) var(--space-5);
+    border-color: var(--border-card);
+    border-radius: var(--radius-md);
+    background: var(--surface-soft);
+  }
+
+  .cycle-page .interpretation-box {
+    padding: var(--space-4) var(--space-5);
+    border: 0;
+    border-radius: var(--radius-sm);
+    box-shadow: none;
+  }
+
+  .cycle-page .interpretation-box::before {
+    display: none;
+  }
+
+  .cycle-page .interpretation-box p,
+  .cycle-page .detail-panel--danger .interpretation-box p {
+    font-size: var(--font-size-sm);
+    font-style: normal;
+    line-height: var(--line-height-normal);
+  }
+
+  .cycle-page .history-chart {
+    padding: var(--space-6);
+    border-color: var(--border-card);
+    background: var(--surface-soft);
+    box-shadow: none;
+  }
+
+  .cycle-page .complementary-data {
+    margin-top: var(--space-4);
+    padding-top: var(--space-8);
+    border-width: 1px 0 0;
+    border-radius: 0;
+    background: transparent;
+  }
+}
+
+@media screen and (max-width: 1080px) {
+  .cycle-page .detail-heading h2 {
+    margin: 0;
+    color: var(--text-strong);
+    font-family: var(--font-serif);
+    font-size: var(--font-size-2xl);
+    line-height: var(--line-height-tight);
+  }
+}

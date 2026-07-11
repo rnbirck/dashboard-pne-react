@@ -156,16 +156,16 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   return (
     <div className="page-stack cycle-page">
       <section className="page-card cycle-hero">
-        <div>
+        <div className="cycle-hero__copy">
           <span className="eyebrow">{cycleCopy.eyebrow}</span>
           <h1>{title}</h1>
           <p>{cycleCopy.supportText}</p>
-          <p>
-            Município em foco:{' '}
-            <strong style={{ color: 'var(--text-strong)' }}>{selectedMunicipio}</strong>
+          <p className="cycle-hero__context">
+            <span>Município em foco</span>
+            <strong>{selectedMunicipio}</strong>
           </p>
         </div>
-        <div className="cycle-hero-meta-group">
+        <div className="cycle-hero-meta-group" aria-label="Resumo dos indicadores do ciclo">
           <ManagementMetricCard
             detail={cycleCopy.summary.totalDetail}
             label={cycleCopy.summary.totalLabel}
@@ -232,13 +232,13 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
           </div>
         ) : (
           <>
-            <div className="cycle-filter-panel">
+            <div className="cycle-filter-panel platform-filter-panel">
               <div className="cycle-filter-panel__heading">
                 <div>
                   <span className="eyebrow">Temas das metas</span>
                   <h2>{selectedGroup?.label ?? 'Metas do ciclo'}</h2>
                 </div>
-                <label className="cycle-search">
+                <label className="cycle-search platform-search-field">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <circle cx="11" cy="11" r="6.5" />
                     <path d="m16 16 4 4" />
@@ -342,25 +342,26 @@ function enrichGoalRefs(categories, cycle) {
 function ManagementMetricCard({ detail, label, tone, value }) {
   return (
     <div className={`cycle-hero-meta interaction-card--informative cycle-hero-meta--${tone}`}>
-      <small>{label}</small>
-      <span>{value}</span>
-      <em>{detail}</em>
+      <span className="cycle-hero-meta__label">{label}</span>
+      <strong className="cycle-hero-meta__value">{value}</strong>
+      <small className="cycle-hero-meta__detail">{detail}</small>
     </div>
   )
 }
 
 function BasicEducationFilter({ filters, selectedFilter, onSelectFilter }) {
   return (
-    <div className="basic-education-filter" role="tablist" aria-label="Etapas da Educação Básica">
+    <div className="basic-education-filter platform-segmented-control" role="group" aria-label="Etapas da Educação Básica">
       {filters.map((filter) => (
         <button
           className={
             filter.key === selectedFilter
-              ? 'basic-education-filter__chip is-active'
-              : 'basic-education-filter__chip'
+              ? 'basic-education-filter__chip platform-segmented-option is-active'
+              : 'basic-education-filter__chip platform-segmented-option'
           }
           key={filter.key}
           type="button"
+          aria-pressed={filter.key === selectedFilter}
           onClick={() => onSelectFilter(filter.key)}
         >
           {filter.label}

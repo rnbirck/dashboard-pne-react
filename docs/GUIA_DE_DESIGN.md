@@ -644,3 +644,31 @@ Após cada etapa, repetir a auditoria de acessibilidade, performance, responsivi
 3. **P2 — `$impeccable typeset`**: alinhar fontes carregadas, hierarquia e tamanhos mínimos.
 4. **P2 — `$impeccable distill`**: reduzir cards e camadas sem remover conteúdo analítico.
 5. **P3 — `$impeccable polish`**: concluir consistência visual e microestados após todas as migrações.
+
+## 14. Gramática unificada da plataforma
+
+A interface utiliza uma única hierarquia tipográfica e quatro famílias de controles, implementadas em `src/styles/platform-ui.css`.
+
+Hierarquia tipográfica:
+
+- `h1`: título institucional da página, em Source Serif 4, peso 600;
+- `h2`: seção principal, em Public Sans, peso 700;
+- `h3` e títulos de detalhe: Public Sans, peso 700;
+- títulos, rótulos, filtros, navegação, tabelas e dados nunca usam a fonte serifada;
+- rótulos auxiliares usam caixa normal, 12 px, peso 600 e espaçamento discreto;
+- caixa alta permanece reservada a siglas e códigos oficiais.
+
+Famílias de controles:
+
+1. **Busca e seleção**: altura de 44 px, raio de 8 px, superfície branca, borda neutra e o mesmo anel de foco.
+2. **Filtros**: opções retangulares que podem quebrar linha; seleção usa `green-soft`, texto `green-deep` e borda `green-primary`.
+3. **Segmentos e abas**: grupo sobre superfície neutra, com opção ativa branca e estado exposto por `aria-pressed` ou `aria-selected`.
+4. **Navegação local**: voltar, anterior e próximo usam a mesma altura, raio, peso, borda e estados de foco/disabled.
+
+Regras de continuidade:
+
+- `CategoryTabs` representa filtragem e usa grupo de botões com `aria-pressed`;
+- mudança de módulo usa abas; mudança de recorte usa controle segmentado; redução de lista usa filtro;
+- cards clicáveis de PNE, Educação e Financeiro compartilham borda, raio, hover, foco e seleção;
+- novos controles devem reutilizar as classes `platform-*` e os tokens semânticos `--control-*` antes de receber estilos locais;
+- estilos locais podem alterar somente composição ou conteúdo específico, nunca a gramática base do controle.

@@ -114,7 +114,7 @@ export const MunicipalitySelector = forwardRef(function MunicipalitySelector(
   return (
     <label
       ref={containerRef}
-      className={`municipio-selector ${isHero ? 'municipio-selector--hero' : ''} ${current ? 'is-selected' : ''} ${className} ${isOpen ? 'is-open' : ''}`}
+      className={`municipio-selector platform-selector ${isHero ? 'municipio-selector--hero' : ''} ${current ? 'is-selected' : ''} ${className} ${isOpen ? 'is-open' : ''}`}
     >
       <span className="municipio-selector__label">Município</span>
       <div className="municipio-selector__field">

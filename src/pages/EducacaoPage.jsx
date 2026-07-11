@@ -478,13 +478,13 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
     return (
       <>
         {!isShowingIndicatorDetail ? (
-          <div className="cycle-filter-panel educacao-filter-panel">
+          <div className="cycle-filter-panel educacao-filter-panel platform-filter-panel">
             <div className="cycle-filter-panel__heading">
               <div>
                 <span className="eyebrow">Temas de análise</span>
                 <h2>{selectedTheme?.label ?? 'Indicadores de educação'}</h2>
               </div>
-              <label className="cycle-search">
+              <label className="cycle-search platform-search-field">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <circle cx="11" cy="11" r="6.5" />
                   <path d="m16 16 4 4" />
@@ -572,15 +572,15 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
   function renderFinancingScope() {
     return (
       <>
-        <div className="cycle-category-bar educacao-financing-nav">
+        <div className="cycle-category-bar educacao-financing-nav platform-module-navigation">
           <span className="eyebrow">Módulos de financiamento</span>
-          <div className="educacao-financing-nav__grid" role="tablist" aria-label="Módulos de financiamento da educação">
+          <div className="educacao-financing-nav__grid platform-module-tabs" role="tablist" aria-label="Módulos de financiamento da educação">
             {FINANCING_MODULES.map((module) => {
               const isActive = module.key === selectedFinancingModule
 
               return (
                 <button
-                  className={'educacao-module-card' + (isActive ? ' is-active' : '')}
+                  className={'educacao-module-card platform-module-tab' + (isActive ? ' is-active' : '')}
                   key={module.key}
                   type="button"
                   role="tab"
@@ -639,12 +639,12 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
         </div>
 
         {!isSidebarScopedPage ? (
-        <div className="educacao-scope-selector">
+        <div className="educacao-scope-selector platform-scope-selector">
           <div className="educacao-scope-selector__intro">
             <span className="eyebrow educacao-scope-selector__heading">Escolha o bloco de indicadores</span>
             <p className="educacao-scope-selector__subtitle">Alterne entre os indicadores educacionais e o financiamento da educação.</p>
           </div>
-          <div className="educacao-scope-selector__grid">
+          <div className="educacao-scope-selector__grid platform-scope-options">
             {MAIN_INDICATOR_BLOCKS.map((block) => {
               const isActive = selectedMainBlock === block.key
               const count = block.key === MAIN_BLOCK_KEYS.panorama
@@ -653,7 +653,7 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
 
               return (
                 <button
-                  className={'educacao-scope-card' + (isActive ? ' is-active' : '')}
+                  className={'educacao-scope-card platform-scope-option' + (isActive ? ' is-active' : '')}
                   key={block.key}
                   type="button"
                   aria-pressed={isActive}
@@ -724,7 +724,7 @@ function EducationDetailNavigation({
 
 function IndicatorSegmentedControl({ options, selectedKey, onSelect, ariaLabel }) {
   return (
-    <div className="indicator-stage-segmented" role="group" aria-label={ariaLabel}>
+    <div className="indicator-stage-segmented platform-segmented-control" role="group" aria-label={ariaLabel}>
       {options.map((option) => {
         const isActive = option.key === selectedKey
 
@@ -734,8 +734,8 @@ function IndicatorSegmentedControl({ options, selectedKey, onSelect, ariaLabel }
             type="button"
             className={
               isActive
-                ? 'indicator-stage-segmented__button is-active'
-                : 'indicator-stage-segmented__button'
+                ? 'indicator-stage-segmented__button platform-segmented-option is-active'
+                : 'indicator-stage-segmented__button platform-segmented-option'
             }
             aria-pressed={isActive}
             onClick={() => onSelect(option.key)}
@@ -1211,10 +1211,10 @@ function EducationIndicatorBreakdown({ indicator }) {
       </div>
 
       {hasTabs ? (
-        <div className="educacao-detail-tabs" role="tablist" aria-label="Detalhamentos do indicador">
+        <div className="educacao-detail-tabs platform-tab-list" role="tablist" aria-label="Detalhamentos do indicador">
           {detailItems.map((item) => (
             <button
-              className={`educacao-detail-tab${activeItem?.key === item.key ? ' is-active' : ''}`}
+              className={`educacao-detail-tab platform-tab${activeItem?.key === item.key ? ' is-active' : ''}`}
               key={item.key}
               role="tab"
               aria-selected={activeItem?.key === item.key}
@@ -1282,7 +1282,7 @@ function TurmasPanoramaPanel({ indicator, blocos }) {
 
       <IndicatorReferenceBox description={indicator.description} />
 
-      <div className="indicator-control-bar">
+      <div className="indicator-control-bar platform-control-bar">
         <div className="indicator-control-bar__copy">
           <span className="indicator-control-bar__label">Métrica analisada</span>
           <span className="indicator-control-bar__hint">Atualiza os valores, o histórico do indicador e o detalhamento.</span>

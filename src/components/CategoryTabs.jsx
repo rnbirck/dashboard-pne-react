@@ -1,6 +1,6 @@
 export function CategoryTabs({ categories, selectedCategory, onSelectCategory, ariaLabel = 'Categorias' }) {
   return (
-    <div className="category-tabs" role="tablist" aria-label={ariaLabel}>
+    <div className="category-tabs platform-filter-list" role="group" aria-label={ariaLabel}>
       {categories.map((category) => {
         const visibleLabel = category.shortLabel ?? category.label
         const hasFullLabel = Boolean(category.shortLabel && category.shortLabel !== category.label)
@@ -8,11 +8,14 @@ export function CategoryTabs({ categories, selectedCategory, onSelectCategory, a
         return (
           <button
             className={
-              category.key === selectedCategory ? 'category-tab is-active' : 'category-tab'
+              category.key === selectedCategory
+                ? 'category-tab platform-filter-option is-active'
+                : 'category-tab platform-filter-option'
             }
             key={category.key}
             type="button"
             title={category.label}
+            aria-pressed={category.key === selectedCategory}
             onClick={() => onSelectCategory(category.key)}
           >
             <span aria-hidden={hasFullLabel ? 'true' : undefined}>{visibleLabel}</span>

@@ -195,7 +195,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
       <div className="detail-heading">
         <div className="detail-heading__copy">
           <span className="eyebrow">{cycleCopy.detailEyebrow}</span>
-          <h3 data-detail-title tabIndex={-1}>{getIndicatorTitle(item, result)}</h3>
+          <h2 data-detail-title tabIndex={-1}>{getIndicatorTitle(item, result)}</h2>
           {item.sub && <p>{item.sub}</p>}
           {item.desc && <p>{appendStageExplanations(item.desc)}</p>}
           {legalGoal && (
