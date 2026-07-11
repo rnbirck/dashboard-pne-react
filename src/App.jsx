@@ -23,8 +23,41 @@ import { PneLegalGoalsPage } from './pages/PneLegalGoalsPage'
 import { PneOverviewPage } from './pages/PneOverviewPage'
 import { useAsyncData } from './utils/useAsyncData'
 
+const HASH_PAGE_MAP = Object.freeze({
+  home: 'home',
+  pneoverview: 'pne-overview',
+  pnelegalgoals: 'pne-legal-goals',
+  metaslegais: 'pne-legal-goals',
+  pne2014: 'pne2014',
+  pne2024: 'pne2014',
+  pne2026: 'pne2026',
+  diagnostico: 'diagnostico',
+  educacao: 'educacao',
+  financeiros: 'financeiros',
+  fundeb: 'financeiros',
+  pnate: 'financeiros',
+  siope: 'financeiros',
+  vaar: 'financeiros',
+  sistemas: 'educacao',
+  escolassistemas: 'educacao',
+})
+
+function getInitialActivePage() {
+  if (typeof window === 'undefined') return 'home'
+
+  const route = window.location.hash
+    .replace(/^#\/?/, '')
+    .split('?')[0]
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('pt-BR')
+    .replace(/[^a-z0-9]/g, '')
+
+  return HASH_PAGE_MAP[route] ?? 'home'
+}
+
 function App() {
-  const [activePage, setActivePage] = useState('home')
+  const [activePage, setActivePage] = useState(getInitialActivePage)
   const [initialData, setInitialData] = useState({
     error: null,
     indicadores: null,
@@ -32,6 +65,23 @@ function App() {
     municipios: [],
     municipiosIndex: [],
   })
+
+  useEffect(() => {
+    function handleHashChange() {
+      setActivePage(getInitialActivePage())
+    }
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
+
+  function handleNavigate(page) {
+    const nextHash = `#${page}`
+    if (window.location.hash !== nextHash) {
+      window.location.hash = nextHash
+    } else {
+      setActivePage(page)
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -79,7 +129,7 @@ function App() {
       <Layout
         activePage={activePage}
         municipios={initialData.municipios}
-        onNavigate={setActivePage}
+        onNavigate={handleNavigate}
       >
         {initialData.loading ? (
           <LoadingState message="Carregando base do dashboard..." />
@@ -93,7 +143,7 @@ function App() {
             indicadores={initialData.indicadores}
             municipios={initialData.municipios}
             municipiosIndex={initialData.municipiosIndex}
-            onNavigate={setActivePage}
+            onNavigate={handleNavigate}
           />
         )}
       </Layout>

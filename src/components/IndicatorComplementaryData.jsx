@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { loadIndicatorDetail, loadMunicipioSharedInfo } from '../data/staticData'
 import { isDemographicCensusIndicator } from '../utils/indicatorSeries'
 import { AdministrativeDependencyChart } from './AdministrativeDependencyChart'
 import { ComplementaryEnrollmentChart } from './ComplementaryEnrollmentChart'
-import { DataSourceNote } from './DataSourceNote'
+import { PneSourceNotes } from './PneSourceNotes'
 import { IndicatorProjectionPanel } from './IndicatorProjectionPanel'
 
 const numberFormatter = new Intl.NumberFormat('pt-BR')
@@ -19,6 +19,8 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
   const [details, setDetails] = useState(null)
   const [activeTab, setActiveTab] = useState('')
   const [sharedPrivadas, setSharedPrivadas] = useState(null)
+  const tabSetId = useId().replace(/:/g, '')
+  const tabRefs = useRef([])
 
   useEffect(() => {
     loadMunicipioSharedInfo(slug, 'privadas_conveniadas').then((data) => {
@@ -205,6 +207,25 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
 
   const activeOption = options.find((option) => option.key === activeTab) ?? options[0]
   const contentId = `indicator-explore-more-${indicatorKey || 'detail'}`
+  const panelId = `complementary-panel-${tabSetId}`
+
+  function selectTab(index) {
+    const option = options[index]
+    if (!option) return
+    setActiveTab(option.key)
+    tabRefs.current[index]?.focus()
+  }
+
+  function handleTabKeyDown(event, index) {
+    let nextIndex = null
+    if (event.key === 'ArrowRight') nextIndex = (index + 1) % options.length
+    if (event.key === 'ArrowLeft') nextIndex = (index - 1 + options.length) % options.length
+    if (event.key === 'Home') nextIndex = 0
+    if (event.key === 'End') nextIndex = options.length - 1
+    if (nextIndex === null) return
+    event.preventDefault()
+    selectTab(nextIndex)
+  }
 
   return (
     <section className="complementary-data is-open" aria-label="Dados de apoio da meta">
@@ -221,14 +242,19 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
       <div className="complementary-data__body" id={contentId}>
           {options.length > 1 ? (
             <div className="complementary-data__tabs platform-tab-list" role="tablist" aria-label="Opções de exploração">
-              {options.map((option) => (
+              {options.map((option, index) => (
                 <button
+                  ref={(element) => { tabRefs.current[index] = element }}
                   type="button"
                   className={`complementary-data__tab platform-tab${activeOption?.key === option.key ? ' is-active' : ''}`}
                   key={option.key}
+                  id={`complementary-tab-${tabSetId}-${option.key}`}
                   role="tab"
                   aria-selected={activeOption?.key === option.key}
+                  aria-controls={panelId}
+                  tabIndex={activeOption?.key === option.key ? 0 : -1}
                   onClick={() => setActiveTab(option.key)}
+                  onKeyDown={(event) => handleTabKeyDown(event, index)}
                 >
                   <span>{option.label}</span>
                   {option.badge ? (
@@ -238,13 +264,18 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
               ))}
             </div>
           ) : null}
-          <div className="complementary-data__panel" role="tabpanel">
+          <div
+            className="complementary-data__panel"
+            id={panelId}
+            role="tabpanel"
+            aria-labelledby={`complementary-tab-${tabSetId}-${activeOption.key}`}
+          >
             <div className="complementary-data__panel-heading">
               <h5>{activeOption?.label}</h5>
               {activeOption?.description ? <p>{activeOption.description}</p> : null}
             </div>
             {activeOption?.content}
-            <DataSourceNote
+            <PneSourceNotes
               context={{
                 block: 'pne',
                 cycle,
@@ -439,14 +470,15 @@ function CalculationComponentsTable({ denominatorLabel, numeratorLabel, rows, sh
   return (
     <div className="complementary-components">
       {showHeading ? <h5>Dados usados no cálculo</h5> : null}
-      <div className="complementary-components__table-wrap">
+      <div className="complementary-components__table-wrap" role="region" aria-label="Dados usados no cálculo do indicador" tabIndex={0}>
         <table className="complementary-components__table">
+          <caption className="u-sr-only">Dados usados no cálculo do indicador</caption>
           <thead>
             <tr>
-              <th>Ano</th>
-              <th>{numeratorLabel}</th>
-              <th>{denominatorLabel}</th>
-              <th>Percentual</th>
+              <th scope="col">Ano</th>
+              <th scope="col">{numeratorLabel}</th>
+              <th scope="col">{denominatorLabel}</th>
+              <th scope="col">Percentual</th>
             </tr>
           </thead>
           <tbody>

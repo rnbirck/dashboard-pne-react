@@ -12,11 +12,14 @@ import { buildThematicGroups } from '../data/thematicGroups'
 import { normalizePopulationPercentResults } from '../utils/indicatorValues'
 import { getPneCycleCopy } from '../utils/pneCycleCopy'
 import { filterPneComparableCategories } from '../utils/pneDisplayRules'
-import { useDetailViewNavigation } from '../hooks/useDetailViewNavigation'
+import { resolveDetailSequence, useDetailViewNavigation } from '../hooks/useDetailViewNavigation'
+import { PageHeadingText } from '../components/HeadingText'
+import { getHashContext, setHashContext } from '../utils/hashNavigation'
 
 const CYCLE_SOURCE_NOTE = 'INEP, Censo Escolar, SAEB, IBGE e bases oficiais consolidadas no painel.'
 
 export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio, title }) {
+  const initialDetailKey = getHashContext().params.get('detalhe') ?? ''
   const cycleCopy = getPneCycleCopy(cycle)
   const categories = useMemo(
     () => enrichGoalRefs(indicadores?.cycles?.[cycle]?.categories ?? [], cycle),
@@ -24,8 +27,8 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   )
   const [selectedGroupKey, setSelectedGroupKey] = useState('')
   const [selectedBasicEducationFilterKey, setSelectedBasicEducationFilterKey] = useState('todos')
-  const [selectedIndicatorKey, setSelectedIndicatorKey] = useState('')
-  const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const [selectedIndicatorKey, setSelectedIndicatorKey] = useState(initialDetailKey)
+  const [isDetailOpen, setIsDetailOpen] = useState(Boolean(initialDetailKey))
   const [searchQuery, setSearchQuery] = useState('')
   const previousCycleRef = useRef(cycle)
   const municipioResults = municipioData?.[cycle]?.indicadores ?? null
@@ -81,13 +84,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     [activeIndicatorKey, filteredGroupItems],
   )
   const activeResult = activeItem ? normalizedMunicipioResults?.[activeItem.key] : null
-  const activeIndex = activeItem
-    ? filteredGroupItems.findIndex((item) => item.key === activeItem.key)
-    : -1
-  const previousItem = activeIndex > 0 ? filteredGroupItems[activeIndex - 1] : null
-  const nextItem = activeIndex >= 0 && activeIndex < filteredGroupItems.length - 1
-    ? filteredGroupItems[activeIndex + 1]
-    : null
+  const { activeIndex, previousItem, nextItem } = resolveDetailSequence(filteredGroupItems, activeItem?.key)
   const cycleManagementStats = useMemo(
     () => buildCycleManagementStats(comparableCategories, normalizedMunicipioResults),
     [comparableCategories, normalizedMunicipioResults],
@@ -98,6 +95,16 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     activeKey: activeIndicatorKey,
     isOpen: isShowingDetail,
   })
+
+  useEffect(() => {
+    function handleHashChange() {
+      const detailKey = getHashContext().params.get('detalhe') ?? ''
+      setSelectedIndicatorKey(detailKey)
+      setIsDetailOpen(Boolean(detailKey))
+    }
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
 
   useEffect(() => {
     if (previousCycleRef.current === cycle) return
@@ -140,12 +147,14 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     detailNavigation.prepareDetail(itemKey, { captureGridPosition: true })
     setSelectedIndicatorKey(itemKey)
     setIsDetailOpen(true)
+    setHashContext(cycle === 'pne_2014_2024' ? 'pne2014' : 'pne2026', { detalhe: itemKey })
   }
 
   function handleBackToGrid() {
     const returnKey = activeIndicatorKey
     setIsDetailOpen(false)
     setSelectedIndicatorKey('')
+    setHashContext(cycle === 'pne_2014_2024' ? 'pne2014' : 'pne2026')
     detailNavigation.restoreGrid(returnKey)
   }
 
@@ -153,15 +162,14 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     detailNavigation.prepareDetail(itemKey)
     setSelectedIndicatorKey(itemKey)
     setIsDetailOpen(true)
+    setHashContext(cycle === 'pne_2014_2024' ? 'pne2014' : 'pne2026', { detalhe: itemKey })
   }
 
   return (
     <div className="page-stack cycle-page">
       <section className="page-card cycle-hero">
         <div className="cycle-hero__copy">
-          <span className="eyebrow">{cycleCopy.eyebrow}</span>
-          <h1>{title}</h1>
-          <p>{cycleCopy.supportText}</p>
+          <PageHeadingText eyebrow={cycleCopy.eyebrow} title={title} description={cycleCopy.supportText} />
           <p className="cycle-hero__context">
             <span>Município em foco</span>
             <strong>{selectedMunicipio}</strong>

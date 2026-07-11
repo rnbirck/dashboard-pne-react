@@ -1,4 +1,6 @@
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
+import { forwardRef, useEffect, useId, useImperativeHandle, useMemo, useRef, useState } from 'react'
+
+const MAX_VISIBLE_MUNICIPALITIES = 100
 
 function normalizeText(value) {
   return String(value ?? '')
@@ -22,6 +24,9 @@ export const MunicipalitySelector = forwardRef(function MunicipalitySelector(
 ) {
   const current = value ?? selectedMunicipio ?? ''
   const isHero = variant === 'hero'
+  const instanceId = useId().replace(/:/g, '')
+  const inputId = `municipio-selector-input-${instanceId}`
+  const listboxId = `municipio-selector-listbox-${instanceId}`
 
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
@@ -39,9 +44,13 @@ export const MunicipalitySelector = forwardRef(function MunicipalitySelector(
 
   const filtered = useMemo(() => {
     const q = normalizeText(query)
-    if (!q) return list
-    return list.filter((municipio) => normalizeText(municipio).includes(q))
+    const matches = q
+      ? list.filter((municipio) => normalizeText(municipio).includes(q))
+      : list
+    return matches.slice(0, MAX_VISIBLE_MUNICIPALITIES)
   }, [list, query])
+
+  const optionId = (municipio) => `municipio-option-${instanceId}-${normalizeText(municipio).replace(/[^a-z0-9]+/g, '-')}`
 
   useEffect(() => {
     if (activeIndex >= filtered.length) {
@@ -123,15 +132,16 @@ export const MunicipalitySelector = forwardRef(function MunicipalitySelector(
           <circle cx="12" cy="9" r="2.4" />
         </svg>
         <input
+          id={inputId}
           ref={inputRef}
           type="text"
           role="combobox"
           aria-expanded={isOpen}
           aria-autocomplete="list"
-          aria-controls="municipio-selector-listbox"
+          aria-controls={listboxId}
           aria-activedescendant={
             isOpen && filtered[activeIndex]
-              ? `municipio-option-${activeIndex}`
+              ? optionId(filtered[activeIndex])
               : undefined
           }
           className="municipio-selector__input"
@@ -171,7 +181,7 @@ export const MunicipalitySelector = forwardRef(function MunicipalitySelector(
         </button>
         {isOpen && (
           <ul
-            id="municipio-selector-listbox"
+            id={listboxId}
             role="listbox"
             className="municipio-selector__listbox"
           >
@@ -181,7 +191,7 @@ export const MunicipalitySelector = forwardRef(function MunicipalitySelector(
               filtered.map((municipio, index) => (
                 <li
                   key={municipio}
-                  id={`municipio-option-${index}`}
+                  id={optionId(municipio)}
                   role="option"
                   aria-selected={index === activeIndex}
                   className={

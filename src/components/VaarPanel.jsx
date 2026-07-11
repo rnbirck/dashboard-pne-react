@@ -1,4 +1,5 @@
 import { isMissing } from '../utils/educationFormatters'
+import { ContentState } from './ContentState'
 
 const EM = '\u2014'
 
@@ -643,7 +644,7 @@ function TechnicalDetails({ title, rows, metrics, emptyText }) {
           ))}
         </div>
       ) : (
-        <p className="vaar-empty-detail">{emptyText}</p>
+        <ContentState as="p" kind="unavailable" className="vaar-empty-detail">{emptyText}</ContentState>
       )}
     </details>
   )

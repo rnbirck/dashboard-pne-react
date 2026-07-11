@@ -21,7 +21,7 @@ import { IndicatorHistoryChart } from './IndicatorHistoryChart'
 import { ChartEmptyState } from './ChartPrimitives'
 import { isDemographicCensusIndicator, buildDisplayIndicatorSeries } from '../utils/indicatorSeries'
 import { loadIndicatorDetail } from '../data/staticData'
-import { DataSourceNote } from './DataSourceNote'
+import { PneSourceNotes } from './PneSourceNotes'
 import { MetricCard } from './MetricCard'
 import { PNE_2026_GOAL_TEXTS } from '../data/pne2026GoalTexts'
 import { PNE_2014_GOAL_TEXTS } from '../data/pne2014GoalTexts'
@@ -322,7 +322,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
             unit={unit}
             floorNegativeValues={isAccExpansion}
           />
-          <DataSourceNote
+          <PneSourceNotes
             context={{
               block: 'pne',
               cycle,
@@ -338,7 +338,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
       {!hasSeries && !isInformative && (
         <>
           <ChartEmptyState message="Histórico não disponível." />
-          <DataSourceNote
+          <PneSourceNotes
             context={{
               block: 'pne',
               cycle,

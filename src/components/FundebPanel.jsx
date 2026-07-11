@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
-import { useDetailViewNavigation } from '../hooks/useDetailViewNavigation'
+import { useEffect, useMemo, useState } from 'react'
+import { resolveDetailSequence, useDetailViewNavigation } from '../hooks/useDetailViewNavigation'
 import { FUNDEB_INDICATORS, formatFundebValue, getLimiteReferencia } from '../data/fundebIndicators'
 import { DataSourceNote } from './DataSourceNote'
 import { MethodNote } from './MethodNote'
+import { ContentState } from './ContentState'
 import { IndicatorHistoryChart } from '../components/IndicatorHistoryChart'
 import { ChartEmptyState } from './ChartPrimitives'
 import { EducationSummaryCard } from './EducationSummaryCard'
@@ -223,13 +224,13 @@ function FundebInfoIcon({ type }) {
   )
 }
 
-export function FundebPanel({ municipioData, selectedMunicipio, embedded = false }) {
+export function FundebPanel({ municipioData, selectedMunicipio, embedded = false, detailKey = '', onDetailChange }) {
   const rawFundebData = municipioData?.blocos?.fundeb
   const hasFundebData = Boolean(rawFundebData?.historico?.length)
   const fundebData = rawFundebData ?? {}
-  const [selectedKey, setSelectedKey] = useState(FUNDEB_INDICATORS[0].key)
+  const [selectedKey, setSelectedKey] = useState(detailKey || FUNDEB_INDICATORS[0].key)
   const [searchQuery, setSearchQuery] = useState('')
-  const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const [isDetailOpen, setIsDetailOpen] = useState(Boolean(detailKey))
   const detailNavigation = useDetailViewNavigation({
     activeKey: selectedKey,
     isOpen: isDetailOpen,
@@ -276,13 +277,18 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
     [filteredItems, historico],
   )
   const selectedIndicatorModel = indicatorModels.find((indicator) => indicator.key === selectedKey) ?? indicatorModels[0] ?? null
-  const selectedIndex = selectedIndicatorModel
-    ? indicatorModels.findIndex((indicator) => indicator.key === selectedIndicatorModel.key)
-    : -1
-  const previousIndicator = selectedIndex > 0 ? indicatorModels[selectedIndex - 1] : null
-  const nextIndicator = selectedIndex >= 0 && selectedIndex < indicatorModels.length - 1
-    ? indicatorModels[selectedIndex + 1]
-    : null
+  const { activeIndex: selectedIndex, previousItem: previousIndicator, nextItem: nextIndicator } = resolveDetailSequence(indicatorModels, selectedIndicatorModel?.key)
+
+  useEffect(() => {
+    if (!detailKey) return setIsDetailOpen(false)
+    if (indicatorModels.some((indicator) => indicator.key === detailKey)) {
+      setSelectedKey(detailKey)
+      setIsDetailOpen(true)
+    } else if (indicatorModels.length) {
+      setIsDetailOpen(false)
+      onDetailChange?.('')
+    }
+  }, [detailKey, indicatorModels, onDetailChange])
 
   function handleIndicatorSelect(indicatorKey) {
     detailNavigation.prepareDetail(indicatorKey, {
@@ -290,12 +296,14 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
     })
     setSelectedKey(indicatorKey)
     setIsDetailOpen(true)
+    onDetailChange?.(indicatorKey)
   }
 
   function handleBackToGrid() {
     const returnKey = selectedKey
     setIsDetailOpen(false)
     setSelectedKey('')
+    onDetailChange?.('')
     detailNavigation.restoreGrid(returnKey)
   }
 
@@ -433,14 +441,15 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
                       <h4>Histórico do indicador</h4>
                     </div>
                   </div>
-                  <div className="fundeb-table-wrap">
+                  <div className="fundeb-table-wrap" role="region" aria-label="Série histórica do indicador do FUNDEB" tabIndex={0}>
                     <table className="fundeb-table">
+                      <caption className="u-sr-only">Série histórica do indicador do FUNDEB</caption>
                       <thead>
                         <tr>
-                          <th>Ano</th>
-                          <th>Valor</th>
-                          <th>Variação anual</th>
-                          {isPercentual && <th>Mínimo exigido</th>}
+                          <th scope="col">Ano</th>
+                          <th scope="col">Valor</th>
+                          <th scope="col">Variação anual</th>
+                          {isPercentual && <th scope="col">Mínimo exigido</th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -523,7 +532,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
               <div className="indicator-list financial-indicator-card-grid">
                 {indicatorModels.length === 0 ? (
                   <div className="indicator-sidebar__empty">
-                    <p>Nenhum indicador encontrado.</p>
+                    <ContentState as="p" kind="noResults">Nenhum indicador encontrado.</ContentState>
                   </div>
                 ) : (
                   indicatorModels.map((indicator) => (
@@ -596,14 +605,15 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
                     <h4>Histórico do indicador</h4>
                   </div>
                 </div>
-                <div className="fundeb-table-wrap">
+                <div className="fundeb-table-wrap" role="region" aria-label="Série histórica do indicador do FUNDEB" tabIndex={0}>
                   <table className="fundeb-table">
+                    <caption className="u-sr-only">Série histórica do indicador do FUNDEB</caption>
                     <thead>
                       <tr>
-                        <th>Ano</th>
-                        <th>Valor</th>
-                        <th>Variação anual</th>
-                        {isPercentual && <th>Mínimo exigido</th>}
+                        <th scope="col">Ano</th>
+                        <th scope="col">Valor</th>
+                        <th scope="col">Variação anual</th>
+                        {isPercentual && <th scope="col">Mínimo exigido</th>}
                       </tr>
                     </thead>
                     <tbody>

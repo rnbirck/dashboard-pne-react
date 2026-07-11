@@ -1,15 +1,24 @@
-import { StatusBadge } from './StatusBadge'
-import { InteractionChevron } from './InteractionChevron'
-import { Sparkline } from './Sparkline'
+import { ExplorableIndicatorCardFrame } from './ExplorableIndicatorCardFrame'
 
 const EM = '\u2014'
-const SPARKLINE_CLASS_NAMES = Object.freeze({
-  root: 'education-indicator-card__sparkline',
-  area: 'education-indicator-card__sparkline-area',
-  line: 'education-indicator-card__sparkline-line',
-  end: 'education-indicator-card__sparkline-end',
-  period: 'education-indicator-card__sparkline-period',
-  empty: 'education-indicator-card__sparkline--empty',
+const EDUCATION_CARD_CLASS_CONTRACT = Object.freeze({
+  root: 'education-indicator-card',
+  statusModifier: (tone) => `education-indicator-card--${tone}`,
+  topline: 'education-indicator-card__topline',
+  context: 'education-indicator-card__theme',
+  title: 'education-indicator-card__title',
+  description: 'education-indicator-card__description',
+  valueRow: 'education-indicator-card__value-row',
+  support: 'education-indicator-card__support',
+  footer: 'education-indicator-card__footer',
+  sparkline: Object.freeze({
+    root: 'education-indicator-card__sparkline',
+    area: 'education-indicator-card__sparkline-area',
+    line: 'education-indicator-card__sparkline-line',
+    end: 'education-indicator-card__sparkline-end',
+    period: 'education-indicator-card__sparkline-period',
+    empty: 'education-indicator-card__sparkline--empty',
+  }),
 })
 
 export function EducationIndicatorCard({ buttonRef, indicator, isSelected = false, onSelect }) {
@@ -17,44 +26,37 @@ export function EducationIndicatorCard({ buttonRef, indicator, isSelected = fals
   const periodLabel = indicator.initialYear && indicator.currentYear
     ? `desde ${indicator.initialYear}`
     : 'no período'
+  const viewModel = {
+    ariaLabel: `Abrir detalhe do indicador ${indicator.label}`,
+    contextLabel: indicator.themeShortLabel ?? indicator.themeLabel ?? 'Indicador',
+    description: indicator.description,
+    footer: {
+      primary: indicator.categoryLabel ?? 'Geral',
+      secondary: indicator.mainCutLabel,
+    },
+    sparklineSeries: indicator.series,
+    status: {
+      label: indicator.statusLabel,
+      tone: statusTone,
+    },
+    support: {
+      label: `Variação ${periodLabel}`,
+      value: indicator.variationDisplay ?? EM,
+    },
+    title: indicator.label,
+    value: {
+      display: indicator.currentDisplay ?? EM,
+      metaLabel: indicator.currentYear ? `Ano ${indicator.currentYear}` : 'Ano indisponível',
+    },
+  }
 
   return (
-    <button
-      className={`education-indicator-card interaction-card--explorable education-indicator-card--${statusTone}${isSelected ? ' is-selected' : ''}`}
-      ref={buttonRef}
-      type="button"
-      onClick={onSelect}
-      aria-label={`Abrir detalhe do indicador ${indicator.label}`}
-      aria-pressed={isSelected}
-      title={indicator.label}
-    >
-      <span className="education-indicator-card__topline">
-        <span className="education-indicator-card__theme">
-          {indicator.themeShortLabel ?? indicator.themeLabel ?? 'Indicador'}
-        </span>
-        <StatusBadge status={indicator.statusLabel} tone={statusTone} />
-      </span>
-
-      <span className="education-indicator-card__title">{indicator.label}</span>
-      <span className="education-indicator-card__description">{indicator.description}</span>
-
-      <span className="education-indicator-card__value-row">
-        <strong>{indicator.currentDisplay ?? EM}</strong>
-        <span>{indicator.currentYear ? `Ano ${indicator.currentYear}` : 'Ano indisponível'}</span>
-      </span>
-
-      <span className="education-indicator-card__support">
-        <span>Variação {periodLabel}</span>
-        <strong>{indicator.variationDisplay ?? EM}</strong>
-      </span>
-
-      <Sparkline series={indicator.series} classNames={SPARKLINE_CLASS_NAMES} />
-
-      <span className="education-indicator-card__footer">
-        <span>{indicator.categoryLabel ?? 'Geral'}</span>
-        {indicator.mainCutLabel ? <span>{indicator.mainCutLabel}</span> : null}
-        <InteractionChevron />
-      </span>
-    </button>
+    <ExplorableIndicatorCardFrame
+      buttonRef={buttonRef}
+      classContract={EDUCATION_CARD_CLASS_CONTRACT}
+      isSelected={isSelected}
+      onSelect={onSelect}
+      viewModel={viewModel}
+    />
   )
 }

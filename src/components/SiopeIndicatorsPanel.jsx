@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { CategoryTabs } from './CategoryTabs'
 import { DataSourceNote } from './DataSourceNote'
 import { MethodNote } from './MethodNote'
+import { ContentState } from './ContentState'
 import {
   FinancialChartFrame,
   FinancialDetailHeader,
@@ -19,7 +20,7 @@ import {
   SIOPE_INDICATOR_READING_GUIDES,
 } from '../data/siopeIndicators'
 import { useAsyncData } from '../utils/useAsyncData'
-import { useDetailViewNavigation } from '../hooks/useDetailViewNavigation'
+import { resolveDetailSequence, useDetailViewNavigation } from '../hooks/useDetailViewNavigation'
 
 const EM = '\u2014'
 const SIOPE_SOURCE = 'SIOPE / FNDE'
@@ -329,9 +330,9 @@ function SiopeSummaryCard({ card }) {
 
 function SiopeEmpty({ children }) {
   return (
-    <div className="siope-empty">
+    <ContentState kind="empty" className="siope-empty">
       <p>{children}</p>
-    </div>
+    </ContentState>
   )
 }
 
@@ -375,11 +376,11 @@ function SiopeHistoricalData({ children }) {
   )
 }
 
-export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio }) {
+export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey = '', onDetailChange }) {
   const state = useAsyncData(() => loadSiopeDashboardData(), [])
   const [selectedGroupKey, setSelectedGroupKey] = useState('')
-  const [selectedIndicatorKey, setSelectedIndicatorKey] = useState('')
-  const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const [selectedIndicatorKey, setSelectedIndicatorKey] = useState(detailKey)
+  const [isDetailOpen, setIsDetailOpen] = useState(Boolean(detailKey))
   const detailNavigation = useDetailViewNavigation({
     activeKey: selectedIndicatorKey,
     isOpen: isDetailOpen,
@@ -397,12 +398,23 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio }) {
     }
   }, [idMunicipio, selectedMunicipio, state.data])
 
+  useEffect(() => {
+    if (!detailKey) return setIsDetailOpen(false)
+    if (model.groups.some((group) => group.items?.some((indicator) => indicator.slug === detailKey))) {
+      setSelectedIndicatorKey(detailKey)
+      setIsDetailOpen(true)
+    } else if (!state.loading) {
+      setIsDetailOpen(false)
+      onDetailChange?.('')
+    }
+  }, [detailKey, model.groups, onDetailChange, state.loading])
+
   if (!selectedMunicipio) {
     return <SiopeEmpty>Selecione um município para consultar os dados declarados ao SIOPE/FNDE.</SiopeEmpty>
   }
 
   if (state.loading) {
-    return <div className="page-stack"><p className="state-box state-box--loading">Carregando dados do SIOPE/FNDE...</p></div>
+    return <div className="page-stack"><ContentState as="p" kind="loading" className="state-box state-box--loading">Carregando dados do SIOPE/FNDE...</ContentState></div>
   }
 
   if (state.error) {
@@ -420,9 +432,10 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio }) {
     return <SiopeEmpty>Dados do SIOPE/FNDE não disponíveis para este município.</SiopeEmpty>
   }
 
-  const activeGroupKey = model.groups.some((group) => group.key === selectedGroupKey)
+  const detailGroup = model.groups.find((group) => group.items?.some((item) => item.slug === detailKey))
+  const activeGroupKey = detailGroup?.key ?? (model.groups.some((group) => group.key === selectedGroupKey)
     ? selectedGroupKey
-    : model.groups[0]?.key
+    : model.groups[0]?.key)
   const activeGroup = model.groups.find((group) => group.key === activeGroupKey) ?? model.groups[0]
   const activeIndicators = activeGroup?.items ?? []
   const indicatorModels = activeIndicators.map((indicator) => buildSiopeIndicatorModel(indicator, model.municipality, activeGroup))
@@ -436,13 +449,7 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio }) {
   const summaryCards = buildSummaryCards(model.catalogIndicators, model.municipality)
   const municipalityMissing2025 = !hasMunicipalityDataForYear(model.municipality, 2025)
   const selectedIndicatorHasMissingValues = series.some((point) => !point.hasValue)
-  const selectedIndex = selectedIndicatorModel
-    ? indicatorModels.findIndex((indicator) => indicator.key === selectedIndicatorModel.key)
-    : -1
-  const previousIndicator = selectedIndex > 0 ? indicatorModels[selectedIndex - 1] : null
-  const nextIndicator = selectedIndex >= 0 && selectedIndex < indicatorModels.length - 1
-    ? indicatorModels[selectedIndex + 1]
-    : null
+  const { activeIndex: selectedIndex, previousItem: previousIndicator, nextItem: nextIndicator } = resolveDetailSequence(indicatorModels, selectedIndicatorModel?.key)
 
   function handleGroupSelect(groupKey) {
     setSelectedGroupKey(groupKey)
@@ -456,12 +463,14 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio }) {
     })
     setSelectedIndicatorKey(indicatorKey)
     setIsDetailOpen(true)
+    onDetailChange?.(indicatorKey)
   }
 
   function handleBackToGrid() {
     const returnKey = selectedIndicatorKey
     setIsDetailOpen(false)
     setSelectedIndicatorKey('')
+    onDetailChange?.('')
     detailNavigation.restoreGrid(returnKey)
   }
 
@@ -572,13 +581,14 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio }) {
                     <h4>Valores por ano</h4>
                   </div>
                 </div>
-                <div className="fundeb-table-wrap">
+                <div className="fundeb-table-wrap" role="region" aria-label="Série histórica do indicador do SIOPE" tabIndex={0}>
                   <table className="fundeb-table">
+                    <caption className="u-sr-only">Série histórica do indicador do SIOPE</caption>
                     <thead>
                       <tr>
-                        <th>Ano</th>
-                        <th>Valor</th>
-                        <th>Registro</th>
+                        <th scope="col">Ano</th>
+                        <th scope="col">Valor</th>
+                        <th scope="col">Registro</th>
                       </tr>
                     </thead>
                     <tbody>

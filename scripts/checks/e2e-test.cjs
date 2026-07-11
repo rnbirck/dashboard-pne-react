@@ -3,13 +3,17 @@ const { chromium } = require('playwright');
 
 const BASE_URL = process.env.BASE_URL ?? 'http://localhost:5173';
 const MUNICIPALITY = '\u00c1urea';
+const SISTEMA_S_MUNICIPALITY = 'Alegrete';
 const PNE_2014 = 'PNE 2014\u20132024';
 const PNE_2026 = 'PNE 2026\u20132036';
 const EDUCATION = 'Indicadores de Educa\u00e7\u00e3o';
 const FINANCE = 'Indicadores Financeiros da Educa\u00e7\u00e3o';
 const LEGAL_GOALS = 'Metas legais';
 const LEGAL_GOALS_TITLE = 'Metas legais do PNE 2026\u20132036';
+const DIAGNOSIS = 'Diagn\u00f3stico municipal';
 const EDUCATION_EMPTY = 'Nenhum indicador dispon\u00edvel para este tema ou busca.';
+const EDUCATION_EMPTY_SPARKLINE_CARD = 'Abrir detalhe do indicador Matr\u00edculas na rede privada';
+const EDUCATION_SCHOOL_STAGE_METHOD = 'Uma mesma escola pode ofertar mais de uma etapa; por isso, a soma por etapa pode ser maior que o total de escolas.';
 const LEGAL_GOALS_EMPTY = 'Nenhuma meta com acompanhamento municipal compar\u00e1vel encontrada para os filtros selecionados.';
 const EXPLORABLE_CARD_NAME = /^Abrir detalhe do indicador /;
 const BASIC_EDUCATION_STAGES = 'Etapas da Educa\u00e7\u00e3o B\u00e1sica';
@@ -27,6 +31,7 @@ const SIOPE_REGISTER_ALERT = 'Registro: Este município não possui dado para es
 const SIOPE_2025_MISSING_MUNICIPALITY = 'Alegrete';
 const SISTEMA_S_SOURCE = 'Fonte: Censo Escolar / Sinopse Estatística da Educação Básica — INEP';
 const SISTEMA_S_FIXTURE_PATH = '/data/educacao/municipios/4300406.json';
+const SISTEMA_S_EMPTY_FIXTURE_PATH = '/data/educacao/municipios/4301552.json';
 const DATA_SOURCE_LABEL_COLOR = 'rgb(106, 101, 89)';
 const DATA_SOURCE_MIN_CONTRAST = 4.5;
 const FUNDEB_METHOD_INDICATORS = [
@@ -44,7 +49,44 @@ const VIEWPORTS = [
   { width: 1280, height: 720 },
   { width: 1024, height: 768 },
 ];
+const RESPONSIVE_VIEWPORTS = [
+  { width: 768, height: 1024 },
+  { width: 390, height: 844 },
+  { width: 320, height: 568 },
+];
 const MOBILE_DATA_SOURCE_VIEWPORT = { width: 390, height: 844 };
+const EDUCATION_CARD_CLASSES = Object.freeze({
+  root: 'education-indicator-card',
+  statusPrefix: 'education-indicator-card--',
+  topline: 'education-indicator-card__topline',
+  context: 'education-indicator-card__theme',
+  title: 'education-indicator-card__title',
+  description: 'education-indicator-card__description',
+  valueRow: 'education-indicator-card__value-row',
+  support: 'education-indicator-card__support',
+  footer: 'education-indicator-card__footer',
+  sparkline: Object.freeze({
+    root: 'education-indicator-card__sparkline',
+    period: 'education-indicator-card__sparkline-period',
+    empty: 'education-indicator-card__sparkline--empty',
+  }),
+});
+const FINANCIAL_CARD_CLASSES = Object.freeze({
+  root: 'financial-indicator-card',
+  statusPrefix: 'financial-indicator-card--',
+  topline: 'financial-indicator-card__topline',
+  context: 'financial-indicator-card__module',
+  title: 'financial-indicator-card__title',
+  description: 'financial-indicator-card__description',
+  valueRow: 'financial-indicator-card__value-row',
+  support: 'financial-indicator-card__support',
+  footer: 'financial-indicator-card__footer',
+  sparkline: Object.freeze({
+    root: 'financial-indicator-card__sparkline',
+    period: 'financial-indicator-card__sparkline-period',
+    empty: 'financial-indicator-card__sparkline--empty',
+  }),
+});
 
 const dataSourceLegibilityEvidence = [];
 
@@ -62,6 +104,24 @@ async function assertNoHorizontalOverflow(page, context) {
     metrics.scrollWidth <= metrics.viewportWidth,
     `${context}: overflow horizontal (${metrics.scrollWidth}px > ${metrics.viewportWidth}px)`,
   );
+}
+
+async function assertPriorityContentInFirstFold(page, viewport) {
+  if (viewport.width !== 1024 || viewport.height !== 768) return;
+  const evidence = await page.evaluate(() => {
+    const municipality = document.querySelector('.context-bar .municipio-selector');
+    const heading = document.querySelector('.content-area h1');
+    const context = document.querySelector('.context-bar');
+    return {
+      contextBottom: context?.getBoundingClientRect().bottom,
+      headingBottom: heading?.getBoundingClientRect().bottom,
+      municipalityBottom: municipality?.getBoundingClientRect().bottom,
+      viewportHeight: innerHeight,
+    };
+  });
+  assert.ok(evidence.municipalityBottom <= evidence.viewportHeight, '1024x768: município permanece na primeira dobra');
+  assert.ok(evidence.contextBottom <= evidence.viewportHeight, '1024x768: contexto permanece na primeira dobra');
+  assert.ok(evidence.headingBottom <= evidence.viewportHeight, '1024x768: h1 permanece na primeira dobra');
 }
 
 async function assertDataSourceLegibility(note, context) {
@@ -133,12 +193,64 @@ async function assertDataSourceLegibility(note, context) {
   dataSourceLegibilityEvidence.push({ context, ...evidence });
 }
 
-async function selectMunicipality(page) {
+async function assertAuxiliaryTextLegibility(locator, context) {
+  await locator.waitFor({ state: 'visible' });
+  const evidence = await locator.evaluate((element) => ({
+    fontSize: Number.parseFloat(getComputedStyle(element).fontSize),
+    scrollWidth: element.scrollWidth,
+    width: element.clientWidth,
+  }));
+
+  assert.ok(evidence.fontSize >= 12, `${context}: texto auxiliar deve ter no m\u00ednimo 12 px`);
+  assert.ok(evidence.scrollWidth <= evidence.width, `${context}: texto auxiliar n\u00e3o deve causar overflow`);
+}
+
+async function selectMunicipality(page, municipality = MUNICIPALITY, waitForTitle = true) {
   const municipalityInput = page.getByRole('combobox', { name: 'Munic\u00edpio' });
-  await municipalityInput.fill(MUNICIPALITY);
-  await page.getByRole('option', { name: MUNICIPALITY, exact: true }).click();
+  await municipalityInput.fill(municipality);
+  await page.getByRole('option', { name: municipality, exact: true }).click();
   await page.getByRole('button', { name: 'Limpar sele\u00e7\u00e3o' }).waitFor({ state: 'visible' });
-  await page.getByRole('heading', { level: 1, name: new RegExp(MUNICIPALITY) }).waitFor({ state: 'visible' });
+  if (waitForTitle) {
+    await page.getByRole('heading', { level: 1, name: new RegExp(municipality) }).waitFor({ state: 'visible' });
+  }
+}
+
+function deferDataRequest(page, path) {
+  const url = `**${path}`;
+  let releaseRequest;
+  let resolveRequestStarted;
+  let requestStarted = false;
+  const requestStartedPromise = new Promise((resolve) => {
+    resolveRequestStarted = resolve;
+  });
+  const requestReleased = new Promise((resolve) => {
+    releaseRequest = resolve;
+  });
+  const handler = async (route) => {
+    requestStarted = true;
+    resolveRequestStarted();
+    await requestReleased;
+    await route.continue();
+  };
+
+  return {
+    async install() {
+      await page.route(url, handler);
+    },
+    release() {
+      releaseRequest();
+    },
+    hasStarted() {
+      return requestStarted;
+    },
+    waitForRequest() {
+      return requestStartedPromise;
+    },
+    async dispose() {
+      releaseRequest();
+      await page.unroute(url, handler);
+    },
+  };
 }
 
 async function navigateTo(page, navigationName, pageTitle) {
@@ -150,6 +262,177 @@ async function firstExplorableCard(page) {
   const card = page.getByRole('button', { name: EXPLORABLE_CARD_NAME }).first();
   await card.waitFor({ state: 'visible' });
   return card;
+}
+
+async function assertExplorableCardGridColumns(grid, viewport, context) {
+  await grid.waitFor({ state: 'visible' });
+  const columnCount = await grid.evaluate((element) => (
+    getComputedStyle(element).gridTemplateColumns
+      .split(' ')
+      .filter(Boolean)
+      .length
+  ));
+  const expectedColumnCount = viewport.width > 1180 ? 3 : 2;
+
+  assert.equal(
+    columnCount,
+    expectedColumnCount,
+    `${context}: ${expectedColumnCount} colunas em ${viewport.width}x${viewport.height}`,
+  );
+}
+
+async function assertCardActivationAndFocusRestoration(page, card, cardName, key, context) {
+  const indicatorName = cardName.replace('Abrir detalhe do indicador ', '');
+
+  assert.equal(await card.getAttribute('aria-pressed'), 'false', `${context}: card inicia sem seleção`);
+  await card.focus();
+  await page.keyboard.press(key);
+  await page.getByRole('heading', { level: 3, name: indicatorName, exact: true }).waitFor({ state: 'visible' });
+
+  const backToCards = page.getByRole('button', { name: 'Voltar aos indicadores', exact: true }).first();
+  await backToCards.waitFor({ state: 'visible' });
+  await backToCards.click();
+  await card.waitFor({ state: 'visible' });
+  await page.waitForFunction(
+    (name) => document.activeElement?.getAttribute('aria-label') === name,
+    cardName,
+  );
+  assert.equal(await card.getAttribute('aria-pressed'), 'false', `${context}: card retorna sem seleção`);
+}
+
+async function assertControlledAriaPressedTransition(page) {
+  const evidence = await page.evaluate(async () => {
+    const React = (await import('/node_modules/.vite/deps/react.js')).default;
+    const { createRoot } = (await import('/node_modules/.vite/deps/react-dom_client.js')).default;
+    const { EducationIndicatorCard } = await import('/src/components/EducationIndicatorCard.jsx');
+    const host = document.createElement('div');
+    host.className = 'content-area';
+    document.body.append(host);
+    const root = createRoot(host);
+    const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+
+    function ControlledCard() {
+      const [isSelected, setIsSelected] = React.useState(false);
+      return React.createElement(EducationIndicatorCard, {
+        indicator: {
+          categoryLabel: 'Teste E2E',
+          currentDisplay: '1',
+          currentYear: 2025,
+          description: 'Contrato controlado de seleção.',
+          label: 'Contrato aria-pressed UI-15',
+          series: [],
+          statusLabel: 'Com dados',
+          statusTone: 'info',
+          variationDisplay: '—',
+        },
+        isSelected,
+        onSelect: () => setIsSelected(true),
+      });
+    }
+
+    try {
+      root.render(React.createElement(ControlledCard));
+      await nextFrame();
+      await nextFrame();
+      const card = host.querySelector('.education-indicator-card');
+      const initial = card?.getAttribute('aria-pressed');
+      card?.click();
+      await nextFrame();
+      return {
+        initial,
+        selected: card?.getAttribute('aria-pressed'),
+      };
+    } finally {
+      root.unmount();
+      host.remove();
+    }
+  });
+
+  assert.deepEqual(
+    evidence,
+    { initial: 'false', selected: 'true' },
+    'UI-15: aria-pressed muda de false para true quando o card controlado é selecionado',
+  );
+}
+
+async function assertExplorableIndicatorCardStructure(card, { classes, context }) {
+  const evidence = await card.evaluate((element) => {
+    const regions = Array.from(element.children);
+    const sparkline = regions[5];
+
+    return {
+      ariaLabel: element.getAttribute('aria-label'),
+      ariaPressed: element.getAttribute('aria-pressed'),
+      classNames: Array.from(element.classList),
+      footerChildren: Array.from(regions[6]?.children ?? []).map((child) => ({
+        classNames: Array.from(child.classList),
+        tagName: child.tagName,
+      })),
+      regionClasses: regions.map((region) => Array.from(region.classList)),
+      regionTags: regions.map((region) => region.tagName),
+      sparkline: {
+        ariaHidden: sparkline?.getAttribute('aria-hidden') ?? null,
+        childClasses: Array.from(sparkline?.children ?? []).map((child) => Array.from(child.classList)),
+        childTags: Array.from(sparkline?.children ?? []).map((child) => child.tagName),
+        classNames: Array.from(sparkline?.classList ?? []),
+        text: sparkline?.textContent?.trim(),
+      },
+      title: element.getAttribute('title'),
+      type: element.getAttribute('type'),
+      valueRowTags: Array.from(regions[3]?.children ?? []).map((child) => child.tagName),
+      supportTags: Array.from(regions[4]?.children ?? []).map((child) => child.tagName),
+      toplineClasses: Array.from(regions[0]?.children ?? []).map((child) => Array.from(child.classList)),
+    };
+  });
+  const expectedRegionClasses = [
+    classes.topline,
+    classes.title,
+    classes.description,
+    classes.valueRow,
+    classes.support,
+    classes.sparkline.root,
+    classes.footer,
+  ];
+
+  assert.equal(evidence.type, 'button', `${context}: card preserva type=button`);
+  assert.equal(evidence.ariaPressed, 'false', `${context}: card preserva aria-pressed inicial`);
+  assert.equal(evidence.title, evidence.ariaLabel.replace('Abrir detalhe do indicador ', ''), `${context}: title preserva o nome do indicador`);
+  assert.ok(evidence.ariaLabel.startsWith('Abrir detalhe do indicador '), `${context}: card preserva aria-label`);
+  assert.ok(evidence.classNames.includes(classes.root), `${context}: classe raiz espec\u00edfica`);
+  assert.ok(evidence.classNames.includes('interaction-card--explorable'), `${context}: classe de intera\u00e7\u00e3o`);
+  assert.ok(evidence.classNames.some((className) => className.startsWith(classes.statusPrefix)), `${context}: modificador de status espec\u00edfico`);
+  assert.deepEqual(evidence.regionTags, Array(7).fill('SPAN'), `${context}: sete regi\u00f5es diretas em spans`);
+  assert.deepEqual(
+    evidence.regionClasses.map((classNames) => classNames[0]),
+    expectedRegionClasses,
+    `${context}: ordem e classes das sete regi\u00f5es`,
+  );
+  assert.equal(evidence.toplineClasses[0][0], classes.context, `${context}: contexto espec\u00edfico no topline`);
+  assert.ok(evidence.toplineClasses[1].includes('status-badge'), `${context}: StatusBadge preservado`);
+  assert.deepEqual(evidence.valueRowTags, ['STRONG', 'SPAN'], `${context}: value row preserva a ordem`);
+  assert.deepEqual(evidence.supportTags, ['SPAN', 'STRONG'], `${context}: support preserva a ordem`);
+  assert.ok(evidence.footerChildren.at(-1).classNames.includes('interaction-chevron'), `${context}: InteractionChevron preservado`);
+  assert.equal(evidence.sparkline.ariaHidden, 'true', `${context}: sparkline com hist\u00f3rico permanece oculta para leitores de tela`);
+  assert.deepEqual(evidence.sparkline.childTags, ['svg', 'SPAN'], `${context}: sparkline preserva SVG e per\u00edodo`);
+  assert.equal(evidence.sparkline.childClasses[1][0], classes.sparkline.period, `${context}: classe do per\u00edodo da sparkline`);
+}
+
+async function assertEmptySparklineState(card, { classes, context }) {
+  const evidence = await card.evaluate((element) => {
+    const sparkline = element.children[5];
+    return {
+      ariaHidden: sparkline?.getAttribute('aria-hidden') ?? null,
+      childElementCount: sparkline?.childElementCount,
+      classNames: Array.from(sparkline?.classList ?? []),
+      text: sparkline?.textContent?.trim(),
+    };
+  });
+
+  assert.ok(evidence.classNames.includes(classes.sparkline.root), `${context}: classe raiz da sparkline vazia`);
+  assert.ok(evidence.classNames.includes(classes.sparkline.empty), `${context}: estado vazio da sparkline`);
+  assert.equal(evidence.childElementCount, 0, `${context}: sparkline vazia n\u00e3o adiciona estrutura`);
+  assert.equal(evidence.text, 'Hist\u00f3rico n\u00e3o dispon\u00edvel.', `${context}: texto da sparkline vazia`);
+  assert.equal(evidence.ariaHidden, null, `${context}: atributo ARIA da sparkline vazia permanece inalterado`);
 }
 
 async function selectedPressedButton(scope, context) {
@@ -235,12 +518,31 @@ async function verifyPne2014Flow(page, viewport) {
 
 async function verifyPne2026Flow(page, viewport) {
   await navigateTo(page, PNE_2026, PNE_2026);
-  await firstExplorableCard(page);
+  const card = await firstExplorableCard(page);
   await assertDataSourceLegibility(
     page.locator('.data-source-note').first(),
     `${PNE_2026} em ${viewport.width}x${viewport.height}`,
   );
   await assertNoHorizontalOverflow(page, `${PNE_2026} em ${viewport.width}x${viewport.height}`);
+  await card.click();
+  const complementaryTabs = page.getByRole('tablist', { name: 'Opções de exploração' });
+  if (await complementaryTabs.count()) {
+    const tabs = complementaryTabs.getByRole('tab');
+    const panel = page.getByRole('tabpanel').filter({ has: page.locator('.complementary-data__panel-heading') });
+    assert.ok(await tabs.count() > 1, 'PNE: conjunto complementar possui abas reais');
+    const firstTab = tabs.first();
+    const secondTab = tabs.nth(1);
+    assert.equal(await firstTab.getAttribute('tabindex'), '0', 'PNE: primeira aba inicia no roving tabindex');
+    assert.equal(await secondTab.getAttribute('tabindex'), '-1', 'PNE: aba inativa sai da ordem de Tab');
+    await firstTab.focus();
+    await page.keyboard.press('ArrowRight');
+    assert.equal(await secondTab.getAttribute('aria-selected'), 'true', 'PNE: ArrowRight ativa a próxima aba');
+    assert.equal(await panel.getAttribute('aria-labelledby'), await secondTab.getAttribute('id'), 'PNE: painel referencia a aba ativa');
+    await page.keyboard.press('End');
+    assert.equal(await tabs.last().getAttribute('aria-selected'), 'true', 'PNE: End ativa a última aba');
+    await page.keyboard.press('Home');
+    assert.equal(await firstTab.getAttribute('aria-selected'), 'true', 'PNE: Home retorna à primeira aba');
+  }
 }
 
 async function verifyEducationFlow(page, viewport) {
@@ -257,9 +559,43 @@ async function verifyEducationFlow(page, viewport) {
   const cards = page.getByRole('button', { name: EXPLORABLE_CARD_NAME });
   const initialCount = await cards.count();
   assert.ok(initialCount > 0, 'Educação: deve haver indicadores no tema ativo');
+  await assertExplorableCardGridColumns(
+    page.locator('.education-indicator-card-grid'),
+    viewport,
+    'Educação: grade de cards',
+  );
 
   const card = await firstExplorableCard(page);
   const cardName = await card.getAttribute('aria-label');
+  await assertExplorableIndicatorCardStructure(card, {
+    classes: EDUCATION_CARD_CLASSES,
+    context: 'Educa\u00e7\u00e3o: card com hist\u00f3rico',
+  });
+  await assertAuxiliaryTextLegibility(
+    card.locator('.education-indicator-card__footer > span').first(),
+    `Educa\u00e7\u00e3o em ${viewport.width}x${viewport.height}`,
+  );
+  const emptySparklineCard = page.getByRole('button', { name: EDUCATION_EMPTY_SPARKLINE_CARD, exact: true });
+  assert.equal(await emptySparklineCard.count(), 1, 'Educa\u00e7\u00e3o: card de s\u00e9rie insuficiente deve ser \u00fanico');
+  await assertEmptySparklineState(emptySparklineCard, {
+    classes: EDUCATION_CARD_CLASSES,
+    context: 'Educa\u00e7\u00e3o: card sem hist\u00f3rico',
+  });
+  await assertControlledAriaPressedTransition(page);
+  await assertCardActivationAndFocusRestoration(
+    page,
+    card,
+    cardName,
+    'Enter',
+    'Educação: ativação por Enter',
+  );
+  await assertCardActivationAndFocusRestoration(
+    page,
+    card,
+    cardName,
+    'Space',
+    'Educação: ativação por Espaço',
+  );
   await searchInput.fill(cardName.replace('Abrir detalhe do indicador ', ''));
   await page.getByRole('button', { name: cardName, exact: true }).waitFor({ state: 'visible' });
   const foundCount = await cards.count();
@@ -275,6 +611,53 @@ async function verifyEducationFlow(page, viewport) {
   await page.getByRole('button', { name: cardName, exact: true }).waitFor({ state: 'visible' });
   assert.equal(await cards.count(), initialCount, 'Educação: limpeza manual restaura a lista');
   assert.equal(await (await selectedPressedButton(themes, 'Educação')).innerText(), selectedThemeName, 'Educação: tema ativo após limpeza');
+  const schoolsTheme = themes.getByRole('button', { name: 'Escolas 7', exact: true });
+  await schoolsTheme.click();
+  const totalSchoolsCard = page.getByRole('button', {
+    name: 'Abrir detalhe do indicador Total de escolas',
+    exact: true,
+  });
+  await totalSchoolsCard.click();
+
+  const educationSupportPanel = page.locator('.educacao-explore__panel');
+  const supportTabs = page.getByRole('tablist', { name: 'Detalhamentos do indicador' });
+  const schoolStageTab = supportTabs.getByRole('tab', { name: 'Por etapa', exact: true });
+  const schoolNetworkTab = supportTabs.getByRole('tab', { name: 'Por rede', exact: true });
+  const supportPanel = page.getByRole('tabpanel').filter({ has: page.locator('.educacao-explore-table, .education-chart') }).first();
+  assert.ok(await schoolNetworkTab.getAttribute('id'), 'Educação: aba possui ID único');
+  assert.equal(await schoolNetworkTab.getAttribute('aria-controls'), await supportPanel.getAttribute('id'), 'Educação: aba controla o painel');
+  await schoolNetworkTab.focus();
+  await page.keyboard.press('ArrowRight');
+  assert.equal(await supportTabs.locator('[aria-selected="true"]').count(), 1, 'Educação: ArrowRight mantém uma aba ativa');
+  await page.keyboard.press('End');
+  assert.equal(await supportTabs.getByRole('tab').last().getAttribute('aria-selected'), 'true', 'Educação: End ativa a última aba');
+  await page.keyboard.press('Home');
+  assert.equal(await supportTabs.getByRole('tab').first().getAttribute('aria-selected'), 'true', 'Educação: Home ativa a primeira aba');
+  await schoolStageTab.click();
+
+  const educationStageSource = educationSupportPanel.getByText(SISTEMA_S_SOURCE, { exact: true });
+  const educationStageMethod = educationSupportPanel.getByText(EDUCATION_SCHOOL_STAGE_METHOD, { exact: true });
+  await educationStageMethod.waitFor({ state: 'visible' });
+  assert.equal(await educationStageSource.count(), 1, 'Educa\u00e7\u00e3o: fonte do recorte por etapa aparece uma vez');
+  assert.equal(await educationStageMethod.count(), 1, 'Educa\u00e7\u00e3o: metodologia do recorte por etapa aparece uma vez');
+
+  const educationStageNoteOrder = await educationStageMethod.evaluate((element) => ({
+    className: element.className,
+    previousClassName: element.previousElementSibling?.className,
+    previousText: element.previousElementSibling?.textContent?.trim(),
+    tagName: element.tagName,
+  }));
+  assert.equal(educationStageNoteOrder.tagName, 'P', 'Educa\u00e7\u00e3o: metodologia preserva o par\u00e1grafo');
+  assert.equal(educationStageNoteOrder.className, 'educacao-explore__note', 'Educa\u00e7\u00e3o: metodologia preserva a classe');
+  assert.equal(educationStageNoteOrder.previousClassName, 'data-source-note', 'Educa\u00e7\u00e3o: fonte precede imediatamente a metodologia');
+  assert.equal(educationStageNoteOrder.previousText, SISTEMA_S_SOURCE, 'Educa\u00e7\u00e3o: fonte preserva texto e posi\u00e7\u00e3o');
+
+  await schoolNetworkTab.click();
+  assert.equal(await educationStageMethod.count(), 0, 'Educa\u00e7\u00e3o: metodologia n\u00e3o aparece em recorte sem nota');
+  assert.equal(await educationSupportPanel.getByText(SISTEMA_S_SOURCE, { exact: true }).count(), 1, 'Educa\u00e7\u00e3o: fonte permanece \u00fanica sem metodologia');
+
+  await page.getByRole('button', { name: 'Voltar aos indicadores', exact: true }).first().click();
+  await totalSchoolsCard.waitFor({ state: 'visible' });
   const studentsPerClassTheme = themes.getByRole('button', { name: /Alunos por turma/ });
   await studentsPerClassTheme.click();
   assert.equal(await studentsPerClassTheme.getAttribute('aria-pressed'), 'true', 'Educa\u00e7\u00e3o: tema de alunos por turma ativo');
@@ -353,11 +736,52 @@ async function verifyLegalGoalsFlow(page, viewport) {
   const expandedGoal = page.getByRole('button', { name: /^Meta 1\.a/ });
   await expandedGoal.click();
   assert.equal(await expandedGoal.getAttribute('aria-expanded'), 'true', 'Metas legais: meta com fonte é expandida');
+  const legalIndicator = page.locator('.legal-goal-indicator').first();
+  const legalSourceNotes = legalIndicator.locator('.data-source-note');
+  await legalSourceNotes.first().waitFor({ state: 'visible' });
+  assert.equal(await legalSourceNotes.count(), 2, 'PNE: fonte e metodologia aparecem uma vez no indicador representativo');
+  assert.match(await legalSourceNotes.nth(0).innerText(), /^Fonte:/, 'PNE: fonte permanece na primeira posição');
+  assert.match(await legalSourceNotes.nth(1).innerText(), /^Nota metodológica:/, 'PNE: metodologia permanece separada e sucede a fonte');
+  await assertAuxiliaryTextLegibility(
+    page.locator('.legal-goals-results-meta').first(),
+    `PNE em ${viewport.width}x${viewport.height}`,
+  );
   await assertDataSourceLegibility(
     page.locator('.data-source-note').first(),
     `Metas legais em ${viewport.width}x${viewport.height}`,
   );
   await assertNoHorizontalOverflow(page, `${LEGAL_GOALS} em ${viewport.width}x${viewport.height}`);
+}
+
+async function verifyDiagnosisFlow(page, viewport) {
+  await page.getByRole('button', { name: DIAGNOSIS, exact: true }).click();
+  await page.getByRole('heading', { level: 1, name: new RegExp(MUNICIPALITY) }).waitFor({ state: 'visible' });
+
+  const evidenceBlocks = page.locator('.diagnostic-priorities__source');
+  assert.ok(await evidenceBlocks.count() > 0, 'Diagnóstico: prioridades mantêm evidências');
+  for (const block of await evidenceBlocks.all()) {
+    await block.locator('summary').click();
+  }
+
+  const methodologyNotes = evidenceBlocks.getByText(/^Nota metodológica:/);
+  assert.ok(await methodologyNotes.count() > 0, 'Diagnóstico: metodologia compatível aparece no bloco de evidência');
+  const methodology = methodologyNotes.first();
+  const noteOrder = await methodology.evaluate((element) => ({
+    previousText: element.previousElementSibling?.textContent?.trim(),
+    tagName: element.tagName,
+  }));
+  assert.equal(noteOrder.tagName, 'P', 'Diagnóstico: MethodNote preserva o parágrafo');
+  assert.ok(noteOrder.previousText && !noteOrder.previousText.includes('Nota metodológica:'), 'Diagnóstico: fonte precede a metodologia sem concatenação');
+  assert.equal(
+    await evidenceBlocks.locator('p').filter({ hasText: /\. Nota metodológica:/ }).count(),
+    0,
+    'Diagnóstico: fonte e metodologia não ficam duplicadas',
+  );
+  await assertAuxiliaryTextLegibility(
+    evidenceBlocks.first(),
+    `Diagnóstico em ${viewport.width}x${viewport.height}`,
+  );
+  await assertNoHorizontalOverflow(page, `${DIAGNOSIS} em ${viewport.width}x${viewport.height}`);
 }
 
 async function verifyFinanceFlow(page, viewport) {
@@ -412,6 +836,16 @@ async function verifyFinanceFlow(page, viewport) {
     exact: true,
   });
   await siopeCard.waitFor({ state: 'visible' });
+  await assertExplorableCardGridColumns(
+    page.locator('.financial-indicator-card-grid'),
+    viewport,
+    'SIOPE: grade de cards financeiros',
+  );
+  await assertExplorableIndicatorCardStructure(siopeCard, {
+    classes: FINANCIAL_CARD_CLASSES,
+    context: 'SIOPE: card com hist\u00f3rico',
+  });
+  const siopeCardName = await siopeCard.getAttribute('aria-label');
   await siopeCard.click();
   await page.getByRole('heading', { level: 3, name: 'Aplicação em MDE', exact: true }).waitFor({ state: 'visible' });
   await page.getByRole('heading', { level: 3, name: 'Histórico do indicador', exact: true }).waitFor({ state: 'visible' });
@@ -449,6 +883,15 @@ async function verifyFinanceFlow(page, viewport) {
     0,
     'SIOPE: o alerta de registro não substitui a fonte ou a metodologia quando não há lacuna',
   );
+
+  const backToFinancialCards = page.getByRole('button', { name: 'Voltar aos indicadores', exact: true }).first();
+  await backToFinancialCards.click();
+  await siopeCard.waitFor({ state: 'visible' });
+  await page.waitForFunction(
+    (name) => document.activeElement?.getAttribute('aria-label') === name,
+    siopeCardName,
+  );
+  assert.equal(await siopeCard.getAttribute('aria-pressed'), 'false', 'SIOPE: card restaurado sem seleção');
 
   const fundebTab = moduleTabs.getByRole('tab', { name: /^FUNDEB\b/ });
   assert.equal(await fundebTab.count(), 1, 'FUNDEB: aba do módulo deve ser única');
@@ -575,6 +1018,116 @@ async function verifyFinanceFlow(page, viewport) {
   await assertNoHorizontalOverflow(page, `${FINANCE} em ${viewport.width}x${viewport.height}`);
 }
 
+async function verifySistemaSThemePersistence(page, viewport) {
+  const context = `Sistema S enderecavel em ${viewport.width}x${viewport.height}`;
+  const sistemaSRequest = deferDataRequest(page, SISTEMA_S_FIXTURE_PATH);
+  await sistemaSRequest.install();
+
+  try {
+    await page.evaluate((municipality) => {
+      localStorage.setItem('pne_dashboard_municipio', municipality);
+    }, SISTEMA_S_MUNICIPALITY);
+    await page.goto('about:blank');
+    await page.goto(`${BASE_URL}#sistemas`, { waitUntil: 'domcontentloaded' });
+
+    const loading = page.getByText('Carregando dados...', { exact: true });
+    await loading.waitFor({ state: 'visible' });
+    await sistemaSRequest.waitForRequest();
+    assert.equal(sistemaSRequest.hasStarted(), true, `${context}: resposta de Sistema S permanece retida`);
+    assert.equal(await page.locator('.sistema-s-panel').count(), 0, `${context}: painel aguarda os dados`);
+    assert.equal(await page.locator('.education-indicator-card-grid').count(), 0, `${context}: cards do tema padrao nao aparecem durante o carregamento`);
+
+    sistemaSRequest.release();
+    const sistemaSPanel = page.locator('.sistema-s-panel');
+    await sistemaSPanel.waitFor({ state: 'visible' });
+    assert.equal(await sistemaSPanel.count(), 1, `${context}: rota direta preserva o tema Sistema S`);
+    assert.equal(await page.locator('.education-indicator-card-grid').count(), 0, `${context}: dados validos nao retornam aos cards do tema padrao`);
+    await assertNoHorizontalOverflow(page, context);
+  } finally {
+    await sistemaSRequest.dispose();
+  }
+
+  await navigateTo(page, FINANCE, FINANCE);
+  await navigateTo(page, EDUCATION, EDUCATION);
+  await page.locator('.sistema-s-panel').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('.sistema-s-panel').count(), 1, `${context}: navegacao restaura Sistema S`);
+
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.sistema-s-panel').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('.sistema-s-panel').count(), 1, `${context}: recarregamento preserva rota e municipio`);
+
+  const missingSistemaSRequest = deferDataRequest(page, SISTEMA_S_EMPTY_FIXTURE_PATH);
+  await missingSistemaSRequest.install();
+
+  try {
+    await selectMunicipality(page, MUNICIPALITY, false);
+    await page.getByText('Carregando dados...', { exact: true }).waitFor({ state: 'visible' });
+    await missingSistemaSRequest.waitForRequest();
+    assert.equal(missingSistemaSRequest.hasStarted(), true, `${context}: resposta sem Sistema S permanece retida`);
+    assert.equal(await page.locator('.sistema-s-panel').count(), 0, `${context}: troca municipal aguarda a disponibilidade atual`);
+    assert.equal(await page.locator('.education-indicator-card-grid').count(), 0, `${context}: troca municipal nao exibe cards do tema padrao antes da resposta`);
+
+    missingSistemaSRequest.release();
+    await page.locator('.education-indicator-card-grid').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('.sistema-s-panel').count(), 0, `${context}: municipio sem Sistema S usa o fallback apos a resposta`);
+    await assertNoHorizontalOverflow(page, `${context} sem dados`);
+  } finally {
+    await missingSistemaSRequest.dispose();
+  }
+}
+
+async function verifyAddressableNavigation(page, viewport) {
+  const context = `Hash estável em ${viewport.width}x${viewport.height}`;
+  await page.goto(`${BASE_URL}/#financeiros?modulo=fundeb`, { waitUntil: 'domcontentloaded' });
+  const modules = page.getByRole('tablist', { name: 'Módulos de financiamento da educação' });
+  const fundeb = modules.getByRole('tab', { name: /^FUNDEB/ });
+  await fundeb.waitFor({ state: 'visible' });
+  assert.equal(await fundeb.getAttribute('aria-selected'), 'true', `${context}: módulo financeiro direto`);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await fundeb.waitFor({ state: 'visible' });
+  assert.equal(await fundeb.getAttribute('aria-selected'), 'true', `${context}: recarga preserva módulo`);
+
+  const financialModules = [
+    { key: 'fundeb', tab: /^FUNDEB/ },
+    { key: 'pnate', tab: /^PNATE/ },
+    { key: 'siope', tab: /Aplicação dos Recursos/ },
+  ];
+  for (const module of financialModules) {
+    await page.goto(`${BASE_URL}/#financeiros?modulo=${module.key}`, { waitUntil: 'domcontentloaded' });
+    const moduleTab = page.getByRole('tablist', { name: 'Módulos de financiamento da educação' }).getByRole('tab', { name: module.tab });
+    await moduleTab.waitFor({ state: 'visible' });
+    const detailCard = page.getByRole('button', { name: EXPLORABLE_CARD_NAME }).first();
+    const cardName = await detailCard.getAttribute('aria-label');
+    await detailCard.click();
+    assert.match(page.url(), new RegExp(`modulo=${module.key}&detalhe=[^&]+`), `${context}: ${module.key} serializa detalhe`);
+    const detailUrl = page.url();
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.getByRole('button', { name: 'Voltar aos indicadores' }).first().waitFor({ state: 'visible' });
+    assert.equal(page.url(), detailUrl, `${context}: ${module.key} preserva detalhe na recarga`);
+    await page.getByRole('button', { name: 'Voltar aos indicadores' }).first().click();
+    await page.getByRole('button', { name: cardName, exact: true }).waitFor({ state: 'visible' });
+    assert.doesNotMatch(page.url(), /detalhe=/, `${context}: ${module.key} remove detalhe ao fechar`);
+    await page.goto(`${BASE_URL}/#financeiros?modulo=${module.key}&detalhe=chave-inexistente`, { waitUntil: 'domcontentloaded' });
+    await page.getByRole('button', { name: EXPLORABLE_CARD_NAME }).first().waitFor({ state: 'visible' });
+    assert.doesNotMatch(page.url(), /detalhe=/, `${context}: ${module.key} trata chave inválida`);
+  }
+
+  await page.goto(`${BASE_URL}/#educacao?tema=rede`, { waitUntil: 'domcontentloaded' });
+  const schools = page.getByRole('group', { name: 'Temas da educação' }).getByRole('button', { name: /^Escolas/ });
+  await schools.waitFor({ state: 'visible' });
+  assert.equal(await schools.getAttribute('aria-pressed'), 'true', `${context}: tema direto`);
+  const card = page.getByRole('button', { name: EXPLORABLE_CARD_NAME }).first();
+  await card.click();
+  assert.match(page.url(), /detalhe=[^&]+/, `${context}: abertura registra detalhe`);
+  await page.goBack({ waitUntil: 'domcontentloaded' });
+  await card.waitFor({ state: 'visible' });
+  assert.doesNotMatch(page.url(), /detalhe=/, `${context}: voltar fecha detalhe`);
+
+  await page.goto(`${BASE_URL}/#contexto-invalido`, { waitUntil: 'domcontentloaded' });
+  await page.getByRole('heading', { level: 1 }).waitFor({ state: 'visible' });
+  assert.equal(await page.getByRole('button', { name: 'Home', exact: true }).getAttribute('aria-current'), 'page', `${context}: contexto inválido usa Home`);
+}
+
 async function verifySistemaSFlow(page, viewport) {
   await page.evaluate(async (fixturePath) => {
     const resources = performance.getEntriesByType('resource').map((entry) => entry.name);
@@ -662,6 +1215,71 @@ async function verifySistemaSFlow(page, viewport) {
   await assertNoHorizontalOverflow(page, `Sistema S em ${viewport.width}x${viewport.height}`);
 }
 
+async function verifyMunicipalitySelectorIsolation(page) {
+  await page.evaluate(async () => {
+    const resources = performance.getEntriesByType('resource').map((entry) => entry.name);
+    const reactUrl = resources.find((name) => /\/react\.js\?/.test(name));
+    const reactDomUrl = resources.find((name) => /\/react-dom_client\.js\?/.test(name));
+    const [{ MunicipalitySelector }, reactModule, reactDomModule] = await Promise.all([
+      import('/src/components/MunicipalitySelector.jsx'),
+      import(reactUrl),
+      import(reactDomUrl),
+    ]);
+    const host = document.createElement('div');
+    host.id = 'municipality-selector-e2e-fixture';
+    document.body.replaceChildren(host);
+    const selector = (key) => reactModule.default.createElement(MunicipalitySelector, {
+      key,
+      municipios: ['Alegrete', 'Áurea', 'Bagé'],
+      onChange: () => {},
+    });
+    reactDomModule.default.createRoot(host).render(
+      reactModule.default.createElement('div', null, selector('one'), selector('two')),
+    );
+  });
+
+  const inputs = page.getByRole('combobox', { name: 'Município' });
+  await inputs.first().waitFor({ state: 'visible' });
+  assert.equal(await inputs.count(), 2, 'Seletor municipal: fixture possui duas instâncias');
+  await inputs.nth(0).click();
+  await inputs.nth(1).focus();
+  const duplicateIds = await page.locator('[id]').evaluateAll((elements) => {
+    const ids = elements.map((element) => element.id);
+    return ids.filter((id, index) => ids.indexOf(id) !== index);
+  });
+  assert.deepEqual(duplicateIds, [], 'Seletor municipal: não existem IDs duplicados entre instâncias');
+  for (const input of await inputs.all()) {
+    const controls = await input.getAttribute('aria-controls');
+    assert.ok(controls, 'Seletor municipal: combobox referencia listbox própria');
+    assert.equal(await page.locator(`#${controls}`).count(), 1, 'Seletor municipal: relação aria-controls é única');
+  }
+}
+
+async function verifyContentStatesFixture(page, viewport) {
+  await page.evaluate(async () => {
+    const resources = performance.getEntriesByType('resource').map((entry) => entry.name);
+    const reactUrl = resources.find((name) => /\/react\.js\?/.test(name));
+    const reactDomUrl = resources.find((name) => /\/react-dom_client\.js\?/.test(name));
+    const [{ ContentState }, reactModule, reactDomModule] = await Promise.all([
+      import('/src/components/ContentState.jsx'), import(reactUrl), import(reactDomUrl),
+    ]);
+    const host = document.createElement('div');
+    document.body.replaceChildren(host);
+    const state = (kind, text) => reactModule.default.createElement(ContentState, { kind, key: kind }, text);
+    reactDomModule.default.createRoot(host).render(reactModule.default.createElement('div', null,
+      state('loading', 'Carregando dados representativos...'),
+      state('error', 'Erro representativo ao carregar os dados.'),
+      state('empty', 'Sem dados disponíveis.'),
+      state('noResults', 'Nenhum resultado para um texto de busca deliberadamente longo.'),
+      state('unavailable', 'Valor monetário indisponível: R$ 9.999.999.999.999,99.'),
+    ));
+  });
+  await page.getByRole('alert').waitFor({ state: 'visible' });
+  assert.equal(await page.getByRole('alert').count(), 1, 'Estados: erro possui anúncio assertivo');
+  assert.equal(await page.getByRole('status').count(), 4, 'Estados: demais naturezas possuem anúncio polido');
+  await assertNoHorizontalOverflow(page, `Estados representativos em ${viewport.width}x${viewport.height}`);
+}
+
 async function runViewport(browser, viewport, errors) {
   const context = await browser.newContext({ viewport });
   const page = await context.newPage();
@@ -683,13 +1301,57 @@ async function runViewport(browser, viewport, errors) {
 
     await selectMunicipality(page);
     await assertNoHorizontalOverflow(page, `Home com município em ${viewportLabel}`);
+    await assertPriorityContentInFirstFold(page, viewport);
 
     await verifyPne2014Flow(page, viewport);
     await verifyPne2026Flow(page, viewport);
     await verifyEducationFlow(page, viewport);
     await verifyLegalGoalsFlow(page, viewport);
+    await verifyDiagnosisFlow(page, viewport);
     await verifyFinanceFlow(page, viewport);
+    await verifyAddressableNavigation(page, viewport);
+    await verifySistemaSThemePersistence(page, viewport);
+    await verifyContentStatesFixture(page, viewport);
+    await verifyMunicipalitySelectorIsolation(page);
     await verifySistemaSFlow(page, viewport);
+  } finally {
+    await context.close();
+  }
+}
+
+async function runResponsiveViewport(browser, viewport, errors) {
+  const context = await browser.newContext({ viewport });
+  const page = await context.newPage();
+  const viewportLabel = `${viewport.width}x${viewport.height}`;
+  page.on('console', (message) => {
+    if (message.type() === 'error') errors.push(`${viewportLabel}: console.error: ${message.text()}`);
+  });
+  page.on('pageerror', (error) => errors.push(`${viewportLabel}: pageerror: ${error.message}`));
+
+  try {
+    await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
+    await page.getByRole('heading', { level: 1 }).waitFor({ state: 'visible' });
+    await selectMunicipality(page);
+    await assertNoHorizontalOverflow(page, `Home em ${viewportLabel}`);
+    await navigateTo(page, EDUCATION, EDUCATION);
+    await page.locator('.education-indicator-card-grid').waitFor({ state: 'visible' });
+    await assertNoHorizontalOverflow(page, `Educação em ${viewportLabel}`);
+    const columns = await page.locator('.education-indicator-card-grid').evaluate((element) => (
+      getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length
+    ));
+    assert.equal(columns, 1, `Educação: uma coluna na grade em ${viewportLabel}`);
+    await navigateTo(page, PNE_2026, PNE_2026);
+    await assertNoHorizontalOverflow(page, `${PNE_2026} em ${viewportLabel}`);
+    if (viewport.width <= 390) {
+      const themes = page.getByRole('group', { name: 'Temas' });
+      const scrollEvidence = await themes.evaluate((element) => ({
+        clientWidth: element.clientWidth,
+        overflowX: getComputedStyle(element).overflowX,
+        scrollWidth: element.scrollWidth,
+      }));
+      assert.equal(scrollEvidence.overflowX, 'auto', `${PNE_2026}: rolagem de temas fica contida`);
+      assert.ok(scrollEvidence.scrollWidth > scrollEvidence.clientWidth, `${PNE_2026}: conteúdo extenso permanece alcançável`);
+    }
   } finally {
     await context.close();
   }
@@ -742,6 +1404,9 @@ async function runTests() {
   try {
     for (const viewport of VIEWPORTS) {
       await runViewport(browser, viewport, errors);
+    }
+    for (const viewport of RESPONSIVE_VIEWPORTS) {
+      await runResponsiveViewport(browser, viewport, errors);
     }
     await runMobileDataSourceViewport(browser, errors);
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { CategoryTabs } from '../components/CategoryTabs'
 import { FundebPanel } from '../components/FundebPanel'
 import { PnatePanel } from '../components/PnatePanel'
@@ -11,22 +11,28 @@ import { SIOPE_SELECTED_INDICATORS_COUNT } from '../data/siopeIndicators'
 import { EducationBarChart } from '../components/EducationBarChart'
 import { EducationIndicatorCard } from '../components/EducationIndicatorCard'
 import { DetailNavigation } from '../components/DetailNavigation'
+import { DetailHeadingText, PageHeadingText } from '../components/HeadingText'
+import { IndicatorChartHeader } from '../components/IndicatorChartHeader'
 import { EducationLineChart } from '../components/EducationLineChart'
 import { EducationStackedBarChart } from '../components/EducationStackedBarChart'
 import { EducationSummaryCard } from '../components/EducationSummaryCard'
 import { EducationTable } from '../components/EducationTable'
 import { DataSourceNote } from '../components/DataSourceNote'
+import { ContentState } from '../components/ContentState'
+import { MethodNote } from '../components/MethodNote'
 import { MetricCard } from '../components/MetricCard'
 import { SearchField } from '../components/SearchField'
 import { SegmentedControl } from '../components/SegmentedControl'
 import { StatusBadge } from '../components/StatusBadge'
 import { ChartEmptyState, ChartLegend, ChartTooltip } from '../components/ChartPrimitives'
 import { loadEducationMunicipio, loadEducationMunicipiosIndex } from '../data/educationData'
+import { getDataSourceParts } from '../utils/dataSourceNotes'
 import { PNE_CONTEXT_PROXY_INDICATOR_KEYS } from '../utils/pneDisplayRules'
 import { useAsyncData } from '../utils/useAsyncData'
 import { scrollPageToTop } from '../utils/navigationScroll'
-import { useDetailViewNavigation } from '../hooks/useDetailViewNavigation'
+import { resolveDetailSequence, useDetailViewNavigation } from '../hooks/useDetailViewNavigation'
 import { chartSeriesColor, closeChartTooltipOnEscape } from '../utils/chartVisuals'
+import { getHashContext, setHashContext } from '../utils/hashNavigation'
 import {
   depLabel,
   etapaLabel,
@@ -241,6 +247,9 @@ function getInitialEducationNavigation() {
   const rawHash = window.location.hash.replace(/^#\/?/, '')
   const hashQuery = rawHash.includes('?') ? rawHash.slice(rawHash.indexOf('?') + 1) : ''
   const hashParams = new URLSearchParams(hashQuery)
+  fallback.detailKey = hashParams.get('detalhe') ?? ''
+  const requestedTheme = hashParams.get('tema') ?? hashParams.get('theme')
+  if (requestedTheme) fallback.panoramaTheme = requestedTheme
   const keys = ['bloco', 'block', 'scope', 'tema', 'theme', 'modulo', 'module']
   const candidates = [
     rawHash && !rawHash.includes('?') ? rawHash : null,
@@ -290,6 +299,16 @@ function getInitialEducationNavigation() {
       }
     }
 
+    const panoramaTheme = Object.values(PANORAMA_THEME_KEYS)
+      .find((key) => normalizeNavigationValue(key) === value)
+    if (panoramaTheme) {
+      return {
+        ...fallback,
+        mainBlock: MAIN_BLOCK_KEYS.panorama,
+        panoramaTheme,
+      }
+    }
+
     if (value === 'financiamentoeducacao') {
       return {
         ...fallback,
@@ -323,6 +342,7 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
     return new Map(list.map((m) => [m.municipio, m.id_municipio]))
   }, [eduIndexState.data])
   const selectedId = eduMunMap.get(selectedMunicipio) ?? null
+  const previousSelectedIdRef = useRef(selectedId)
   const munDataState = useAsyncData(async () => {
     if (!selectedId) return null
     return loadEducationMunicipio(selectedId)
@@ -338,13 +358,41 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
   const [selectedMainBlock, setSelectedMainBlock] = useState(initialNavigation.mainBlock)
   const [selectedThemeKey, setSelectedThemeKey] = useState(initialNavigation.panoramaTheme)
   const [selectedFinancingModule, setSelectedFinancingModule] = useState(initialNavigation.financingModule)
-  const [selectedIndicatorKey, setSelectedIndicatorKey] = useState('')
-  const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const [selectedIndicatorKey, setSelectedIndicatorKey] = useState(initialNavigation.detailKey ?? '')
+  const [isDetailOpen, setIsDetailOpen] = useState(Boolean(initialNavigation.detailKey))
   const [searchQuery, setSearchQuery] = useState('')
   const detailNavigation = useDetailViewNavigation({
     activeKey: selectedIndicatorKey,
     isOpen: isDetailOpen,
   })
+  const handleFinancialDetailChange = useCallback((detailKey) => {
+    setSelectedIndicatorKey(detailKey)
+    setHashContext('financeiros', { modulo: selectedFinancingModule, detalhe: detailKey })
+  }, [selectedFinancingModule])
+
+  useEffect(() => {
+    function handleHashChange() {
+      const navigation = getInitialEducationNavigation()
+      const { params, route } = getHashContext()
+      if (params.has('tema') || params.has('theme') || ['sistemas', 'escolassistemas'].includes(normalizeNavigationValue(route))) {
+        setSelectedThemeKey(navigation.panoramaTheme)
+      }
+      if (params.has('modulo') || params.has('module') || ['fundeb', 'pnate', 'siope', 'vaar'].includes(normalizeNavigationValue(route))) {
+        setSelectedFinancingModule(navigation.financingModule)
+      }
+      if (normalizeNavigationValue(route) === 'educacao' && !params.has('tema') && selectedThemeKey !== PANORAMA_THEME_KEYS.matriculas) {
+        setHashContext('educacao', { tema: selectedThemeKey })
+      }
+      if (normalizeNavigationValue(route) === 'financeiros' && !params.has('modulo')) {
+        setHashContext('financeiros', { modulo: selectedFinancingModule })
+      }
+      setSelectedIndicatorKey(navigation.detailKey ?? '')
+      setIsDetailOpen(Boolean(navigation.detailKey))
+    }
+
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [selectedFinancingModule, selectedThemeKey])
 
   useEffect(() => {
     if (!initialMainBlock || initialMainBlock === selectedMainBlock) return
@@ -359,21 +407,31 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
   const hasSistemaS =
     Number(sistemaS.resumo_ultimo_ano?.total_escolas || 0) > 0 &&
     Number(sistemaS.ultimo_ano) === 2025
+  const shouldKeepSistemaSTheme =
+    eduIndexState.loading ||
+    munDataState.loading ||
+    previousSelectedIdRef.current !== selectedId
 
   useEffect(() => {
-    if (selectedThemeKey === PANORAMA_THEME_KEYS.escolasSistemaS && !hasSistemaS) {
+    if (
+      !shouldKeepSistemaSTheme &&
+      selectedThemeKey === PANORAMA_THEME_KEYS.escolasSistemaS &&
+      !hasSistemaS
+    ) {
       setSelectedThemeKey(PANORAMA_THEME_KEYS.matriculas)
     }
-  }, [hasSistemaS, selectedThemeKey])
+  }, [hasSistemaS, selectedThemeKey, shouldKeepSistemaSTheme])
+
+  useEffect(() => {
+    previousSelectedIdRef.current = selectedId
+  }, [selectedId])
 
   if (!selectedMunicipio) {
     return (
       <div className="page-stack educacao-page">
         <section className="page-card educacao-hero">
           <div>
-            <span className="eyebrow">{pageCopy.eyebrow}</span>
-            <h1>{pageCopy.title}</h1>
-            <p>{pageCopy.description}</p>
+            <PageHeadingText eyebrow={pageCopy.eyebrow} title={pageCopy.title} description={pageCopy.description} />
           </div>
         </section>
         <section className="empty-state">
@@ -390,7 +448,7 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
   }
 
   if (eduIndexState.loading || munDataState.loading) {
-    return <div className="page-stack"><p className="state-box state-box--loading">Carregando dados...</p></div>
+    return <div className="page-stack"><ContentState as="p" kind="loading" className="state-box state-box--loading">Carregando dados...</ContentState></div>
   }
 
   if (munDataState.error) {
@@ -418,13 +476,7 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
     return queryMatches
   })
   const activeIndicator = filteredItems.find((item) => item.key === selectedIndicatorKey) ?? null
-  const activeIndicatorIndex = activeIndicator
-    ? filteredItems.findIndex((item) => item.key === activeIndicator.key)
-    : -1
-  const previousIndicator = activeIndicatorIndex > 0 ? filteredItems[activeIndicatorIndex - 1] : null
-  const nextIndicator = activeIndicatorIndex >= 0 && activeIndicatorIndex < filteredItems.length - 1
-    ? filteredItems[activeIndicatorIndex + 1]
-    : null
+  const { activeIndex: activeIndicatorIndex, previousItem: previousIndicator, nextItem: nextIndicator } = resolveDetailSequence(filteredItems, activeIndicator?.key)
   const isShowingIndicatorDetail = Boolean(isDetailOpen && activeIndicator)
   const isPneComplementaryTheme = selectedTheme?.key === PANORAMA_THEME_KEYS.complementaresPne
 
@@ -433,6 +485,7 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
     setSelectedIndicatorKey('')
     setIsDetailOpen(false)
     setSearchQuery('')
+    setHashContext('educacao', { tema: themeKey })
   }
 
   function handleMainBlockSelect(mainBlock) {
@@ -441,6 +494,7 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
     setSelectedIndicatorKey('')
     setIsDetailOpen(false)
     setSearchQuery('')
+    setHashContext(mainBlock === MAIN_BLOCK_KEYS.financiamento ? 'financeiros' : 'educacao')
     if (mainBlock === MAIN_BLOCK_KEYS.panorama) {
       const validKeys = themes.map((t) => t.key)
       if (!validKeys.includes(selectedThemeKey)) {
@@ -452,6 +506,8 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
   function handleFinancingModuleSelect(moduleKey) {
     if (moduleKey === selectedFinancingModule) return
     setSelectedFinancingModule(moduleKey)
+    setSelectedIndicatorKey('')
+    setHashContext('financeiros', { modulo: moduleKey })
     window.requestAnimationFrame(() => {
       scrollPageToTop()
     })
@@ -461,12 +517,16 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
     detailNavigation.prepareDetail(indicatorKey, { captureGridPosition: true })
     setSelectedIndicatorKey(indicatorKey)
     setIsDetailOpen(true)
+    const { params, route } = getHashContext()
+    setHashContext(route || 'educacao', { tema: params.get('tema'), modulo: params.get('modulo'), detalhe: indicatorKey })
   }
 
   function handleBackToIndicators() {
     const returnKey = selectedIndicatorKey
     setIsDetailOpen(false)
     setSelectedIndicatorKey('')
+    const { params, route } = getHashContext()
+    setHashContext(route || 'educacao', { tema: params.get('tema'), modulo: params.get('modulo') })
     detailNavigation.restoreGrid(returnKey)
   }
 
@@ -474,6 +534,8 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
     detailNavigation.prepareDetail(indicatorKey)
     setSelectedIndicatorKey(indicatorKey)
     setIsDetailOpen(true)
+    const { params, route } = getHashContext()
+    setHashContext(route || 'educacao', { tema: params.get('tema'), modulo: params.get('modulo'), detalhe: indicatorKey })
   }
 
   function renderPanoramaScope() {
@@ -537,7 +599,7 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
 
             {filteredItems.length === 0 ? (
               <div className="meta-grid-empty education-indicator-grid-empty">
-                <p>Nenhum indicador disponível para este tema ou busca.</p>
+                <ContentState as="p" kind="noResults">Nenhum indicador disponível para este tema ou busca.</ContentState>
               </div>
             ) : isPneComplementaryTheme ? (
               <PneComplementaryGroupedGrid
@@ -593,12 +655,16 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
         </div>
         {selectedFinancingModule === FINANCING_MODULE_KEYS.siope ? (
           <SiopeIndicatorsPanel
+            detailKey={selectedIndicatorKey}
             idMunicipio={selectedId}
+            onDetailChange={handleFinancialDetailChange}
             selectedMunicipio={selectedMunicipio}
           />
         ) : selectedFinancingModule === FINANCING_MODULE_KEYS.fundeb ? (
           <FundebPanel
+            detailKey={selectedIndicatorKey}
             municipioData={municipioData}
+            onDetailChange={handleFinancialDetailChange}
             selectedMunicipio={selectedMunicipio}
             embedded={true}
           />
@@ -606,6 +672,8 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
           <VaarPanel vaarData={dados?.blocos?.vaar} />
         ) : (
           <PnatePanel
+            detailKey={selectedIndicatorKey}
+            onDetailChange={handleFinancialDetailChange}
             pnateData={dados?.blocos?.pnate ?? municipioData?.blocos?.pnate}
             selectedMunicipio={selectedMunicipio}
           />
@@ -628,9 +696,7 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
     <div className="page-stack educacao-page">
       <section className="page-card educacao-hero">
         <div className="educacao-hero__intro">
-          <span className="eyebrow">{pageCopy.eyebrow}</span>
-          <h1>{pageCopy.title}</h1>
-          <p>{pageCopy.description}</p>
+          <PageHeadingText eyebrow={pageCopy.eyebrow} title={pageCopy.title} description={pageCopy.description} />
           <p className="educacao-hero__municipality">Município em foco: <strong>{selectedMunicipio}</strong></p>
         </div>
 
@@ -734,11 +800,7 @@ function IndicatorSegmentedControl({ options, selectedKey, onSelect, ariaLabel }
 function EducationDetailHeader({ indicator, description }) {
   return (
     <div className="detail-heading educacao-detail-heading">
-      <div className="detail-heading__copy">
-        <span className="eyebrow">Indicador selecionado</span>
-        <h3 data-detail-title tabIndex={-1}>{indicator.label}</h3>
-        {description ? <p>{description}</p> : null}
-      </div>
+      <DetailHeadingText eyebrow="Indicador selecionado" title={indicator.label} description={description} />
       <div className="educacao-detail-heading__badges">
         <span className="indicator-stage-badge">{indicator.themeShortLabel ?? indicator.themeLabel}</span>
         <StatusBadge status={indicator.statusLabel} tone={indicator.statusTone} />
@@ -819,27 +881,6 @@ function buildHistorySummary(series, formatLabel = (value) => String(value)) {
   return `Série de ${firstPoint.ano} a ${lastPoint.ano}: ${formatLabel(firstPoint.valor)} no início e ${formatLabel(lastPoint.valor)} no dado mais recente.`
 }
 
-function IndicatorChartHeader({ title, subtitle, eyebrow = 'Série histórica', summary, hasWideSegmented = false, children }) {
-  return (
-    <div
-      className={
-        hasWideSegmented
-          ? 'indicator-chart-header has-wide-segmented'
-          : 'indicator-chart-header'
-      }
-    >
-      <div className="indicator-chart-title-group">
-        {eyebrow ? <span className="indicator-chart-eyebrow">{eyebrow}</span> : null}
-        <h3>{title}</h3>
-        <p>{subtitle}</p>
-        {summary ? <p className="indicator-chart-summary">{summary}</p> : null}
-      </div>
-
-      {children}
-    </div>
-  )
-}
-
 function EducationIndicatorDetail({ indicator, blocos }) {
   const [selectedStageKey, setSelectedStageKey] = useState('')
 
@@ -917,7 +958,7 @@ function EducationIndicatorDetail({ indicator, blocos }) {
               showPointLabels={displayIndicator.showPointLabels}
               title={null}
             />
-            <DataSourceNote context={dataSourceContextForEducation(displayIndicator)} />
+            <EducationSourceNotes context={dataSourceContextForEducation(displayIndicator)} />
           </>
         ) : (
           <ChartEmptyState message="Histórico não disponível." />
@@ -1151,7 +1192,7 @@ function InfraDetailPanel({ indicator, blocos }) {
           <div className="infra-table-scroll">
             <EducationTable columns={evolutionColumns} rows={evolutionRows} />
           </div>
-          <DataSourceNote
+          <EducationSourceNotes
             context={dataSourceContextForEducation(indicator, {
               detailType: 'table',
               title: 'Histórico dos principais indicadores de infraestrutura',
@@ -1178,8 +1219,28 @@ function applyStageOption(indicator, option) {
 function EducationIndicatorBreakdown({ indicator }) {
   const detailItems = sortDetailItems(indicator.explore ?? [])
   const [selectedDetailKey, setSelectedDetailKey] = useState('')
+  const tabSetId = useId().replace(/:/g, '')
+  const tabRefs = useRef([])
   const activeItem = detailItems.find((item) => item.key === selectedDetailKey) ?? detailItems[0] ?? null
   const hasTabs = detailItems.length > 1
+
+  function selectTab(index) {
+    const item = detailItems[index]
+    if (!item) return
+    setSelectedDetailKey(item.key)
+    tabRefs.current[index]?.focus()
+  }
+
+  function handleTabKeyDown(event, index) {
+    let nextIndex = null
+    if (event.key === 'ArrowRight') nextIndex = (index + 1) % detailItems.length
+    if (event.key === 'ArrowLeft') nextIndex = (index - 1 + detailItems.length) % detailItems.length
+    if (event.key === 'Home') nextIndex = 0
+    if (event.key === 'End') nextIndex = detailItems.length - 1
+    if (nextIndex === null) return
+    event.preventDefault()
+    selectTab(nextIndex)
+  }
 
   if (!detailItems.length) return null
 
@@ -1195,14 +1256,19 @@ function EducationIndicatorBreakdown({ indicator }) {
 
       {hasTabs ? (
         <div className="educacao-detail-tabs platform-tab-list" role="tablist" aria-label="Detalhamentos do indicador">
-          {detailItems.map((item) => (
+          {detailItems.map((item, index) => (
             <button
+              ref={(element) => { tabRefs.current[index] = element }}
               className={`educacao-detail-tab platform-tab${activeItem?.key === item.key ? ' is-active' : ''}`}
               key={item.key}
+              id={`education-detail-tab-${tabSetId}-${item.key}`}
               role="tab"
               aria-selected={activeItem?.key === item.key}
+              aria-controls={`education-detail-panel-${tabSetId}`}
+              tabIndex={activeItem?.key === item.key ? 0 : -1}
               type="button"
               onClick={() => setSelectedDetailKey(item.key)}
+              onKeyDown={(event) => handleTabKeyDown(event, index)}
             >
               {getDetailTabLabel(item)}
             </button>
@@ -1210,7 +1276,12 @@ function EducationIndicatorBreakdown({ indicator }) {
         </div>
       ) : null}
 
-      <div className="educacao-explore__panel">
+      <div
+        className="educacao-explore__panel"
+        id={`education-detail-panel-${tabSetId}`}
+        role="tabpanel"
+        aria-labelledby={hasTabs ? `education-detail-tab-${tabSetId}-${activeItem.key}` : undefined}
+      >
         <ExploreItem indicator={indicator} item={activeItem} />
       </div>
     </section>
@@ -1301,7 +1372,7 @@ function TurmasPanoramaPanel({ indicator, blocos }) {
               series={displaySeries}
               showPointLabels
             />
-            <DataSourceNote
+            <EducationSourceNotes
               context={dataSourceContextForEducation(indicator, {
                 detailType: selectedMetricKey,
                 title: activeMetric.label,
@@ -1337,6 +1408,19 @@ function dataSourceContextForEducation(indicator, extra = {}) {
   }
 }
 
+function EducationSourceNotes({ context }) {
+  const { methodology, source } = getDataSourceParts(context)
+
+  return (
+    <>
+      {source ? <DataSourceNote source={source} /> : null}
+      {methodology ? (
+        <MethodNote className="data-source-note">Nota metodológica: {methodology}</MethodNote>
+      ) : null}
+    </>
+  )
+}
+
 function detailTabPriority(item) {
   if (Number.isFinite(item.tabPriority)) return item.tabPriority
   const label = getDetailTabLabel(item)
@@ -1369,14 +1453,21 @@ function getDetailTabLabel(item) {
 }
 
 function ExploreItem({ indicator, item }) {
-  const noteEl = item.note ? <p className="educacao-explore__note">{item.note}</p> : null
-  const sourceNote = (
-    <DataSourceNote
-      context={dataSourceContextForEducation(indicator, {
-        detailType: item.type,
-        title: item.title ?? item.tabLabel,
-      })}
-    />
+  const sourceContext = dataSourceContextForEducation(indicator, {
+    detailType: item.type,
+    title: item.title ?? item.tabLabel,
+  })
+  const isSchoolStageMethodology = item.key === 'rede-etapa' && Boolean(item.note)
+  const sourceParts = isSchoolStageMethodology ? getDataSourceParts(sourceContext) : null
+  const noteEl = isSchoolStageMethodology ? (
+    <MethodNote className="educacao-explore__note">{item.note}</MethodNote>
+  ) : item.note ? (
+    <p className="educacao-explore__note">{item.note}</p>
+  ) : null
+  const sourceNote = sourceParts ? (
+    <DataSourceNote source={sourceParts.source} />
+  ) : (
+    <EducationSourceNotes context={sourceContext} />
   )
 
   if (item.type === 'stacked') {

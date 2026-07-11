@@ -11,6 +11,8 @@
     "list:indicators": "node scripts/checks/list-indicators.cjs",
     "preview": "vite preview",
     "test:e2e": "node scripts/checks/e2e-test.cjs",
+    "test:visual": "node scripts/checks/visual-test.cjs",
+    "update:visual": "node -e \"process.env.UPDATE_VISUAL_BASELINES='1';require('./scripts/checks/visual-test.cjs')\"",
     "update:data": "python data_pipeline/scripts/update_static_data.py",
     "update:data:skip-build": "python data_pipeline/scripts/update_static_data.py --skip-build",
     "validate:details": "python data_pipeline/scripts/validate_static_details.py"

@@ -11,7 +11,7 @@ export function MunicipalityProvider({ children, municipios }) {
   const [selectedMunicipio, setSelectedMunicipio] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY)
-      if (saved && municipios.includes(saved)) {
+      if (saved) {
         return saved
       }
     } catch {
@@ -34,6 +34,8 @@ export function MunicipalityProvider({ children, municipios }) {
   }, [])
 
   useEffect(() => {
+    if (municipios.length === 0) return
+
     if (selectedMunicipio && !municipios.includes(selectedMunicipio)) {
       setSelectedMunicipio(null)
       try {

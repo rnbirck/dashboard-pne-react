@@ -1,58 +1,65 @@
+import { DetailNavigation } from './DetailNavigation'
+import { DetailHeadingText } from './HeadingText'
+import { ExplorableIndicatorCardFrame } from './ExplorableIndicatorCardFrame'
+import { IndicatorChartHeader } from './IndicatorChartHeader'
 import { MetricCard } from './MetricCard'
 import { StatusBadge } from './StatusBadge'
-import { DetailNavigation } from './DetailNavigation'
-import { InteractionChevron } from './InteractionChevron'
-import { Sparkline } from './Sparkline'
 
 const EM = '\u2014'
-const SPARKLINE_CLASS_NAMES = Object.freeze({
-  root: 'financial-indicator-card__sparkline',
-  area: 'financial-indicator-card__sparkline-area',
-  line: 'financial-indicator-card__sparkline-line',
-  end: 'financial-indicator-card__sparkline-end',
-  period: 'financial-indicator-card__sparkline-period',
-  empty: 'financial-indicator-card__sparkline--empty',
+const FINANCIAL_CARD_CLASS_CONTRACT = Object.freeze({
+  root: 'financial-indicator-card',
+  statusModifier: (tone) => `financial-indicator-card--${tone}`,
+  topline: 'financial-indicator-card__topline',
+  context: 'financial-indicator-card__module',
+  title: 'financial-indicator-card__title',
+  description: 'financial-indicator-card__description',
+  valueRow: 'financial-indicator-card__value-row',
+  support: 'financial-indicator-card__support',
+  footer: 'financial-indicator-card__footer',
+  sparkline: Object.freeze({
+    root: 'financial-indicator-card__sparkline',
+    area: 'financial-indicator-card__sparkline-area',
+    line: 'financial-indicator-card__sparkline-line',
+    end: 'financial-indicator-card__sparkline-end',
+    period: 'financial-indicator-card__sparkline-period',
+    empty: 'financial-indicator-card__sparkline--empty',
+  }),
 })
 
 export function FinancialIndicatorCard({ buttonRef, indicator, isSelected = false, onSelect }) {
   const statusTone = indicator.statusTone ?? 'default'
+  const viewModel = {
+    ariaLabel: `Abrir detalhe do indicador ${indicator.label}`,
+    contextLabel: indicator.moduleLabel ?? 'Financeiro',
+    description: indicator.description,
+    footer: {
+      primary: indicator.unitLabel ?? 'Indicador',
+      secondary: indicator.sourceLabel,
+    },
+    sparklineSeries: indicator.series,
+    status: {
+      label: indicator.statusLabel ?? 'Com dados',
+      tone: statusTone,
+    },
+    support: {
+      label: indicator.variationLabel ?? 'Variação no período',
+      value: indicator.variationDisplay ?? EM,
+    },
+    title: indicator.label,
+    value: {
+      display: indicator.currentDisplay ?? EM,
+      metaLabel: indicator.currentYear ? `Ano ${indicator.currentYear}` : 'Ano indisponível',
+    },
+  }
 
   return (
-    <button
-      className={`financial-indicator-card interaction-card--explorable financial-indicator-card--${statusTone}${isSelected ? ' is-selected' : ''}`}
-      ref={buttonRef}
-      type="button"
-      onClick={onSelect}
-      aria-label={`Abrir detalhe do indicador ${indicator.label}`}
-      aria-pressed={isSelected}
-      title={indicator.label}
-    >
-      <span className="financial-indicator-card__topline">
-        <span className="financial-indicator-card__module">{indicator.moduleLabel ?? 'Financeiro'}</span>
-        <StatusBadge status={indicator.statusLabel ?? 'Com dados'} tone={statusTone} />
-      </span>
-
-      <span className="financial-indicator-card__title">{indicator.label}</span>
-      <span className="financial-indicator-card__description">{indicator.description}</span>
-
-      <span className="financial-indicator-card__value-row">
-        <strong>{indicator.currentDisplay ?? EM}</strong>
-        <span>{indicator.currentYear ? `Ano ${indicator.currentYear}` : 'Ano indisponível'}</span>
-      </span>
-
-      <span className="financial-indicator-card__support">
-        <span>{indicator.variationLabel ?? 'Variação no período'}</span>
-        <strong>{indicator.variationDisplay ?? EM}</strong>
-      </span>
-
-      <Sparkline series={indicator.series} classNames={SPARKLINE_CLASS_NAMES} />
-
-      <span className="financial-indicator-card__footer">
-        <span>{indicator.unitLabel ?? 'Indicador'}</span>
-        {indicator.sourceLabel ? <span>{indicator.sourceLabel}</span> : null}
-        <InteractionChevron />
-      </span>
-    </button>
+    <ExplorableIndicatorCardFrame
+      buttonRef={buttonRef}
+      classContract={FINANCIAL_CARD_CLASS_CONTRACT}
+      isSelected={isSelected}
+      onSelect={onSelect}
+      viewModel={viewModel}
+    />
   )
 }
 
@@ -84,11 +91,7 @@ export function FinancialDetailNavigation({
 export function FinancialDetailHeader({ indicator }) {
   return (
     <div className="detail-heading educacao-detail-heading financial-detail-heading">
-      <div className="detail-heading__copy">
-        <span className="eyebrow">Indicador selecionado</span>
-        <h3 data-detail-title tabIndex={-1}>{indicator.label}</h3>
-        {indicator.description ? <p>{indicator.description}</p> : null}
-      </div>
+      <DetailHeadingText eyebrow="Indicador selecionado" title={indicator.label} description={indicator.description} />
       <div className="educacao-detail-heading__badges financial-detail-heading__badges">
         {indicator.moduleLabel ? <span className="indicator-stage-badge">{indicator.moduleLabel}</span> : null}
         {indicator.unitLabel ? <span className="indicator-stage-badge">{indicator.unitLabel}</span> : null}
@@ -146,14 +149,7 @@ export function FinancialQuickReading({ text, tone = 'default' }) {
 export function FinancialChartFrame({ children, source, subtitle, summary, title = 'Histórico do indicador' }) {
   return (
     <div className="indicator-chart-card educacao-main-chart-card financial-chart-card">
-      <div className="indicator-chart-header financial-chart-header">
-        <div className="indicator-chart-title-group">
-          <span className="indicator-chart-eyebrow">Série histórica</span>
-          <h3>{title}</h3>
-          {subtitle ? <p>{subtitle}</p> : null}
-          {summary ? <p className="indicator-chart-summary">{summary}</p> : null}
-        </div>
-      </div>
+      <IndicatorChartHeader className="financial-chart-header" subtitle={subtitle} summary={summary} title={title} />
       {children}
       {source}
     </div>

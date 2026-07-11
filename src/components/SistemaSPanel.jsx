@@ -262,15 +262,16 @@ export function SistemaSPanel({ blocos }) {
                   <span className="sistema-s-detail-title">Escolas do Sistema S</span>
                   <p>Lista de escolas do Sistema S no último ano disponível.</p>
                 </div>
-                <div className="sistema-s-table-wrap">
+                <div className="sistema-s-table-wrap" role="region" aria-label="Lista de escolas do Sistema S" tabIndex={0}>
                   <table className="sistema-s-table">
+                    <caption className="u-sr-only">Lista de escolas do Sistema S no último ano disponível</caption>
                     <thead>
                       <tr>
-                        <th>Escola</th>
-                        <th>Matrículas</th>
-                        <th>Turmas</th>
-                        <th>Docentes</th>
-                        <th>Etapas</th>
+                        <th scope="col">Escola</th>
+                        <th scope="col">Matrículas</th>
+                        <th scope="col">Turmas</th>
+                        <th scope="col">Docentes</th>
+                        <th scope="col">Etapas</th>
                       </tr>
                     </thead>
                     <tbody>

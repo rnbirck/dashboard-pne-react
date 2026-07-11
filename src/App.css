@@ -3059,48 +3059,6 @@
   font-size: 1rem;
 }
 
-.state-box {
-  width: min(720px, calc(100% - 32px));
-  margin: 48px auto;
-  padding: 18px 20px;
-  color: var(--text-strong);
-  font-weight: 700;
-  border-radius: var(--radius-md);
-  background: var(--grad-card);
-  box-shadow: var(--shadow-lg);
-}
-
-.state-box > span {
-  display: block;
-  margin-top: 4px;
-  color: var(--text-muted);
-  font-weight: 500;
-  font-size: 0.92rem;
-}
-
-.state-box--loading {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.state-spinner {
-  width: 18px;
-  height: 18px;
-  border: 2px solid rgba(47, 113, 60, 0.16);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-.state-box--error {
-  border-color: rgba(216, 75, 33, 0.28);
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
 /* =========================
    Reduced motion
    ========================= */
@@ -20951,6 +20909,51 @@ body:has(.educacao-page) .context-bar {
   }
 }
 
+/* UI-03/UI-06 — notebook preserva alvos e compacta apenas a composição. */
+@media screen and (min-width: 861px) and (max-width: 1080px) {
+  .app-header {
+    gap: 8px;
+    padding-block: 10px;
+  }
+
+  .brand-lockup {
+    padding-bottom: 8px;
+  }
+
+  .top-nav {
+    align-items: start;
+    gap: 4px;
+  }
+
+  .top-nav::before {
+    display: none;
+  }
+
+  .nav-group {
+    width: 100%;
+    padding: 3px;
+  }
+
+  .nav-subitems {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 2px 0 0 28px;
+  }
+}
+
+@media screen and (max-width: 620px) {
+  .educacao-filter-panel .category-tabs {
+    max-width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+  }
+
+  .educacao-filter-panel .category-tab {
+    position: relative;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .interaction-card--explorable,
   .interaction-card--navigation,
@@ -21144,5 +21147,86 @@ body:has(.educacao-page) .context-bar {
 
   .cycle-page .cycle-hero-meta-group {
     grid-template-columns: 1fr;
+  }
+
+  .cycle-page .cycle-filter-panel .category-tab {
+    position: relative;
+  }
+}
+
+/* UI-05 — legibilidade mínima dos textos auxiliares de Educação no Lote 1. */
+@media screen {
+  .education-card__label,
+  .education-card__year,
+  .education-card__detail,
+  .education-indicator-card__theme,
+  .education-indicator-card .status-badge,
+  .education-indicator-card__value-row span,
+  .education-indicator-card__support,
+  .education-indicator-card__sparkline--empty,
+  .education-indicator-card__footer span,
+  .educacao-scope-card__count,
+  .educacao-module-card__count,
+  .infra-dep-band__title,
+  .infra-dep-band__hint,
+  .infra-panel-group__title,
+  .infra-panel-group__ref,
+  .infra-row__label,
+  .infra-row__year,
+  .infra-table-scroll .education-table,
+  .educacao-detail-tab,
+  .educacao-age-detail__control span,
+  .education-stacked-legend span,
+  .educacao-stage-context__label,
+  .education-detail-view .educacao-detail-heading .eyebrow,
+  .educacao-indicator-reference span,
+  .education-detail-view .metric-card__label,
+  .education-detail-view .metric-card__detail,
+  .education-detail-view .education-quick-reading > span,
+  .education-detail-view .indicator-chart-eyebrow,
+  .education-detail-view .indicator-stage-segmented-label,
+  .education-detail-view .indicator-control-bar__label,
+  .education-detail-view .indicator-control-bar__hint,
+  .education-detail-view .education-support-data .educacao-explore__eyebrow,
+  .education-detail-view .educacao-detail-tab {
+    font-size: var(--font-size-xs);
+  }
+
+  .education-card__label,
+  .education-card__year,
+  .education-card__detail,
+  .education-indicator-card__theme,
+  .education-indicator-card__value-row span,
+  .education-indicator-card__support,
+  .education-indicator-card__sparkline--empty,
+  .education-indicator-card__footer span,
+  .educacao-module-card__count,
+  .infra-dep-band__hint,
+  .infra-panel-group__ref,
+  .infra-row__year,
+  .educacao-indicator-reference span,
+  .education-detail-view .metric-card__label,
+  .education-detail-view .metric-card__detail,
+  .education-detail-view .indicator-control-bar__hint {
+    color: var(--text-soft);
+  }
+
+  .education-chart .chart-axis-label,
+  .education-chart .chart-x-label,
+  .education-chart .chart-bar-label,
+  .education-chart .chart-bar-cat,
+  .education-chart .chart-bar-value,
+  .education-chart .chart-x-label--angled,
+  .education-chart .chart-missing-label,
+  .educacao-explore .chart-axis-label,
+  .educacao-explore .chart-x-label,
+  .educacao-explore .chart-bar-label,
+  .educacao-explore .chart-bar-cat,
+  .educacao-explore .chart-bar-value,
+  .education-detail-view .education-chart .chart-point-label,
+  .education-detail-view .history-chart .chart-point-label,
+  .education-detail-view .education-chart .chart-point-label.is-last,
+  .education-detail-view .history-chart .chart-point-label.is-last {
+    font-size: var(--font-size-xs);
   }
 }

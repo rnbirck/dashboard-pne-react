@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { DataSourceNote } from '../components/DataSourceNote'
+import { PneSourceNotes } from '../components/PneSourceNotes'
 import { MunicipalitySelector } from '../components/MunicipalitySelector'
 import { SearchField } from '../components/SearchField'
 import {
@@ -617,7 +617,7 @@ function LegalGoalIndicator({ indicatorRelation, item, onNavigate, projection, r
       )}
 
       <div className="legal-goal-indicator__footer">
-        <DataSourceNote context={sourceContext} />
+        <PneSourceNotes context={sourceContext} />
         {onNavigate ? (
           <button
             className="legal-goal-open-cycle"

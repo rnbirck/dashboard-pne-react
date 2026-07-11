@@ -4,7 +4,9 @@ import {
   isAccumulativeExpansionIndicator,
   resolveIndicatorUnit,
 } from '../utils/format'
-import { getDataSourceNote } from '../utils/dataSourceNotes'
+import { MethodNote } from './MethodNote'
+import { ContentState } from './ContentState'
+import { getDataSourceParts } from '../utils/dataSourceNotes'
 import { getPneCycleCopy } from '../utils/pneCycleCopy'
 import { isPneComparableIndicator } from '../utils/pneDisplayRules'
 
@@ -318,6 +320,9 @@ function PrioritiesSection({ items, scopeLabel }) {
                     Evidência{item.referenceYear ? ` · ${item.referenceYear}` : ''}
                   </summary>
                   <p>{item.sourceNote || 'Fonte não declarada no recorte carregado.'}</p>
+                  {item.methodologyNote ? (
+                    <MethodNote>Nota metodológica: {item.methodologyNote}</MethodNote>
+                  ) : null}
                 </details>
               </div>
               <div className="diagnostic-priorities__measure">
@@ -338,9 +343,9 @@ function PrioritiesSection({ items, scopeLabel }) {
           ))}
         </ol>
       ) : (
-        <p className="diagnostic-empty-text">
+        <ContentState as="p" kind="empty" className="diagnostic-empty-text">
           Nenhum indicador abaixo da meta com referência comparável neste ciclo.
-        </p>
+        </ContentState>
       )}
     </section>
   )
@@ -399,7 +404,7 @@ function InsightCard({
           ))}
         </ul>
       ) : (
-        <p className="diagnostic-empty-text">{emptyMessage}</p>
+        <ContentState as="p" kind="empty" className="diagnostic-empty-text">{emptyMessage}</ContentState>
       )}
     </section>
   )
@@ -634,6 +639,7 @@ function buildAreaAnalysis(category, results) {
 }
 
 function normalizeDiagnosticIndicator(item, category, result) {
+  const sourceParts = getDataSourceParts({ indicatorKey: item.key, item, result })
   if (!hasDiagnosticRealData(result)) return null
   if (!isPneComparableIndicator({ indicatorKey: item.key, result })) return null
 
@@ -663,7 +669,8 @@ function normalizeDiagnosticIndicator(item, category, result) {
     meta: Number.isFinite(meta) ? meta : null,
     rawKey: item.key,
     referenceYear: Number.isFinite(Number(result?.end_year)) ? Number(result.end_year) : null,
-    sourceNote: getDataSourceNote({ indicatorKey: item.key, item, result }),
+    methodologyNote: sourceParts.methodology,
+    sourceNote: sourceParts.source,
     status: result?.atingida === true ? 'achieved' : 'below',
     unit,
     variation,
@@ -860,7 +867,7 @@ function buildAccountabilityText(analysis, municipio) {
 function buildSourceSummary(indicators) {
   return [...new Set(
     (indicators ?? [])
-      .map((indicator) => String(indicator.sourceNote ?? '').split('. Nota metodológica:')[0])
+      .map((indicator) => String(indicator.sourceNote ?? ''))
       .filter(Boolean),
   )]
 }
