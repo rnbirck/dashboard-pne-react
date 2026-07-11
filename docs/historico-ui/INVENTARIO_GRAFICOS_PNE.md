@@ -1,5 +1,7 @@
 # Inventário de gráficos do Dashboard PNE
 
+> **Status: histórico.** Preservado como inventário anterior à consolidação atual; não define regras ou pendências ativas. Consulte `../GUIA_DE_DESIGN.md` e `../PLANO_MIGRACAO_UI.md`.
+
 Baseline registrado antes da rodada de padronização visual de gráficos e tooltips.
 
 Todos os gráficos atuais são implementados com SVG próprio; não há biblioteca externa de visualização de dados. Os domínios, escalas, séries e cálculos permanecem sob responsabilidade dos componentes existentes e não fazem parte desta rodada.

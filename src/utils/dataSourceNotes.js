@@ -79,7 +79,7 @@ const METHODOLOGY_NOTES_BY_KEY = {
   pos_graduacao: 'Dado bruto preservado; há pontos históricos acima de 100% em poucos municípios, exigindo revisão humana de fonte/denominador.',
 }
 
-export function getDataSourceNote(context = {}) {
+export function getDataSourceParts(context = {}) {
   const block = normalize(context.block ?? context.bloco)
   const theme = normalize(context.themeKey ?? context.theme ?? context.section ?? context.tema)
   const indicatorKey = normalize(context.indicatorKey ?? context.key)
@@ -108,50 +108,41 @@ export function getDataSourceNote(context = {}) {
   ].filter(Boolean).join(' '))
   const methodologyNote = getMethodologyNote(indicatorKey, text, context)
 
+  let source = ''
+
   if (block === 'fundeb' || theme === 'fundeb') {
-    return withMethodology(SOURCE_FUNDEB, methodologyNote)
+    source = SOURCE_FUNDEB
+  } else if (block === 'pnate' || theme === 'pnate') {
+    source = SOURCE_PNATE
+  } else if (POPULATION_ATTENDANCE_KEYS.has(indicatorKey)) {
+    source = SOURCE_POPULATION_ATTENDANCE
+  } else if (isCensoDemografico(indicatorKey, text)) {
+    source = SOURCE_CENSO_DEMOGRAFICO
+  } else if (CENSO_ESCOLAR_KEYS.has(indicatorKey)) {
+    source = SOURCE_CENSO_ESCOLAR
+  } else if (isIdebSaeb(indicatorKey, text)) {
+    source = SOURCE_IDEB_SAEB
+  } else if (isEducationalIndicators(indicatorKey, text)) {
+    source = SOURCE_EDUCATIONAL_INDICATORS
+  } else if (isAtuAlunosTurma(indicatorKey, theme, text)) {
+    source = SOURCE_ATU
+  } else if (isCensoEscolarText(text)) {
+    source = SOURCE_CENSO_ESCOLAR
+  } else {
+    const declaredSource = sourceFromDeclaredMetadata(context, text)
+    if (declaredSource) {
+      source = declaredSource
+    } else if (block === 'educacao' && EDUCATION_THEME_SOURCES[theme]) {
+      source = EDUCATION_THEME_SOURCES[theme]
+    }
   }
 
-  if (block === 'pnate' || theme === 'pnate') {
-    return withMethodology(SOURCE_PNATE, methodologyNote)
-  }
+  return { source, methodology: methodologyNote }
+}
 
-  if (POPULATION_ATTENDANCE_KEYS.has(indicatorKey)) {
-    return withMethodology(SOURCE_POPULATION_ATTENDANCE, methodologyNote)
-  }
-
-  if (isCensoDemografico(indicatorKey, text)) {
-    return withMethodology(SOURCE_CENSO_DEMOGRAFICO, methodologyNote)
-  }
-
-  if (CENSO_ESCOLAR_KEYS.has(indicatorKey)) {
-    return withMethodology(SOURCE_CENSO_ESCOLAR, methodologyNote)
-  }
-
-  if (isIdebSaeb(indicatorKey, text)) {
-    return withMethodology(SOURCE_IDEB_SAEB, methodologyNote)
-  }
-
-  if (isEducationalIndicators(indicatorKey, text)) {
-    return withMethodology(SOURCE_EDUCATIONAL_INDICATORS, methodologyNote)
-  }
-
-  if (isAtuAlunosTurma(indicatorKey, theme, text)) {
-    return withMethodology(SOURCE_ATU, methodologyNote)
-  }
-
-  if (isCensoEscolarText(text)) {
-    return withMethodology(SOURCE_CENSO_ESCOLAR, methodologyNote)
-  }
-
-  const declaredSource = sourceFromDeclaredMetadata(context, text)
-  if (declaredSource) return withMethodology(declaredSource, methodologyNote)
-
-  if (block === 'educacao' && EDUCATION_THEME_SOURCES[theme]) {
-    return withMethodology(EDUCATION_THEME_SOURCES[theme], methodologyNote)
-  }
-
-  return withMethodology('', methodologyNote)
+export function getDataSourceNote(context = {}) {
+  const { source, methodology } = getDataSourceParts(context)
+  return withMethodology(source, methodology)
 }
 
 function getMethodologyNote(indicatorKey, text, context) {

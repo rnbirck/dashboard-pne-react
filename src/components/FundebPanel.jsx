@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useDetailViewNavigation } from '../hooks/useDetailViewNavigation'
 import { FUNDEB_INDICATORS, formatFundebValue, getLimiteReferencia } from '../data/fundebIndicators'
 import { DataSourceNote } from './DataSourceNote'
+import { MethodNote } from './MethodNote'
 import { IndicatorHistoryChart } from '../components/IndicatorHistoryChart'
 import { ChartEmptyState } from './ChartPrimitives'
 import { EducationSummaryCard } from './EducationSummaryCard'
@@ -383,7 +384,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
             <FinancialQuickReading text={selectedIndicatorModel.quickReading} tone={selectedIndicatorModel.statusTone} />
 
             {(selectedKey === 'despesa_remuneracao_profissionais_creche' || selectedKey === 'despesa_remuneracao_profissionais_pre_escola') && (
-              <p className="fundeb-indicator-note"><strong>Nota metodológica:</strong> Série exibida a partir de 2021 para manter comparabilidade com a estrutura do Novo FUNDEB.</p>
+              <MethodNote className="fundeb-indicator-note"><strong>Nota metodológica:</strong> Série exibida a partir de 2021 para manter comparabilidade com a estrutura do Novo FUNDEB.</MethodNote>
             )}
 
             <FinancialChartFrame
@@ -557,7 +558,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
             </div>
 
             {(selectedKey === 'despesa_remuneracao_profissionais_creche' || selectedKey === 'despesa_remuneracao_profissionais_pre_escola') && (
-              <p className="fundeb-indicator-note"><strong>Nota metodológica:</strong> Série exibida a partir de 2021 para manter comparabilidade com a estrutura do Novo FUNDEB.</p>
+              <MethodNote className="fundeb-indicator-note"><strong>Nota metodológica:</strong> Série exibida a partir de 2021 para manter comparabilidade com a estrutura do Novo FUNDEB.</MethodNote>
             )}
 
             {(validSeries.length >= 2 || series.length >= 1) && (

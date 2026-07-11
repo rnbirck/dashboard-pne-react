@@ -1,5 +1,7 @@
 # Auditoria visual do dashboard PNE — etapa 02
 
+> **Status: histórico.** Preservada como fotografia da auditoria original; não define regras ou pendências ativas. Consulte `../GUIA_DE_DESIGN.md` e `../PLANO_MIGRACAO_UI.md`.
+
 Data da auditoria: 10 de julho de 2026  
 Escopo: inspeção visual e de navegação da aplicação local, sem alteração de interface, dados ou regras de negócio.
 

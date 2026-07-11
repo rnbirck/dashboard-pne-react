@@ -1,10 +1,12 @@
 # Proposta de sistema visual comum — Dashboard PNE
 
+> **Status: histórico.** Preservada como proposta anterior à aprovação da gramática atual; não define regras ou pendências ativas. Consulte `../GUIA_DE_DESIGN.md` e `../PLANO_MIGRACAO_UI.md`.
+
 > Documento de auditoria e proposta. Não representa implementação aprovada. Nenhum componente, dado ou regra de negócio foi alterado nesta etapa.
 
 ## 1. Escopo e método
 
-A proposta parte da interface atual, do `GUIA_DE_DESIGN.md`, dos tokens existentes em `src/styles/design-tokens.css`, de uma varredura dos componentes e de inspeção do dashboard local no navegador. O objetivo é reduzir variações acidentais sem redesenhar a plataforma.
+A proposta parte da interface atual, do `../GUIA_DE_DESIGN.md`, dos tokens existentes em `src/styles/design-tokens.css`, de uma varredura dos componentes e de inspeção do dashboard local no navegador. O objetivo é reduzir variações acidentais sem redesenhar a plataforma.
 
 Evidências principais:
 

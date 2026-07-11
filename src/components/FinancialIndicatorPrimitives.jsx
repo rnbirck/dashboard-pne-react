@@ -2,13 +2,19 @@ import { MetricCard } from './MetricCard'
 import { StatusBadge } from './StatusBadge'
 import { DetailNavigation } from './DetailNavigation'
 import { InteractionChevron } from './InteractionChevron'
+import { Sparkline } from './Sparkline'
 
 const EM = '\u2014'
-const SPARKLINE_WIDTH = 320
-const SPARKLINE_HEIGHT = 56
+const SPARKLINE_CLASS_NAMES = Object.freeze({
+  root: 'financial-indicator-card__sparkline',
+  area: 'financial-indicator-card__sparkline-area',
+  line: 'financial-indicator-card__sparkline-line',
+  end: 'financial-indicator-card__sparkline-end',
+  period: 'financial-indicator-card__sparkline-period',
+  empty: 'financial-indicator-card__sparkline--empty',
+})
 
 export function FinancialIndicatorCard({ buttonRef, indicator, isSelected = false, onSelect }) {
-  const sparkline = getSparkline(indicator.series)
   const statusTone = indicator.statusTone ?? 'default'
 
   return (
@@ -39,27 +45,7 @@ export function FinancialIndicatorCard({ buttonRef, indicator, isSelected = fals
         <strong>{indicator.variationDisplay ?? EM}</strong>
       </span>
 
-      {sparkline ? (
-        <span className="financial-indicator-card__sparkline" aria-hidden="true">
-          <svg viewBox={`0 0 ${SPARKLINE_WIDTH} ${SPARKLINE_HEIGHT}`}>
-            <path className="financial-indicator-card__sparkline-area" d={sparkline.areaPath} />
-            <path className="financial-indicator-card__sparkline-line" d={sparkline.linePath} />
-            <circle
-              className="financial-indicator-card__sparkline-end"
-              cx={sparkline.lastPoint.x}
-              cy={sparkline.lastPoint.y}
-              r="3.4"
-            />
-          </svg>
-          <span className="financial-indicator-card__sparkline-period">
-            {sparkline.firstYear}–{sparkline.lastYear}
-          </span>
-        </span>
-      ) : (
-        <span className="financial-indicator-card__sparkline financial-indicator-card__sparkline--empty">
-          Histórico não disponível.
-        </span>
-      )}
+      <Sparkline series={indicator.series} classNames={SPARKLINE_CLASS_NAMES} />
 
       <span className="financial-indicator-card__footer">
         <span>{indicator.unitLabel ?? 'Indicador'}</span>
@@ -191,49 +177,4 @@ export function FinancialSupportData({ children, subtitle = 'Tabela e recortes d
       </div>
     </section>
   )
-}
-
-function getSparkline(series = []) {
-  const points = series
-    .map((point) => ({
-      value: Number(point?.valor),
-      year: Number(point?.ano),
-    }))
-    .filter((point) => Number.isFinite(point.value) && Number.isFinite(point.year))
-    .sort((a, b) => a.year - b.year)
-
-  if (points.length < 3) return null
-
-  const values = points.map((point) => point.value)
-  const min = Math.min(...values)
-  const max = Math.max(...values)
-  const range = max - min
-  const insetX = 2
-  const insetY = 7
-  const baseline = SPARKLINE_HEIGHT - 4
-  const step = (SPARKLINE_WIDTH - insetX * 2) / (points.length - 1)
-
-  const scaledPoints = points.map((point, index) => {
-    const x = insetX + index * step
-    const y = range === 0
-      ? SPARKLINE_HEIGHT / 2
-      : baseline - ((point.value - min) / range) * (SPARKLINE_HEIGHT - insetY * 2)
-
-    return { x, y }
-  })
-
-  const linePath = scaledPoints
-    .map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
-    .join(' ')
-  const firstPoint = scaledPoints[0]
-  const lastPoint = scaledPoints[scaledPoints.length - 1]
-  const areaPath = `${linePath} L${lastPoint.x.toFixed(1)} ${baseline.toFixed(1)} L${firstPoint.x.toFixed(1)} ${baseline.toFixed(1)} Z`
-
-  return {
-    areaPath,
-    firstYear: points[0].year,
-    lastPoint,
-    lastYear: points[points.length - 1].year,
-    linePath,
-  }
 }

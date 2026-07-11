@@ -17,6 +17,8 @@ import { EducationSummaryCard } from '../components/EducationSummaryCard'
 import { EducationTable } from '../components/EducationTable'
 import { DataSourceNote } from '../components/DataSourceNote'
 import { MetricCard } from '../components/MetricCard'
+import { SearchField } from '../components/SearchField'
+import { SegmentedControl } from '../components/SegmentedControl'
 import { StatusBadge } from '../components/StatusBadge'
 import { ChartEmptyState, ChartLegend, ChartTooltip } from '../components/ChartPrimitives'
 import { loadEducationMunicipio, loadEducationMunicipiosIndex } from '../data/educationData'
@@ -484,19 +486,13 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
                 <span className="eyebrow">Temas de análise</span>
                 <h2>{selectedTheme?.label ?? 'Indicadores de educação'}</h2>
               </div>
-              <label className="cycle-search platform-search-field">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <circle cx="11" cy="11" r="6.5" />
-                  <path d="m16 16 4 4" />
-                </svg>
-                <input
-                  type="search"
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Buscar indicador..."
-                  aria-label="Buscar indicador"
-                />
-              </label>
+              <SearchField
+                ariaLabel="Buscar indicador"
+                className="cycle-search platform-search-field"
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Buscar indicador..."
+                value={searchQuery}
+              />
             </div>
 
             <CategoryTabs
@@ -724,27 +720,14 @@ function EducationDetailNavigation({
 
 function IndicatorSegmentedControl({ options, selectedKey, onSelect, ariaLabel }) {
   return (
-    <div className="indicator-stage-segmented platform-segmented-control" role="group" aria-label={ariaLabel}>
-      {options.map((option) => {
-        const isActive = option.key === selectedKey
-
-        return (
-          <button
-            key={option.key}
-            type="button"
-            className={
-              isActive
-                ? 'indicator-stage-segmented__button platform-segmented-option is-active'
-                : 'indicator-stage-segmented__button platform-segmented-option'
-            }
-            aria-pressed={isActive}
-            onClick={() => onSelect(option.key)}
-          >
-            {option.label}
-          </button>
-        )
-      })}
-    </div>
+    <SegmentedControl
+      ariaLabel={ariaLabel}
+      className="indicator-stage-segmented platform-segmented-control"
+      optionClassName="indicator-stage-segmented__button platform-segmented-option"
+      onSelect={onSelect}
+      options={options.map(({ key, label }) => ({ key, label }))}
+      selectedKey={selectedKey}
+    />
   )
 }
 

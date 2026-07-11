@@ -1,5 +1,7 @@
 # Auditoria de interação e navegabilidade — Dashboard PNE
 
+> **Status: histórico.** Preservada como evidência da auditoria original; não define regras ou pendências ativas. Consulte `../GUIA_DE_DESIGN.md` e `../PLANO_MIGRACAO_UI.md`.
+
 > Auditoria realizada sobre a aplicação local e o código atual. Este documento não autoriza nem aplica mudanças. Dados, cálculos, status e regras de negócio permanecem fora do escopo.
 
 ## 1. Resumo executivo

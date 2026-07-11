@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { DataSourceNote } from '../components/DataSourceNote'
 import { MunicipalitySelector } from '../components/MunicipalitySelector'
+import { SearchField } from '../components/SearchField'
 import {
   PNE_2026_LEGAL_GOAL_INDICATOR_MAP,
   PNE_2026_LEGAL_GOAL_MAPPING_METADATA,
@@ -260,19 +261,13 @@ export function PneLegalGoalsPage({
                   código, texto legal ou indicador.
                 </p>
               </div>
-              <label className="legal-goals-search platform-search-field">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <circle cx="11" cy="11" r="6.5" />
-                  <path d="m16 16 4 4" />
-                </svg>
-                <input
-                  aria-label="Buscar metas legais"
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Buscar por código, texto legal ou indicador..."
-                  type="search"
-                  value={searchQuery}
-                />
-              </label>
+              <SearchField
+                ariaLabel="Buscar metas legais"
+                className="legal-goals-search platform-search-field"
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Buscar por código, texto legal ou indicador..."
+                value={searchQuery}
+              />
             </div>
 
             <div className="legal-goals-theme-filter platform-filter-group">

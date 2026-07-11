@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useDetailViewNavigation } from '../hooks/useDetailViewNavigation'
 import { PNATE_INDICATORS, formatPnateValue } from '../data/pnateIndicators'
 import { DataSourceNote } from './DataSourceNote'
+import { MethodNote } from './MethodNote'
 import { IndicatorHistoryChart } from '../components/IndicatorHistoryChart'
 import { ChartEmptyState } from './ChartPrimitives'
 import { EducationSummaryCard } from './EducationSummaryCard'
@@ -295,9 +296,7 @@ export function PnatePanel({ pnateData, selectedMunicipio }) {
       </section>
 
       {avisos.length > 0 && (
-        <p className="fundeb-indicator-note">
-          <strong>Nota metodológica:</strong> {avisos[0]}
-        </p>
+        <MethodNote className="fundeb-indicator-note"><strong>Nota metodológica:</strong> {avisos[0]}</MethodNote>
       )}
 
       {isDetailOpen && selectedIndicatorModel ? (

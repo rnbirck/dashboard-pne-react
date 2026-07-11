@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { EducationLineChart } from './EducationLineChart'
 import { ChartEmptyState } from './ChartPrimitives'
+import { DataSourceNote } from './DataSourceNote'
 import { MetricCard } from './MetricCard'
 import { EducationSummaryCard } from './EducationSummaryCard'
 import { formatNumber, isMissing } from '../utils/educationFormatters'
 
 const EM = '\u2014'
+const SISTEMA_S_SOURCE_CONTEXT = { block: 'educacao', themeKey: 'sistema_s' }
 
 const EAD_KEYWORDS = ['EAD', 'ADMINISTRACAO REGIONAL', 'ADMINISTRAÇÃO REGIONAL', ' REGIONAL ']
 
@@ -156,6 +158,7 @@ export function SistemaSPanel({ blocos }) {
           <EducationSummaryCard label="Turmas" value={!isMissing(resumo.total_turmas) ? formatNumber(resumo.total_turmas) : EM} year={anoResumo} />
           <EducationSummaryCard label="Docentes" value={!isMissing(resumo.total_docentes) ? formatNumber(resumo.total_docentes) : EM} year={anoResumo} />
         </div>
+        <DataSourceNote context={SISTEMA_S_SOURCE_CONTEXT} />
       </section>
 
       <div className="cycle-layout educacao-analysis-layout">

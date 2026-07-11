@@ -4,6 +4,8 @@ import { DataSourceNote } from '../components/DataSourceNote'
 import { DetailNavigation } from '../components/DetailNavigation'
 import { IndicatorDetail } from '../components/IndicatorDetail'
 import { MetaCard } from '../components/MetaCard'
+import { SearchField } from '../components/SearchField'
+import { SegmentedControl } from '../components/SegmentedControl'
 import { PNE_2026_INDICATOR_GOAL_REFS } from '../data/pne2026IndicatorGoalRefs'
 import { PNE_2014_INDICATOR_GOAL_REFS } from '../data/pne2014IndicatorGoalRefs'
 import { buildThematicGroups } from '../data/thematicGroups'
@@ -238,19 +240,13 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
                   <span className="eyebrow">Temas das metas</span>
                   <h2>{selectedGroup?.label ?? 'Metas do ciclo'}</h2>
                 </div>
-                <label className="cycle-search platform-search-field">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <circle cx="11" cy="11" r="6.5" />
-                    <path d="m16 16 4 4" />
-                  </svg>
-                  <input
-                    type="search"
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="Buscar meta..."
-                    aria-label="Buscar meta"
-                  />
-                </label>
+                <SearchField
+                  ariaLabel="Buscar meta"
+                  className="cycle-search platform-search-field"
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Buscar meta..."
+                  value={searchQuery}
+                />
               </div>
 
               <CategoryTabs
@@ -351,23 +347,14 @@ function ManagementMetricCard({ detail, label, tone, value }) {
 
 function BasicEducationFilter({ filters, selectedFilter, onSelectFilter }) {
   return (
-    <div className="basic-education-filter platform-segmented-control" role="group" aria-label="Etapas da Educação Básica">
-      {filters.map((filter) => (
-        <button
-          className={
-            filter.key === selectedFilter
-              ? 'basic-education-filter__chip platform-segmented-option is-active'
-              : 'basic-education-filter__chip platform-segmented-option'
-          }
-          key={filter.key}
-          type="button"
-          aria-pressed={filter.key === selectedFilter}
-          onClick={() => onSelectFilter(filter.key)}
-        >
-          {filter.label}
-        </button>
-      ))}
-    </div>
+    <SegmentedControl
+      ariaLabel="Etapas da Educação Básica"
+      className="basic-education-filter platform-segmented-control"
+      optionClassName="basic-education-filter__chip platform-segmented-option"
+      options={filters.map(({ key, label }) => ({ key, label }))}
+      onSelect={onSelectFilter}
+      selectedKey={selectedFilter}
+    />
   )
 }
 

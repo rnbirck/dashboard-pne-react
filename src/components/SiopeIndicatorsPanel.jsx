@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { CategoryTabs } from './CategoryTabs'
 import { DataSourceNote } from './DataSourceNote'
+import { MethodNote } from './MethodNote'
 import {
   FinancialChartFrame,
   FinancialDetailHeader,
@@ -21,7 +22,8 @@ import { useAsyncData } from '../utils/useAsyncData'
 import { useDetailViewNavigation } from '../hooks/useDetailViewNavigation'
 
 const EM = '\u2014'
-const SIOPE_SOURCE_NOTE = 'SIOPE / FNDE. Para cada ano, foi considerado o dado declarado no 6º bimestre.'
+const SIOPE_SOURCE = 'SIOPE / FNDE'
+const SIOPE_METHODOLOGY = 'Para cada ano, foi considerado o dado declarado no 6º bimestre.'
 const MUNICIPALITY_2025_MISSING_NOTE =
   'Este município ainda não possui dados de 2025 no SIOPE. Exibindo o último ano disponível.'
 const MISSING_VALUE_NOTE = 'Este município não possui dado para este indicador neste ano.'
@@ -470,7 +472,11 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio }) {
           <span className="eyebrow">SIOPE / FNDE</span>
           <h2 id="siope-title">Aplicação dos Recursos da Educação</h2>
           <p>{SIOPE_SECTION_SUBTITLE}</p>
-          <DataSourceNote source={SIOPE_SOURCE_NOTE} />
+          <DataSourceNote source={SIOPE_SOURCE} />
+          <MethodNote className="data-source-note">
+            <strong className="data-source-note__label">Nota metodológica:</strong>{' '}
+            <span className="data-source-note__text">{SIOPE_METHODOLOGY}</span>
+          </MethodNote>
         </div>
       </section>
 
@@ -534,7 +540,7 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio }) {
             <FinancialChartFrame
               subtitle={`${selectedIndicatorModel.label} · ${selectedIndicatorModel.groupLabel}`}
               summary={selectedIndicatorModel.historySummary}
-              source={<DataSourceNote className="fundeb-data-source siope-chart-source" source={SIOPE_SOURCE_NOTE} />}
+              source={<DataSourceNote className="fundeb-data-source siope-chart-source" source={SIOPE_SOURCE} />}
             >
               {validSeries.length >= 2 ? (
                 <IndicatorHistoryChart
@@ -586,7 +592,7 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio }) {
                     </tbody>
                   </table>
                 </div>
-                <DataSourceNote className="fundeb-data-source" source={SIOPE_SOURCE_NOTE} />
+                <DataSourceNote className="fundeb-data-source" source={SIOPE_SOURCE} />
               </div>
             </SiopeHistoricalData>
           </section>
