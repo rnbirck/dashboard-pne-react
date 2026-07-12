@@ -14,13 +14,19 @@ export function ExplorableIndicatorCardFrame({
     contextLabel,
     description,
     footer,
+    hideSparkline = false,
+    hideStatus = false,
+    hideSupport = false,
     sparklineSeries,
     status,
     support,
     title,
     value,
+    variant,
   } = viewModel
-  const className = `${classContract.root} interaction-card--explorable ${classContract.statusModifier(status.tone)}${isSelected ? ' is-selected' : ''}`
+  const statusTone = status?.tone ?? 'default'
+  const variantClass = variant ? ` ${classContract.root}--${variant}` : ''
+  const className = `${classContract.root} interaction-card--explorable ${classContract.statusModifier(statusTone)}${variantClass}${isSelected ? ' is-selected' : ''}`
 
   return (
     <button
@@ -34,7 +40,7 @@ export function ExplorableIndicatorCardFrame({
     >
       <span className={classContract.topline}>
         <span className={classContract.context}>{contextLabel}</span>
-        <StatusBadge status={status.label} tone={status.tone} />
+        {!hideStatus && status?.label ? <StatusBadge status={status.label} tone={statusTone} /> : null}
       </span>
 
       <span className={classContract.title}>{title}</span>
@@ -45,16 +51,18 @@ export function ExplorableIndicatorCardFrame({
         <span>{value.metaLabel}</span>
       </span>
 
-      <span className={classContract.support}>
-        <span>{support.label}</span>
-        <strong>{support.value}</strong>
-      </span>
+      {!hideSupport && support ? (
+        <span className={classContract.support}>
+          <span>{support.label}</span>
+          <strong>{support.value}</strong>
+        </span>
+      ) : null}
 
-      <Sparkline series={sparklineSeries} classNames={classContract.sparkline} />
+      {!hideSparkline ? <Sparkline series={sparklineSeries} classNames={classContract.sparkline} /> : null}
 
       <span className={classContract.footer}>
-        <span>{footer.primary}</span>
-        {footer.secondary ? <span>{footer.secondary}</span> : null}
+        {footer.primary ? <span title={footer.primary}>{footer.primary}</span> : null}
+        {footer.secondary ? <span title={footer.secondary}>{footer.secondary}</span> : null}
         <InteractionChevron />
       </span>
     </button>

@@ -3,6 +3,8 @@ import './App.css'
 import './styles/chart-system.css'
 import './styles/pne-cycle-experience.css'
 import './styles/platform-ui.css'
+import './styles/financial-pages.css'
+import './styles/navigation-shell.css'
 import { MunicipalityProvider, useMunicipality } from './context/MunicipalityContext'
 import { ErrorState } from './components/ErrorState'
 import { Layout } from './components/Layout'
@@ -17,10 +19,13 @@ import {
 import { CyclePage } from './pages/CyclePage'
 import { Diagnostico } from './pages/Diagnostico'
 import { EducacaoPage } from './pages/EducacaoPage'
+import { FinancialPage } from './pages/FinancialPage'
 import { MunicipalitySelector } from './components/MunicipalitySelector'
 import { Home } from './pages/Home'
 import { PneLegalGoalsPage } from './pages/PneLegalGoalsPage'
 import { PneOverviewPage } from './pages/PneOverviewPage'
+import { FINANCIAL_PAGE_KEYS } from './data/financialModules'
+import { getEducationSectionFromLocation } from './data/educationIndicatorCatalog'
 import { useAsyncData } from './utils/useAsyncData'
 
 const HASH_PAGE_MAP = Object.freeze({
@@ -34,30 +39,53 @@ const HASH_PAGE_MAP = Object.freeze({
   diagnostico: 'diagnostico',
   educacao: 'educacao',
   financeiros: 'financeiros',
-  fundeb: 'financeiros',
-  pnate: 'financeiros',
-  siope: 'financeiros',
-  vaar: 'financeiros',
+  financeirosaplicacaorecursos: FINANCIAL_PAGE_KEYS.application,
+  financeirosfundeb: FINANCIAL_PAGE_KEYS.fundeb,
+  financeirospnate: FINANCIAL_PAGE_KEYS.pnate,
+  financeirosvaar: FINANCIAL_PAGE_KEYS.vaar,
+  fundeb: FINANCIAL_PAGE_KEYS.fundeb,
+  pnate: FINANCIAL_PAGE_KEYS.pnate,
+  siope: FINANCIAL_PAGE_KEYS.application,
+  vaar: FINANCIAL_PAGE_KEYS.vaar,
   sistemas: 'educacao',
   escolassistemas: 'educacao',
 })
 
+const FINANCIAL_PAGES = new Set(Object.values(FINANCIAL_PAGE_KEYS))
+
 function getInitialActivePage() {
   if (typeof window === 'undefined') return 'home'
 
-  const route = window.location.hash
+  const rawHash = window.location.hash
     .replace(/^#\/?/, '')
-    .split('?')[0]
+  const [rawRoute, rawQuery = ''] = rawHash.split('?')
+  const route = rawRoute
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLocaleLowerCase('pt-BR')
     .replace(/[^a-z0-9]/g, '')
+  const params = new URLSearchParams(rawQuery)
+
+  if (route === 'financeiros') {
+    const requestedModule = params.get('modulo') ?? params.get('module')
+    const normalizedModule = String(requestedModule ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLocaleLowerCase('pt-BR')
+      .replace(/[^a-z0-9]/g, '')
+
+    if (normalizedModule === 'fundeb') return FINANCIAL_PAGE_KEYS.fundeb
+    if (normalizedModule === 'pnate') return FINANCIAL_PAGE_KEYS.pnate
+    if (normalizedModule === 'vaar' || normalizedModule === 'complementacaovaar') return FINANCIAL_PAGE_KEYS.vaar
+    if (normalizedModule === 'siope' || normalizedModule === 'aplicacaorecursos') return FINANCIAL_PAGE_KEYS.application
+  }
 
   return HASH_PAGE_MAP[route] ?? 'home'
 }
 
 function App() {
   const [activePage, setActivePage] = useState(getInitialActivePage)
+  const [activeEducationSection, setActiveEducationSection] = useState(() => getEducationSectionFromLocation())
   const [initialData, setInitialData] = useState({
     error: null,
     indicadores: null,
@@ -69,6 +97,7 @@ function App() {
   useEffect(() => {
     function handleHashChange() {
       setActivePage(getInitialActivePage())
+      setActiveEducationSection(getEducationSectionFromLocation())
     }
     window.addEventListener('hashchange', handleHashChange)
     return () => window.removeEventListener('hashchange', handleHashChange)
@@ -79,7 +108,8 @@ function App() {
     if (window.location.hash !== nextHash) {
       window.location.hash = nextHash
     } else {
-      setActivePage(page)
+      setActivePage(getInitialActivePage())
+      setActiveEducationSection(getEducationSectionFromLocation())
     }
   }
 
@@ -128,6 +158,7 @@ function App() {
     <MunicipalityProvider municipios={initialData.municipios}>
       <Layout
         activePage={activePage}
+        activeEducationSection={activeEducationSection}
         municipios={initialData.municipios}
         onNavigate={handleNavigate}
       >
@@ -200,6 +231,18 @@ function PageContent({
         municipios={municipios}
         onMunicipioChange={setSelectedMunicipio}
         onNavigate={onNavigate}
+        selectedMunicipio={selectedMunicipio}
+      />
+    )
+  }
+
+  if (FINANCIAL_PAGES.has(activePage)) {
+    return (
+      <FinancialPage
+        municipioData={municipioData}
+        municipioError={municipioError}
+        municipioLoading={municipioLoading}
+        pageKey={activePage}
         selectedMunicipio={selectedMunicipio}
       />
     )
@@ -279,18 +322,6 @@ function PageContent({
     return (
       <EducacaoPage
         indicadores={indicadores}
-        initialMainBlock="panoramaEducacional"
-        municipioData={municipioData}
-        selectedMunicipio={selectedMunicipio}
-      />
-    )
-  }
-
-  if (activePage === 'financeiros') {
-    return (
-      <EducacaoPage
-        indicadores={indicadores}
-        initialMainBlock="financiamentoEducacao"
         municipioData={municipioData}
         selectedMunicipio={selectedMunicipio}
       />

@@ -22,32 +22,61 @@ const EDUCATION_CARD_CLASS_CONTRACT = Object.freeze({
 })
 
 export function EducationIndicatorCard({ buttonRef, indicator, isSelected = false, onSelect }) {
+  const isExploratory = indicator.cardVariant === 'exploratory'
   const statusTone = indicator.statusTone ?? 'default'
   const periodLabel = indicator.initialYear && indicator.currentYear
     ? `desde ${indicator.initialYear}`
     : 'no período'
+  const exploratorySummary = indicator.exploratorySummary ?? {}
+  const contextLabel = isExploratory
+    ? 'Infraestrutura escolar'
+    : indicator.themeShortLabel ?? indicator.themeLabel ?? 'Indicador'
+  const normalizedContext = String(contextLabel).trim().toLocaleLowerCase('pt-BR')
+  const normalizedCategory = String(indicator.categoryLabel ?? '').trim().toLocaleLowerCase('pt-BR')
+  const mainCutLabel = String(indicator.mainCutLabel ?? '').trim()
+  const normalizedMainCut = mainCutLabel.toLocaleLowerCase('pt-BR')
+  const footerMainCut = normalizedMainCut && normalizedMainCut !== normalizedContext && normalizedMainCut !== normalizedCategory
+    ? mainCutLabel
+    : null
   const viewModel = {
-    ariaLabel: `Abrir detalhe do indicador ${indicator.label}`,
-    contextLabel: indicator.themeShortLabel ?? indicator.themeLabel ?? 'Indicador',
+    ariaLabel: isExploratory
+      ? `Abrir panorama da infraestrutura escolar. ${exploratorySummary.count ?? EM} ${exploratorySummary.label ?? 'dimensões'}, ano ${exploratorySummary.latestYear ?? 'indisponível'}.`
+      : `Abrir detalhe do indicador ${indicator.label}. Valor ${indicator.currentDisplay ?? EM}, ${indicator.currentYear ? `ano ${indicator.currentYear}` : 'ano indisponível'}. ${indicator.statusLabel ?? ''}. Variação ${periodLabel}: ${indicator.variationDisplay ?? EM}`.replace(/\.{2,}/g, '.').replace(/\s+/g, ' ').trim(),
+    contextLabel,
     description: indicator.description,
     footer: {
-      primary: indicator.categoryLabel ?? 'Geral',
-      secondary: indicator.mainCutLabel,
+      primary: isExploratory ? 'Abrir panorama' : footerMainCut,
+      secondary: isExploratory
+        ? exploratorySummary.groupCount ? `${exploratorySummary.groupCount} grupos` : null
+        : null,
     },
-    sparklineSeries: indicator.series,
+    hideSparkline: isExploratory,
+    hideStatus: isExploratory,
     status: {
       label: indicator.statusLabel,
       tone: statusTone,
     },
-    support: {
-      label: `Variação ${periodLabel}`,
-      value: indicator.variationDisplay ?? EM,
-    },
-    title: indicator.label,
-    value: {
-      display: indicator.currentDisplay ?? EM,
-      metaLabel: indicator.currentYear ? `Ano ${indicator.currentYear}` : 'Ano indisponível',
-    },
+    support: isExploratory
+      ? {
+          label: 'Último ano',
+          value: exploratorySummary.latestYear ?? EM,
+        }
+      : {
+          label: `Variação ${periodLabel}`,
+          value: indicator.variationDisplay ?? EM,
+        },
+    title: isExploratory ? indicator.cardTitle : indicator.label,
+    value: isExploratory
+      ? {
+          display: exploratorySummary.count ?? EM,
+          metaLabel: exploratorySummary.label ?? 'dimensões',
+        }
+      : {
+          display: indicator.currentDisplay ?? EM,
+          metaLabel: indicator.currentYear ? `Ano ${indicator.currentYear}` : 'Ano indisponível',
+        },
+    variant: indicator.cardVariant,
+    sparklineSeries: isExploratory ? null : indicator.series,
   }
 
   return (

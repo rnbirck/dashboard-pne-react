@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useRef, useState } from 'react'
 import { ChartEmptyState, ChartLegend, ChartTooltip } from './ChartPrimitives'
 import { closeChartTooltipOnEscape } from '../utils/chartVisuals'
 
@@ -11,12 +11,53 @@ const percentFormatter = new Intl.NumberFormat('pt-BR', {
   minimumFractionDigits: 1,
 })
 
-export function IndicatorProjectionPanel({ projection, showTitle = true }) {
+export function IndicatorProjectionPanel({ chartLabel, projection, showTitle = true, contextOnly = false }) {
   const [activePoint, setActivePoint] = useState(null)
+  const [tabStopYear, setTabStopYear] = useState(null)
+  const pointRefs = useRef([])
+  const chartId = useId().replace(/:/g, '')
 
-  const chart = useMemo(() => buildProjectionChart(projection), [projection])
+  const chart = useMemo(
+    () => buildProjectionChart(projection, {
+      chartMinYear: contextOnly ? projection?.historical_years?.[0] : undefined,
+      showGoalContext: !contextOnly,
+    }),
+    [contextOnly, projection],
+  )
   const lastChartPointYear = chart.points.filter((point) => point.valid !== false).slice(-1)[0]?.year
   const transitionYear = chart.points.filter((point) => point.valid !== false && !point.isProjected).slice(-1)[0]?.year
+  const latestHistoricalPoint = chart.points.filter((point) => point.valid !== false && !point.isProjected).slice(-1)[0]
+  const accessibleChartLabel = chartLabel
+    ? `${contextOnly ? 'Gráfico de cenário estimado' : 'Gráfico de projeção tendencial'}: ${chartLabel}`
+    : contextOnly ? 'Gráfico de cenário estimado' : 'Gráfico de projeção tendencial'
+  const focusablePoints = chart.points.filter((point) => point.valid !== false)
+  const resolvedTabStopYear = focusablePoints.some((point) => point.year === tabStopYear)
+    ? tabStopYear
+    : focusablePoints[0]?.year
+
+  function focusPoint(index) {
+    const point = focusablePoints[index]
+    if (!point) return
+    setTabStopYear(point.year)
+    pointRefs.current[index]?.focus()
+  }
+
+  function handlePointKeyDown(event, index) {
+    if (event.key === 'Escape') {
+      closeChartTooltipOnEscape(event, () => setActivePoint(null))
+      return
+    }
+
+    let nextIndex = null
+    if (event.key === 'ArrowRight') nextIndex = (index + 1) % focusablePoints.length
+    if (event.key === 'ArrowLeft') nextIndex = (index - 1 + focusablePoints.length) % focusablePoints.length
+    if (event.key === 'Home') nextIndex = 0
+    if (event.key === 'End') nextIndex = focusablePoints.length - 1
+    if (nextIndex === null) return
+
+    event.preventDefault()
+    focusPoint(nextIndex)
+  }
 
   if (!projection?.available) {
     return (
@@ -27,71 +68,82 @@ export function IndicatorProjectionPanel({ projection, showTitle = true }) {
   }
 
   const projected2036 = projection.projected_2036
-  const target = projection.target_percent
-  const distance = projection.distance_to_target_2036
-  const lastHistoricalPct = projection.historical_percent?.length > 0
-    ? projection.historical_percent[projection.historical_percent.length - 1]
-    : null
+  const target = contextOnly ? null : projection.target_percent
+  const distance = contextOnly ? null : projection.distance_to_target_2036
+  const lastHistoricalPct = latestHistoricalPoint?.value ?? null
   const status = projection.status_2036
   const tendeAtingir = status === 'tende_a_atingir'
 
   return (
-    <div className="complementary-projection">
+    <div className={`complementary-projection${contextOnly ? ' complementary-projection--context' : ''}`}>
       <div className="complementary-projection__header">
-        {showTitle ? <h5>Projeção tendencial até 2036</h5> : null}
-        <p className="complementary-projection__method">
-          Este cenário estima como o indicador pode evoluir até 2036, considerando o
-          comportamento recente das matrículas e a tendência populacional projetada para
-          a faixa etária no RS. O resultado serve como referência de planejamento e não
-          representa uma previsão oficial.
-        </p>
+        {showTitle ? <h5>{contextOnly ? 'Cenário estimado até 2036' : 'Projeção tendencial até 2036'}</h5> : null}
+        {!contextOnly ? (
+          <p className="complementary-projection__method">
+            Este cenário estima como o indicador pode evoluir até 2036, considerando o
+            comportamento recente das matrículas e a tendência populacional projetada para
+            a faixa etária no RS. O resultado serve como referência de planejamento e não
+            representa uma previsão oficial.
+          </p>
+        ) : null}
       </div>
 
       <div className="complementary-projection__cards">
         <div className="complementary-projection__card">
-          <span className="complementary-projection__card-label">Valor atual</span>
+          <span className="complementary-projection__card-label">{contextOnly ? 'Último valor observado' : 'Valor atual'}</span>
           <span className="complementary-projection__card-value">
-            {lastHistoricalPct != null ? `${percentFormatter.format(lastHistoricalPct)}%` : '—'}
+            {lastHistoricalPct != null
+              ? `${percentFormatter.format(lastHistoricalPct)}%${contextOnly && latestHistoricalPoint?.year ? ` (${latestHistoricalPoint.year})` : ''}`
+              : '—'}
           </span>
         </div>
         <div className="complementary-projection__card">
-          <span className="complementary-projection__card-label">Projetado em 2036</span>
+          <span className="complementary-projection__card-label">{contextOnly ? 'Cenário estimado em 2036' : 'Projetado em 2036'}</span>
           <span className="complementary-projection__card-value">
             {projected2036 != null ? `${percentFormatter.format(projected2036)}%` : '—'}
           </span>
         </div>
-        <div className="complementary-projection__card">
-          <span className="complementary-projection__card-label">Meta PNE 2036</span>
-          <span className="complementary-projection__card-value">
-            {target != null ? `${percentFormatter.format(target)}%` : '—'}
-          </span>
-        </div>
-        <div className="complementary-projection__card">
-          <span className="complementary-projection__card-label">Distância estimada da meta</span>
-          <span className={`complementary-projection__card-value ${tendeAtingir ? 'complementary-projection__value--positive' : 'complementary-projection__value--negative'}`}>
-            {distance != null ? `${distance >= 0 ? '+' : ''}${percentFormatter.format(distance)} p.p.` : '—'}
-          </span>
-        </div>
+        {!contextOnly ? (
+          <>
+            <div className="complementary-projection__card">
+              <span className="complementary-projection__card-label">Meta PNE 2036</span>
+              <span className="complementary-projection__card-value">
+                {target != null ? `${percentFormatter.format(target)}%` : '—'}
+              </span>
+            </div>
+            <div className="complementary-projection__card">
+              <span className="complementary-projection__card-label">Distância estimada da meta</span>
+              <span className={`complementary-projection__card-value ${tendeAtingir ? 'complementary-projection__value--positive' : 'complementary-projection__value--negative'}`}>
+                {distance != null ? `${distance >= 0 ? '+' : ''}${percentFormatter.format(distance)} p.p.` : '—'}
+              </span>
+            </div>
+          </>
+        ) : null}
       </div>
 
-      {chart.points.length > 0 && (
+      {chart.points.length > 0 ? (
         <>
           <ChartLegend
             className="complementary-projection__legend"
             items={[
               { key: 'observed', label: transitionYear ? `Observado até ${transitionYear}` : 'Observado', color: 'var(--chart-primary)' },
-              { key: 'projected', label: 'Projetado até 2036', color: 'var(--chart-primary)', dashed: true },
+              { key: 'projected', label: 'Projetado até 2036', color: contextOnly ? 'var(--chart-series-2)' : 'var(--chart-primary)', dashed: true },
               ...(target != null ? [{ key: 'target', label: 'Meta PNE 2036', color: 'var(--chart-series-3)', dashed: true }] : []),
             ]}
           />
-          <div className="history-chart__canvas complementary-projection__chart">
+          <div
+            className="history-chart__canvas complementary-projection__chart"
+            role="region"
+            aria-label={chartLabel ? `Área rolável do gráfico: ${chartLabel}` : 'Área rolável do gráfico'}
+            tabIndex={0}
+          >
           <svg
             viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-            role="img"
-            aria-label="Gráfico de projeção tendencial"
+            role="group"
+            aria-label={accessibleChartLabel}
           >
             <defs>
-              <clipPath id="proj-clip">
+              <clipPath id={`proj-clip-${chartId}`}>
                 <rect
                   x={PADDING.left}
                   y={PADDING.top}
@@ -101,7 +153,7 @@ export function IndicatorProjectionPanel({ projection, showTitle = true }) {
               </clipPath>
             </defs>
 
-            <g className="chart-grid">
+            <g className="chart-grid" aria-hidden="true">
               {chart.yTicks.map((tick, i) => (
                 <g key={i}>
                   <line
@@ -116,7 +168,7 @@ export function IndicatorProjectionPanel({ projection, showTitle = true }) {
             </g>
 
             {chart.metaLine && (
-              <g className="chart-meta-line">
+              <g className="chart-meta-line" aria-hidden="true">
                 <line
                   x1={PADDING.left} x2={CHART_WIDTH - PADDING.right}
                   y1={chart.metaLine.y} y2={chart.metaLine.y}
@@ -130,38 +182,44 @@ export function IndicatorProjectionPanel({ projection, showTitle = true }) {
               </g>
             )}
 
-            <g className="chart-axis">
+            <g className="chart-axis" aria-hidden="true">
               <line className="chart-axis__x" x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={CHART_HEIGHT - PADDING.bottom} y2={CHART_HEIGHT - PADDING.bottom} />
               <line className="chart-axis__y" x1={PADDING.left} x2={PADDING.left} y1={PADDING.top} y2={CHART_HEIGHT - PADDING.bottom} />
             </g>
 
-            <g clipPath="url(#proj-clip)">
+            <g clipPath={`url(#proj-clip-${chartId})`} aria-hidden="true">
               {chart.areaPath && <path className="chart-area projection-area" d={chart.areaPath} />}
               <path className="chart-line projection-line" d={chart.historicalPath} />
               <path className="chart-line projection-line--dashed" d={chart.projectionPath} />
             </g>
 
             <g className="chart-points">
-              {chart.points.filter(p => p.valid !== false).map((point) => (
+              {focusablePoints.map((point, index) => (
                 <circle
+                  ref={(element) => { pointRefs.current[index] = element }}
                   key={point.year}
+                  role="img"
                   aria-label={`${point.isProjected ? 'Projetado' : 'Observado'} ${point.year}: ${percentFormatter.format(point.value)}%`}
+                  aria-keyshortcuts="ArrowLeft ArrowRight Home End"
                   className={`chart-mark${point.year === transitionYear ? ' is-transition' : ''}${point.year === lastChartPointYear ? ' is-last' : ''}`}
                   cx={point.x} cy={point.y}
                   r={activePoint?.year === point.year ? 5.5 : point.year === transitionYear ? 5 : point.year === lastChartPointYear ? 4.5 : 3.5}
                   onMouseEnter={() => setActivePoint(point)}
                   onMouseLeave={() => setActivePoint(null)}
-                  onFocus={() => setActivePoint(point)}
+                  onFocus={() => {
+                    setTabStopYear(point.year)
+                    setActivePoint(point)
+                  }}
                   onBlur={() => setActivePoint(null)}
-                  onKeyDown={(event) => closeChartTooltipOnEscape(event, () => setActivePoint(null))}
-                  tabIndex="0"
+                  onKeyDown={(event) => handlePointKeyDown(event, index)}
+                  tabIndex={point.year === resolvedTabStopYear ? 0 : -1}
                 >
                   <title>{`${point.year}: ${percentFormatter.format(point.value)}%`}</title>
                 </circle>
               ))}
             </g>
 
-            <g className="chart-x-labels">
+            <g className="chart-x-labels" aria-hidden="true">
               {chart.xTicks.map((tick, i, arr) => (
                 <text
                   key={tick.year}
@@ -192,25 +250,48 @@ export function IndicatorProjectionPanel({ projection, showTitle = true }) {
           )}
           </div>
         </>
+      ) : (
+        <ChartEmptyState message="Série histórica insuficiente para exibir o gráfico." />
       )}
 
-      <div className="complementary-projection__reading">
-        <p>
-          {tendeAtingir
-            ? 'Se a trajetória atual for mantida, o município tende a atingir a meta em 2036.'
-            : 'Se a trajetória atual for mantida, o município apresenta risco de não atingir a meta em 2036.'}
-        </p>
-      </div>
+      {contextOnly ? (
+        projection.quality || projection.warnings?.length ? (
+          <div className="education-projection-alerts" role="note">
+            {projection.quality ? <p><strong>Qualidade do cenário:</strong> {formatProjectionQuality(projection.quality)}.</p> : null}
+            {projection.warnings?.length ? (
+              <details className="education-projection-alerts__details">
+                <summary>Alertas do cenário ({projection.warnings.length})</summary>
+                <ul>
+                  {projection.warnings.map((warning) => <li key={warning}>{warning}</li>)}
+                </ul>
+              </details>
+            ) : null}
+          </div>
+        ) : null
+      ) : (
+        <div className="complementary-projection__reading">
+          <p>
+            {tendeAtingir
+              ? 'Se a trajetória atual for mantida, o município tende a atingir a meta em 2036.'
+              : 'Se a trajetória atual for mantida, o município apresenta risco de não atingir a meta em 2036.'}
+          </p>
+        </div>
+      )}
     </div>
   )
 }
 
-function buildProjectionChart(projection) {
+function formatProjectionQuality(quality) {
+  const labels = { alta: 'alta', media: 'média', baixa: 'baixa' }
+  return labels[quality] ?? quality
+}
+
+function buildProjectionChart(projection, { chartMinYear, showGoalContext = true } = {}) {
   if (!projection?.available) {
     return { points: [], yTicks: [], metaLine: null, areaPath: null, historicalPath: '', projectionPath: '', xTicks: [] }
   }
 
-  const CHART_MIN_YEAR = 2016
+  const CHART_MIN_YEAR = chartMinYear ?? 2016
   const CHART_MAX_YEAR = 2036
 
   const historicalPct = projection.historical_percent || []
@@ -241,7 +322,7 @@ function buildProjectionChart(projection) {
 
   const allPoints = [...histPoints, ...projPoints]
 
-  const target = projection.target_percent
+  const target = showGoalContext ? projection.target_percent : null
   const values = allPoints.map(p => p.value)
   if (target != null) values.push(target)
   const minVal = Math.min(...values)

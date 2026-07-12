@@ -29,9 +29,9 @@ const FINANCIAL_CARD_CLASS_CONTRACT = Object.freeze({
 export function FinancialIndicatorCard({ buttonRef, indicator, isSelected = false, onSelect }) {
   const statusTone = indicator.statusTone ?? 'default'
   const viewModel = {
-    ariaLabel: `Abrir detalhe do indicador ${indicator.label}`,
+    ariaLabel: `Abrir detalhe do indicador ${indicator.label}. Valor atual: ${indicator.currentDisplay ?? EM}.`,
     contextLabel: indicator.moduleLabel ?? 'Financeiro',
-    description: indicator.description,
+    description: indicator.cardDescription ?? indicator.description,
     footer: {
       primary: indicator.unitLabel ?? 'Indicador',
       secondary: indicator.sourceLabel,
@@ -47,7 +47,7 @@ export function FinancialIndicatorCard({ buttonRef, indicator, isSelected = fals
     },
     title: indicator.label,
     value: {
-      display: indicator.currentDisplay ?? EM,
+      display: indicator.currentDisplayCompact ?? indicator.currentDisplay ?? EM,
       metaLabel: indicator.currentYear ? `Ano ${indicator.currentYear}` : 'Ano indisponível',
     },
   }

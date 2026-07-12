@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { resolveDetailSequence, useDetailViewNavigation } from '../hooks/useDetailViewNavigation'
 import { PNATE_INDICATORS, formatPnateValue } from '../data/pnateIndicators'
+import { getFinancialIndicatorMetadata } from '../data/financialIndicatorMetadata'
 import { DataSourceNote } from './DataSourceNote'
+import { FinancialIndicatorMetadata } from './FinancialIndicatorMetadata'
 import { MethodNote } from './MethodNote'
 import { ContentState } from './ContentState'
 import { IndicatorHistoryChart } from '../components/IndicatorHistoryChart'
@@ -323,6 +325,7 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
             <FinancialReferenceBox>{selectedIndicatorModel.description}</FinancialReferenceBox>
             <FinancialMetricGrid indicator={selectedIndicatorModel} />
             <FinancialQuickReading text={selectedIndicatorModel.quickReading} tone={selectedIndicatorModel.statusTone} />
+            <FinancialIndicatorMetadata metadata={getFinancialIndicatorMetadata('pnate', selectedIndicatorModel.key)} />
 
             <FinancialChartFrame
               subtitle={`${selectedIndicator.label} · PNATE`}

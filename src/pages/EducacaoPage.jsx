@@ -1,13 +1,6 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { CategoryTabs } from '../components/CategoryTabs'
-import { FundebPanel } from '../components/FundebPanel'
-import { PnatePanel } from '../components/PnatePanel'
-import { SiopeIndicatorsPanel } from '../components/SiopeIndicatorsPanel'
 import { SistemaSPanel } from '../components/SistemaSPanel'
-import { VaarPanel } from '../components/VaarPanel'
-import { FUNDEB_INDICATORS } from '../data/fundebIndicators'
-import { PNATE_INDICATORS } from '../data/pnateIndicators'
-import { SIOPE_SELECTED_INDICATORS_COUNT } from '../data/siopeIndicators'
 import { EducationBarChart } from '../components/EducationBarChart'
 import { EducationIndicatorCard } from '../components/EducationIndicatorCard'
 import { DetailNavigation } from '../components/DetailNavigation'
@@ -19,20 +12,36 @@ import { EducationSummaryCard } from '../components/EducationSummaryCard'
 import { EducationTable } from '../components/EducationTable'
 import { DataSourceNote } from '../components/DataSourceNote'
 import { ContentState } from '../components/ContentState'
+import { ErrorState } from '../components/ErrorState'
 import { MethodNote } from '../components/MethodNote'
 import { MetricCard } from '../components/MetricCard'
 import { SearchField } from '../components/SearchField'
 import { SegmentedControl } from '../components/SegmentedControl'
 import { StatusBadge } from '../components/StatusBadge'
 import { ChartEmptyState, ChartLegend, ChartTooltip } from '../components/ChartPrimitives'
+import { IndicatorProjectionPanel } from '../components/IndicatorProjectionPanel'
 import { loadEducationMunicipio, loadEducationMunicipiosIndex } from '../data/educationData'
 import { getDataSourceParts } from '../utils/dataSourceNotes'
 import { PNE_CONTEXT_PROXY_INDICATOR_KEYS } from '../utils/pneDisplayRules'
 import { useAsyncData } from '../utils/useAsyncData'
-import { scrollPageToTop } from '../utils/navigationScroll'
 import { resolveDetailSequence, useDetailViewNavigation } from '../hooks/useDetailViewNavigation'
 import { chartSeriesColor, closeChartTooltipOnEscape } from '../utils/chartVisuals'
 import { getHashContext, setHashContext } from '../utils/hashNavigation'
+import '../styles/education-pages.css'
+import {
+  EDUCATION_COMPLEMENTARY_INDICATOR_CATALOG,
+  EDUCATION_DEMAND_GROUP_CATALOG,
+  EDUCATION_DEMAND_INDICATOR_CATALOG,
+  EDUCATION_INDICATOR_CATALOG,
+  EDUCATION_SOURCE_CATALOG,
+  EDUCATION_SECTION_GROUPS,
+  EDUCATION_SECTION_CATALOG,
+  EDUCATION_SECTION_KEYS,
+  getEducationIndicatorCatalogItem,
+  getEducationThemeForIndicator,
+  getEducationThemeForSection,
+  resolveEducationSection,
+} from '../data/educationIndicatorCatalog'
 import {
   depLabel,
   etapaLabel,
@@ -62,8 +71,8 @@ const CATEGORY_LABELS = {
   [FILTER_KEYS.infantil]: 'Educação Infantil',
   [FILTER_KEYS.fundamental]: 'Ensino Fundamental',
   [FILTER_KEYS.medio]: 'Ensino Médio',
-  [FILTER_KEYS.eja]: 'EJA',
-  [FILTER_KEYS.profissional]: 'Educação Profissional',
+  [FILTER_KEYS.eja]: 'Educação de Jovens e Adultos',
+  [FILTER_KEYS.profissional]: 'Educação Profissional e Tecnológica',
 }
 
 const DEPENDENCY_COLORS = {
@@ -87,10 +96,10 @@ const ATU_TOTAL_SERIE_BY_STAGE = {
   medio: 'medio_total',
 }
 const ALUNOS_TURMA_SERIE_LABELS = {
-  infantil_total: 'Total - Educação Infantil',
+  infantil_total: 'Total — Educação Infantil',
   creche: 'Creche',
   pre_escola: 'Pré-Escola',
-  fundamental_total: 'Total - Ensino Fundamental',
+  fundamental_total: 'Total — Ensino Fundamental',
   fundamental_anos_iniciais: 'Anos Iniciais',
   fundamental_anos_finais: 'Anos Finais',
   fundamental_1_ano: '1º ano',
@@ -103,7 +112,7 @@ const ALUNOS_TURMA_SERIE_LABELS = {
   fundamental_8_ano: '8º ano',
   fundamental_9_ano: '9º ano',
   fundamental_multietapa: 'Multietapa, multi ou correção de fluxo',
-  medio_total: 'Total - Ensino Médio',
+  medio_total: 'Total — Ensino Médio',
   medio_1_serie: '1ª série',
   medio_2_serie: '2ª série',
   medio_3_serie: '3ª série',
@@ -124,121 +133,35 @@ const EJA_VALID_AGE_RANGES = [
 const CATEGORY_COMPARISON_COLORS = ['#0f766e', '#2563eb', '#f59e0b', '#7c3aed', '#0891b2', '#db2777', '#65a30d', '#9333ea']
 const COR_RACA_ORDER = ['Branca', 'Parda', 'Preta', 'Amarela', 'Indígena', 'Não Declarada']
 
-const MAIN_BLOCK_KEYS = {
-  panorama: 'panoramaEducacional',
-  financiamento: 'financiamentoEducacao',
-}
-
 const PANORAMA_THEME_KEYS = {
   complementaresPne: 'pne_complementares',
   matriculas: 'matriculas',
   escolasSistemaS: 'escolasSistemaS',
 }
 
-const PNE_COMPLEMENTARY_GROUPS = [
-  {
-    key: 'atendimento_apoio',
-    label: 'Atendimento e apoio educacional',
-    indicatorKeys: ['aee'],
-  },
-  {
-    key: 'eja_profissional',
-    label: 'EJA e Educação Profissional',
-    indicatorKeys: ['eja_integrada_educacao_profissional'],
-  },
-  {
-    key: 'conectividade',
-    label: 'Conectividade escolar',
-    indicatorKeys: [
-      'internet',
-      'internet_alunos',
-      'internet_aprendizagem',
-      'internet_comunidade',
-      'acesso_internet_computador',
-      'acesso_internet_disp_pessoais',
-      'rede_local',
-      'rede_wireless',
-      'banda_larga',
-    ],
-  },
-  {
-    key: 'equipamentos',
-    label: 'Equipamentos para alunos',
-    indicatorKeys: ['desktop_aluno', 'comp_portatil_aluno', 'tablet_aluno'],
-  },
-  {
-    key: 'gestao',
-    label: 'Gestão e proposta pedagógica',
-    indicatorKeys: ['proposta_pedagogica'],
-  },
-]
-
-const FINANCING_MODULE_KEYS = {
-  fundeb: 'fundeb',
-  pnate: 'pnate',
-  siope: 'siope',
-  vaar: 'vaar',
-}
-
-const MAIN_INDICATOR_BLOCKS = [
-  {
-    key: MAIN_BLOCK_KEYS.panorama,
-    title: 'Panorama Educacional',
-    description: 'Matrículas, escolas, alunos por turma, docentes, fluxo, aprendizagem e matrículas técnicas.',
-  },
-  {
-    key: MAIN_BLOCK_KEYS.financiamento,
-    title: 'Financiamento da Educação',
-    description: 'SIOPE, FUNDEB, VAAR, PNATE, receitas, despesas, aplicação de recursos e resultados financeiros.',
-  },
+const LEGACY_EDUCATION_THEME_KEYS = [
+  'matriculas',
+  'rede',
+  'turmas',
+  'docentes',
+  'fluxo',
+  'aprendizagem',
+  'oferta',
 ]
 
 const EDUCATION_PAGE_COPY = {
-  description: 'Matrículas, escolas, docentes, fluxo, aprendizagem e matrículas técnicas do município.',
+  description: 'Indicadores de atendimento, trajetória escolar, profissionais, infraestrutura, modalidades e condições da oferta educacional no município.',
   emptyDescription: 'Os indicadores educacionais são carregados após a seleção do município. Use o seletor no topo da página.',
   eyebrow: 'Indicadores de Educação',
   title: 'Indicadores de Educação',
 }
 
-const FINANCIAL_PAGE_COPY = {
-  description: 'SIOPE, FUNDEB, VAAR, PNATE, receitas, despesas, aplicação de recursos e resultados financeiros.',
-  emptyDescription: 'Os indicadores financeiros são carregados após a seleção do município. Use o seletor no topo da página.',
-  eyebrow: 'Indicadores Financeiros da Educação',
-  title: 'Indicadores Financeiros da Educação',
-}
-
-const FINANCING_MODULES = [
-  {
-    key: FINANCING_MODULE_KEYS.siope,
-    title: 'Aplicação dos Recursos',
-    description: 'Receitas, despesas, mínimos legais, FUNDEB, gasto por aluno e saldos declarados ao SIOPE/FNDE.',
-    count: `${SIOPE_SELECTED_INDICATORS_COUNT} indicadores`,
-  },
-  {
-    key: FINANCING_MODULE_KEYS.fundeb,
-    title: 'FUNDEB',
-    description: 'Receitas, despesas, remuneração e saldos do fundo.',
-    count: `${FUNDEB_INDICATORS.length} indicadores`,
-  },
-  {
-    key: FINANCING_MODULE_KEYS.vaar,
-    title: 'Complementação VAAR',
-    description: 'Condicionalidades e resultados de aprendizagem e atendimento.',
-    count: '2023-2026',
-  },
-  {
-    key: FINANCING_MODULE_KEYS.pnate,
-    title: 'PNATE',
-    description: 'Transporte escolar rural, estudantes atendidos e repasses.',
-    count: `${PNATE_INDICATORS.length} indicadores`,
-  },
-]
-
-function getInitialEducationNavigation() {
+export function getInitialEducationNavigation() {
   const fallback = {
-    mainBlock: MAIN_BLOCK_KEYS.panorama,
     panoramaTheme: PANORAMA_THEME_KEYS.matriculas,
-    financingModule: FINANCING_MODULE_KEYS.siope,
+    section: EDUCATION_SECTION_KEYS.overview,
+    detailKey: '',
+    shouldApplyTheme: false,
   }
 
   if (typeof window === 'undefined') return fallback
@@ -247,81 +170,43 @@ function getInitialEducationNavigation() {
   const rawHash = window.location.hash.replace(/^#\/?/, '')
   const hashQuery = rawHash.includes('?') ? rawHash.slice(rawHash.indexOf('?') + 1) : ''
   const hashParams = new URLSearchParams(hashQuery)
-  fallback.detailKey = hashParams.get('detalhe') ?? ''
-  const requestedTheme = hashParams.get('tema') ?? hashParams.get('theme')
-  if (requestedTheme) fallback.panoramaTheme = requestedTheme
-  const keys = ['bloco', 'block', 'scope', 'tema', 'theme', 'modulo', 'module']
-  const candidates = [
-    rawHash && !rawHash.includes('?') ? rawHash : null,
-    ...keys.flatMap((key) => [searchParams.get(key), hashParams.get(key)]),
-  ]
+  const detailKey = hashParams.get('detalhe') ?? searchParams.get('detalhe') ?? ''
+  const requestedSection = hashParams.get('secao') ?? searchParams.get('secao')
+  const requestedTheme = hashParams.get('tema')
+    ?? hashParams.get('theme')
+    ?? searchParams.get('tema')
+    ?? searchParams.get('theme')
+  const routeValue = normalizeNavigationValue(rawHash && !rawHash.includes('?') ? rawHash : '')
+  const themeValue = normalizeNavigationValue(requestedTheme)
+  const detailTheme = getEducationThemeForIndicator(detailKey)
+  const resolvedSection = resolveEducationSection({
+    detailKey,
+    requestedSection,
+    requestedTheme,
+  })
+  const hasSystemTheme = ['sistemas', 'escolassistemas'].includes(routeValue)
+  const navigationSection = hasSystemTheme ? EDUCATION_SECTION_KEYS.modalities : resolvedSection
+  const legacyTheme = [...Object.values(PANORAMA_THEME_KEYS), ...LEGACY_EDUCATION_THEME_KEYS]
+    .find((key) => normalizeNavigationValue(key) === themeValue)
 
-  for (const candidate of candidates) {
-    const value = normalizeNavigationValue(candidate)
-
-    if (value === 'fundeb') {
-      return {
-        ...fallback,
-        mainBlock: MAIN_BLOCK_KEYS.financiamento,
-        financingModule: FINANCING_MODULE_KEYS.fundeb,
-      }
-    }
-
-    if (value === 'pnate') {
-      return {
-        ...fallback,
-        mainBlock: MAIN_BLOCK_KEYS.financiamento,
-        financingModule: FINANCING_MODULE_KEYS.pnate,
-      }
-    }
-
-    if (value === 'siope' || value === 'indicadoressiope') {
-      return {
-        ...fallback,
-        mainBlock: MAIN_BLOCK_KEYS.financiamento,
-        financingModule: FINANCING_MODULE_KEYS.siope,
-      }
-    }
-
-    if (value === 'vaar' || value === 'complementacaovaar' || value === 'complementaovaar') {
-      return {
-        ...fallback,
-        mainBlock: MAIN_BLOCK_KEYS.financiamento,
-        financingModule: FINANCING_MODULE_KEYS.vaar,
-      }
-    }
-
-    if (['sistemas', 'escolassistemas'].includes(value)) {
-      return {
-        ...fallback,
-        mainBlock: MAIN_BLOCK_KEYS.panorama,
-        panoramaTheme: PANORAMA_THEME_KEYS.escolasSistemaS,
-      }
-    }
-
-    const panoramaTheme = Object.values(PANORAMA_THEME_KEYS)
-      .find((key) => normalizeNavigationValue(key) === value)
-    if (panoramaTheme) {
-      return {
-        ...fallback,
-        mainBlock: MAIN_BLOCK_KEYS.panorama,
-        panoramaTheme,
-      }
-    }
-
-    if (value === 'financiamentoeducacao') {
-      return {
-        ...fallback,
-        mainBlock: MAIN_BLOCK_KEYS.financiamento,
-      }
-    }
-
-    if (value === 'panoramaeducacional' || value === 'panorama') {
-      return fallback
-    }
+  let panoramaTheme = fallback.panoramaTheme
+  if (hasSystemTheme) {
+    panoramaTheme = PANORAMA_THEME_KEYS.escolasSistemaS
+  } else if (detailTheme) {
+    panoramaTheme = detailTheme
+  } else if (legacyTheme) {
+    panoramaTheme = legacyTheme
+  } else if (requestedSection) {
+    panoramaTheme = getEducationThemeForSection(requestedSection) ?? panoramaTheme
   }
 
-  return fallback
+  return {
+    ...fallback,
+    panoramaTheme,
+    section: navigationSection,
+    detailKey,
+    shouldApplyTheme: Boolean(detailKey || requestedSection || requestedTheme || hasSystemTheme),
+  }
 }
 
 function normalizeNavigationValue(value) {
@@ -332,10 +217,8 @@ function normalizeNavigationValue(value) {
     .replace(/[^a-z0-9]/g, '')
 }
 
-export function EducacaoPage({ indicadores, initialMainBlock, municipioData, selectedMunicipio }) {
-  const isFinancingPage = initialMainBlock === MAIN_BLOCK_KEYS.financiamento
-  const isSidebarScopedPage = Boolean(initialMainBlock)
-  const pageCopy = isFinancingPage ? FINANCIAL_PAGE_COPY : EDUCATION_PAGE_COPY
+export function EducacaoPage({ indicadores, municipioData, selectedMunicipio }) {
+  const pageCopy = EDUCATION_PAGE_COPY
   const eduIndexState = useAsyncData(() => loadEducationMunicipiosIndex(), [])
   const eduMunMap = useMemo(() => {
     const list = eduIndexState.data?.municipios ?? []
@@ -348,16 +231,9 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
     return loadEducationMunicipio(selectedId)
   }, [selectedId])
 
-  const initialNavigation = useMemo(
-    () => ({
-      ...getInitialEducationNavigation(),
-      ...(initialMainBlock ? { mainBlock: initialMainBlock } : {}),
-    }),
-    [initialMainBlock],
-  )
-  const [selectedMainBlock, setSelectedMainBlock] = useState(initialNavigation.mainBlock)
+  const initialNavigation = useMemo(() => getInitialEducationNavigation(), [])
+  const [selectedSectionKey, setSelectedSectionKey] = useState(initialNavigation.section)
   const [selectedThemeKey, setSelectedThemeKey] = useState(initialNavigation.panoramaTheme)
-  const [selectedFinancingModule, setSelectedFinancingModule] = useState(initialNavigation.financingModule)
   const [selectedIndicatorKey, setSelectedIndicatorKey] = useState(initialNavigation.detailKey ?? '')
   const [isDetailOpen, setIsDetailOpen] = useState(Boolean(initialNavigation.detailKey))
   const [searchQuery, setSearchQuery] = useState('')
@@ -365,26 +241,17 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
     activeKey: selectedIndicatorKey,
     isOpen: isDetailOpen,
   })
-  const handleFinancialDetailChange = useCallback((detailKey) => {
-    setSelectedIndicatorKey(detailKey)
-    setHashContext('financeiros', { modulo: selectedFinancingModule, detalhe: detailKey })
-  }, [selectedFinancingModule])
-
   useEffect(() => {
     function handleHashChange() {
       const navigation = getInitialEducationNavigation()
-      const { params, route } = getHashContext()
-      if (params.has('tema') || params.has('theme') || ['sistemas', 'escolassistemas'].includes(normalizeNavigationValue(route))) {
+      const sectionChanged = navigation.section !== selectedSectionKey
+      const themeChanged = navigation.shouldApplyTheme && navigation.panoramaTheme !== selectedThemeKey
+      setSelectedSectionKey(navigation.section)
+      if (navigation.shouldApplyTheme) {
         setSelectedThemeKey(navigation.panoramaTheme)
       }
-      if (params.has('modulo') || params.has('module') || ['fundeb', 'pnate', 'siope', 'vaar'].includes(normalizeNavigationValue(route))) {
-        setSelectedFinancingModule(navigation.financingModule)
-      }
-      if (normalizeNavigationValue(route) === 'educacao' && !params.has('tema') && selectedThemeKey !== PANORAMA_THEME_KEYS.matriculas) {
-        setHashContext('educacao', { tema: selectedThemeKey })
-      }
-      if (normalizeNavigationValue(route) === 'financeiros' && !params.has('modulo')) {
-        setHashContext('financeiros', { modulo: selectedFinancingModule })
+      if (sectionChanged || themeChanged) {
+        setSearchQuery('')
       }
       setSelectedIndicatorKey(navigation.detailKey ?? '')
       setIsDetailOpen(Boolean(navigation.detailKey))
@@ -392,15 +259,7 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
 
     window.addEventListener('hashchange', handleHashChange)
     return () => window.removeEventListener('hashchange', handleHashChange)
-  }, [selectedFinancingModule, selectedThemeKey])
-
-  useEffect(() => {
-    if (!initialMainBlock || initialMainBlock === selectedMainBlock) return
-    setSelectedMainBlock(initialMainBlock)
-    setSelectedIndicatorKey('')
-    setIsDetailOpen(false)
-    setSearchQuery('')
-  }, [initialMainBlock, selectedMainBlock])
+  }, [selectedSectionKey, selectedThemeKey])
 
   const dados = munDataState.data
   const sistemaS = dados?.blocos?.sistema_s ?? {}
@@ -418,9 +277,9 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
       selectedThemeKey === PANORAMA_THEME_KEYS.escolasSistemaS &&
       !hasSistemaS
     ) {
-      setSelectedThemeKey(PANORAMA_THEME_KEYS.matriculas)
+      setSelectedThemeKey(getEducationThemeForSection(selectedSectionKey) ?? PANORAMA_THEME_KEYS.matriculas)
     }
-  }, [hasSistemaS, selectedThemeKey, shouldKeepSistemaSTheme])
+  }, [hasSistemaS, selectedSectionKey, selectedThemeKey, shouldKeepSistemaSTheme])
 
   useEffect(() => {
     previousSelectedIdRef.current = selectedId
@@ -451,26 +310,56 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
     return <div className="page-stack"><ContentState as="p" kind="loading" className="state-box state-box--loading">Carregando dados...</ContentState></div>
   }
 
-  if (munDataState.error) {
-    return <div className="page-stack"><div className="state-box state-box--error"><strong>Erro ao carregar dados</strong><span>{munDataState.error}</span></div></div>
+  if (eduIndexState.error) {
+    return <div className="page-stack"><ErrorState title="Erro ao carregar o índice educacional" message={eduIndexState.error} /></div>
   }
 
-  if (!dados) return null
+  if (!selectedId) {
+    return (
+      <div className="page-stack">
+        <ContentState kind="unavailable" className="state-box">
+          <strong>Indicadores educacionais indisponíveis</strong>
+          <span>Não foi encontrada uma correspondência de dados educacionais para {selectedMunicipio}.</span>
+        </ContentState>
+      </div>
+    )
+  }
+
+  if (munDataState.error) {
+    return <div className="page-stack"><ErrorState title="Erro ao carregar dados" message={munDataState.error} /></div>
+  }
+
+  if (!dados) {
+    return (
+      <div className="page-stack">
+        <ContentState kind="unavailable" className="state-box">
+          <strong>Indicadores educacionais indisponíveis</strong>
+          <span>Os dados deste município não estão disponíveis no momento.</span>
+        </ContentState>
+      </div>
+    )
+  }
 
   const model = buildEducationModel(dados.blocos ?? {})
   const pneComplementaryTheme = buildPneComplementaryTheme({
     indicadores,
     results: municipioData?.pne_2026_2036?.indicadores,
   })
+  const allEducationItems = [
+    ...model.items,
+    ...(pneComplementaryTheme?.items ?? []),
+  ]
+  const section = EDUCATION_SECTION_CATALOG.find((item) => item.key === selectedSectionKey)
+  const itemsByKey = new Map(allEducationItems.map((item) => [item.key, item]))
+  const sectionItems = (section?.indicatorKeys ?? [])
+    .map((indicatorKey) => itemsByKey.get(indicatorKey))
+    .filter(Boolean)
   const themes = pneComplementaryTheme
     ? [...model.themes, pneComplementaryTheme]
     : model.themes
+  const selectedTheme = themes.find((theme) => theme.key === selectedThemeKey) ?? themes[0]
   const isSistemaSTheme = selectedThemeKey === PANORAMA_THEME_KEYS.escolasSistemaS && hasSistemaS
-  const selectedTheme = isSistemaSTheme
-    ? null
-    : (themes.find((theme) => theme.key === selectedThemeKey) ?? themes[0])
-  const themeItems = selectedTheme?.items ?? []
-  const filteredItems = themeItems.filter((item) => {
+  const filteredItems = sectionItems.filter((item) => {
     const query = searchQuery.trim().toLocaleLowerCase('pt-BR')
     const queryMatches = !query || `${item.label} ${item.description} ${item.themeLabel} ${item.categoryLabel ?? ''} ${item.searchText ?? ''}`.toLocaleLowerCase('pt-BR').includes(query)
     return queryMatches
@@ -479,8 +368,12 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
   const { activeIndex: activeIndicatorIndex, previousItem: previousIndicator, nextItem: nextIndicator } = resolveDetailSequence(filteredItems, activeIndicator?.key)
   const isShowingIndicatorDetail = Boolean(isDetailOpen && activeIndicator)
   const isPneComplementaryTheme = selectedTheme?.key === PANORAMA_THEME_KEYS.complementaresPne
+  const isOverviewSection = selectedSectionKey === EDUCATION_SECTION_KEYS.overview
+  const isDemandSection = selectedSectionKey === EDUCATION_SECTION_KEYS.demand
+  const isMethodologySection = selectedSectionKey === EDUCATION_SECTION_KEYS.methodology
 
   function handleThemeSelect(themeKey) {
+    setSelectedSectionKey(resolveEducationSection({ requestedTheme: themeKey }))
     setSelectedThemeKey(themeKey)
     setSelectedIndicatorKey('')
     setIsDetailOpen(false)
@@ -488,37 +381,17 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
     setHashContext('educacao', { tema: themeKey })
   }
 
-  function handleMainBlockSelect(mainBlock) {
-    if (mainBlock === selectedMainBlock) return
-    setSelectedMainBlock(mainBlock)
-    setSelectedIndicatorKey('')
-    setIsDetailOpen(false)
-    setSearchQuery('')
-    setHashContext(mainBlock === MAIN_BLOCK_KEYS.financiamento ? 'financeiros' : 'educacao')
-    if (mainBlock === MAIN_BLOCK_KEYS.panorama) {
-      const validKeys = themes.map((t) => t.key)
-      if (!validKeys.includes(selectedThemeKey)) {
-        setSelectedThemeKey(PANORAMA_THEME_KEYS.matriculas)
-      }
-    }
-  }
-
-  function handleFinancingModuleSelect(moduleKey) {
-    if (moduleKey === selectedFinancingModule) return
-    setSelectedFinancingModule(moduleKey)
-    setSelectedIndicatorKey('')
-    setHashContext('financeiros', { modulo: moduleKey })
-    window.requestAnimationFrame(() => {
-      scrollPageToTop()
-    })
-  }
-
   function handleIndicatorCardSelect(indicatorKey) {
     detailNavigation.prepareDetail(indicatorKey, { captureGridPosition: true })
     setSelectedIndicatorKey(indicatorKey)
     setIsDetailOpen(true)
     const { params, route } = getHashContext()
-    setHashContext(route || 'educacao', { tema: params.get('tema'), modulo: params.get('modulo'), detalhe: indicatorKey })
+    setHashContext(route || 'educacao', {
+      tema: params.get('tema'),
+      secao: params.get('secao') ?? resolveEducationSection({ detailKey: indicatorKey }),
+      modulo: params.get('modulo'),
+      detalhe: indicatorKey,
+    })
   }
 
   function handleBackToIndicators() {
@@ -526,7 +399,11 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
     setIsDetailOpen(false)
     setSelectedIndicatorKey('')
     const { params, route } = getHashContext()
-    setHashContext(route || 'educacao', { tema: params.get('tema'), modulo: params.get('modulo') })
+    setHashContext(route || 'educacao', {
+      tema: params.get('tema'),
+      secao: params.get('secao') ?? selectedSectionKey,
+      modulo: params.get('modulo'),
+    })
     detailNavigation.restoreGrid(returnKey)
   }
 
@@ -535,10 +412,155 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
     setSelectedIndicatorKey(indicatorKey)
     setIsDetailOpen(true)
     const { params, route } = getHashContext()
-    setHashContext(route || 'educacao', { tema: params.get('tema'), modulo: params.get('modulo'), detalhe: indicatorKey })
+    setHashContext(route || 'educacao', {
+      tema: params.get('tema'),
+      secao: params.get('secao') ?? resolveEducationSection({ detailKey: indicatorKey }),
+      modulo: params.get('modulo'),
+      detalhe: indicatorKey,
+    })
   }
 
-  function renderPanoramaScope() {
+  function renderEducationSectionScope() {
+    const groups = EDUCATION_SECTION_GROUPS[selectedSectionKey] ?? []
+    const normalizedSearchQuery = searchQuery.trim().toLocaleLowerCase('pt-BR')
+    const visibleGroups = groups
+      .map((group) => ({
+        ...group,
+        items: group.indicatorKeys
+          .map((indicatorKey) => filteredItems.find((item) => item.key === indicatorKey))
+          .filter(Boolean),
+      }))
+      .filter((group) => group.items.length > 0)
+    const showSistemaSGroup =
+      selectedSectionKey === EDUCATION_SECTION_KEYS.modalities &&
+      hasSistemaS &&
+      (!normalizedSearchQuery || 'sistema s oferta profissional'.includes(normalizedSearchQuery))
+
+    if (isSistemaSTheme) {
+      return (
+        <>
+          <section className="page-card education-thematic-heading" aria-labelledby="education-thematic-title">
+            <span className="eyebrow">{'Seção de indicadores'}</span>
+            <h2 id="education-thematic-title">{section?.label}</h2>
+            <p>{section?.description}</p>
+          </section>
+          <section className="education-special-group" aria-labelledby="education-special-group-title">
+            <div className="education-indicator-group__heading">
+              <div>
+                <span className="eyebrow">{section?.label}</span>
+                <h3 id="education-special-group-title">Sistema S</h3>
+              </div>
+            </div>
+            <SistemaSPanel blocos={dados.blocos} />
+          </section>
+        </>
+      )
+    }
+
+    if (isShowingIndicatorDetail) {
+      return (
+        <div className="education-detail-view" ref={detailNavigation.detailViewRef}>
+          <EducationDetailNavigation
+            activeIndex={activeIndicatorIndex}
+            nextIndicator={nextIndicator}
+            onBack={handleBackToIndicators}
+            onNext={handleAdjacentIndicator}
+            onPrevious={handleAdjacentIndicator}
+            previousIndicator={previousIndicator}
+            total={filteredItems.length}
+          />
+          <EducationIndicatorDetail indicator={activeIndicator} blocos={dados.blocos} />
+          <EducationDetailNavigation
+            activeIndex={activeIndicatorIndex}
+            isBottom
+            nextIndicator={nextIndicator}
+            onBack={handleBackToIndicators}
+            onNext={handleAdjacentIndicator}
+            onPrevious={handleAdjacentIndicator}
+            previousIndicator={previousIndicator}
+            total={filteredItems.length}
+          />
+        </div>
+      )
+    }
+
+    return (
+      <>
+        <section className="cycle-filter-panel educacao-filter-panel platform-filter-panel education-section-filter-panel" aria-labelledby="education-thematic-title">
+          <div className="education-section-filter-panel__identity">
+            <span className="eyebrow">{'Seção de indicadores'}</span>
+            <h2 id="education-thematic-title">{section?.label}</h2>
+            <p>{section?.description}</p>
+          </div>
+          <div className="cycle-filter-panel__heading">
+            <div>
+              <span className="eyebrow">{'Indicadores da seção'}</span>
+              <strong className="education-section-filter-count">{formatIndicatorCount(filteredItems.length)}</strong>
+            </div>
+            <SearchField
+              ariaLabel="Buscar indicador"
+              className="cycle-search platform-search-field"
+              onChange={(event) => setSearchQuery(event.target.value)}
+              onClear={() => setSearchQuery('')}
+              placeholder="Buscar indicador..."
+              value={searchQuery}
+            />
+          </div>
+        </section>
+
+        {filteredItems.length === 0 && !showSistemaSGroup ? (
+          <div className="meta-grid-empty education-indicator-grid-empty">
+            <ContentState as="p" kind="noResults">
+              {searchQuery.trim()
+                ? `Nenhum indicador encontrado para “${searchQuery.trim()}” nesta seção.`
+                : 'Nenhum indicador disponível para esta seção.'}
+            </ContentState>
+          </div>
+        ) : (
+          <div className="education-indicator-groups">
+            {visibleGroups.map((group) => (
+              <section className="education-indicator-group" key={group.key} aria-labelledby={`education-group-${group.key}`}>
+                <div className="education-indicator-group__heading">
+                  <div>
+                    <span className="eyebrow">Indicadores relacionados</span>
+                    <h3 id={`education-group-${group.key}`}>{group.label}</h3>
+                  </div>
+                  <span>{formatIndicatorCount(group.items.length)}</span>
+                </div>
+                <p className="education-indicator-group__description">{group.description}</p>
+                <div className="education-indicator-card-grid">
+                  {group.items.map((item) => (
+                    <EducationIndicatorCard
+                      buttonRef={(node) => detailNavigation.registerCard(item.key, node)}
+                      indicator={item}
+                      isSelected={isDetailOpen && item.key === selectedIndicatorKey}
+                      key={item.key}
+                      onSelect={() => handleIndicatorCardSelect(item.key)}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+            {showSistemaSGroup ? (
+              <section className="education-special-group" aria-labelledby="education-section-sistema-s-title">
+                <div className="education-indicator-group__heading">
+                  <div>
+                    <span className="eyebrow">{section?.label}</span>
+                    <h3 id="education-section-sistema-s-title">Sistema S</h3>
+                  </div>
+                </div>
+                <SistemaSPanel blocos={dados.blocos} />
+              </section>
+            ) : null}
+          </div>
+        )}
+      </>
+    )
+  }
+
+  // Legacy renderer retained for the compatibility helpers above; thematic sections use renderEducationSectionScope.
+  // eslint-disable-next-line no-unused-vars
+  function renderLegacyPanoramaScope() {
     return (
       <>
         {!isShowingIndicatorDetail ? (
@@ -552,6 +574,7 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
                 ariaLabel="Buscar indicador"
                 className="cycle-search platform-search-field"
                 onChange={(event) => setSearchQuery(event.target.value)}
+                onClear={() => setSearchQuery('')}
                 placeholder="Buscar indicador..."
                 value={searchQuery}
               />
@@ -593,7 +616,7 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
         ) : (
           <div className="education-indicator-grid-shell">
             <div className="meta-grid-header education-indicator-grid-header">
-              <span>{filteredItems.length} indicadores</span>
+              <span>{formatIndicatorCount(filteredItems.length)}</span>
               <p>{selectedMunicipio} · {selectedTheme?.shortLabel ?? selectedTheme?.label}</p>
             </div>
 
@@ -627,118 +650,30 @@ export function EducacaoPage({ indicadores, initialMainBlock, municipioData, sel
     )
   }
 
-  function renderFinancingScope() {
-    return (
-      <>
-        <div className="cycle-category-bar educacao-financing-nav platform-module-navigation">
-          <span className="eyebrow">Módulos de financiamento</span>
-          <div className="educacao-financing-nav__grid platform-module-tabs" role="tablist" aria-label="Módulos de financiamento da educação">
-            {FINANCING_MODULES.map((module) => {
-              const isActive = module.key === selectedFinancingModule
-
-              return (
-                <button
-                  className={'educacao-module-card platform-module-tab' + (isActive ? ' is-active' : '')}
-                  key={module.key}
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  onClick={() => handleFinancingModuleSelect(module.key)}
-                >
-                  <span className="educacao-module-card__title">{module.title}</span>
-                  <span className="educacao-module-card__description">{module.description}</span>
-                  <span className="educacao-module-card__count">{module.count}</span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-        {selectedFinancingModule === FINANCING_MODULE_KEYS.siope ? (
-          <SiopeIndicatorsPanel
-            detailKey={selectedIndicatorKey}
-            idMunicipio={selectedId}
-            onDetailChange={handleFinancialDetailChange}
-            selectedMunicipio={selectedMunicipio}
-          />
-        ) : selectedFinancingModule === FINANCING_MODULE_KEYS.fundeb ? (
-          <FundebPanel
-            detailKey={selectedIndicatorKey}
-            municipioData={municipioData}
-            onDetailChange={handleFinancialDetailChange}
-            selectedMunicipio={selectedMunicipio}
-            embedded={true}
-          />
-        ) : selectedFinancingModule === FINANCING_MODULE_KEYS.vaar ? (
-          <VaarPanel vaarData={dados?.blocos?.vaar} />
-        ) : (
-          <PnatePanel
-            detailKey={selectedIndicatorKey}
-            onDetailChange={handleFinancialDetailChange}
-            pnateData={dados?.blocos?.pnate ?? municipioData?.blocos?.pnate}
-            selectedMunicipio={selectedMunicipio}
-          />
-        )}
-      </>
-    )
-  }
-
-  function renderSelectedEducationBlock() {
-    if (selectedMainBlock === MAIN_BLOCK_KEYS.financiamento) {
-      return (
-        renderFinancingScope()
-      )
-    }
-
-    return renderPanoramaScope()
-  }
-
   return (
-    <div className="page-stack educacao-page">
+    <div className={`page-stack educacao-page educacao-page--${selectedSectionKey}`}>
       <section className="page-card educacao-hero">
         <div className="educacao-hero__intro">
           <PageHeadingText eyebrow={pageCopy.eyebrow} title={pageCopy.title} description={pageCopy.description} />
-          <p className="educacao-hero__municipality">Município em foco: <strong>{selectedMunicipio}</strong></p>
-        </div>
-
-        {!isSidebarScopedPage ? (
-        <div className="educacao-scope-selector platform-scope-selector">
-          <div className="educacao-scope-selector__intro">
-            <span className="eyebrow educacao-scope-selector__heading">Escolha o bloco de indicadores</span>
-            <p className="educacao-scope-selector__subtitle">Alterne entre os indicadores educacionais e o financiamento da educação.</p>
-          </div>
-          <div className="educacao-scope-selector__grid platform-scope-options">
-            {MAIN_INDICATOR_BLOCKS.map((block) => {
-              const isActive = selectedMainBlock === block.key
-              const count = block.key === MAIN_BLOCK_KEYS.panorama
-                ? `${themes.length} temas`
-                : `${FINANCING_MODULES.length} módulos`
-
-              return (
-                <button
-                  className={'educacao-scope-card platform-scope-option' + (isActive ? ' is-active' : '')}
-                  key={block.key}
-                  type="button"
-                  aria-pressed={isActive}
-                  onClick={() => handleMainBlockSelect(block.key)}
-                >
-                  <span className="educacao-scope-card__title">{block.title}</span>
-                  <span className="educacao-scope-card__description">{block.description}</span>
-                  <span className="educacao-scope-card__footer">
-                    <span className="educacao-scope-card__count">{count}</span>
-                  </span>
-                </button>
-              )
-            })}
+          <div className="educacao-hero__meta" aria-label="Contexto desta página">
+            <p className="educacao-hero__municipality">Município em foco: <strong>{selectedMunicipio}</strong></p>
+            <p className="educacao-hero__current-section">Seção atual: <strong>{section?.label ?? 'Visão geral'}</strong></p>
           </div>
         </div>
-        ) : null}
+
       </section>
 
-      {selectedMainBlock === MAIN_BLOCK_KEYS.panorama && !isSistemaSTheme && <EducationOverviewCards overview={model.overview} />}
-
-      <section className="cycle-workspace educacao-workspace">
-        {renderSelectedEducationBlock()}
-      </section>
+      {isOverviewSection && !isSistemaSTheme ? (
+        <EducationOverviewPage overview={model.overview} sections={EDUCATION_SECTION_CATALOG} />
+      ) : isDemandSection && !isSistemaSTheme ? (
+        <EducationDemandPage municipioData={municipioData} />
+      ) : isMethodologySection && !isSistemaSTheme ? (
+        <EducationMethodologyPage catalog={EDUCATION_INDICATOR_CATALOG} items={allEducationItems} />
+      ) : (
+        <section className="cycle-workspace educacao-workspace">
+          {renderEducationSectionScope()}
+        </section>
+      )}
     </div>
   )
 }
@@ -797,10 +732,299 @@ function IndicatorSegmentedControl({ options, selectedKey, onSelect, ariaLabel }
   )
 }
 
+function EducationOverviewPage({ overview, sections }) {
+  const methodology = sections.find((section) => section.key === EDUCATION_SECTION_KEYS.methodology)
+  const navigableSections = sections.filter((section) => (
+    section.key !== EDUCATION_SECTION_KEYS.overview
+    && section.key !== EDUCATION_SECTION_KEYS.methodology
+  ))
+
+  return (
+    <div className="education-overview-page">
+      <EducationOverviewCards overview={overview} />
+
+      <section className="page-card education-section-navigation" aria-labelledby="education-section-navigation-title">
+        <div className="education-section-navigation__heading">
+          <div>
+            <span className="eyebrow">Áreas de análise</span>
+            <h2 id="education-section-navigation-title">Explore os indicadores por seção</h2>
+          </div>
+          <p>{'Escolha uma se\u00e7\u00e3o para consultar seus indicadores e detalhamentos.'}</p>
+        </div>
+
+        <nav className="education-section-link-grid" aria-label="Seções de indicadores da educação">
+          {navigableSections.map((section) => (
+            <a className="education-section-link" href={`#educacao?secao=${section.key}`} key={section.key}>
+              <span className="education-section-link__title">{section.label}</span>
+              <span className="education-section-link__description">{section.description}</span>
+              {section.indicatorKeys.length > 0 ? (
+                <span className="education-section-link__meta">{formatIndicatorCount(section.indicatorKeys.length)}</span>
+              ) : null}
+            </a>
+          ))}
+        </nav>
+
+        {methodology ? (
+          <a className="education-section-link education-section-link--secondary" href={`#educacao?secao=${methodology.key}`}>
+            <span className="education-section-link__title">{methodology.label}</span>
+            <span className="education-section-link__description">{methodology.description}</span>
+          </a>
+        ) : null}
+      </section>
+    </div>
+  )
+}
+
+function EducationDemandPage({ municipioData }) {
+  const projections = municipioData?.pne_2026_2036?.projecoes ?? {}
+
+  return (
+    <div className="education-demand-page">
+      <section className="page-card education-thematic-heading" aria-labelledby="education-demand-title">
+        <span className="eyebrow">Seção de indicadores</span>
+        <h2 id="education-demand-title">Demanda e projeções</h2>
+        <p>Cenários estimados de atendimento a partir do histórico municipal disponível e da população de referência por faixa etária. Cada indicador separa o observado de um cenário estimado até 2036; a projeção apoia o planejamento, mas não é uma previsão oficial.</p>
+      </section>
+
+      <details className="page-card education-demand-note">
+        <summary>Nota metodológica</summary>
+        <p>Os indicadores consideram os dados disponíveis para o município. Matrículas localizadas no território não representam necessariamente a residência dos estudantes. As projeções são cenários estimados e não constituem previsão oficial nem cálculo direto de déficit de vagas.</p>
+      </details>
+
+      {EDUCATION_DEMAND_GROUP_CATALOG.map((group) => (
+        <section className="education-indicator-group education-demand-group" key={group.key} aria-labelledby={`education-demand-group-${group.key}`}>
+          <div className="education-indicator-group__heading">
+            <div>
+              <span className="eyebrow">Demanda e projeções</span>
+              <h3 id={`education-demand-group-${group.key}`}>{group.label}</h3>
+            </div>
+            <span>{formatIndicatorCount(group.indicatorKeys.length)}</span>
+          </div>
+          <p className="education-indicator-group__description">{group.description}</p>
+          <div className="education-demand-indicator-grid">
+            {group.indicatorKeys.map((indicatorKey) => {
+              const indicator = EDUCATION_DEMAND_INDICATOR_CATALOG.find((item) => item.key === indicatorKey)
+              return indicator ? (
+                <EducationDemandIndicator
+                  indicator={indicator}
+                  key={indicator.key}
+                  projection={projections[indicator.key]}
+                />
+              ) : null
+            })}
+          </div>
+        </section>
+      ))}
+    </div>
+  )
+}
+
+function EducationDemandIndicator({ indicator, projection }) {
+  const history = buildProjectionHistory(projection)
+  const latest = history.at(-1)
+  const firstYear = history[0]?.year
+  const lastYear = latest?.year
+  const historyLabel = history.length > 1 && firstYear && lastYear
+    ? `${firstYear}–${lastYear} · ${history.length} anos`
+    : history.length === 1 && firstYear
+      ? `${firstYear} · 1 ano`
+      : 'Não disponível para o município'
+  const population = latest?.population
+
+  return (
+    <article className="page-card education-demand-indicator" aria-labelledby={`education-demand-indicator-${indicator.key}`}>
+      <div className="education-demand-indicator__heading">
+        <div>
+          <span className="eyebrow">{indicator.populationLabel}</span>
+          <h4 id={`education-demand-indicator-${indicator.key}`}>{indicator.title}</h4>
+        </div>
+        <span className="education-demand-indicator__age">Faixa etária: {indicator.ageRange}</span>
+      </div>
+
+      <dl className="education-demand-indicator__metadata">
+        <div>
+          <dt>Último valor observado</dt>
+          <dd>{latest ? `${formatPercent(latest.value)} · ${latest.year}` : '—'}</dd>
+        </div>
+        <div>
+          <dt>Histórico disponível</dt>
+          <dd>{historyLabel}</dd>
+        </div>
+        <div>
+          <dt>População de referência</dt>
+          <dd>{population == null ? '—' : `${formatNumber(population)} pessoas · ${lastYear}`}</dd>
+        </div>
+      </dl>
+
+      <IndicatorProjectionPanel chartLabel={indicator.title} contextOnly projection={projection} />
+      <p className="education-demand-indicator__source"><strong>Fonte:</strong> {indicator.source}</p>
+    </article>
+  )
+}
+
+function buildProjectionHistory(projection) {
+  if (!projection) return []
+
+  return (projection.historical_years ?? [])
+    .map((year, index) => ({
+      year,
+      value: projection.historical_percent?.[index],
+      population: projection.historical_population?.[index],
+    }))
+    .filter((point) => Number.isFinite(Number(point.year)) && Number.isFinite(Number(point.value)))
+}
+
+function EducationMethodologyPage({ catalog, items }) {
+  const itemByKey = new Map(items.map((item) => [item.key, item]))
+  const sourceGroups = EDUCATION_SOURCE_CATALOG
+    .map((source) => {
+      const indicators = catalog.filter((indicator) => indicator.source === source.key)
+      const years = indicators.flatMap((indicator) => getIndicatorYears(itemByKey.get(indicator.key)))
+      return {
+        ...source,
+        indicators,
+        years: [...new Set(years)].sort((a, b) => a - b),
+      }
+    })
+    .filter((source) => source.indicators.length > 0)
+
+  return (
+    <div className="education-methodology-page">
+      <section className="page-card education-thematic-heading" aria-labelledby="education-methodology-title">
+        <span className="eyebrow">Seção de indicadores</span>
+        <h2 id="education-methodology-title">Metodologia e fontes</h2>
+        <p>Como os indicadores são organizados, quais fontes os sustentam e quais cuidados orientam sua leitura no diagnóstico municipal.</p>
+      </section>
+
+      <MethodologyTextSection title="Escopo do diagnóstico" variant="scope">
+        <p>O diagnóstico considera instituições de ensino localizadas no município. Quando disponíveis, os dados distinguem diferentes dependências administrativas e recortes da oferta educacional.</p>
+        <p>Os indicadores apoiam a leitura do território, mas não substituem levantamentos complementares realizados pelo município.</p>
+      </MethodologyTextSection>
+
+      <section className="page-card education-methodology-sources" aria-labelledby="education-methodology-sources-title">
+        <div className="education-methodology-section-heading">
+          <div>
+            <span className="eyebrow">Relação derivada do catálogo</span>
+            <h3 id="education-methodology-sources-title">Fontes e periodicidade</h3>
+          </div>
+          <span>{formatIndicatorCount(catalog.length)} catalogados</span>
+        </div>
+        <p className="education-methodology-lead">A relação abaixo é montada a partir das fontes declaradas no catálogo central, com a cobertura observada para o município selecionado.</p>
+        <div className="education-methodology-source-grid">
+          {sourceGroups.map((source) => (
+            <article className="education-methodology-source" key={source.key}>
+              <div className="education-methodology-source__heading">
+                <h4>{source.officialName}</h4>
+                <span>{formatIndicatorCount(source.indicators.length)}</span>
+              </div>
+              <dl className="education-methodology-source__metadata">
+                <div>
+                  <dt>Periodicidade</dt>
+                  <dd>{source.periodicity}</dd>
+                </div>
+                <div>
+                  <dt>Último ano / intervalo</dt>
+                  <dd>{formatSourceYears(source.years)}</dd>
+                </div>
+              </dl>
+              <details className="education-methodology-source__indicators">
+                <summary>Indicadores relacionados</summary>
+                <p>{source.indicators.map((indicator) => normalizeEducationIndicatorLabel(indicator.label)).join('; ')}</p>
+              </details>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <MethodologyTextSection title="Como interpretar" variant="interpretation">
+        <ul>
+          <li>Cada card mantém seu próprio ano de referência; os anos podem variar entre indicadores.</li>
+          <li>Zero é um valor válido quando informado pela fonte. Ausência de dado não deve ser interpretada como zero.</li>
+          <li>Variações entre o primeiro e o último ponto válido consideram apenas os anos com dado disponível.</li>
+          <li>Fontes distintas podem apresentar valores diferentes por adotarem recortes, definições e coberturas próprias.</li>
+          <li>Alertas de cobertura parcial permanecem associados ao indicador e devem ser considerados na leitura.</li>
+        </ul>
+      </MethodologyTextSection>
+
+      <MethodologyTextSection title="Limitações" variant="limitations">
+        <ul>
+          <li>Escolas localizadas no território não representam necessariamente a residência dos estudantes.</li>
+          <li>Os dados atuais não identificam todas as pessoas que estão fora da escola.</li>
+          <li>Os indicadores não calculam automaticamente déficit de vagas.</li>
+          <li>As projeções são cenários estimados e não constituem previsão oficial.</li>
+          <li>Periodicidade, cobertura e disponibilidade variam entre fontes e municípios.</li>
+          <li>Um diagnóstico para o PME pode exigir dados complementares produzidos pelo município.</li>
+        </ul>
+      </MethodologyTextSection>
+
+      <section className="page-card education-methodology-links" aria-labelledby="education-methodology-links-title">
+        <span className="eyebrow">Leituras relacionadas</span>
+        <h3 id="education-methodology-links-title">Consulte também</h3>
+        <p>As páginas relacionadas preservam seus próprios indicadores e critérios.</p>
+        <div className="education-methodology-links__list">
+          <a href="#pne-overview">Metas e resultados do PNE</a>
+          <a href="#financeiros">Indicadores Financeiros da Educação</a>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function MethodologyTextSection({ children, title, variant }) {
+  const variantClass = variant ? ` education-methodology-text--${variant}` : ''
+  return (
+    <section className={`page-card education-methodology-text${variantClass}`} aria-labelledby={`education-methodology-${normalizeMethodologyId(title)}`}>
+      <span className="eyebrow">Metodologia</span>
+      <h3 id={`education-methodology-${normalizeMethodologyId(title)}`}>{title}</h3>
+      {children}
+    </section>
+  )
+}
+
+function normalizeMethodologyId(value) {
+  return String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').replace(/[^a-z0-9]+/g, '-')
+}
+
+function getIndicatorYears(item) {
+  return normalizeYearSeries(item?.series ?? [])
+    .map((point) => Number(point.ano))
+    .filter((year) => Number.isFinite(year))
+}
+
+function formatSourceYears(years) {
+  if (!years.length) return 'Não disponível para o município'
+  if (years.length === 1) return String(years[0])
+  return `${years[0]}–${years.at(-1)}`
+}
+
+function formatIndicatorCount(count) {
+  return `${count} ${count === 1 ? 'indicador' : 'indicadores'}`
+}
+
+function normalizeEducationIndicatorLabel(label) {
+  const normalized = String(label ?? '')
+    .replace(/^Alunos por turma - /, 'Alunos por turma — ')
+    .replace(/^Docentes - /, 'Docentes — ')
+
+  const replacements = {
+    'EJA': 'Educação de Jovens e Adultos',
+    'Docentes — EJA': 'Docentes — Educação de Jovens e Adultos',
+    'Docentes — Educação Profissional': 'Docentes — Educação Profissional e Tecnológica',
+    'Matrículas na EJA': 'Matrículas na Educação de Jovens e Adultos',
+    'Matrículas na educação profissional — Censo Escolar': 'Matrículas na Educação Profissional e Tecnológica — Censo Escolar',
+    'Matrículas técnicas — Sinopse Estatística': 'Matrículas técnicas — Sinopse Estatística do Censo Escolar',
+    'SAEB Língua Portuguesa': 'SAEB — Língua Portuguesa',
+    'SAEB Matemática': 'SAEB — Matemática',
+    'Educação Profissional': 'Educação Profissional e Tecnológica',
+  }
+
+  return replacements[normalized] ?? normalized
+}
+
 function EducationDetailHeader({ indicator, description }) {
   return (
     <div className="detail-heading educacao-detail-heading">
-      <DetailHeadingText eyebrow="Indicador selecionado" title={indicator.label} description={description} />
+      <DetailHeadingText eyebrow="Indicador selecionado" level={2} title={normalizeEducationIndicatorLabel(indicator.label)} description={description} />
       <div className="educacao-detail-heading__badges">
         <span className="indicator-stage-badge">{indicator.themeShortLabel ?? indicator.themeLabel}</span>
         <StatusBadge status={indicator.statusLabel} tone={indicator.statusTone} />
@@ -832,10 +1056,12 @@ function EducationQuickReading({ text, tone = 'default' }) {
 }
 
 function PneComplementaryGroupedGrid({ items, onSelect, registerCard, selectedIndicatorKey }) {
-  const groups = PNE_COMPLEMENTARY_GROUPS
+  const groups = Object.values(EDUCATION_SECTION_GROUPS)
+    .flat()
+    .filter((group) => group.indicatorKeys.some((indicatorKey) => items.some((item) => item.key === indicatorKey)))
     .map((group) => ({
       ...group,
-      items: items.filter((item) => item.pneComplementaryGroupKey === group.key),
+      items: items.filter((item) => item.groupKey === group.key),
     }))
     .filter((group) => group.items.length > 0)
 
@@ -849,7 +1075,7 @@ function PneComplementaryGroupedGrid({ items, onSelect, registerCard, selectedIn
         <section className="pne-complementary-group" key={group.key}>
           <div className="pne-complementary-group__heading">
             <h3>{group.label}</h3>
-            <span>{group.items.length} indicadores</span>
+            <span>{formatIndicatorCount(group.items.length)}</span>
           </div>
           <div className="education-indicator-card-grid">
             {group.items.map((item) => (
@@ -1136,18 +1362,14 @@ function InfraDetailPanel({ indicator, blocos }) {
                 Os indicadores abaixo são recalculados conforme a rede selecionada.
               </span>
             </div>
-            <div className="infra-dep-band__pills">
-              {availableDeps.map((dep) => (
-                <button
-                  key={dep}
-                  type="button"
-                  className={`infra-dep-pill${dep === selectedDep ? ' is-active' : ''}`}
-                  onClick={() => setSelectedDep(dep)}
-                >
-                  {DEP_LABELS[dep] || dep}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              ariaLabel="Rede exibida"
+              className="infra-dep-band__pills platform-segmented-control"
+              optionClassName="infra-dep-pill platform-segmented-option"
+              onSelect={setSelectedDep}
+              options={availableDeps.map((dep) => ({ key: dep, label: DEP_LABELS[dep] || dep }))}
+              selectedKey={selectedDep}
+            />
           </div>
         )}
 
@@ -1190,7 +1412,11 @@ function InfraDetailPanel({ indicator, blocos }) {
             </div>
           </div>
           <div className="infra-table-scroll">
-            <EducationTable columns={evolutionColumns} rows={evolutionRows} />
+            <EducationTable
+              caption="Histórico dos principais indicadores de infraestrutura"
+              columns={evolutionColumns}
+              rows={evolutionRows}
+            />
           </div>
           <EducationSourceNotes
             context={dataSourceContextForEducation(indicator, {
@@ -1945,8 +2171,14 @@ function buildPneComplementaryTheme({ indicadores, results }) {
   if (!results) return null
 
   const itemByKey = buildPneCatalogItemMap(indicadores)
-  const items = PNE_COMPLEMENTARY_GROUPS.flatMap((group) =>
-    group.indicatorKeys.map((indicatorKey) => {
+  const groupByIndicatorKey = new Map(
+    Object.values(EDUCATION_SECTION_GROUPS)
+      .flat()
+      .flatMap((group) => group.indicatorKeys.map((indicatorKey) => [indicatorKey, group])),
+  )
+  const items = EDUCATION_COMPLEMENTARY_INDICATOR_CATALOG.map((catalogEntry) => {
+      const indicatorKey = catalogEntry.key
+      const group = groupByIndicatorKey.get(indicatorKey)
       const result = results?.[indicatorKey]
       const catalogItem = itemByKey.get(indicatorKey)
 
@@ -1960,23 +2192,24 @@ function buildPneComplementaryTheme({ indicadores, results }) {
 
       return createIndicator({
         key: indicatorKey,
-        label: catalogItem?.label ?? INFRA_METRIC_LABELS[indicatorKey] ?? indicatorKey,
-        description: catalogItem?.desc ?? 'Indicador contextual relacionado ao PNE.',
+        label: catalogItem?.label ?? catalogEntry.label ?? INFRA_METRIC_LABELS[indicatorKey] ?? indicatorKey,
+        description: catalogItem?.desc ?? catalogEntry.description ?? 'Indicador contextual relacionado ao PNE.',
         themeKey: PANORAMA_THEME_KEYS.complementaresPne,
-        themeLabel: 'Dados complementares do PNE',
-        themeShortLabel: 'Complementares PNE',
-        categoryLabel: group.label,
+        themeLabel: group?.label ?? catalogEntry.section,
+        themeShortLabel: group?.label ?? 'Indicador contextual',
+        categoryLabel: group?.label ?? catalogEntry.section,
         categories: [FILTER_KEYS.todos],
         series: result.series ?? [],
         currentValue: result.end_value,
         currentYear,
         formatType,
-        mainCutLabel: group.label,
-        pneComplementaryGroupKey: group.key,
+        mainCutLabel: group?.label ?? catalogEntry.section,
+        groupKey: catalogEntry.groupKey,
+        pneComplementaryGroupKey: catalogEntry.groupKey,
         quickReading: `Indicador contextual do PNE: ${currentDisplay} em ${currentYear ?? 'ano indisponível'}. Não representa cumprimento da meta legal.`,
         searchText: [
           indicatorKey,
-          group.label,
+          group?.label,
           catalogItem?.sub,
           catalogItem?.categoryLabel,
           'contexto proxy complementar PNE',
@@ -1984,15 +2217,14 @@ function buildPneComplementaryTheme({ indicadores, results }) {
         statusLabel: 'Contexto',
         statusTone: 'muted',
       })
-    }),
-  ).filter(Boolean)
+  }).filter(Boolean)
 
   if (!items.length) return null
 
   return {
     key: PANORAMA_THEME_KEYS.complementaresPne,
-    label: 'Dados complementares do PNE',
-    shortLabel: 'Complementares PNE',
+    label: 'Contexto complementar',
+    shortLabel: 'Contexto complementar',
     items,
   }
 }
@@ -2064,7 +2296,7 @@ function buildEducationModel(blocos) {
     makeTheme('docentes', 'Docentes', 'Docentes', items),
     makeTheme('fluxo', 'Fluxo escolar', 'Fluxo', items),
     makeTheme('aprendizagem', 'Aprendizagem', 'Aprendizagem', items),
-    makeTheme('oferta', 'Matrículas na educação profissional', 'Matrículas técnicas', items),
+    makeTheme('oferta', 'Matrículas técnicas · Sinopse Estatística', 'Sinopse Estatística', items),
   ]
 
   return {
@@ -2077,6 +2309,7 @@ function buildEducationModel(blocos) {
       { label: 'IDEB', value: preferredIdeb ? formatValue(preferredIdeb.ideb) : EM, year: preferredIdeb?.ano },
       { label: 'Matrículas técnicas', value: formatNumber(ofertaResumo.total_matriculas_tecnicas), year: oferta.ultimo_ano },
     ],
+    items,
     themes,
   }
 }
@@ -2098,7 +2331,7 @@ function buildMatriculasIndicators(mat) {
     createIndicator({ key: 'mat-fundamental', label: 'Matrículas no ensino fundamental', description: 'Matrículas registradas no ensino fundamental.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.fundamental], stageLabel: 'Ensino Fundamental', series: normalizeYearSeries(series.por_etapa?.fundamental), currentValue: byEtapa.fundamental, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Ensino Fundamental', explore: buildMatriculasExplore(mat, { cutKey: 'fundamental', cutLabel: 'Ensino Fundamental', stageKey: 'fundamental' }) }),
     createIndicator({ key: 'mat-medio', label: 'Matrículas no ensino médio', description: 'Matrículas registradas no ensino médio.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.medio], stageLabel: 'Ensino Médio', series: normalizeYearSeries(series.por_etapa?.medio), currentValue: byEtapa.medio, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Ensino Médio', explore: buildMatriculasExplore(mat, { cutKey: 'medio', cutLabel: 'Ensino Médio', stageKey: 'medio' }) }),
     createIndicator({ key: 'mat-eja', label: 'Matrículas na EJA', description: 'Matrículas registradas na educação de jovens e adultos.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.eja], stageLabel: 'EJA', series: normalizeYearSeries(series.por_etapa?.eja), currentValue: byEtapa.eja, currentYear: latestYear, formatType: 'number', mainCutLabel: 'EJA', explore: buildMatriculasExplore(mat, { cutKey: 'eja', cutLabel: 'EJA', stageKey: 'eja' }) }),
-    createIndicator({ key: 'mat-profissional', label: 'Matrículas na educação profissional', description: 'Matrículas registradas na educação profissional/técnica.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.profissional], stageLabel: 'Educação Profissional', series: normalizeYearSeries(series.por_etapa?.profissional), currentValue: byEtapa.profissional, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Educação Profissional', explore: buildMatriculasExplore(mat, { cutKey: 'profissional', cutLabel: 'Educação Profissional', stageKey: 'profissional' }) }),
+    createIndicator({ key: 'mat-profissional', label: 'Matrículas na educação profissional — Censo Escolar', description: 'Matrículas registradas na educação profissional/técnica no Censo Escolar, por etapa de ensino.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Censo Escolar', categories: [FILTER_KEYS.profissional], stageLabel: 'Educação Profissional', series: normalizeYearSeries(series.por_etapa?.profissional), currentValue: byEtapa.profissional, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Educação Profissional · Censo Escolar', explore: buildMatriculasExplore(mat, { cutKey: 'profissional', cutLabel: 'Educação Profissional', stageKey: 'profissional' }) }),
     createIndicator({ key: 'mat-integral', label: 'Matrículas em tempo integral', description: 'Percentual total de matrículas em tempo integral no município.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.todos], isGeral: true, series: valueSeries(series.integral, 'percentual'), currentValue: resumo.percentual_integral, currentYear: latestYear, formatType: 'percent', mainCutLabel: 'Tempo integral no total do município', explore: buildMatriculasIntegralExplore(mat) }),
     createIndicator({ key: 'mat-rural', label: 'Matrículas em zona rural', description: 'Matrículas vinculadas à localização rural.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.todos], isGeral: true, series: normalizeYearSeries(series.por_localizacao?.rural), currentValue: resumo.matriculas_rural, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Zona rural', explore: buildMatriculasExplore(mat, { cutKey: 'rural', cutLabel: 'Zona rural', locationKey: 'rural' }) }),
     createIndicator({ key: 'mat-publica', label: 'Matrículas na rede pública', description: 'Matrículas na rede pública municipal, estadual e federal.', themeKey: 'matriculas', themeLabel: 'Matrículas e atendimento', themeShortLabel: 'Matrículas', categories: [FILTER_KEYS.todos], isGeral: true, series: normalizeYearSeries(series.por_dependencia?.publica), currentValue: resumo.matriculas_publica, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Rede pública', explore: buildMatriculasExplore(mat, { cutKey: 'publica', cutLabel: 'Rede pública', dependencyKey: 'publica' }) }),
@@ -2111,6 +2344,10 @@ function buildRedeIndicators(rede) {
   const resumo = rede.resumo_ultimo_ano ?? {}
   const porEtapa = resumo.por_etapa ?? {}
   const latestYear = rede.ultimo_ano
+  const infra = rede.infraestrutura ?? {}
+  const infraGroups = Object.values(infra.grupos ?? {})
+  const infraDimensionCount = infraGroups.reduce((total, group) => total + (group.metricas?.length ?? 0), 0)
+  const infraLatestYear = infra.ultimo_ano ?? latestYear
   const stageOrder = ['infantil', 'fundamental', 'medio', 'eja', 'profissional']
   const base = { themeKey: 'rede', themeLabel: 'Escolas', themeShortLabel: 'Escolas', categories: [FILTER_KEYS.todos], isGeral: true, currentYear: latestYear }
 
@@ -2135,12 +2372,20 @@ function buildRedeIndicators(rede) {
       ...base,
       key: 'rede-infraestrutura',
       label: 'Infraestrutura',
-      description: 'Acesso à internet e banda larga nas escolas.',
+      cardTitle: 'Panorama da infraestrutura escolar',
+      cardVariant: 'exploratory',
+      description: 'Explore as dimensões de ambiente escolar, conectividade e equipamentos disponíveis nas escolas.',
       series: valueSeries(series.internet, 'perc_internet'),
       currentValue: resumo.perc_internet,
       formatType: 'percent',
       mainCutLabel: 'Escolas com internet',
       explore: buildRedeInfraExplore(rede),
+      exploratorySummary: {
+        count: infraDimensionCount,
+        groupCount: infraGroups.length,
+        label: 'dimensões',
+        latestYear: infraLatestYear,
+      },
     }),
   ]
 }
@@ -2185,7 +2430,7 @@ function buildAlunosTurmaIndicators(alunosTurma) {
     return createIndicator({
       ...base,
       key: `alunos-turma-${stageKey}`,
-      label: `Alunos por turma - ${etapaLabel(stageKey)}`,
+      label: `Alunos por turma — ${etapaLabel(stageKey)}`,
       description: `Média oficial de alunos por turma em ${etapaLabel(stageKey).toLocaleLowerCase('pt-BR')}. Use o filtro para trocar total, ano ou série.`,
       categories: [FILTER_KEYS[stageKey] ?? FILTER_KEYS.todos],
       stageKey,
@@ -2218,7 +2463,7 @@ function buildDocentesIndicators(turmas) {
     return createIndicator({
       ...base,
       key: `docentes-${stageKey}`,
-      label: `Docentes - ${etapaLabel(stageKey)}`,
+      label: `Docentes — ${etapaLabel(stageKey)}`,
       description: `Total de docentes vinculados a ${etapaLabel(stageKey).toLowerCase()}.`,
       categories: [FILTER_KEYS[stageKey] ?? FILTER_KEYS.todos],
       isGeral: false,
@@ -2297,11 +2542,13 @@ function buildOfertaIndicators(oferta) {
   const latestYear = oferta.ultimo_ano
   const explore = buildOfertaExplore(oferta)
   return [
-    createIndicator({ key: 'oferta-total', label: 'Matrículas na educação profissional', description: 'Total de matrículas em cursos técnicos e profissionais.', themeKey: 'oferta', themeLabel: 'Matrículas na educação profissional', themeShortLabel: 'Matrículas técnicas', categories: [FILTER_KEYS.profissional], stageLabel: 'Educação Profissional', series: normalizeYearSeries(series.total), currentValue: resumo.total_matriculas_tecnicas, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Matrículas técnicas', explore, notices: oferta.avisos ?? [] }),
+    createIndicator({ key: 'oferta-total', label: 'Matrículas técnicas — Sinopse Estatística', description: 'Total de matrículas em cursos técnicos e profissionais segundo a Sinopse Estatística do Censo Escolar.', themeKey: 'oferta', themeLabel: 'Matrículas técnicas · Sinopse Estatística', themeShortLabel: 'Sinopse Estatística', categories: [FILTER_KEYS.profissional], stageLabel: 'Educação Profissional', series: normalizeYearSeries(series.total), currentValue: resumo.total_matriculas_tecnicas, currentYear: latestYear, formatType: 'number', mainCutLabel: 'Matrículas técnicas · Sinopse Estatística', explore, notices: oferta.avisos ?? [] }),
   ]
 }
 
 function createIndicator(config) {
+  const catalogItem = getEducationIndicatorCatalogItem(config.key)
+  const displayLabel = normalizeEducationIndicatorLabel(config.label)
   const series = normalizeYearSeries(config.series)
   const categories = normalizeIndicatorCategories(config)
   const isGeral = config.isGeral ?? (categories.length === 1 && categories[0] === FILTER_KEYS.todos)
@@ -2317,7 +2564,15 @@ function createIndicator(config) {
 
   return {
     ...config,
+    label: displayLabel,
     id: config.id ?? config.key,
+    catalogKey: catalogItem?.key ?? config.key,
+    catalogType: catalogItem?.type ?? 'base',
+    section: config.section ?? catalogItem?.section ?? null,
+    sections: config.sections ?? catalogItem?.sections ?? [],
+    groupKey: config.groupKey ?? catalogItem?.groupKey ?? null,
+    renderer: config.renderer ?? catalogItem?.renderer ?? 'EducationIndicatorDetail',
+    missingPolicy: config.missingPolicy ?? catalogItem?.missingPolicy ?? null,
     tema: config.tema ?? config.themeKey,
     categorias: categories,
     categories,
@@ -2335,7 +2590,7 @@ function createIndicator(config) {
     notices: config.notices ?? [],
     explore: filterRenderableExplore(config.explore),
     stageFilterOptions: filterStageFilterOptions(config.stageFilterOptions),
-    quickReading: config.quickReading ?? buildQuickReading({ currentDisplay: formatValueForType(currentValue), currentValue, currentYear, formatType: config.formatType, initialValue, initialYear, label: config.label, variation }),
+    quickReading: config.quickReading ?? buildQuickReading({ currentDisplay: formatValueForType(currentValue), currentValue, currentYear, formatType: config.formatType, initialValue, initialYear, label: displayLabel, variation }),
     scaleType: config.scaleType ?? inferScaleType(config),
     statusLabel: config.statusLabel ?? status.label,
     statusTone: config.statusTone ?? status.tone,

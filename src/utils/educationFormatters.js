@@ -58,8 +58,8 @@ const ETAPA_LABELS = {
   fundamental_anos_iniciais: 'Anos Iniciais',
   fundamental_anos_finais: 'Anos Finais',
   medio: 'Ensino Médio',
-  eja: 'EJA',
-  profissional: 'Educação Profissional',
+  eja: 'Educação de Jovens e Adultos',
+  profissional: 'Educação Profissional e Tecnológica',
 }
 
 export function etapaLabel(key) {
@@ -94,7 +94,7 @@ const MOD_LABELS = {
   concomitante: 'Concomitante',
   subsequente: 'Subsequente',
   magisterio: 'Magistério',
-  integradora_eja: 'EJA Integrada',
+  integradora_eja: 'Educação de Jovens e Adultos integrada',
 }
 
 export function modLabel(key) {

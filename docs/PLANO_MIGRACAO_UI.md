@@ -67,7 +67,52 @@ Os três gates foram executados em sequência, com lint, build, E2E e `git diff 
 - **CSS movido:** `.state-box`, `.state-box > span`, `.state-box--loading`, `.state-box--error`, `.state-spinner`, `@keyframes spin` e os quatro seletores `:focus-visible` das regiões tabulares passaram a `platform-ui.css`. Consumidores: `ContentState`, `LoadingState`, `ErrorState`, Educação, SIOPE e wrappers de Educação/FUNDEB/PNATE/SIOPE/Sistema S/PNE complementar.
 - **CSS removido:** somente as cópias equivalentes em `App.css` após a transferência; nenhum seletor ativo foi eliminado sem destino.
 - **CSS mantido:** `DataSourceNote` e overrides de domínio, `IndicatorChartHeader`, cards exploráveis, gráficos PNE/Financeiro, layouts, breakpoints estruturais e exceções responsivas. A justificativa é dependência de especificidade, ordem de cascata ou composição ainda local.
-- **Hash financeiro final:** `#financeiros?modulo=fundeb&detalhe=<key>`, `#financeiros?modulo=pnate&detalhe=<key>` e `#financeiros?modulo=siope&detalhe=<slug>`. Índices nunca são persistidos.
+- **Hash financeiro final:** a visão geral usa `#financeiros`; os módulos usam `#financeiros-aplicacao-recursos?detalhe=<key>`, `#financeiros-fundeb?detalhe=<key>` e `#financeiros-pnate?detalhe=<key>` quando há detalhamento. `#financeiros-vaar` preserva o módulo sem índice individual. Os hashes legados com `?modulo=` continuam aceitos e são normalizados para a rota independente correspondente.
+- **Visão geral financeira editorial:** `#financeiros` foi simplificada em hero com quadro legal, três blocos sobre a organização do financiamento, uma única grade navegável dos quatro módulos, conceitos em acordeão e fontes oficiais compactas no rodapé. O fluxo detalhado, os blocos repetidos e os cards grandes de referências foram removidos. No desktop, o submenu lateral permanece a navegação principal; em larguras reduzidas, a navegação financeira usa um seletor compacto sem duplicar o submenu visível.
+
+### Encerramento da reorganização de Indicadores da Educação
+
+Os Lotes 0–5 de Educação estão encerrados no escopo aprovado: catálogo central com 37 indicadores-base e 15 complementares, oito seções endereçáveis, Visão geral, acesso por `secao`, aliases legados (`tema`, `theme` e `detalhe`), detalhes com sequência restrita à seção e estados provisórios de Demanda/Metodologia. A revisão final preservou dados, JSONs, pipeline, cálculos, séries, renderers e regras de negócio.
+
+O E2E foi atualizado somente nos contratos que haviam ficado defasados em relação à arquitetura vigente de Financeiros: título da visão geral, rotas `financeiros-*`, seletor estrutural de módulo, retorno de `#educacao` para Visão geral e múltiplas grades agrupadas de Educação. A configuração agora registra `window.innerWidth=1366` em 1366×768; caso o ambiente limite a 1280, o teste informa explicitamente a resolução efetiva.
+
+Validação final: lint, build, E2E, histórico Back/Forward, reload, URLs legadas, aliases, foco, `aria-current`, troca municipal, console e overflow passaram. Permanecem fora deste encerramento as 67 ocorrências `MISSING_VM` e a validação de detalhes com 2 erros e 994 avisos, todas registradas como pendências preexistentes.
+
+### Iniciativa pós-migração — refinamento das oito páginas de Educação (2026-07-12)
+
+Esta iniciativa não reabre UI-01 a UI-18. O escopo visual abrangeu Visão geral, Atendimento, Trajetória, Profissionais, Infraestrutura, Modalidades, Demanda e Metodologia, preservando dados, JSONs, cálculos, filtros, conteúdo analítico, rotas e estrutura da navegação global.
+
+- `src/styles/education-pages.css` passou a concentrar a composição do módulo com hero institucional, resumo tabular sem cards aninhados, acessos temáticos, grupos abertos, cards 3→2→1, detalhes, Demanda e Metodologia. Seletores de detalhe foram escopados por `.educacao-page` para não atingir Financeiro.
+- Busca, limpeza e recortes de Infraestrutura reutilizam a gramática compartilhada; limpar a busca mantém 44 px sem deslocamento e devolve foco ao input. O item pai de Educação volta de qualquer subseção para `#educacao`/Visão geral.
+- Detalhes usam hierarquia `h1 → h2`, caption específico na tabela de Infraestrutura, textos auxiliares com contraste AA e rótulos SVG sem redução abaixo de 12 px físicos.
+- Demanda usa um indicador por linha, região gráfica rolável no celular, nomes acessíveis específicos e roving tabindex: quatro paradas de `Tab` substituem 92, com ArrowLeft/ArrowRight/Home/End entre anos. Série inválida recebe estado vazio explícito.
+- Metodologia usa fontes em grade 3→2→1, disclosures nativos com indicador visual e blocos distintos para escopo, interpretação e limitações.
+
+Evidência registrada: smoke das oito rotas em 1366×768, 1024×768 e 390×844 (24 combinações) sem erro de console, overflow, truncamento de títulos ou texto visível abaixo de 12 px; grade de tablet em 768×1024 validada com duas colunas de 348 px; troca de seção restaurou rolagem e foco em 24/24 casos. O E2E integral passou em 1366×768, 1280×720, 1024×768 e na checagem móvel de 390×844, incluindo teclado, foco, hash, estados, fonte e contraste. Lint, build e `git diff --check` passaram; as três referências visuais de Educação foram atualizadas e recomparadas em 1366×768, 1280×720 e 1024×768 com diferença de 0,000%. A suíte visual global ainda precisa alinhar a navegação dos casos FUNDEB/SIOPE à página intermediária atual de Financeiros; esse timeout ocorre depois das comparações de Educação e não altera os baselines dos demais módulos.
+
+Acabamento final (2026-07-12): o topo das seções internas passou a reunir identificação, quantidade e busca em uma única superfície, mantendo o hero institucional separado. Rodapés dos cards agora eliminam a categoria repetida pelo contexto ou agrupamento, limitam-se a dois chips sem quebra e reservam uma coluna fixa para a seta; títulos completos permanecem no nome acessível do card e chips truncados expõem `title`. A grade interna estabiliza títulos, descrições, métricas, sparklines e rodapés; grupos de um card deixam de exibir divisor longo. Em Demanda, metadados e caixas numéricas foram compactados, observado/projetado ganharam superfícies distintas, gráficos receberam limite visual moderado no desktop e a nota metodológica virou disclosure nativo fechado por padrão. Smoke responsivo em 1366×768, 1280×720, 1024×768 e 390×844 confirmou zero overflow horizontal, chips quebrados, textos abaixo de 12 px, títulos cortados ou rodapés fora da base. Lint, build e `git diff --check` passaram. O E2E integral permanece temporariamente defasado: ainda procura o grupo legado `Temas da educação / Escolas` e interrompe a primeira resolução antes das demais; a falha é de contrato do teste, não da interface atual.
+
+### Nova iniciativa — identidade SESI-RS, navegação lateral e Home (2026-07-12)
+
+Esta iniciativa não reabre UI-01 a UI-18 nem altera dados, JSONs, cálculos, indicadores, regras de negócio, rotas ou aliases. O escopo cobre a identidade institucional do shell, a navegação global e a hierarquia da Home.
+
+- A sidebar desktop preserva `--sidebar-width` (264 px), passa a usar o nome compacto “Painel SESI-RS / Inteligência Municipal” e organiza PNE, Indicadores educacionais e Financiamento da educação em accordions exclusivos. Home permanece um item simples; somente subitens e Home recebem `aria-current="page"`.
+- `SidebarAccordionGroup` concentra o padrão de grupo com `aria-expanded`, `aria-controls`, chevron rotacionado, foco visível, alvos de 44 px e exclusividade de abertura. Reload, hashchange e histórico derivam o grupo proprietário do hash atual.
+- Abaixo de 1080 px, a sidebar persistente é substituída por drawer com botão de abertura, backdrop, fechamento por Escape, retorno de foco, contenção de Tab, rolagem interna e fechamento após navegação. O conteúdo e o seletor municipal permanecem visíveis antes da abertura.
+- `SidebarInstitutionalSignature` e `InstitutionalBrandStrip` definem os pontos estáveis para `public/brands/SESI.png` e `public/brands/FIERGS.png`, preservando logos separados, proporção e `object-fit: contain`. Os binários não estavam presentes nos anexos disponíveis nesta execução e precisam ser adicionados sem edição dos originais.
+- A Home passa a apresentar o nome institucional completo, o título e a descrição aprovados, município como contexto operacional, três acessos principais, os conceitos “Visão municipal integrada”, “Evidências oficiais” e “Planejamento e decisão”, além da faixa institucional final. `index.html` acompanha a nova descrição, título e `theme-color` verde institucional.
+
+### Refinamento da sidebar e assinatura institucional (2026-07-12)
+
+Rodada posterior de acabamento, sem reabrir a arquitetura de navegação: a largura canônica passou a 280 px, os grupos principais usam os rótulos compactos “PNE”, “Indicadores educacionais” e “Financiamento”, e os estados foram simplificados para reduzir molduras e linhas redundantes. O submenu mantém uma única linha vertical sutil, recuo confortável e subitem ativo secundário ao grupo pai.
+
+Os arquivos originais `SESI.png` e `FIERGS.png` foram copiados sem alteração para `public/brands/SESI.png` e `public/brands/FIERGS.png`. A assinatura da sidebar e a faixa da Home usam os logos como imagens institucionais, sem botões, chips, filtros ou bordas individuais.
+
+### Refinamento da barra superior e da Home (2026-07-12)
+
+Esta rodada conclui a assinatura institucional no shell: `InstitutionalTopBarSignature` exibe os arquivos reais `public/brands/SESI.png` e `public/brands/FIERGS.png` na barra superior, alinhados ao lado direito do seletor municipal. A sidebar deixa de repetir as marcas e passa a terminar com uma nota institucional discreta, sem card.
+
+A Home foi aproximada da composição da página “O que é o PNE” com a seção “Como navegar” em quatro passos, o bloco editorial “Sobre o painel” e a linha de fontes próxima ao conteúdo de apoio. O bloco de leitura comum usa uma superfície contínua com divisores para não duplicar visualmente a grade de acessos principais. A observação anterior sobre ausência dos arquivos de marca fica superada pela cópia verificada dos originais para `public/brands`.
 
 ## 4. Resumo final da migração
 

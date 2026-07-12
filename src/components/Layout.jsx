@@ -6,6 +6,7 @@ import { Header } from './Header'
 
 export function Layout({
   activePage,
+  activeEducationSection,
   children,
   municipios,
   onNavigate,
@@ -40,12 +41,13 @@ export function Layout({
       window.cancelAnimationFrame(frame)
       observer?.disconnect()
     }
-  }, [activePage])
+  }, [activeEducationSection, activePage])
 
   return (
     <div className="dashboard-shell">
       <Header
         activePage={activePage}
+        activeEducationSection={activeEducationSection}
         onNavigate={onNavigate}
       />
 

@@ -8050,34 +8050,8 @@ p.data-source-note {
   opacity: 0.7;
 }
 
-.fundeb-table .fundeb-variation-positive {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-inline: auto;
-  min-width: 44px;
-  min-height: 21px;
-  padding: 2px 7px;
-  border-radius: var(--radius-pill);
-  background: rgba(21, 128, 61, 0.08);
-  color: #15803d;
-  font-weight: 700;
-}
-
-.fundeb-table .fundeb-variation-negative {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-inline: auto;
-  min-width: 44px;
-  min-height: 21px;
-  padding: 2px 7px;
-  border-radius: var(--radius-pill);
-  background: rgba(185, 28, 28, 0.08);
-  color: #b91c1c;
-  font-weight: 700;
-}
-
+.fundeb-table .fundeb-variation-positive,
+.fundeb-table .fundeb-variation-negative,
 .fundeb-table .fundeb-variation-neutral {
   display: inline-flex;
   align-items: center;
@@ -8087,8 +8061,9 @@ p.data-source-note {
   min-height: 21px;
   padding: 2px 7px;
   border-radius: var(--radius-pill);
-  background: rgba(97, 109, 99, 0.08);
-  color: var(--text-muted);
+  border: 1px solid var(--border-card);
+  background: var(--status-muted-bg);
+  color: var(--text-soft);
   font-weight: 700;
 }
 
@@ -15959,7 +15934,7 @@ p.data-source-note {
 }
 
 .financial-grid-workspace .indicator-search {
-  min-height: 38px;
+  min-height: var(--control-height);
   max-width: 360px;
   border-color: var(--border-card);
   border-radius: var(--radius-sm);
@@ -15969,6 +15944,56 @@ p.data-source-note {
 .financial-grid-workspace .indicator-search:focus-within {
   border-color: rgba(62, 122, 94, 0.42);
   box-shadow: 0 0 0 3px rgba(62, 122, 94, 0.11);
+}
+
+.financial-indicator-filters {
+  display: grid;
+  grid-template-columns: minmax(240px, 360px) minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+.financial-indicator-segmented-control {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: stretch;
+  padding: 3px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--control-radius);
+  background: var(--control-surface-muted);
+}
+
+.financial-indicator-segmented-control__option {
+  flex: 1 1 120px;
+  min-height: var(--touch-target-min);
+  padding: 8px 12px;
+  border: 0;
+  border-radius: calc(var(--control-radius) - 2px);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+  transition: background-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.financial-indicator-segmented-control__option:hover {
+  background: var(--surface-card);
+  color: var(--text-strong);
+}
+
+.financial-indicator-segmented-control__option.is-active {
+  background: var(--control-surface-selected);
+  color: var(--control-text-selected);
+  box-shadow: var(--shadow-sm);
+}
+
+.financial-indicator-segmented-control__option:focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
 }
 
 .financial-grid-workspace .fundeb-detail--legacy {
@@ -16045,7 +16070,7 @@ p.data-source-note {
 }
 
 .financial-indicator-card--info {
-  --indicator-status-color: #497ca5;
+  --indicator-status-color: var(--status-muted-line);
 }
 
 .financial-indicator-card--muted,
@@ -16137,6 +16162,14 @@ p.data-source-note {
   -webkit-line-clamp: 2;
 }
 
+.financial-grid-workspace .financial-indicator-card__description {
+  display: block;
+  min-height: calc(3 * 1.42em);
+  overflow: visible;
+  -webkit-box-orient: initial;
+  -webkit-line-clamp: unset;
+}
+
 .financial-indicator-card__value-row {
   align-items: flex-end;
   gap: 10px;
@@ -16146,7 +16179,7 @@ p.data-source-note {
   min-width: 0;
   color: var(--text-strong);
   font-family: var(--font-sans);
-  font-size: clamp(1.24rem, 1.7vw, 1.86rem);
+  font-size: clamp(1.1rem, 1.4vw, 1.5rem);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0;
@@ -16273,9 +16306,12 @@ p.data-source-note {
   box-shadow: none;
 }
 
-.financial-quick-reading--success::before,
-.financial-quick-reading--info::before {
+.financial-quick-reading--success::before {
   background: var(--green-primary);
+}
+
+.financial-quick-reading--info::before {
+  background: var(--status-muted-line);
 }
 
 .financial-quick-reading--warning::before {
@@ -16741,6 +16777,10 @@ p.data-source-note {
   .financial-search,
   .financial-grid-workspace .indicator-search {
     max-width: none;
+  }
+
+  .financial-indicator-filters {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -20213,6 +20253,12 @@ body:has(.educacao-page) .context-bar {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   letter-spacing: 0;
+}
+
+.financial-indicator-card .status-badge--info {
+  border-color: var(--border-card);
+  background: var(--status-muted-bg);
+  color: var(--text-soft);
 }
 
 .cycle-search input {

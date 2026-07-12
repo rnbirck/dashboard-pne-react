@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CategoryTabs } from './CategoryTabs'
 import { DataSourceNote } from './DataSourceNote'
+import { FinancialIndicatorMetadata } from './FinancialIndicatorMetadata'
 import { MethodNote } from './MethodNote'
 import { ContentState } from './ContentState'
 import {
@@ -19,6 +20,7 @@ import {
   SIOPE_DASHBOARD_YEARS,
   SIOPE_INDICATOR_READING_GUIDES,
 } from '../data/siopeIndicators'
+import { getFinancialIndicatorMetadata } from '../data/financialIndicatorMetadata'
 import { useAsyncData } from '../utils/useAsyncData'
 import { resolveDetailSequence, useDetailViewNavigation } from '../hooks/useDetailViewNavigation'
 
@@ -29,7 +31,7 @@ const MUNICIPALITY_2025_MISSING_NOTE =
   'Este município ainda não possui dados de 2025 no SIOPE. Exibindo o último ano disponível.'
 const MISSING_VALUE_NOTE = 'Este município não possui dado para este indicador neste ano.'
 const SIOPE_SECTION_SUBTITLE =
-  'Receitas, despesas, mínimos legais, FUNDEB, gasto por aluno e saldos declarados ao SIOPE/FNDE.'
+  'Receitas, despesas, mínimos legais, gasto por estudante e saldos declarados ao SIOPE/FNDE.'
 
 const SIOPE_LEGAL_STATUS_RULES = {
   aplicacao_mde_percentual: {
@@ -479,7 +481,7 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
       <section className="page-card siope-info-box" aria-labelledby="siope-title">
         <div className="siope-info-box__header">
           <span className="eyebrow">SIOPE / FNDE</span>
-          <h2 id="siope-title">Aplicação dos Recursos da Educação</h2>
+          <h2 id="siope-title">Financiamento e Execução dos Recursos da Educação</h2>
           <p>{SIOPE_SECTION_SUBTITLE}</p>
           <DataSourceNote source={SIOPE_SOURCE} />
           <MethodNote className="data-source-note">
@@ -539,6 +541,7 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
             />
             <FinancialMetricGrid indicator={selectedIndicatorModel} />
             <FinancialQuickReading text={selectedIndicatorModel.quickReading} tone={selectedIndicatorModel.statusTone} />
+            <FinancialIndicatorMetadata metadata={getFinancialIndicatorMetadata('siope', selectedIndicatorModel.key)} />
 
             {selectedIndicatorHasMissingValues ? (
               <p className="fundeb-indicator-note siope-register-alert">

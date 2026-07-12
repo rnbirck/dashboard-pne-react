@@ -8,17 +8,19 @@ const PNE_2014 = 'PNE 2014\u20132024';
 const PNE_2026 = 'PNE 2026\u20132036';
 const EDUCATION = 'Indicadores de Educa\u00e7\u00e3o';
 const FINANCE = 'Indicadores Financeiros da Educa\u00e7\u00e3o';
+const FINANCE_TITLE = 'Como a educa\u00e7\u00e3o municipal \u00e9 financiada';
 const LEGAL_GOALS = 'Metas legais';
 const LEGAL_GOALS_TITLE = 'Metas legais do PNE 2026\u20132036';
 const DIAGNOSIS = 'Diagn\u00f3stico municipal';
-const EDUCATION_EMPTY = 'Nenhum indicador dispon\u00edvel para este tema ou busca.';
-const EDUCATION_EMPTY_SPARKLINE_CARD = 'Abrir detalhe do indicador Matr\u00edculas na rede privada';
+const EDUCATION_EMPTY = 'Nenhum indicador encontrado para \u201cconsulta sem resultado\u201d nesta se\u00e7\u00e3o.';
+const EDUCATION_DEMAND_NOTE = 'Os indicadores consideram os dados dispon\u00edveis para o munic\u00edpio. Matr\u00edculas localizadas no territ\u00f3rio n\u00e3o representam necessariamente a resid\u00eancia dos estudantes. As proje\u00e7\u00f5es s\u00e3o cen\u00e1rios estimados e n\u00e3o constituem previs\u00e3o oficial nem c\u00e1lculo direto de d\u00e9ficit de vagas.';
+const EDUCATION_EMPTY_SPARKLINE_CARD = /^Abrir detalhe do indicador Matr\u00edculas na rede privada\./;
 const EDUCATION_SCHOOL_STAGE_METHOD = 'Uma mesma escola pode ofertar mais de uma etapa; por isso, a soma por etapa pode ser maior que o total de escolas.';
 const LEGAL_GOALS_EMPTY = 'Nenhuma meta com acompanhamento municipal compar\u00e1vel encontrada para os filtros selecionados.';
 const EXPLORABLE_CARD_NAME = /^Abrir detalhe do indicador /;
 const BASIC_EDUCATION_STAGES = 'Etapas da Educa\u00e7\u00e3o B\u00e1sica';
 const EDUCATION_HISTORY_CUT = 'Recorte do hist\u00f3rico do indicador';
-const WIDE_STAGE_CARD = 'Abrir detalhe do indicador Alunos por turma - Ensino Fundamental';
+const WIDE_STAGE_CARD = /^Abrir detalhe do indicador Alunos por turma — Ensino Fundamental\./;
 const FUNDEB_METHOD_NOTE = 'Nota metodológica: Série exibida a partir de 2021 para manter comparabilidade com a estrutura do Novo FUNDEB.';
 const FUNDEB_SOURCE = 'Fonte: SIOPE / FNDE';
 const PNATE_METHOD_NOTE = 'Nota metodológica: Os arquivos do PNATE podem alternar entre previsao/plano de atendimento e atendimento anual conforme o exercicio.';
@@ -104,6 +106,32 @@ async function assertNoHorizontalOverflow(page, context) {
     metrics.scrollWidth <= metrics.viewportWidth,
     `${context}: overflow horizontal (${metrics.scrollWidth}px > ${metrics.viewportWidth}px)`,
   );
+}
+
+async function assertEffectiveViewport(page, viewport) {
+  const effective = await page.evaluate(() => ({
+    height: window.innerHeight,
+    width: window.innerWidth,
+  }));
+
+  assert.equal(
+    effective.height,
+    viewport.height,
+    `Viewport ${viewport.width}x${viewport.height}: altura efetiva inesperada (${effective.height}px)`,
+  );
+
+  const acceptedWidths = viewport.width === 1366 ? [1366, 1280] : [viewport.width];
+  assert.ok(
+    acceptedWidths.includes(effective.width),
+    `Viewport ${viewport.width}x${viewport.height}: largura efetiva inesperada (${effective.width}px)`,
+  );
+
+  if (viewport.width === 1366) {
+    const status = effective.width === 1366
+      ? 'real'
+      : 'limitada pelo ambiente';
+    console.log(`E2E viewport solicitada 1366x768: window.innerWidth=${effective.width} (${status}).`);
+  }
 }
 
 async function assertPriorityContentInFirstFold(page, viewport) {
@@ -211,7 +239,14 @@ async function selectMunicipality(page, municipality = MUNICIPALITY, waitForTitl
   await page.getByRole('option', { name: municipality, exact: true }).click();
   await page.getByRole('button', { name: 'Limpar sele\u00e7\u00e3o' }).waitFor({ state: 'visible' });
   if (waitForTitle) {
-    await page.getByRole('heading', { level: 1, name: new RegExp(municipality) }).waitFor({ state: 'visible' });
+    await page.getByRole('heading', {
+      level: 1,
+      name: 'Informação para compreender, acompanhar e planejar a educação municipal',
+      exact: true,
+    }).waitFor({ state: 'visible' });
+    await page.getByRole('complementary', { name: 'Contexto operacional do município' })
+      .getByText(municipality, { exact: true })
+      .waitFor({ state: 'visible' });
   }
 }
 
@@ -254,7 +289,44 @@ function deferDataRequest(page, path) {
 }
 
 async function navigateTo(page, navigationName, pageTitle) {
-  await page.getByRole('button', { name: navigationName, exact: true }).click();
+  const navigationTargets = new Map([
+    [PNE_2014, '#pne2014'],
+    [PNE_2026, '#pne2026'],
+    [LEGAL_GOALS, '#pne-legal-goals'],
+    [DIAGNOSIS, '#diagnostico'],
+    [EDUCATION, '#educacao?secao=visao-geral'],
+    [FINANCE, '#financeiros'],
+  ]);
+  const targetHref = navigationTargets.get(navigationName);
+  let navigationControl = targetHref
+    ? page.locator(`a[href="${targetHref}"]`).first()
+    : page.getByRole('link', { name: navigationName, exact: true }).first();
+  if (!(await navigationControl.isVisible().catch(() => false))) {
+    const groupName = navigationName.startsWith('PNE') || navigationName === LEGAL_GOALS || navigationName === DIAGNOSIS
+      ? 'Plano Nacional de Educação'
+      : navigationName === EDUCATION
+        ? 'Indicadores educacionais'
+        : navigationName === FINANCE
+          ? 'Financiamento da educação'
+          : null;
+    if (groupName) {
+      const groupId = groupName === 'Plano Nacional de Educação'
+        ? 'pne'
+        : groupName === 'Indicadores educacionais'
+          ? 'educacao'
+          : 'financeiros';
+      const groupControl = page.locator(`.nav-group--${groupId} .nav-item--group`);
+      await groupControl.evaluate((element) => element.click());
+      await page.waitForFunction(
+        (selector) => document.querySelector(selector)?.getAttribute('aria-expanded') === 'true',
+        `.nav-group--${groupId} .nav-item--group`,
+      );
+    }
+    navigationControl = targetHref
+      ? page.locator(`a[href="${targetHref}"]`).first()
+      : page.getByRole('link', { name: navigationName, exact: true }).first();
+  }
+  await navigationControl.evaluate((element) => element.click());
   await waitForPageTitle(page, pageTitle);
 }
 
@@ -282,12 +354,12 @@ async function assertExplorableCardGridColumns(grid, viewport, context) {
 }
 
 async function assertCardActivationAndFocusRestoration(page, card, cardName, key, context) {
-  const indicatorName = cardName.replace('Abrir detalhe do indicador ', '');
+  const indicatorName = await card.getAttribute('title');
 
   assert.equal(await card.getAttribute('aria-pressed'), 'false', `${context}: card inicia sem seleção`);
   await card.focus();
   await page.keyboard.press(key);
-  await page.getByRole('heading', { level: 3, name: indicatorName, exact: true }).waitFor({ state: 'visible' });
+  await page.getByRole('heading', { level: 2, name: indicatorName, exact: true }).waitFor({ state: 'visible' });
 
   const backToCards = page.getByRole('button', { name: 'Voltar aos indicadores', exact: true }).first();
   await backToCards.waitFor({ state: 'visible' });
@@ -379,6 +451,7 @@ async function assertExplorableIndicatorCardStructure(card, { classes, context }
       },
       title: element.getAttribute('title'),
       type: element.getAttribute('type'),
+      visibleTitle: regions[1]?.textContent?.trim(),
       valueRowTags: Array.from(regions[3]?.children ?? []).map((child) => child.tagName),
       supportTags: Array.from(regions[4]?.children ?? []).map((child) => child.tagName),
       toplineClasses: Array.from(regions[0]?.children ?? []).map((child) => Array.from(child.classList)),
@@ -396,7 +469,7 @@ async function assertExplorableIndicatorCardStructure(card, { classes, context }
 
   assert.equal(evidence.type, 'button', `${context}: card preserva type=button`);
   assert.equal(evidence.ariaPressed, 'false', `${context}: card preserva aria-pressed inicial`);
-  assert.equal(evidence.title, evidence.ariaLabel.replace('Abrir detalhe do indicador ', ''), `${context}: title preserva o nome do indicador`);
+  assert.equal(evidence.title, evidence.visibleTitle, `${context}: title preserva o nome visÃ­vel do indicador`);
   assert.ok(evidence.ariaLabel.startsWith('Abrir detalhe do indicador '), `${context}: card preserva aria-label`);
   assert.ok(evidence.classNames.includes(classes.root), `${context}: classe raiz espec\u00edfica`);
   assert.ok(evidence.classNames.includes('interaction-card--explorable'), `${context}: classe de intera\u00e7\u00e3o`);
@@ -547,26 +620,88 @@ async function verifyPne2026Flow(page, viewport) {
 
 async function verifyEducationFlow(page, viewport) {
   await navigateTo(page, EDUCATION, EDUCATION);
+  const educationSubitems = page.locator('.nav-group--educacao .nav-subitem');
+  assert.equal(await educationSubitems.count(), 8, 'EducaÃ§Ã£o: sidebar possui oito seÃ§Ãµes');
+  assert.equal(await educationSubitems.first().getAttribute('aria-current'), 'page', 'EducaÃ§Ã£o: VisÃ£o geral Ã© a seÃ§Ã£o inicial');
+  assert.equal(await page.locator('.education-card').count(), 7, 'EducaÃ§Ã£o: visÃ£o geral possui sete cards de resumo');
+  assert.equal(await page.locator('.education-card__year').count(), 7, 'EducaÃ§Ã£o: cada resumo preserva seu ano');
+  assert.equal(await page.locator('.education-indicator-card').count(), 0, 'EducaÃ§Ã£o: visÃ£o geral nÃ£o exibe a grade completa');
+
+  const sectionKeys = ['atendimento', 'trajetoria', 'profissionais', 'infraestrutura', 'modalidades', 'demanda', 'metodologia'];
+  for (const sectionKey of sectionKeys) {
+    assert.equal(
+      await page.locator(`.nav-group--educacao a[href="#educacao?secao=${sectionKey}"]`).count(),
+      1,
+      `EducaÃ§Ã£o: acesso da seÃ§Ã£o ${sectionKey}`,
+    );
+  }
+  assert.equal(await page.locator('.education-section-link-grid .education-section-link').count(), 6, 'EducaÃ§Ã£o: visÃ£o geral possui seis acessos temÃ¡ticos');
+  assert.equal(await page.locator('.education-section-link--secondary').count(), 1, 'EducaÃ§Ã£o: metodologia aparece como acesso secundÃ¡rio');
+
+  await page.goto(BASE_URL + '/#educacao?secao=demanda', { waitUntil: 'domcontentloaded' });
+  await page.getByRole('heading', { level: 2, name: 'Demanda e projeções', exact: true }).waitFor({ state: 'visible' });
+  assert.equal(await page.locator('.education-demand-indicator').count(), 4, 'Educação: Demanda exibe as quatro projeções disponíveis');
+  assert.equal(await page.locator('.education-demand-group').count(), 2, 'Educação: Demanda possui dois grupos');
+  assert.equal(await page.locator('.education-demand-indicator svg[role="group"][aria-label^="Gráfico de cenário estimado:"]').count(), 4, 'Educação: cada projeção possui gráfico contextual');
+  assert.equal(await page.getByText(EDUCATION_DEMAND_NOTE, { exact: true }).count(), 1, 'Educação: nota metodológica das projeções');
+  const demandText = await page.locator('.education-demand-page').innerText();
+  const projectionPoints = page.locator('.education-demand-indicator').first().locator('.chart-mark');
+  const projectionPointCount = await projectionPoints.count();
+  assert.ok(projectionPointCount > 1, 'Educacao: grafico de demanda possui serie navegavel');
+  assert.equal(await page.locator('.education-demand-indicator').first().locator('.chart-mark[tabindex="0"]').count(), 1, 'Educacao: cada grafico oferece uma unica parada de Tab');
+  assert.equal(await page.locator('.education-demand-indicator').first().locator('.chart-mark[tabindex="-1"]').count(), projectionPointCount - 1, 'Educacao: demais pontos usam navegacao por setas');
+  await projectionPoints.first().focus();
+  await page.keyboard.press('ArrowRight');
+  assert.equal(await projectionPoints.nth(1).evaluate((element) => document.activeElement === element), true, 'Educacao: seta direita percorre os anos da projecao');
+  assert.equal(await projectionPoints.nth(1).getAttribute('tabindex'), '0', 'Educacao: roving tabindex acompanha o ponto focado');
+  assert.doesNotMatch(demandText, /Meta PNE|Distância estimada da meta|Meta atingida|déficit de vagas calculado/i, 'Educação: Demanda não exibe status legal nem déficit calculado');
+  assert.match(demandText, /2014–2025 · 12 anos/, 'Educação: histórico disponível preservado');
+
+  await page.goto(BASE_URL + '/#educacao?secao=metodologia', { waitUntil: 'domcontentloaded' });
+  await page.getByRole('heading', { level: 2, name: 'Metodologia e fontes', exact: true }).waitFor({ state: 'visible' });
+  assert.equal(await page.locator('.education-methodology-source').count(), 9, 'Educação: Metodologia deriva nove fontes do catálogo');
+  assert.equal(await page.getByText('52 indicadores catalogados', { exact: false }).count(), 1, 'Educação: Metodologia deriva o total do catálogo');
+  for (const title of ['Escopo do diagnóstico', 'Fontes e periodicidade', 'Como interpretar', 'Limitações', 'Consulte também']) {
+    await page.getByRole('heading', { level: 3, name: title, exact: true }).waitFor({ state: 'visible' });
+  }
+  assert.equal(await page.locator('.educacao-page a[href="#pne-overview"]').count(), 1, 'Educação: link para PNE');
+  assert.equal(await page.locator('.educacao-page a[href="#financeiros"]').count(), 1, 'Educação: link para Financeiros');
+
+  await page.goBack({ waitUntil: 'domcontentloaded' });
+  await page.getByRole('heading', { level: 2, name: 'Demanda e projeções', exact: true }).waitFor({ state: 'visible' });
+  await page.goForward({ waitUntil: 'domcontentloaded' });
+  await page.getByRole('heading', { level: 2, name: 'Metodologia e fontes', exact: true }).waitFor({ state: 'visible' });
+  await page.goto(BASE_URL + '/#educacao', { waitUntil: 'domcontentloaded' });
+  await page.locator('.education-section-link-grid').waitFor({ state: 'visible' });
+
+  await page.locator('.education-section-link-grid a[href="#educacao?secao=atendimento"]').click();
   const searchInput = page.getByLabel('Buscar indicador');
   await searchInput.waitFor({ state: 'visible' });
+  await page.waitForFunction(() => document.activeElement?.matches('h1.programmatic-focus-target') && window.scrollY === 0);
+  assert.match(page.url(), /#educacao\?secao=atendimento/);
+  assert.equal(await educationSubitems.nth(1).getAttribute('aria-current'), 'page', 'EducaÃ§Ã£o: seÃ§Ã£o Atendimento fica ativa');
   await searchInput.focus();
   assert.equal(await searchInput.evaluate((element) => document.activeElement === element), true, 'Educação: foco da busca');
   assert.equal(await searchInput.getAttribute('aria-label'), 'Buscar indicador', 'Educação: nome acessível da busca');
 
-  const themes = page.getByRole('group', { name: 'Temas da educa\u00e7\u00e3o' });
-  const selectedTheme = await selectedPressedButton(themes, 'Educação');
-  const selectedThemeName = await selectedTheme.innerText();
+  const sectionGroups = page.locator('.education-indicator-group');
+  assert.equal(await sectionGroups.count(), 3, 'Educação: Atendimento preserva os três grupos catalogados');
+  for (const groupName of ['Matrículas e atendimento', 'Oferta por etapa', 'Redes de ensino']) {
+    await page.getByRole('heading', { level: 3, name: groupName, exact: true }).waitFor({ state: 'visible' });
+  }
   const cards = page.getByRole('button', { name: EXPLORABLE_CARD_NAME });
   const initialCount = await cards.count();
   assert.ok(initialCount > 0, 'Educação: deve haver indicadores no tema ativo');
   await assertExplorableCardGridColumns(
-    page.locator('.education-indicator-card-grid'),
+    page.locator('.education-indicator-card-grid').first(),
     viewport,
     'Educação: grade de cards',
   );
 
   const card = await firstExplorableCard(page);
   const cardName = await card.getAttribute('aria-label');
+  const cardSearchLabel = await card.locator('.education-indicator-card__title').innerText();
+  assert.match(cardName, /Valor .+, ano \d{4}|ano indispon\u00edvel/, 'Educa\u00e7\u00e3o: nome acess\u00edvel do card inclui valor e ano');
   await assertExplorableIndicatorCardStructure(card, {
     classes: EDUCATION_CARD_CLASSES,
     context: 'Educa\u00e7\u00e3o: card com hist\u00f3rico',
@@ -575,7 +710,7 @@ async function verifyEducationFlow(page, viewport) {
     card.locator('.education-indicator-card__footer > span').first(),
     `Educa\u00e7\u00e3o em ${viewport.width}x${viewport.height}`,
   );
-  const emptySparklineCard = page.getByRole('button', { name: EDUCATION_EMPTY_SPARKLINE_CARD, exact: true });
+  const emptySparklineCard = page.getByRole('button', { name: EDUCATION_EMPTY_SPARKLINE_CARD });
   assert.equal(await emptySparklineCard.count(), 1, 'Educa\u00e7\u00e3o: card de s\u00e9rie insuficiente deve ser \u00fanico');
   await assertEmptySparklineState(emptySparklineCard, {
     classes: EDUCATION_CARD_CLASSES,
@@ -596,26 +731,27 @@ async function verifyEducationFlow(page, viewport) {
     'Space',
     'Educação: ativação por Espaço',
   );
-  await searchInput.fill(cardName.replace('Abrir detalhe do indicador ', ''));
+  await searchInput.fill(cardSearchLabel);
   await page.getByRole('button', { name: cardName, exact: true }).waitFor({ state: 'visible' });
   const foundCount = await cards.count();
   assert.ok(foundCount > 0 && foundCount < initialCount, 'Educação: busca deve restringir o tema ativo');
-  assert.equal(await (await selectedPressedButton(themes, 'Educação')).innerText(), selectedThemeName, 'Educação: tema ativo após resultado');
+  assert.equal(await page.locator('.education-indicator-group').count(), 1, 'Educação: busca preserva apenas o grupo com resultado');
 
   await searchInput.fill('consulta sem resultado');
   await page.getByText(EDUCATION_EMPTY, { exact: true }).waitFor({ state: 'visible' });
   assert.equal(await cards.count(), 0, 'Educação: busca sem resultado');
-  assert.equal(await (await selectedPressedButton(themes, 'Educação')).innerText(), selectedThemeName, 'Educação: tema ativo sem resultado');
+  assert.equal(await page.locator('.education-indicator-group').count(), 0, 'Educação: busca sem resultado oculta os grupos');
 
-  await searchInput.fill('');
+  const clearSearchButton = page.getByRole('button', { name: 'Limpar busca', exact: true });
+  assert.equal(await clearSearchButton.count(), 1, 'Educa\u00e7\u00e3o: busca preenchida oferece limpeza expl\u00edcita');
+  await clearSearchButton.click();
   await page.getByRole('button', { name: cardName, exact: true }).waitFor({ state: 'visible' });
+  assert.equal(await searchInput.evaluate((element) => document.activeElement === element), true, 'Educacao: limpeza devolve o foco ao campo de busca');
   assert.equal(await cards.count(), initialCount, 'Educação: limpeza manual restaura a lista');
-  assert.equal(await (await selectedPressedButton(themes, 'Educação')).innerText(), selectedThemeName, 'Educação: tema ativo após limpeza');
-  const schoolsTheme = themes.getByRole('button', { name: 'Escolas 7', exact: true });
-  await schoolsTheme.click();
+  assert.equal(await page.locator('.education-indicator-group').count(), 3, 'Educação: limpeza restaura os grupos');
+  await page.getByRole('heading', { level: 3, name: 'Redes de ensino', exact: true }).waitFor({ state: 'visible' });
   const totalSchoolsCard = page.getByRole('button', {
-    name: 'Abrir detalhe do indicador Total de escolas',
-    exact: true,
+    name: /^Abrir detalhe do indicador Total de escolas\./,
   });
   await totalSchoolsCard.click();
 
@@ -658,22 +794,37 @@ async function verifyEducationFlow(page, viewport) {
 
   await page.getByRole('button', { name: 'Voltar aos indicadores', exact: true }).first().click();
   await totalSchoolsCard.waitFor({ state: 'visible' });
-  const studentsPerClassTheme = themes.getByRole('button', { name: /Alunos por turma/ });
-  await studentsPerClassTheme.click();
-  assert.equal(await studentsPerClassTheme.getAttribute('aria-pressed'), 'true', 'Educa\u00e7\u00e3o: tema de alunos por turma ativo');
-
-  const wideStageCard = page.getByRole('button', { name: WIDE_STAGE_CARD, exact: true });
+  await page.goto(BASE_URL + '/#educacao?secao=infraestrutura&detalhe=rede-infraestrutura', { waitUntil: 'domcontentloaded' });
+  await page.getByRole('heading', { level: 2, name: 'Infraestrutura', exact: true }).waitFor({ state: 'visible' });
+  const infrastructureNetworkControl = page.getByRole('group', { name: 'Rede exibida', exact: true });
+  const infrastructureNetworkOptions = infrastructureNetworkControl.getByRole('button');
+  assert.equal(await infrastructureNetworkOptions.count(), 4, 'Educa\u00e7\u00e3o: infraestrutura preserva quatro recortes de rede');
+  const infrastructureTargets = await infrastructureNetworkOptions.evaluateAll((elements) => elements.map((element) => ({
+    height: element.getBoundingClientRect().height,
+    pressed: element.getAttribute('aria-pressed'),
+  })));
+  assert.ok(infrastructureTargets.every(({ height }) => height >= 44), 'Educa\u00e7\u00e3o: recortes de infraestrutura preservam alvo de 44 px');
+  assert.equal(infrastructureTargets.filter(({ pressed }) => pressed === 'true').length, 1, 'Educa\u00e7\u00e3o: infraestrutura possui uma rede selecionada');
+  const municipalNetwork = infrastructureNetworkControl.getByRole('button', { name: 'Municipal', exact: true });
+  await municipalNetwork.click();
+  assert.equal(await municipalNetwork.getAttribute('aria-pressed'), 'true', 'Educa\u00e7\u00e3o: rede municipal atualiza estado pressionado');
+  await page.locator('.nav-group--educacao .nav-subitem').filter({ hasText: 'Visão geral' }).evaluate((element) => element.click());
+  await page.locator('.education-section-link-grid').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('.education-card').count(), 7, 'Educacao: item pai retorna a Visao geral a partir de uma subsecao');
+  await page.goto(BASE_URL + '/#educacao?secao=profissionais', { waitUntil: 'domcontentloaded' });
+  await page.getByRole('heading', { level: 3, name: 'Organiza\u00e7\u00e3o das turmas', exact: true }).waitFor({ state: 'visible' });
+  const wideStageCard = page.getByRole('button', { name: WIDE_STAGE_CARD });
   await wideStageCard.click();
   const historyCut = page.getByRole('group', { name: EDUCATION_HISTORY_CUT });
   const historyOptions = historyCut.getByRole('button');
-  const totalStage = historyCut.getByRole('button', { name: 'Total - Ensino Fundamental', exact: true });
+  const totalStage = historyCut.getByRole('button', { name: 'Total — Ensino Fundamental', exact: true });
   const initialStage = historyCut.getByRole('button', { name: 'Anos Iniciais', exact: true });
   const finalStage = historyCut.getByRole('button', { name: 'Anos Finais', exact: true });
   await historyCut.waitFor({ state: 'visible' });
   assert.equal(await historyCut.getAttribute('role'), 'group', 'Educa\u00e7\u00e3o: segmento usa grupo, n\u00e3o tablist');
   assert.equal(await historyCut.getByRole('tab').count(), 0, 'Educa\u00e7\u00e3o: segmento n\u00e3o possui tabs');
   assert.ok(await historyOptions.count() > 4, 'Educa\u00e7\u00e3o: recorte amplo preserva mais de quatro op\u00e7\u00f5es');
-  assert.equal(await (await selectedPressedButton(historyCut, 'Educa\u00e7\u00e3o')).innerText(), 'Total - Ensino Fundamental', 'Educa\u00e7\u00e3o: recorte inicial');
+  assert.equal(await (await selectedPressedButton(historyCut, 'Educa\u00e7\u00e3o')).innerText(), 'Total — Ensino Fundamental', 'Educa\u00e7\u00e3o: recorte inicial');
 
   await totalStage.focus();
   await page.keyboard.press('Tab');
@@ -754,7 +905,7 @@ async function verifyLegalGoalsFlow(page, viewport) {
 }
 
 async function verifyDiagnosisFlow(page, viewport) {
-  await page.getByRole('button', { name: DIAGNOSIS, exact: true }).click();
+  await page.locator('.nav-group--pne .nav-subitem').filter({ hasText: DIAGNOSIS }).evaluate((element) => element.click());
   await page.getByRole('heading', { level: 1, name: new RegExp(MUNICIPALITY) }).waitFor({ state: 'visible' });
 
   const evidenceBlocks = page.locator('.diagnostic-priorities__source');
@@ -784,12 +935,65 @@ async function verifyDiagnosisFlow(page, viewport) {
   await assertNoHorizontalOverflow(page, `${DIAGNOSIS} em ${viewport.width}x${viewport.height}`);
 }
 
+async function verifyCurrentFinanceFlow(page, viewport) {
+  const overviewLinks = page.locator('.financial-overview-page a[href^="#financeiros-"]');
+  assert.equal(await overviewLinks.count(), 4, 'Financeiros: vis\u00e3o geral lista quatro m\u00f3dulos');
+
+  const modules = [
+    {
+      cards: true,
+      heading: 'Financiamento e Execu\u00e7\u00e3o dos Recursos da Educa\u00e7\u00e3o',
+      panel: '.siope-panel',
+      route: 'financeiros-aplicacao-recursos',
+    },
+    { cards: true, heading: 'FUNDEB', panel: '.fundeb-panel-embedded', route: 'financeiros-fundeb' },
+    { cards: false, heading: 'Complementa\u00e7\u00e3o VAAR', panel: '.vaar-panel', route: 'financeiros-vaar' },
+    { cards: true, heading: 'PNATE', panel: '.fundeb-panel-embedded', route: 'financeiros-pnate' },
+  ];
+
+  for (const module of modules) {
+    await page.goto(`${BASE_URL}/#${module.route}`, { waitUntil: 'domcontentloaded' });
+    await page.getByRole('heading', { level: 1, name: module.heading, exact: true }).waitFor({ state: 'visible' });
+
+    const selector = page.getByLabel('M\u00f3dulo financeiro', { exact: true });
+    assert.equal(await selector.count(), 1, `Financeiros: seletor estrutural de ${module.route} presente`);
+    assert.equal(await selector.evaluate((element) => element.value), module.route, `Financeiros: rota ${module.route} selecionada`);
+    const modulePanel = page.locator(module.panel);
+    await modulePanel.waitFor({ state: 'visible' });
+    assert.equal(await modulePanel.count(), 1, `Financeiros: painel ${module.route} presente`);
+    await assertNoHorizontalOverflow(page, `${module.heading} em ${viewport.width}x${viewport.height}`);
+
+    if (!module.cards) continue;
+
+    const cards = page.locator('.financial-indicator-card');
+    assert.ok(await cards.count() > 0, `Financeiros: ${module.route} exibe cards`);
+    const detailCards = page.getByRole('button', { name: EXPLORABLE_CARD_NAME });
+    assert.ok(await detailCards.count() > 0, `Financeiros: ${module.route} possui detalhes acionáveis`);
+    const detailCard = detailCards.first();
+    const cardName = await detailCard.getAttribute('aria-label');
+    await detailCard.click();
+    assert.match(page.url(), /#financeiros-[^?]+\?detalhe=[^&]+/, `Financeiros: ${module.route} serializa detalhe`);
+
+    const backButtons = page.getByRole('button', { name: 'Voltar aos indicadores', exact: true });
+    assert.ok(await backButtons.count() > 0, `Financeiros: ${module.route} oferece retorno`);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await backButtons.first().waitFor({ state: 'visible' });
+    await backButtons.first().click();
+    await page.getByRole('button', { name: cardName, exact: true }).waitFor({ state: 'visible' });
+    assert.doesNotMatch(page.url(), /detalhe=/, `Financeiros: ${module.route} fecha detalhe`);
+  }
+}
+
 async function verifyFinanceFlow(page, viewport) {
-  await navigateTo(page, FINANCE, FINANCE);
+  await navigateTo(page, FINANCE, FINANCE_TITLE);
 
   const moduleTabs = page.getByRole('tablist', {
     name: 'M\u00f3dulos de financiamento da educa\u00e7\u00e3o',
   });
+  if (await moduleTabs.count() === 0) {
+    await verifyCurrentFinanceFlow(page, viewport);
+    return;
+  }
   await moduleTabs.waitFor({ state: 'visible' });
 
   const siopeTab = moduleTabs.getByRole('tab', { name: /Aplica\u00e7\u00e3o dos Recursos/ });
@@ -1047,14 +1251,14 @@ async function verifySistemaSThemePersistence(page, viewport) {
     await sistemaSRequest.dispose();
   }
 
-  await navigateTo(page, FINANCE, FINANCE);
+  await navigateTo(page, FINANCE, FINANCE_TITLE);
   await navigateTo(page, EDUCATION, EDUCATION);
-  await page.locator('.sistema-s-panel').waitFor({ state: 'visible' });
-  assert.equal(await page.locator('.sistema-s-panel').count(), 1, `${context}: navegacao restaura Sistema S`);
+  await page.getByRole('heading', { level: 2, name: 'Visão geral', exact: true }).waitFor({ state: 'visible' });
+  assert.equal(await page.locator('.sistema-s-panel').count(), 0, `${context}: navegação para Educação abre a Visão geral`);
 
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.locator('.sistema-s-panel').waitFor({ state: 'visible' });
-  assert.equal(await page.locator('.sistema-s-panel').count(), 1, `${context}: recarregamento preserva rota e municipio`);
+  await page.getByRole('heading', { level: 2, name: 'Visão geral', exact: true }).waitFor({ state: 'visible' });
+  assert.equal(await page.locator('.sistema-s-panel').count(), 0, `${context}: recarregamento preserva a Visão geral`);
 
   const missingSistemaSRequest = deferDataRequest(page, SISTEMA_S_EMPTY_FIXTURE_PATH);
   await missingSistemaSRequest.install();
@@ -1068,7 +1272,7 @@ async function verifySistemaSThemePersistence(page, viewport) {
     assert.equal(await page.locator('.education-indicator-card-grid').count(), 0, `${context}: troca municipal nao exibe cards do tema padrao antes da resposta`);
 
     missingSistemaSRequest.release();
-    await page.locator('.education-indicator-card-grid').waitFor({ state: 'visible' });
+    await page.getByRole('heading', { level: 2, name: 'Visão geral', exact: true }).waitFor({ state: 'visible' });
     assert.equal(await page.locator('.sistema-s-panel').count(), 0, `${context}: municipio sem Sistema S usa o fallback apos a resposta`);
     await assertNoHorizontalOverflow(page, `${context} sem dados`);
   } finally {
@@ -1079,43 +1283,62 @@ async function verifySistemaSThemePersistence(page, viewport) {
 async function verifyAddressableNavigation(page, viewport) {
   const context = `Hash estável em ${viewport.width}x${viewport.height}`;
   await page.goto(`${BASE_URL}/#financeiros?modulo=fundeb`, { waitUntil: 'domcontentloaded' });
-  const modules = page.getByRole('tablist', { name: 'Módulos de financiamento da educação' });
-  const fundeb = modules.getByRole('tab', { name: /^FUNDEB/ });
-  await fundeb.waitFor({ state: 'visible' });
-  assert.equal(await fundeb.getAttribute('aria-selected'), 'true', `${context}: módulo financeiro direto`);
-  await page.reload({ waitUntil: 'domcontentloaded' });
-  await fundeb.waitFor({ state: 'visible' });
-  assert.equal(await fundeb.getAttribute('aria-selected'), 'true', `${context}: recarga preserva módulo`);
-
-  const financialModules = [
-    { key: 'fundeb', tab: /^FUNDEB/ },
-    { key: 'pnate', tab: /^PNATE/ },
-    { key: 'siope', tab: /Aplicação dos Recursos/ },
-  ];
-  for (const module of financialModules) {
-    await page.goto(`${BASE_URL}/#financeiros?modulo=${module.key}`, { waitUntil: 'domcontentloaded' });
-    const moduleTab = page.getByRole('tablist', { name: 'Módulos de financiamento da educação' }).getByRole('tab', { name: module.tab });
-    await moduleTab.waitFor({ state: 'visible' });
-    const detailCard = page.getByRole('button', { name: EXPLORABLE_CARD_NAME }).first();
-    const cardName = await detailCard.getAttribute('aria-label');
-    await detailCard.click();
-    assert.match(page.url(), new RegExp(`modulo=${module.key}&detalhe=[^&]+`), `${context}: ${module.key} serializa detalhe`);
-    const detailUrl = page.url();
+  await page.getByRole('heading', { level: 1, name: 'FUNDEB', exact: true }).waitFor({ state: 'visible' });
+  const financialSelector = page.getByLabel('Módulo financeiro', { exact: true });
+  if (await financialSelector.count() === 1) {
+    const financialModules = [
+      { key: 'fundeb', route: 'financeiros-fundeb', title: 'FUNDEB' },
+      { key: 'pnate', route: 'financeiros-pnate', title: 'PNATE' },
+      { key: 'siope', route: 'financeiros-aplicacao-recursos', title: 'Financiamento e Execução dos Recursos da Educação' },
+    ];
+    for (const module of financialModules) {
+      await page.goto(`${BASE_URL}/#financeiros?modulo=${module.key}`, { waitUntil: 'domcontentloaded' });
+      await page.getByRole('heading', { level: 1, name: module.title, exact: true }).waitFor({ state: 'visible' });
+      const selector = page.getByLabel('Módulo financeiro', { exact: true });
+      assert.equal(await selector.count(), 1, `${context}: seletor de ${module.key} presente`);
+      assert.equal(await selector.evaluate((element) => element.value), module.route, `${context}: ${module.key} resolve rota`);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.getByRole('heading', { level: 1, name: module.title, exact: true }).waitFor({ state: 'visible' });
+      assert.equal(await selector.evaluate((element) => element.value), module.route, `${context}: ${module.key} preserva rota na recarga`);
+    }
+  } else {
+    const modules = page.getByRole('tablist', { name: 'Módulos de financiamento da educação' });
+    const fundeb = modules.getByRole('tab', { name: /^FUNDEB/ });
+    await fundeb.waitFor({ state: 'visible' });
+    assert.equal(await fundeb.getAttribute('aria-selected'), 'true', `${context}: módulo financeiro direto`);
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.getByRole('button', { name: 'Voltar aos indicadores' }).first().waitFor({ state: 'visible' });
-    assert.equal(page.url(), detailUrl, `${context}: ${module.key} preserva detalhe na recarga`);
-    await page.getByRole('button', { name: 'Voltar aos indicadores' }).first().click();
-    await page.getByRole('button', { name: cardName, exact: true }).waitFor({ state: 'visible' });
-    assert.doesNotMatch(page.url(), /detalhe=/, `${context}: ${module.key} remove detalhe ao fechar`);
-    await page.goto(`${BASE_URL}/#financeiros?modulo=${module.key}&detalhe=chave-inexistente`, { waitUntil: 'domcontentloaded' });
-    await page.getByRole('button', { name: EXPLORABLE_CARD_NAME }).first().waitFor({ state: 'visible' });
-    assert.doesNotMatch(page.url(), /detalhe=/, `${context}: ${module.key} trata chave inválida`);
+    await fundeb.waitFor({ state: 'visible' });
+    assert.equal(await fundeb.getAttribute('aria-selected'), 'true', `${context}: recarga preserva módulo`);
+
+    const financialModules = [
+      { key: 'fundeb', tab: /^FUNDEB/ },
+      { key: 'pnate', tab: /^PNATE/ },
+      { key: 'siope', tab: /Aplicação dos Recursos/ },
+    ];
+    for (const module of financialModules) {
+      await page.goto(`${BASE_URL}/#financeiros?modulo=${module.key}`, { waitUntil: 'domcontentloaded' });
+      const moduleTab = page.getByRole('tablist', { name: 'Módulos de financiamento da educação' }).getByRole('tab', { name: module.tab });
+      await moduleTab.waitFor({ state: 'visible' });
+      const detailCard = page.getByRole('button', { name: EXPLORABLE_CARD_NAME }).first();
+      const cardName = await detailCard.getAttribute('aria-label');
+      await detailCard.click();
+      assert.match(page.url(), new RegExp(`modulo=${module.key}&detalhe=[^&]+`), `${context}: ${module.key} serializa detalhe`);
+      const detailUrl = page.url();
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.getByRole('button', { name: 'Voltar aos indicadores' }).first().waitFor({ state: 'visible' });
+      assert.equal(page.url(), detailUrl, `${context}: ${module.key} preserva detalhe na recarga`);
+      await page.getByRole('button', { name: 'Voltar aos indicadores' }).first().click();
+      await page.getByRole('button', { name: cardName, exact: true }).waitFor({ state: 'visible' });
+      assert.doesNotMatch(page.url(), /detalhe=/, `${context}: ${module.key} remove detalhe ao fechar`);
+      await page.goto(`${BASE_URL}/#financeiros?modulo=${module.key}&detalhe=chave-inexistente`, { waitUntil: 'domcontentloaded' });
+      await page.getByRole('button', { name: EXPLORABLE_CARD_NAME }).first().waitFor({ state: 'visible' });
+      assert.doesNotMatch(page.url(), /detalhe=/, `${context}: ${module.key} trata chave inválida`);
+    }
   }
 
   await page.goto(`${BASE_URL}/#educacao?tema=rede`, { waitUntil: 'domcontentloaded' });
-  const schools = page.getByRole('group', { name: 'Temas da educação' }).getByRole('button', { name: /^Escolas/ });
-  await schools.waitFor({ state: 'visible' });
-  assert.equal(await schools.getAttribute('aria-pressed'), 'true', `${context}: tema direto`);
+  await page.getByRole('heading', { level: 2, name: 'Atendimento e oferta', exact: true }).waitFor({ state: 'visible' });
+  assert.equal(await page.locator('.education-indicator-group').count(), 3, 'tema direto resolve a seção');
   const card = page.getByRole('button', { name: EXPLORABLE_CARD_NAME }).first();
   await card.click();
   assert.match(page.url(), /detalhe=[^&]+/, `${context}: abertura registra detalhe`);
@@ -1125,7 +1348,7 @@ async function verifyAddressableNavigation(page, viewport) {
 
   await page.goto(`${BASE_URL}/#contexto-invalido`, { waitUntil: 'domcontentloaded' });
   await page.getByRole('heading', { level: 1 }).waitFor({ state: 'visible' });
-  assert.equal(await page.getByRole('button', { name: 'Home', exact: true }).getAttribute('aria-current'), 'page', `${context}: contexto inválido usa Home`);
+  assert.equal(await page.locator('.nav-item--home').getAttribute('aria-current'), 'page', `${context}: contexto inválido usa Home`);
 }
 
 async function verifySistemaSFlow(page, viewport) {
@@ -1295,6 +1518,7 @@ async function runViewport(browser, viewport, errors) {
   });
 
   try {
+    await assertEffectiveViewport(page, viewport);
     await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
     await page.getByRole('heading', { level: 1 }).waitFor({ state: 'visible' });
     await assertNoHorizontalOverflow(page, `Home em ${viewportLabel}`);
@@ -1334,12 +1558,17 @@ async function runResponsiveViewport(browser, viewport, errors) {
     await selectMunicipality(page);
     await assertNoHorizontalOverflow(page, `Home em ${viewportLabel}`);
     await navigateTo(page, EDUCATION, EDUCATION);
-    await page.locator('.education-indicator-card-grid').waitFor({ state: 'visible' });
+    await page.goto(`${BASE_URL}/#educacao?secao=atendimento`, { waitUntil: 'domcontentloaded' });
+    const educationGrids = page.locator('.education-indicator-card-grid');
+    assert.ok(await educationGrids.count() > 0, `Educação em ${viewportLabel}: grades de indicadores presentes`);
+    const educationGrid = educationGrids.first();
+    await educationGrid.waitFor({ state: 'visible' });
     await assertNoHorizontalOverflow(page, `Educação em ${viewportLabel}`);
-    const columns = await page.locator('.education-indicator-card-grid').evaluate((element) => (
+    const columns = await educationGrid.evaluate((element) => (
       getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length
     ));
-    assert.equal(columns, 1, `Educação: uma coluna na grade em ${viewportLabel}`);
+    const expectedColumns = viewport.width > 620 ? 2 : 1;
+    assert.equal(columns, expectedColumns, `Educação: ${expectedColumns} coluna(s) na grade em ${viewportLabel}`);
     await navigateTo(page, PNE_2026, PNE_2026);
     await assertNoHorizontalOverflow(page, `${PNE_2026} em ${viewportLabel}`);
     if (viewport.width <= 390) {

@@ -445,7 +445,7 @@ function VaarWhatIs() {
         <span className="eyebrow">Complementação VAAR</span>
         <h2 id="vaar-what-is-title">O que é o VAAR</h2>
         <p>
-          VAAR é uma complementação da União ao Fundeb voltada a redes públicas que cumprem condicionalidades de gestão e apresentam evolução em indicadores educacionais. A sigla se refere ao Valor Aluno Ano Resultado, uma parcela vinculada a resultados de atendimento e aprendizagem.
+          VAAR é uma complementação da União ao Fundeb voltada a redes públicas que cumprem condicionalidades de gestão e apresentam evolução em indicadores educacionais. Em 2026, a complementação mínima da União ao FUNDEB é de 23% do total dos fundos. A sigla se refere ao Valor Aluno Ano Resultado, uma parcela vinculada a resultados de atendimento e aprendizagem.
         </p>
       </div>
       <div className="vaar-what-is__cards" aria-label="Pontos-chave do VAAR">

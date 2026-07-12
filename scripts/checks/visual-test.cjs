@@ -14,12 +14,12 @@ const DIFF_DIR = path.resolve(__dirname, 'visual-diffs');
 
 const CASES = [
   { key: 'home', open: async (page) => page.locator('.home-page').waitFor(), region: '.home-page' },
-  { key: 'pne-2014', navigation: 'PNE 2014–2024', region: '.cycle-page' },
-  { key: 'pne-2026', navigation: 'PNE 2026–2036', region: '.cycle-page' },
-  { key: 'educacao', navigation: 'Indicadores de Educação', region: '.educacao-page' },
-  { key: 'diagnostico', navigation: 'Diagnóstico municipal', region: '.diagnostic-panel' },
-  { key: 'fundeb', navigation: 'Indicadores Financeiros da Educação', tab: /^FUNDEB/, region: '.fundeb-panel-embedded' },
-  { key: 'siope', navigation: 'Indicadores Financeiros da Educação', tab: /Aplicação dos Recursos/, region: '.siope-panel' },
+  { key: 'pne-2014', navigationHref: '#pne2014', navigationGroup: 'pne', region: '.cycle-page' },
+  { key: 'pne-2026', navigationHref: '#pne2026', navigationGroup: 'pne', region: '.cycle-page' },
+  { key: 'educacao', navigationHref: '#educacao?secao=visao-geral', navigationGroup: 'educacao', region: '.educacao-page' },
+  { key: 'diagnostico', navigationHref: '#diagnostico', navigationGroup: 'pne', region: '.diagnostic-panel' },
+  { key: 'fundeb', navigationHref: '#financeiros-fundeb', navigationGroup: 'financeiros', region: '.fundeb-panel-embedded' },
+  { key: 'siope', navigationHref: '#financeiros-aplicacao-recursos', navigationGroup: 'financeiros', region: '.siope-panel' },
 ];
 
 async function selectMunicipality(page) {
@@ -52,14 +52,20 @@ async function prepareCase(page, testCase) {
   await page.goto(BASE_URL, { waitUntil: 'networkidle' });
   await page.addStyleTag({ content: '*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}' });
   await selectMunicipality(page);
-  if (testCase.navigation) {
-    await page.getByRole('button', { name: testCase.navigation, exact: true }).click();
-  }
-  if (testCase.tab) {
-    const tablist = page.getByRole('tablist', { name: 'Módulos de financiamento da educação' });
-    await tablist.getByRole('tab', { name: testCase.tab }).click();
+  if (testCase.navigationHref) {
+    const navigationLink = page.locator(`a[href="${testCase.navigationHref}"]`).first();
+    if (!(await navigationLink.isVisible().catch(() => false))) {
+      await page.locator(`.nav-group--${testCase.navigationGroup} .nav-item--group`)
+        .evaluate((element) => element.click());
+      await page.waitForFunction(
+        (href) => Boolean(document.querySelector(`a[href="${href}"]`)),
+        testCase.navigationHref,
+      );
+    }
+    await navigationLink.evaluate((element) => element.click());
   }
   await testCase.open?.(page);
+  await page.addStyleTag({ content: '.context-bar{visibility:hidden!important}' });
   const region = page.locator(testCase.region).first();
   await region.waitFor({ state: 'visible' });
   await page.evaluate(() => document.fonts.ready);
