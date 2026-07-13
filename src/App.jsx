@@ -345,7 +345,7 @@ function EmptyMunicipioState({ onNavigate, onMunicipioChange, municipios }) {
         Os indicadores, rankings e o diagnóstico municipal só são carregados depois da
         seleção. Escolha o município que deseja analisar.
       </p>
-      <div style={{ minWidth: 'min(320px, 100%)', marginTop: '4px' }}>
+      <div className="empty-municipality-selector">
         <MunicipalitySelector
           variant="hero"
           municipios={municipios}

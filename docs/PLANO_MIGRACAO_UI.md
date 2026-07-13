@@ -224,3 +224,60 @@ Os registros abaixo oferecem contexto e não definem regra ativa:
 - [Auditoria de interação e navegabilidade](historico-ui/AUDITORIA_INTERACAO_PNE.md)
 - [Proposta de sistema visual comum](historico-ui/DESIGN_SYSTEM_PNE_PROPOSTA.md)
 - [Inventário histórico de gráficos](historico-ui/INVENTARIO_GRAFICOS_PNE.md)
+
+## 8. Iniciativa de identidade editorial SESI-RS (2026-07-12)
+
+Esta iniciativa sucede a migração UI-01 a UI-18 sem reabrir seus contratos. O
+escopo visual cobre o shell, a barra de contexto, a Home, PNE 2014–2024, PNE
+2026–2036, metas legais, Diagnóstico Municipal, Educação, Sistema S e todos os
+módulos financeiros. Dados, JSONs, cálculos, filtros, aliases, fontes,
+conteúdo analítico e regras de negócio permaneceram inalterados.
+
+- `design-tokens.css` recebeu a paleta editorial SESI-RS, superfícies de papel,
+  sinais ocre/terracota, raios moderados e a escala de composição revisada.
+- `institutional-refresh.css` consolidou a direção compartilhada: shell com
+  malha discreta, heróis editoriais, superfícies contínuas, índices, controles,
+  cards exploráveis, tabelas, gráficos, fontes e estados.
+- A barra lateral e o drawer mantêm os fluxos de teclado, foco, Escape,
+  restauração de foco e abertura exclusiva dos grupos. O contexto municipal
+  continua visível na navegação.
+- Home, PNE, Educação, Diagnóstico e Financeiro usam a mesma anatomia de
+  título, síntese, filtro, evidência e fonte; exceções de domínio continuam
+  apenas onde a semântica exige.
+- A documentação permanente está em [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md).
+
+Evidência da rodada: screenshots revisados em 1366×768, 1280×720, 1024×768 e
+390×844, incluindo drawer mobile e detalhe aberto do PNE; auditoria de rotas
+confirmou zero overflow horizontal em 12 rotas principais nos viewports de
+390×844 e 1024×768. `npm run test:e2e`, `npm run lint`, `npm run build` e
+`git diff --check` devem permanecer como critérios de aceite desta iniciativa;
+baselines visuais foram atualizados deliberadamente após a revisão final.
+
+## 9. Segunda rodada — densidade, insets e leitura linear (2026-07-12)
+
+Esta rodada preserva a direção editorial SESI-RS da iniciativa anterior e não
+altera dados, JSONs, cálculos, filtros, metas, textos metodológicos, fontes,
+classificações, URLs, aliases ou regras de negócio.
+
+- `design-tokens.css` agora explicita a densidade comum (`24/28/16` px), os
+  insets de painel (`24/20/16` px) e a escala vertical compacta dos heróis;
+  `institutional-refresh.css` aplica os valores aos cabeçalhos de Home, PNE,
+  metas legais, Diagnóstico, Educação e Financeiro sem reduzir corpo, dados ou
+  controles abaixo de 44 px.
+- `education-pages.css` usa `--education-panel-padding` em desktop,
+  intermediário e mobile para manter o mesmo respiro em hero, filtros,
+  resumos, detalhes, gráficos, tabelas, metodologia, demanda e estados do
+  módulo; o estado sem município também recebe o inset editorial.
+- Diagnóstico deixou de renderizar a navegação interna Panorama/Prioridades/
+  Temas. O estado de âncora, os IDs, os listeners e os estilos órfãos foram
+  removidos; a ordem natural mantém síntese, filtro, prioridades e temas, com
+  impressão, cópia, teclado e conteúdo preservados.
+- `CyclePage` deixou de renderizar somente a faixa intermediária redundante
+  `meta-grid-header`; contagens, status, títulos, município no hero, resumo do
+  ciclo, detalhe, navegação e notas metodológicas permanecem.
+
+A evidência final deve cobrir as 22 regiões visuais, as rotas solicitadas em
+1366×768 e o drawer mobile em 390×844, além de loading, vazio, erro, texto
+longo, valores grandes, foco e teclado. O aceite é `npm run lint`,
+`npm run build`, `npm run test:e2e`, `npm run update:visual`,
+`npm run test:visual` e `git diff --check`.

@@ -151,7 +151,7 @@ Loading, erro, ausência, ausência de resultados e indisponibilidade devem expl
 
 - **PNE:** meta, distância, ciclo, status e projeção exigem referência legal e diferenciação entre observado e projetado.
 - **Educação:** exploração por tema, etapa e indicador pode privilegiar leitura descritiva sem converter toda medida em status.
-- **Diagnóstico:** síntese decisória, âncoras internas, impressão e ações de cópia são próprios da leitura consolidada.
+- **Diagnóstico:** síntese decisória linear, impressão e ações de cópia são próprios da leitura consolidada.
 - **Financeiro:** moeda, mínimos legais, séries anuais e tabelas extensas exigem contexto e densidade próprios.
 
 Essas exceções reutilizam a mesma tipografia, tokens, estados, foco, cards e controles de base.
@@ -181,3 +181,18 @@ O tom é claro, profissional e responsável. Preferir “exige atenção”, “
 - [ ] Gráficos e tabelas permanecem acessíveis, legíveis e contextuais.
 - [ ] Desktop e notebook foram priorizados; tablet, celular, zoom e textos longos foram validados.
 - [ ] Nenhuma mudança visual alterou dados, cálculos, filtros, regras de negócio ou conteúdo analítico.
+
+## 9. Direção editorial SESI-RS
+
+A plataforma adota uma composição de caderno institucional de acompanhamento:
+verde profundo como âncora, papel quente para leitura prolongada, Source Serif 4
+em títulos de entrada, Public Sans em operação e dados, e linhas/índices para
+organizar a leitura. A nova anatomia é registrada integralmente em
+[DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) e implementada por tokens e pela camada
+compartilhada `src/styles/institutional-refresh.css`.
+
+Heróis podem usar bloco de contexto lateral; grades de acesso e resumos podem
+usar superfícies contínuas com divisores; fonte e metodologia permanecem
+neutras e próximas da evidência. Ocre e terracota são sinais editoriais, não
+classificações de desempenho. A direção preserva todos os requisitos deste
+guia para foco, teclado, contraste, zoom, movimento reduzido e responsividade.

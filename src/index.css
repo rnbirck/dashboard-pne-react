@@ -28,7 +28,7 @@ body {
   color: var(--text);
   font-size: 14px;
   line-height: 1.5;
-  letter-spacing: 0;
+  letter-spacing: 0.002em;
   font-family: var(--font-sans);
   font-weight: var(--font-weight-regular);
   font-variant-numeric: tabular-nums;
@@ -99,13 +99,14 @@ a:hover {
 }
 
 ::selection {
-  background: rgba(47, 113, 60, 0.18);
+  background: rgba(47, 112, 87, 0.2);
   color: var(--text-strong);
 }
 
 :focus-visible {
   outline: 2px solid var(--green-primary);
   outline-offset: 3px;
+  box-shadow: 0 0 0 5px rgba(47, 112, 87, 0.14);
 }
 
 ::-webkit-scrollbar {
@@ -116,9 +117,9 @@ a:hover {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(38, 80, 38, 0.18);
+  background: rgba(25, 66, 51, 0.22);
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(38, 80, 38, 0.28);
+  background: rgba(25, 66, 51, 0.34);
 }

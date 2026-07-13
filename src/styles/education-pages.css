@@ -13,7 +13,7 @@
  */
 
 .educacao-page {
-  --education-panel-padding: var(--space-6);
+  --education-panel-padding: var(--panel-inset);
   --education-panel-gap: var(--space-6);
   width: 100%;
   max-width: var(--shell-max);
@@ -44,7 +44,7 @@
 
 .educacao-hero {
   min-height: 0;
-  padding: var(--space-6) var(--space-8);
+  padding: var(--education-panel-padding);
   border: var(--border-default);
   border-radius: var(--radius-md);
   background: var(--surface-card);
@@ -112,7 +112,7 @@
 .education-thematic-heading {
   display: grid;
   gap: var(--space-2);
-  padding: var(--space-5) var(--space-6);
+  padding: var(--education-panel-padding);
   border: var(--border-default);
   border-radius: var(--radius-md);
   background: var(--surface-soft);
@@ -376,7 +376,7 @@
 }
 
 .educacao-page .educacao-filter-panel {
-  padding: var(--space-5) var(--space-6);
+  padding: var(--education-panel-padding);
   border: var(--border-default);
   border-radius: var(--radius-md);
   background: var(--surface-card);
@@ -427,7 +427,7 @@
 .education-indicator-group,
 .education-special-group {
   min-width: 0;
-  padding: var(--space-6) 0 0;
+  padding: var(--space-6) var(--education-panel-padding) 0;
   border: 0;
   border-top: var(--border-divider);
   border-radius: 0;
@@ -438,7 +438,7 @@
 }
 
 .education-indicator-group:has(.education-indicator-card:only-child) {
-  padding-top: var(--space-4);
+  padding: var(--space-4) var(--education-panel-padding) 0;
   border-top: 0;
   gap: var(--space-4);
 }
@@ -795,7 +795,7 @@
 
 .educacao-page .education-detail-view .educacao-detail-panel {
   min-height: 0;
-  padding: var(--space-6);
+  padding: var(--education-panel-padding);
   border: var(--border-default);
   border-radius: var(--radius-md);
   background: var(--surface-card);
@@ -909,7 +909,7 @@
 
 .educacao-page .education-detail-view .indicator-chart-card,
 .educacao-page .education-detail-view .educacao-explore {
-  padding: var(--space-5);
+  padding: var(--education-panel-padding);
   border: var(--border-default);
   border-radius: var(--radius-md);
   background: var(--surface-card);
@@ -986,7 +986,7 @@
 /* Demand and projections */
 
 .education-demand-note {
-  padding: var(--space-4) var(--space-5);
+  padding: var(--education-panel-padding);
   border: var(--border-width) solid var(--status-info-line);
   border-radius: var(--radius-md);
   background: var(--status-info-bg);
@@ -1035,7 +1035,7 @@
 
 .educacao-page .education-demand-indicator {
   min-width: 0;
-  padding: var(--space-5);
+  padding: var(--education-panel-padding);
   border: 0;
   border-top: var(--border-divider);
   border-radius: 0;
@@ -1351,7 +1351,7 @@
 
 .education-methodology-text,
 .education-methodology-links {
-  padding: var(--space-6);
+  padding: var(--education-panel-padding);
   border: var(--border-default);
   border-radius: var(--radius-md);
   background: var(--surface-card);
@@ -1560,7 +1560,7 @@
 
 @media (max-width: 860px) {
   .educacao-page {
-    --education-panel-padding: var(--space-5);
+    --education-panel-padding: var(--panel-inset-intermediate);
   }
 
   .education-summary-header,
@@ -1588,9 +1588,15 @@
   }
 }
 
+@media (max-width: 1180px) {
+  .educacao-page {
+    --education-panel-padding: var(--panel-inset-intermediate);
+  }
+}
+
 @media (max-width: 620px) {
   .educacao-page {
-    --education-panel-padding: var(--space-4);
+    --education-panel-padding: var(--panel-inset-mobile);
     gap: var(--space-4);
   }
 
@@ -1608,7 +1614,7 @@
   .education-special-group,
   .education-methodology-text,
   .education-methodology-links {
-    padding: var(--space-4);
+    padding: var(--education-panel-padding);
   }
 
   .educacao-hero h1 {
@@ -1684,7 +1690,7 @@
   .education-indicator-group,
   .education-special-group {
     gap: var(--space-4);
-    padding: var(--space-4) 0 0;
+    padding: var(--education-panel-padding);
   }
 
   .education-indicator-group__heading,
@@ -1712,7 +1718,7 @@
   .educacao-page .education-detail-view .educacao-explore,
   .educacao-page .education-demand-indicator,
   .education-methodology-source {
-    padding: var(--space-4);
+    padding: var(--education-panel-padding);
   }
 
   .educacao-page .education-detail-view .educacao-detail-heading {

@@ -1724,7 +1724,7 @@ function ExploreItem({ indicator, item }) {
     return (
       <>
         {item.panoramaRows && item.panoramaRows.length ? (
-          <div className="educacao-explore-table" style={{ marginBottom: '1.5rem' }}>
+          <div className="educacao-explore-table educacao-explore-table--spaced">
             <h4>{item.panoramaTitle}</h4>
             <EducationTable columns={item.panoramaColumns} rows={item.panoramaRows} />
             {sourceNote}
@@ -1738,7 +1738,7 @@ function ExploreItem({ indicator, item }) {
         />
         {sourceNote}
         {item.historyCategories && item.historyData && item.historyData.length >= 2 ? (
-          <div style={{ marginTop: '2rem' }}>
+          <div className="educacao-explore-block--spaced">
             <EducationStackedBarChart
               categories={item.historyCategories}
               data={item.historyData}

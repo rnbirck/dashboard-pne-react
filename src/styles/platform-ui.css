@@ -533,8 +533,7 @@
     gap: var(--space-2);
   }
 
-  .content-area .platform-navigation-button,
-  .content-area .platform-anchor-option {
+  .content-area .platform-navigation-button {
     min-height: var(--control-height);
     padding: 9px var(--space-3);
     border: var(--border-width) solid var(--control-border);
@@ -553,8 +552,7 @@
     transform: none;
   }
 
-  .content-area .platform-navigation-button:hover,
-  .content-area .platform-anchor-option:hover {
+  .content-area .platform-navigation-button:hover {
     border-color: var(--border-strong);
     background: var(--control-surface-muted);
     color: var(--text-strong);
@@ -568,30 +566,6 @@
     color: var(--text-muted);
     cursor: not-allowed;
     opacity: 0.72;
-  }
-
-  .content-area .platform-anchor-navigation {
-    width: fit-content;
-    max-width: 100%;
-    padding: var(--space-1);
-    border: var(--border-default);
-    border-radius: var(--control-radius);
-    background: var(--surface-muted);
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-1);
-  }
-
-  .content-area .platform-anchor-navigation .platform-anchor-option {
-    border-color: transparent;
-    background: transparent;
-  }
-
-  .content-area .platform-anchor-navigation .platform-anchor-option.is-active {
-    border-color: var(--control-border);
-    background: var(--control-surface);
-    color: var(--control-text-selected);
-    box-shadow: var(--shadow-sm);
   }
 
   .content-area .platform-control-bar {
@@ -946,8 +920,7 @@
     .platform-tab,
     .platform-scope-option,
     .platform-module-tab,
-    .platform-navigation-button,
-    .platform-anchor-option
+    .platform-navigation-button
   ):focus-visible {
     outline: 2px solid var(--focus-ring-color);
     outline-offset: 2px;
@@ -1004,8 +977,7 @@
   .platform-tab,
   .platform-scope-option,
   .platform-module-tab,
-  .platform-navigation-button,
-  .platform-anchor-option {
+  .platform-navigation-button {
     transition: none;
   }
 }

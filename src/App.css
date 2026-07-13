@@ -17332,41 +17332,6 @@ body:has(.educacao-page) .context-bar {
   color: var(--status-muted-ink);
 }
 
-.diagnostic-anchor-nav {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: fit-content;
-  max-width: 100%;
-  padding: 6px;
-  border: 1px solid var(--border-card);
-  border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.84);
-  overflow-x: auto;
-}
-
-.diagnostic-anchor-nav a {
-  min-height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 12px;
-  border-radius: 6px;
-  color: var(--text-body);
-  font-size: 0.82rem;
-  font-weight: 700;
-  white-space: nowrap;
-  text-decoration: none;
-  transition: background 0.16s ease, color 0.16s ease;
-}
-
-.diagnostic-anchor-nav a:hover,
-.diagnostic-anchor-nav a:focus-visible {
-  background: var(--accent-ghost);
-  color: var(--accent-strong);
-  text-decoration: none;
-}
-
 .diagnostic-panel .diagnostic-theme-filter {
   gap: 12px;
   padding: 16px;
@@ -18018,38 +17983,6 @@ body:has(.educacao-page) .context-bar {
   height: 17px;
 }
 
-.diagnostic-anchor-nav {
-  width: 100%;
-  padding: 0;
-  border: 0;
-  border-bottom: 1px solid var(--border-card);
-  border-radius: 0;
-  background: transparent;
-  gap: 22px;
-  overflow-x: auto;
-}
-
-.diagnostic-anchor-nav a {
-  min-height: 40px;
-  padding: 0 1px;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-  color: var(--text-soft);
-  font-size: 0.82rem;
-  transition: border-color 0.16s ease, color 0.16s ease;
-}
-
-.diagnostic-anchor-nav a:hover,
-.diagnostic-anchor-nav a:focus-visible,
-.diagnostic-anchor-nav a.is-active {
-  background: transparent;
-  color: var(--accent-strong);
-}
-
-.diagnostic-anchor-nav a.is-active {
-  border-bottom-color: var(--accent);
-}
-
 .diagnostic-panel .diagnostic-theme-filter {
   gap: 10px;
   padding: 12px 14px;
@@ -18374,10 +18307,6 @@ body:has(.educacao-page) .context-bar {
     border-top: 0;
   }
 
-  .diagnostic-anchor-nav {
-    gap: 16px;
-  }
-
   .diagnostic-panel .diagnostic-area-mini-card {
     min-height: 0;
   }
@@ -18549,13 +18478,6 @@ body:has(.educacao-page) .context-bar {
 }
 
 /* Diagnostic corrective pass: quieter hierarchy and lower visual density */
-#diagnostic-summary,
-#diagnostic-themes,
-#diagnostic-priorities,
-#diagnostic-reading {
-  scroll-margin-top: 104px;
-}
-
 .diagnostic-panel .diagnostic-hero {
   gap: 16px;
   padding: 16px;
@@ -18613,16 +18535,6 @@ body:has(.educacao-page) .context-bar {
   max-width: 18ch;
   font-size: 0.68rem;
   line-height: 1.32;
-}
-
-.diagnostic-anchor-nav {
-  gap: 18px;
-  margin-top: -2px;
-}
-
-.diagnostic-anchor-nav a {
-  min-height: 36px;
-  font-size: 0.8rem;
 }
 
 .diagnostic-panel .diagnostic-theme-filter {
@@ -18908,13 +18820,6 @@ body:has(.educacao-page) .context-bar {
 }
 
 @media (max-width: 560px) {
-  #diagnostic-summary,
-  #diagnostic-themes,
-  #diagnostic-priorities,
-  #diagnostic-reading {
-    scroll-margin-top: 82px;
-  }
-
   .diagnostic-panel .diagnostic-hero h2 {
     font-size: 1.44rem;
   }
@@ -19305,12 +19210,6 @@ body:has(.educacao-page) .context-bar {
   gap: 16px;
 }
 
-#diagnostic-summary,
-#diagnostic-priorities,
-#diagnostic-themes {
-  scroll-margin-top: 150px;
-}
-
 .diagnostic-overview {
   display: grid;
   gap: 20px;
@@ -19552,30 +19451,6 @@ body:has(.educacao-page) .context-bar {
   flex: 0 0 auto;
   color: var(--text-body);
   font-weight: 700;
-}
-
-.diagnostic-panel .diagnostic-anchor-nav {
-  position: sticky;
-  top: 92px;
-  z-index: 10;
-  width: 100%;
-  gap: 2px;
-  margin: 0;
-  padding: 4px;
-  border-color: var(--border-line);
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 2px 8px rgba(30, 40, 30, 0.05);
-}
-
-.diagnostic-panel .diagnostic-anchor-nav a {
-  min-height: 40px;
-  padding-inline: 14px;
-  font-size: 0.78rem;
-}
-
-.diagnostic-panel .diagnostic-anchor-nav a.is-active {
-  background: var(--accent-ghost);
-  color: var(--accent-strong);
 }
 
 .diagnostic-panel .diagnostic-theme-filter {
@@ -20034,12 +19909,6 @@ body:has(.educacao-page) .context-bar {
 }
 
 @media (max-width: 680px) {
-  #diagnostic-summary,
-  #diagnostic-priorities,
-  #diagnostic-themes {
-    scroll-margin-top: 138px;
-  }
-
   .diagnostic-overview {
     padding: 18px;
   }
@@ -20096,10 +19965,6 @@ body:has(.educacao-page) .context-bar {
   .diagnostic-overview__footnote {
     flex-direction: column;
     gap: 5px;
-  }
-
-  .diagnostic-panel .diagnostic-anchor-nav {
-    top: 84px;
   }
 
   .diagnostic-panel .diagnostic-theme-filter {
@@ -20768,7 +20633,6 @@ body:has(.educacao-page) .context-bar {
 
 @media (prefers-reduced-motion: reduce) {
   .diagnostic-action,
-  .diagnostic-anchor-nav a,
   .diagnostic-theme-filter__card {
     transition: none;
   }
@@ -20795,7 +20659,6 @@ body:has(.educacao-page) .context-bar {
 
   .app-header,
   .context-bar,
-  .diagnostic-anchor-nav,
   .diagnostic-theme-filter,
   .diagnostic-overview__actions {
     display: none !important;

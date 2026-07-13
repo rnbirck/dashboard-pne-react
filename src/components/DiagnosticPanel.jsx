@@ -68,7 +68,6 @@ const AREA_ICON_PATHS = {
 export function DiagnosticPanel({ categories = [], data, municipio, results = {} }) {
   const analysis = buildDiagnosticAnalysis(categories, results)
   const [selectedFilter, setSelectedFilter] = useState('all')
-  const [activeAnchor, setActiveAnchor] = useState('summary')
   const [copyStatus, setCopyStatus] = useState('idle')
   const filteredIndicators = useMemo(
     () => {
@@ -114,7 +113,7 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
 
   return (
     <div className="diagnostic-panel">
-      <section className="diagnostic-overview" id="diagnostic-summary">
+      <section className="diagnostic-overview">
         <header className="diagnostic-overview__header">
           <div>
             <p className="diagnostic-overview__context">PNE 2026–2036 · ciclo vigente · acompanhamento atual</p>
@@ -180,30 +179,6 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
         </div>
       </section>
 
-      <nav className="diagnostic-anchor-nav platform-anchor-navigation" aria-label="Navegação interna do diagnóstico">
-        <a
-          className={`platform-anchor-option${activeAnchor === 'summary' ? ' is-active' : ''}`}
-          href="#diagnostic-summary"
-          onClick={() => setActiveAnchor('summary')}
-        >
-          Panorama
-        </a>
-        <a
-          className={`platform-anchor-option${activeAnchor === 'priorities' ? ' is-active' : ''}`}
-          href="#diagnostic-priorities"
-          onClick={() => setActiveAnchor('priorities')}
-        >
-          Prioridades
-        </a>
-        <a
-          className={`platform-anchor-option${activeAnchor === 'themes' ? ' is-active' : ''}`}
-          href="#diagnostic-themes"
-          onClick={() => setActiveAnchor('themes')}
-        >
-          Temas
-        </a>
-      </nav>
-
       <section className="diagnostic-theme-filter platform-filter-panel" aria-label="Filtrar prioridades e avanços por tema">
         <div className="diagnostic-theme-filter__header">
           <div>
@@ -243,7 +218,7 @@ export function DiagnosticPanel({ categories = [], data, municipio, results = {}
         scopeLabel={selectedFilterLabel}
       />
 
-      <section className="diagnostic-themes-stack" id="diagnostic-themes">
+      <section className="diagnostic-themes-stack">
         <div className="page-card diagnostic-section">
           <header className="diagnostic-section__heading">
             <div>
@@ -287,7 +262,7 @@ function SummaryMetric({ helper, label, tone = 'default', value }) {
 function PrioritiesSection({ items, scopeLabel }) {
   const list = items ?? []
   return (
-    <section className="page-card diagnostic-priorities" id="diagnostic-priorities">
+    <section className="page-card diagnostic-priorities">
       <header className="diagnostic-priorities__header">
         <div className="diagnostic-priorities__header-text">
           <span>Ordem de atenção · {scopeLabel}</span>

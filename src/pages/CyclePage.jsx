@@ -278,11 +278,6 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
               ) : null}
             </div>
 
-            <div className="meta-grid-header">
-              <span>{filteredGroupItems.length} {cycleCopy.gridCountLabel}</span>
-              <p>{selectedMunicipio} · {title}</p>
-            </div>
-
             {filteredGroupItems.length === 0 ? (
               <div className="meta-grid-empty">
                 <p>Nenhum indicador disponível para este município neste tema.</p>
