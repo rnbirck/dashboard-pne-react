@@ -34,7 +34,7 @@ export function FinancialIndicatorCard({ buttonRef, indicator, isSelected = fals
     description: indicator.cardDescription ?? indicator.description,
     footer: {
       primary: indicator.unitLabel ?? 'Indicador',
-      secondary: indicator.sourceLabel,
+      secondary: null,
     },
     sparklineSeries: indicator.series,
     status: {
@@ -83,9 +83,60 @@ export function FinancialDetailNavigation({
       onNext={onNext}
       onPrevious={onPrevious}
       previousItem={previousIndicator}
+      showBack={!isBottom}
       total={total}
     />
   )
+}
+
+export function FinancialSectionHeader({ actions = null, description, eyebrow, meta, title, titleId, className = '' }) {
+  return (
+    <div className={`pne-overview-section__heading financial-section-heading${className ? ` ${className}` : ''}`}>
+      <span className="eyebrow">{eyebrow}</span>
+      <div className="financial-section-heading__title-row">
+        <h2 id={titleId}>{title}</h2>
+        {meta || actions ? (
+          <div className="financial-section-heading__tools">
+            {meta ? <span className="financial-section-heading__meta">{meta}</span> : null}
+            {actions ? <div className="financial-section-heading__actions">{actions}</div> : null}
+          </div>
+        ) : null}
+      </div>
+      {description ? <p>{description}</p> : null}
+    </div>
+  )
+}
+
+export function FinancialSection({
+  actions,
+  children,
+  className = '',
+  description,
+  eyebrow,
+  meta,
+  title,
+  titleId,
+}) {
+  return (
+    <section
+      aria-labelledby={titleId}
+      className={`page-card pne-overview-section financial-section${className ? ` ${className}` : ''}`}
+    >
+      <FinancialSectionHeader
+        actions={actions}
+        description={description}
+        eyebrow={eyebrow}
+        meta={meta}
+        title={title}
+        titleId={titleId}
+      />
+      {children}
+    </section>
+  )
+}
+
+export function FinancialMetricStrip({ children, className = '' }) {
+  return <div className={`education-summary-grid financial-summary-grid${className ? ` ${className}` : ''}`}>{children}</div>
 }
 
 export function FinancialDetailHeader({ indicator }) {

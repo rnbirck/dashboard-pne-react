@@ -472,6 +472,117 @@
     line-height: var(--line-height-tight);
   }
 
+  .platform-entry-card {
+    width: 100%;
+    min-width: 0;
+    min-height: 224px;
+    padding: var(--space-5);
+    border: var(--border-default);
+    border-radius: var(--radius-lg);
+    background: var(--surface-card);
+    box-shadow: var(--shadow-sm);
+    color: var(--text);
+    cursor: pointer;
+    display: grid;
+    align-content: start;
+    gap: var(--space-3);
+    text-align: left;
+    text-decoration: none;
+    transition: border-color var(--duration-normal) var(--ease-out), background-color var(--duration-normal) var(--ease-out), transform var(--duration-normal) var(--ease-out);
+  }
+
+  .platform-entry-card:hover {
+    border-color: var(--border-strong);
+    background: var(--surface-warm);
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-1px);
+  }
+
+  .platform-entry-card:focus-visible {
+    border-color: var(--green-primary);
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 3px;
+    box-shadow: var(--focus-ring);
+  }
+
+  .platform-entry-card__icon,
+  .platform-entry-card__indicator {
+    width: fit-content;
+    min-height: 42px;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    background: var(--green-soft);
+    color: var(--green-deep);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-snug);
+  }
+
+  .platform-entry-card__icon {
+    width: 42px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .platform-entry-card__icon svg {
+    width: 21px;
+    height: 21px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+  }
+
+  .platform-entry-card__indicator > span {
+    width: 25px;
+    height: 7px;
+    border-radius: var(--radius-pill);
+    background: linear-gradient(90deg, var(--green-primary) 0 62%, rgba(62, 122, 94, 0.22) 62% 100%);
+  }
+
+  .platform-entry-card__title {
+    max-width: 22ch;
+    color: var(--text-strong);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-snug);
+    text-wrap: balance;
+  }
+
+  .platform-entry-card__description {
+    max-width: var(--content-reading-max);
+    margin: 0;
+    color: var(--text-body);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-normal);
+    text-wrap: pretty;
+  }
+
+  .platform-entry-card__footer {
+    min-width: 0;
+    margin-top: auto;
+    color: var(--text-body);
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-normal);
+  }
+
+  .platform-entry-card__footer > span:first-child {
+    min-width: 0;
+    flex: 1 1 auto;
+    text-wrap: pretty;
+  }
+
+  .platform-entry-card .interaction-chevron {
+    color: var(--green-deep);
+  }
+
   .home-entry-grid,
   .foundation-stat-grid {
     display: grid;

@@ -9,6 +9,8 @@ import {
   FinancialDetailHeader,
   FinancialDetailNavigation,
   FinancialIndicatorCard,
+  FinancialSection,
+  FinancialMetricStrip,
   FinancialMetricGrid,
   FinancialQuickReading,
 } from './FinancialIndicatorPrimitives'
@@ -478,49 +480,75 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
 
   return (
     <div className="siope-panel">
-      <section className="page-card siope-info-box" aria-labelledby="siope-title">
-        <div className="siope-info-box__header">
-          <span className="eyebrow">SIOPE / FNDE</span>
-          <h2 id="siope-title">Financiamento e Execução dos Recursos da Educação</h2>
+      <section className="page-card siope-info-box financial-technical-note" aria-labelledby="siope-title">
+        <div className="financial-technical-note__content">
+          <span className="eyebrow">Leitura técnica do SIOPE</span>
+          <h2 id="siope-title">Base de dados e metodologia</h2>
           <p>{SIOPE_SECTION_SUBTITLE}</p>
-          <DataSourceNote source={SIOPE_SOURCE} />
-          <MethodNote className="data-source-note">
-            <strong className="data-source-note__label">Nota metodológica:</strong>{' '}
-            <span className="data-source-note__text">{SIOPE_METHODOLOGY}</span>
-          </MethodNote>
-        </div>
-      </section>
-
-      <section className="page-card education-summary-section fundeb-summary siope-summary">
-        <div className="education-summary-header fundeb-summary__heading">
-          <h2 className="education-summary-title">Visão geral</h2>
-          <small className="education-summary-note">
-            Valores mais recentes disponíveis para {model.municipality.municipio}.
-          </small>
-        </div>
-        {municipalityMissing2025 ? (
-          <p className="siope-municipality-note">{MUNICIPALITY_2025_MISSING_NOTE}</p>
-        ) : null}
-        <div className="education-summary-grid siope-summary-grid">
-          {summaryCards.map((card) => (
-            <SiopeSummaryCard card={card} key={card.indicator.slug} />
-          ))}
-        </div>
-      </section>
-
-      <section className="page-card siope-group-selector">
-        <div className="cycle-category-bar">
-          <span className="eyebrow">Eixos de análise</span>
-          <div className="cycle-category-bar__controls">
-            <CategoryTabs
-              ariaLabel="Eixos de análise dos recursos da educação"
-              categories={model.groups}
-              selectedCategory={activeGroupKey}
-              onSelectCategory={handleGroupSelect}
-            />
+          <div className="financial-technical-note__meta">
+            <DataSourceNote source={SIOPE_SOURCE} />
+            <MethodNote className="data-source-note">
+              <strong className="data-source-note__label">Nota metodológica:</strong>{' '}
+              <span className="data-source-note__text">{SIOPE_METHODOLOGY}</span>
+            </MethodNote>
           </div>
         </div>
       </section>
+
+      <FinancialSection
+        className="fundeb-summary siope-summary financial-metric-strip"
+        eyebrow="Resumo financeiro"
+        meta={`Valores mais recentes disponíveis para ${model.municipality.municipio}.`}
+        title="Visão geral"
+        titleId="siope-summary-title"
+      >
+        {municipalityMissing2025 ? (
+          <p className="siope-municipality-note">{MUNICIPALITY_2025_MISSING_NOTE}</p>
+        ) : null}
+        <FinancialMetricStrip className="siope-summary-grid">
+          {summaryCards.map((card) => (
+            <SiopeSummaryCard card={card} key={card.indicator.slug} />
+          ))}
+        </FinancialMetricStrip>
+      </FinancialSection>
+
+      <FinancialSection
+        className="financial-indicator-section financial-axis-section"
+        eyebrow="Seção de indicadores"
+        meta={`${activeIndicators.length} indicadores`}
+        title="Eixos de análise"
+        titleId="siope-axis-title"
+      >
+          <div className="financial-axis-tabs">
+            <CategoryTabs
+            ariaLabel="Eixos de análise dos recursos da educação"
+            categories={model.groups}
+            selectedCategory={activeGroupKey}
+            onSelectCategory={handleGroupSelect}
+          />
+        </div>
+        <div className="financial-axis-context">
+          <span>{activeGroup?.label ?? 'Eixo de análise'}</span>
+          <span>{model.municipality.municipio}</span>
+        </div>
+        {!isDetailOpen ? (
+          indicatorModels.length ? (
+            <div className="financial-indicator-card-grid">
+              {indicatorModels.map((indicator) => (
+                <FinancialIndicatorCard
+                  buttonRef={(node) => detailNavigation.registerCard(indicator.key, node)}
+                  indicator={indicator}
+                  isSelected={isDetailOpen && indicator.key === selectedIndicatorKey}
+                  key={indicator.key}
+                  onSelect={() => handleIndicatorSelect(indicator.key)}
+                />
+              ))}
+            </div>
+          ) : (
+            <SiopeEmpty>Nenhum indicador disponível neste eixo.</SiopeEmpty>
+          )
+        ) : null}
+      </FinancialSection>
 
       {isDetailOpen && selectedIndicatorModel && selectedIndicator ? (
         <div className="financial-detail-view education-detail-view" ref={detailNavigation.detailViewRef}>
@@ -556,7 +584,7 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
             >
               {validSeries.length >= 2 ? (
                 <IndicatorHistoryChart
-                  chartHeight={340}
+                  chartHeight={validSeries.length <= 5 ? 300 : 320}
                   endYear={2025}
                   formatDataLabel={(value) => formatCompactDataLabel(value, selectedIndicator.unidade)}
                   formatYAxis={selectedIndicator.unidade === 'reais' ? formatCompactCurrency : undefined}
@@ -620,29 +648,7 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
             total={indicatorModels.length}
           />
         </div>
-      ) : (
-        <section className="financial-indicator-grid-shell">
-          <div className="meta-grid-header education-indicator-grid-header">
-            <span>{indicatorModels.length} indicadores</span>
-            <p>{activeGroup?.label ?? 'Eixo de análise'} · {model.municipality.municipio}</p>
-          </div>
-          {indicatorModels.length ? (
-            <div className="financial-indicator-card-grid">
-              {indicatorModels.map((indicator) => (
-                <FinancialIndicatorCard
-                  buttonRef={(node) => detailNavigation.registerCard(indicator.key, node)}
-                  indicator={indicator}
-                  isSelected={isDetailOpen && indicator.key === selectedIndicatorKey}
-                  key={indicator.key}
-                  onSelect={() => handleIndicatorSelect(indicator.key)}
-                />
-              ))}
-            </div>
-          ) : (
-            <SiopeEmpty>Nenhum indicador disponível neste eixo.</SiopeEmpty>
-          )}
-        </section>
-      )}
+      ) : null}
     </div>
   )
 }

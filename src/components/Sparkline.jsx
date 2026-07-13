@@ -14,25 +14,25 @@ export function Sparkline({
 
   if (!sparkline) {
     return (
-      <span className={`${classNames.root} ${classNames.empty}`}>
+      <span className={`${classNames.root} ${classNames.empty} indicator-card-shell__sparkline indicator-card-shell__sparkline--empty`}>
         Histórico não disponível.
       </span>
     )
   }
 
   return (
-    <span className={classNames.root} aria-hidden="true">
+    <span className={`${classNames.root} indicator-card-shell__sparkline`} aria-hidden="true">
       <svg viewBox={`0 0 ${width} ${height}`}>
-        <path className={classNames.area} d={sparkline.areaPath} />
-        <path className={classNames.line} d={sparkline.linePath} />
+        <path className={`${classNames.area} indicator-card-shell__sparkline-area`} d={sparkline.areaPath} />
+        <path className={`${classNames.line} indicator-card-shell__sparkline-line`} d={sparkline.linePath} />
         <circle
-          className={classNames.end}
+          className={`${classNames.end} indicator-card-shell__sparkline-end`}
           cx={sparkline.lastPoint.x}
           cy={sparkline.lastPoint.y}
           r={pointRadius}
         />
       </svg>
-      <span className={classNames.period}>
+      <span className={`${classNames.period} indicator-card-shell__sparkline-period`}>
         {sparkline.firstYear}–{sparkline.lastYear}
       </span>
     </span>

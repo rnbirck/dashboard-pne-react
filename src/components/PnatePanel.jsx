@@ -4,19 +4,20 @@ import { PNATE_INDICATORS, formatPnateValue } from '../data/pnateIndicators'
 import { getFinancialIndicatorMetadata } from '../data/financialIndicatorMetadata'
 import { DataSourceNote } from './DataSourceNote'
 import { FinancialIndicatorMetadata } from './FinancialIndicatorMetadata'
-import { MethodNote } from './MethodNote'
 import { ContentState } from './ContentState'
 import { IndicatorHistoryChart } from '../components/IndicatorHistoryChart'
 import { ChartEmptyState } from './ChartPrimitives'
 import { EducationSummaryCard } from './EducationSummaryCard'
+import { SearchField } from './SearchField'
 import {
   FinancialChartFrame,
   FinancialDetailHeader,
   FinancialDetailNavigation,
   FinancialIndicatorCard,
+  FinancialSection,
+  FinancialMetricStrip,
   FinancialMetricGrid,
   FinancialQuickReading,
-  FinancialReferenceBox,
   FinancialSupportData,
 } from './FinancialIndicatorPrimitives'
 
@@ -265,7 +266,7 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
 
   return (
     <div className="fundeb-panel-embedded">
-      <section className="page-card fundeb-info-box" aria-labelledby="pnate-info-title">
+      <section className="page-card fundeb-info-box financial-intro-panel" aria-labelledby="pnate-info-title">
         <div className="fundeb-info-box__header">
           <h2 id="pnate-info-title">O que é o PNATE</h2>
           <p>
@@ -289,24 +290,27 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
         </div>
       </section>
 
-      <section className="page-card education-summary-section fundeb-summary">
-        <div className="education-summary-header fundeb-summary__heading">
-          <h2 className="education-summary-title">Visão geral</h2>
-          <small className="education-summary-note">
-            Município em foco: {selectedMunicipio}. Dados do ano de referência: {ultimo_ano}.
-          </small>
-        </div>
-        <div className="education-summary-grid fundeb-summary-grid">
+      <FinancialSection
+        className="fundeb-summary financial-metric-strip"
+        eyebrow="Resumo financeiro"
+        meta={`Município em foco: ${selectedMunicipio}. Dados do ano de referência: ${ultimo_ano}.`}
+        title="Visão geral"
+        titleId="pnate-summary-title"
+      >
+        <FinancialMetricStrip className="pnate-summary-grid">
           <EducationSummaryCard label="Repasse total" value={formatPnateValue(resumo_ultimo_ano?.repasse_total, 'financeiro')} year={ultimo_ano} valueSize="compact" />
           <EducationSummaryCard label="Repasse autorizado após desconto" value={formatPnateValue(resumo_ultimo_ano?.repasse_autorizado_apos_desconto, 'financeiro')} year={ultimo_ano} valueSize="compact" />
           <EducationSummaryCard label="Estudantes atendidos" value={formatPnateValue(resumo_ultimo_ano?.total_alunos, 'numero')} year={ultimo_ano} />
           <EducationSummaryCard label="Valor per capita" value={formatPnateValue(resumo_ultimo_ano?.resultado_per_capita, 'financeiro')} year={ultimo_ano} />
           <EducationSummaryCard label="Redes consideradas" value={`${formatPnateValue(resumo_ultimo_ano?.total_alunos_rede_municipal, 'numero')} mun. / ${formatPnateValue(resumo_ultimo_ano?.total_alunos_rede_estadual, 'numero')} est.`} year={ultimo_ano} valueSize="compact" />
-        </div>
-      </section>
+        </FinancialMetricStrip>
+      </FinancialSection>
 
       {avisos.length > 0 && (
-        <MethodNote className="fundeb-indicator-note"><strong>Nota metodológica:</strong> {avisos[0]}</MethodNote>
+        <aside className="financial-methodology-note" aria-label="Nota metodológica do PNATE">
+          <span className="eyebrow">Nota metodológica</span>
+          <p>{avisos[0]}</p>
+        </aside>
       )}
 
       {isDetailOpen && selectedIndicatorModel ? (
@@ -322,7 +326,6 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
           />
           <section className="detail-panel educacao-detail-panel financial-detail-panel fundeb-detail pnate-detail">
             <FinancialDetailHeader indicator={selectedIndicatorModel} />
-            <FinancialReferenceBox>{selectedIndicatorModel.description}</FinancialReferenceBox>
             <FinancialMetricGrid indicator={selectedIndicatorModel} />
             <FinancialQuickReading text={selectedIndicatorModel.quickReading} tone={selectedIndicatorModel.statusTone} />
             <FinancialIndicatorMetadata metadata={getFinancialIndicatorMetadata('pnate', selectedIndicatorModel.key)} />
@@ -344,7 +347,7 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
             >
               {validSeries.length >= 2 ? (
                 <IndicatorHistoryChart
-                  chartHeight={340}
+                  chartHeight={validSeries.length <= 5 ? 300 : 320}
                   endYear={series[series.length - 1].ano}
                   formatDataLabel={(v) => formatCompactDataLabel(v, selectedIndicator.tipo)}
                   formatYAxis={selectedIndicator.tipo === 'numero' ? formatCompactNumber : formatCompactCurrency}
@@ -445,29 +448,26 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
           />
         </div>
       ) : (
-      <section className="financial-indicator-section fundeb-workspace financial-grid-workspace">
-        <div className="fundeb-workspace-layout educacao-analysis-layout">
-          <aside className="indicator-sidebar">
-            <div className="indicator-sidebar__heading">
-              <h3>Indicadores</h3>
-              <span>{PNATE_INDICATORS.length}</span>
-            </div>
-            <label className="indicator-search">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="11" cy="11" r="6.5" />
-                <path d="m16 16 4 4" />
-              </svg>
-              <input
-                type="search"
-                value={searchQuery}
+      <FinancialSection
+        className="financial-indicator-section fundeb-workspace financial-grid-workspace"
+        eyebrow="Seção de indicadores"
+        meta={`${indicatorModels.length} indicadores`}
+        title="Indicadores do PNATE"
+        titleId="pnate-indicators-title"
+      >
+            <div className="financial-indicator-filters financial-indicator-filters--single">
+              <SearchField
+                ariaLabel="Buscar indicador"
+                className="platform-search-field"
                 onChange={(event) => setSearchQuery(event.target.value)}
+                onClear={() => setSearchQuery('')}
                 placeholder="Buscar indicador..."
-                aria-label="Buscar indicador"
+                value={searchQuery}
               />
-            </label>
+            </div>
             <div className="indicator-list financial-indicator-card-grid">
               {indicatorModels.length === 0 ? (
-                <div className="indicator-sidebar__empty">
+                <div className="financial-indicator-grid-empty">
                   <ContentState as="p" kind="noResults">Nenhum indicador encontrado.</ContentState>
                 </div>
               ) : (
@@ -482,7 +482,6 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
                 ))
               )}
             </div>
-          </aside>
 
           <div className="fundeb-detail fundeb-detail--legacy">
             <div className="fundeb-detail-header">
@@ -501,7 +500,7 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
                 {validSeries.length >= 2 && (
                   <div className="fundeb-chart-card">
                     <IndicatorHistoryChart
-                      chartHeight={340}
+                      chartHeight={validSeries.length <= 5 ? 300 : 320}
                       endYear={series[series.length - 1].ano}
                       formatDataLabel={(v) => formatCompactDataLabel(v, selectedIndicator.tipo)}
                       formatYAxis={selectedIndicator.tipo === 'numero' ? formatCompactNumber : formatCompactCurrency}
@@ -594,8 +593,7 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
               </p>
             )}
           </div>
-        </div>
-      </section>
+      </FinancialSection>
       )}
     </div>
   )

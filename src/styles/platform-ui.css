@@ -308,6 +308,29 @@
     box-shadow: inset 0 0 0 1px rgba(62, 122, 94, 0.1);
   }
 
+  .content-area .platform-category-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .content-area .platform-category-tabs .category-tab {
+    min-height: var(--control-height);
+    padding: 9px var(--space-3);
+    border-radius: var(--control-radius);
+    background: var(--control-surface-muted);
+  }
+
+  .content-area .platform-category-tabs .category-tab:hover {
+    background: var(--control-surface);
+  }
+
+  .content-area .platform-category-tabs .category-tab.is-active,
+  .content-area .platform-category-tabs .category-tab[aria-pressed="true"] {
+    border-color: var(--control-border-selected);
+    background: var(--control-surface-selected);
+  }
+
   .content-area .platform-filter-option :where(.category-tab__count, .diagnostic-theme-filter__count) {
     min-width: 24px;
     height: 24px;
@@ -374,6 +397,21 @@
     color: var(--control-text-selected);
     box-shadow: var(--shadow-sm);
     font-weight: var(--font-weight-semibold);
+  }
+
+  .content-area .platform-segmented-control--scrollable {
+    min-width: 0;
+    height: 46px;
+    min-height: 46px;
+    align-items: center;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .content-area .platform-segmented-control--scrollable .platform-segmented-option {
+    flex: 0 0 auto;
+    white-space: nowrap;
   }
 
   /* Tabs */
@@ -614,6 +652,294 @@
     text-transform: none;
   }
 
+  /* Shared shell used by Education and Finance indicator cards. */
+  .content-area .indicator-card-shell {
+    --indicator-status-color: var(--status-muted-line);
+    min-width: 0;
+    min-height: 304px;
+    width: 100%;
+    padding: var(--space-5);
+    border: var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--surface-card);
+    color: var(--text);
+    cursor: pointer;
+    display: grid;
+    grid-template-rows: auto minmax(44px, auto) minmax(48px, auto) auto auto 52px auto;
+    gap: var(--space-3);
+    text-align: left;
+    box-shadow: none;
+    transition:
+      border-color var(--duration-fast) var(--ease-out),
+      background-color var(--duration-fast) var(--ease-out),
+      transform var(--duration-fast) var(--ease-out);
+  }
+
+  .content-area .indicator-card-shell--success {
+    --indicator-status-color: var(--status-ok-line);
+  }
+
+  .content-area .indicator-card-shell--warning {
+    --indicator-status-color: var(--status-warn-line);
+  }
+
+  .content-area .indicator-card-shell--info,
+  .content-area .indicator-card-shell--muted,
+  .content-area .indicator-card-shell--default {
+    --indicator-status-color: var(--status-muted-line);
+  }
+
+  .content-area .indicator-card-shell:hover {
+    border-color: var(--border-strong);
+    background: var(--surface-warm);
+    box-shadow: none;
+    transform: translateY(-1px);
+  }
+
+  .content-area .indicator-card-shell:focus-visible {
+    border-color: var(--control-border-selected);
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 3px;
+    box-shadow: var(--focus-ring);
+  }
+
+  .content-area .indicator-card-shell.is-selected,
+  .content-area .indicator-card-shell[aria-pressed="true"] {
+    border-color: var(--control-border-selected);
+    background: var(--surface-card);
+    box-shadow: inset 0 0 0 1px var(--border-focus);
+    transform: none;
+  }
+
+  .content-area .indicator-card-shell__topline,
+  .content-area .indicator-card-shell__value-row,
+  .content-area .indicator-card-shell__support,
+  .content-area .indicator-card-shell__footer {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .content-area .indicator-card-shell__topline {
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  .content-area .indicator-card-shell__context {
+    min-width: 0;
+    color: var(--green-deep);
+    overflow: hidden;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.01em;
+    line-height: var(--line-height-snug);
+    text-overflow: ellipsis;
+    text-transform: none;
+    white-space: nowrap;
+  }
+
+  .content-area .indicator-card-shell .status-badge {
+    min-height: 26px;
+    padding: 4px var(--space-2);
+    border: var(--border-default);
+    border-radius: var(--radius-pill);
+    background: var(--surface-muted);
+    color: var(--text-secondary);
+    flex: 0 0 auto;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-snug);
+  }
+
+  .content-area .indicator-card-shell__title {
+    min-width: 0;
+    margin: 0;
+    color: var(--text-strong);
+    display: block;
+    overflow: visible;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-snug);
+    text-wrap: balance;
+  }
+
+  .content-area .indicator-card-shell__description {
+    min-width: 0;
+    color: var(--text-secondary);
+    display: block;
+    overflow: visible;
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-normal);
+    text-wrap: pretty;
+  }
+
+  .content-area .indicator-card-shell__value-row {
+    align-items: baseline;
+    gap: var(--space-2);
+    padding-top: var(--space-2);
+    border-top: var(--border-divider);
+  }
+
+  .content-area .indicator-card-shell__value-row strong {
+    min-width: 0;
+    color: var(--text-strong);
+    font-family: var(--font-sans);
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-semibold);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    overflow-wrap: anywhere;
+  }
+
+  .content-area .indicator-card-shell__value-row span {
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-normal);
+    white-space: nowrap;
+  }
+
+  .content-area .indicator-card-shell__support {
+    justify-content: space-between;
+    gap: var(--space-3);
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-normal);
+  }
+
+  .content-area .indicator-card-shell__support strong {
+    color: var(--indicator-status-color);
+    font-weight: var(--font-weight-semibold);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .content-area .indicator-card-shell__sparkline {
+    position: relative;
+    min-width: 0;
+    height: 52px;
+    padding-top: var(--space-2);
+    border-top: var(--border-divider);
+    color: var(--indicator-status-color);
+    display: block;
+  }
+
+  .content-area .indicator-card-shell__sparkline svg {
+    width: 100%;
+    height: 34px;
+    display: block;
+  }
+
+  .content-area .indicator-card-shell__sparkline-line {
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2.25;
+  }
+
+  .content-area .indicator-card-shell__sparkline-area {
+    fill: currentColor;
+    opacity: 0.08;
+  }
+
+  .content-area .indicator-card-shell__sparkline-end {
+    fill: var(--surface-card);
+    stroke: currentColor;
+    stroke-width: 2;
+  }
+
+  .content-area .indicator-card-shell__sparkline-period {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    line-height: 1;
+  }
+
+  .content-area .indicator-card-shell__sparkline--empty {
+    min-height: 52px;
+    padding: var(--space-2);
+    border: var(--border-width) dashed var(--border-card);
+    border-radius: var(--radius-sm);
+    background: var(--surface-soft);
+    color: var(--text-subtle);
+    display: grid;
+    place-items: center;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    text-align: center;
+  }
+
+  .content-area .indicator-card-shell__footer {
+    display: grid;
+    grid-template-columns: minmax(0, max-content) minmax(0, max-content) 28px;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: auto;
+  }
+
+  .content-area .indicator-card-shell__footer > span:not(.interaction-chevron) {
+    min-width: 0;
+    max-width: 100%;
+    min-height: 26px;
+    padding: 4px var(--space-2);
+    border-radius: var(--radius-pill);
+    background: var(--surface-muted);
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    overflow: hidden;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-snug);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .content-area .indicator-card-shell .interaction-chevron {
+    grid-column: 3;
+    width: 28px;
+    height: 28px;
+    margin-left: auto;
+    border: var(--border-default);
+    border-radius: var(--radius-pill);
+    background: var(--surface-card);
+    color: var(--green-deep);
+  }
+
+  .content-area .platform-info-card {
+    min-width: 0;
+    padding: var(--space-5);
+    border: var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--surface-card);
+    color: var(--text);
+    box-shadow: none;
+  }
+
+  .content-area .pne-expandable {
+    min-width: 0;
+    border: var(--border-default);
+    border-radius: var(--radius-sm);
+    background: var(--surface-card);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .content-area .pne-expandable > summary {
+    min-height: 72px;
+    padding: 15px var(--space-4);
+  }
+
+  .content-area .pne-expandable > summary:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: -2px;
+  }
+
   .content-area :where(
     .platform-filter-option,
     .platform-segmented-option,
@@ -656,6 +982,19 @@
     flex-wrap: nowrap;
     padding-bottom: var(--space-1);
     overflow-x: auto;
+  }
+
+  .content-area .platform-category-tabs,
+  .content-area .platform-segmented-control--scrollable {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: var(--space-1);
+    scrollbar-width: thin;
+  }
+
+  .content-area .platform-category-tabs .category-tab,
+  .content-area .platform-segmented-control--scrollable .platform-segmented-option {
+    flex: 0 0 auto;
   }
 }
 

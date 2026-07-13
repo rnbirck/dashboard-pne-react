@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { EditorialExpandableGrid } from '../components/EditorialExpandableGrid'
 import { ErrorState } from '../components/ErrorState'
+import { FinancialSectionHeader } from '../components/FinancialIndicatorPrimitives'
+import { NavigationEntryCard } from '../components/NavigationEntryCard'
 import { FundebPanel } from '../components/FundebPanel'
 import { LoadingState } from '../components/LoadingState'
 import { PageHeadingText } from '../components/HeadingText'
@@ -104,11 +106,10 @@ function FinancialOverviewPage() {
       <FinancialCompactModuleSelector activePageKey={FINANCIAL_PAGE_KEYS.overview} />
 
       <section className="pne-overview-section financial-editorial-section" aria-labelledby="financial-resources-title">
-        <FinancialEditorialHeading eyebrow={resources.eyebrow} title={resources.title} description={resources.description} titleId="financial-resources-title" />
+        <FinancialSectionHeader eyebrow={resources.eyebrow} title={resources.title} description={resources.description} titleId="financial-resources-title" />
         <div className="pne-concept-grid financial-numbered-grid">
-          {resources.cards.map((card, index) => (
+          {resources.cards.map((card) => (
             <article className="pne-concept-card financial-numbered-card" key={card.title}>
-              <span className="pne-concept-card__index">{String(index + 1).padStart(2, '0')}</span>
               <h3>{card.title}</h3>
               <p>{card.body}</p>
             </article>
@@ -117,27 +118,24 @@ function FinancialOverviewPage() {
       </section>
 
       <section className="pne-overview-section pne-overview-entries financial-editorial-section" aria-labelledby="financial-dashboard-title">
-        <FinancialEditorialHeading eyebrow={dashboard.eyebrow} title={dashboard.title} description={dashboard.description} titleId="financial-dashboard-title" />
+        <FinancialSectionHeader eyebrow={dashboard.eyebrow} title={dashboard.title} description={dashboard.description} titleId="financial-dashboard-title" />
         <div className="pne-entry-grid financial-module-entry-grid">
           {FINANCIAL_MODULES.map((module) => (
-            <a className="pne-entry-card interaction-card--navigation" href={`#${module.pageKey}`} key={module.key}>
-              <span className="pne-entry-card__indicator">
-                <span aria-hidden="true" />
-                {module.count}
-              </span>
-              <span className="pne-entry-card__title">{module.title}</span>
-              <p>{module.description}</p>
-              <span className="pne-entry-card__footer">
-                <strong>{dashboard.actionLabel}</strong>
-                <span aria-hidden="true" className="interaction-chevron interaction-chevron--navigation">→</span>
-              </span>
-            </a>
+            <NavigationEntryCard
+              ariaLabel={`Abrir ${module.title}`}
+              bodyText={module.description}
+              footerText={dashboard.actionLabel}
+              href={`#${module.pageKey}`}
+              indicator={module.count}
+              key={module.key}
+              title={module.title}
+            />
           ))}
         </div>
       </section>
 
       <section className="page-card pne-overview-section pne-overview-section--guided financial-editorial-section" aria-labelledby="financial-concepts-title">
-        <FinancialEditorialHeading eyebrow={concepts.eyebrow} title={concepts.title} description={concepts.description} titleId="financial-concepts-title" />
+        <FinancialSectionHeader eyebrow={concepts.eyebrow} title={concepts.title} description={concepts.description} titleId="financial-concepts-title" />
         <EditorialExpandableGrid items={concepts.items} />
       </section>
 
@@ -158,19 +156,9 @@ function FinancialOverviewPage() {
   )
 }
 
-function FinancialEditorialHeading({ description, eyebrow, title, titleId }) {
-  return (
-    <div className="pne-overview-section__heading">
-      <span className="eyebrow">{eyebrow}</span>
-      <h2 id={titleId}>{title}</h2>
-      <p>{description}</p>
-    </div>
-  )
-}
-
 function FinancialPageHeader({ module, selectedMunicipio }) {
   return (
-    <section className="page-card financial-hero financial-hero--module">
+    <section className={`page-card financial-hero financial-hero--module financial-hero--${module.panel}`}>
       <div className="financial-hero__content">
         <PageHeadingText
           description={module.description}

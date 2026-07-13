@@ -10,16 +10,19 @@ export function DetailNavigation({
   onNext,
   onPrevious,
   previousItem,
+  showBack = true,
   total,
 }) {
   return (
     <div
       className={`cycle-detail-nav detail-navigation platform-detail-navigation${isBottom ? ' cycle-detail-nav--bottom detail-navigation--bottom' : ''}${className ? ` ${className}` : ''}`}
     >
-      <button className="cycle-back-button platform-navigation-button" type="button" onClick={onBack}>
-        <span aria-hidden="true">&larr;</span>
-        Voltar aos indicadores
-      </button>
+      {showBack ? (
+        <button className="cycle-back-button platform-navigation-button" type="button" onClick={onBack}>
+          <span aria-hidden="true">&larr;</span>
+          Voltar aos indicadores
+        </button>
+      ) : null}
       <div
         className="cycle-detail-nav__sequence platform-detail-navigation__sequence"
         aria-label={`Navegar entre ${itemPlural} filtrados`}

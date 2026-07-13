@@ -1,6 +1,6 @@
 export function CategoryTabs({ categories, selectedCategory, onSelectCategory, ariaLabel = 'Categorias' }) {
   return (
-    <div className="category-tabs platform-filter-list" role="group" aria-label={ariaLabel}>
+    <div className="category-tabs platform-category-tabs platform-filter-list" role="group" aria-label={ariaLabel}>
       {categories.map((category) => {
         const visibleLabel = category.shortLabel ?? category.label
         const hasFullLabel = Boolean(category.shortLabel && category.shortLabel !== category.label)

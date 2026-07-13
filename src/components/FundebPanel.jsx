@@ -9,15 +9,17 @@ import { ContentState } from './ContentState'
 import { IndicatorHistoryChart } from '../components/IndicatorHistoryChart'
 import { ChartEmptyState } from './ChartPrimitives'
 import { EducationSummaryCard } from './EducationSummaryCard'
+import { SearchField } from './SearchField'
 import { SegmentedControl } from './SegmentedControl'
 import {
   FinancialChartFrame,
   FinancialDetailHeader,
   FinancialDetailNavigation,
   FinancialIndicatorCard,
+  FinancialSection,
+  FinancialMetricStrip,
   FinancialMetricGrid,
   FinancialQuickReading,
-  FinancialReferenceBox,
   FinancialSupportData,
 } from './FinancialIndicatorPrimitives'
 
@@ -362,12 +364,12 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
           <div>
             <span className="eyebrow">FUNDEB</span>
             <h1>Fundo de Manutenção e Desenvolvimento da Educação Básica</h1>
-            <p>Município em foco: <strong style={{ color: 'var(--text-strong)' }}>{selectedMunicipio}</strong></p>
+            <p>Município em foco: <strong>{selectedMunicipio}</strong></p>
           </div>
         </section>
       )}
 
-      <section className="page-card fundeb-info-box" aria-labelledby="fundeb-info-title">
+      <section className="page-card fundeb-info-box financial-intro-panel" aria-labelledby="fundeb-info-title">
         <div className="fundeb-info-box__header">
           <h2 id="fundeb-info-title">O que é o FUNDEB</h2>
           <p>
@@ -391,19 +393,18 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
         </div>
       </section>
 
-      <section className="page-card education-summary-section fundeb-summary">
-        <div className="education-summary-header fundeb-summary__heading">
-          <h2 className="education-summary-title">Visão geral</h2>
-          {Number.isInteger(ultimo_ano) && ultimo_ano < 2025 && (
-            <small className="education-summary-note fundeb-summary__note">
-              Último dado disponível: {ultimo_ano}
-            </small>
-          )}
-          {Number.isInteger(ultimo_ano) && ultimo_ano >= 2025 && (
-            <small className="education-summary-note">Dados financeiros do ano de referência: {ultimo_ano}.</small>
-          )}
-        </div>
-        <div className="education-summary-grid fundeb-summary-grid">
+      <FinancialSection
+        className="fundeb-summary financial-metric-strip"
+        eyebrow="Resumo financeiro"
+        meta={Number.isInteger(ultimo_ano)
+          ? ultimo_ano < 2025
+            ? `Último dado disponível: ${ultimo_ano}`
+            : `Dados financeiros do ano de referência: ${ultimo_ano}.`
+          : null}
+        title="Visão geral"
+        titleId="fundeb-summary-title"
+      >
+        <FinancialMetricStrip className="fundeb-summary-grid">
           <EducationSummaryCard
             accessibleValue={formatFundebValue(resumo_ultimo_ano?.receitas, 'financeiro')}
             label="Receitas do FUNDEB"
@@ -432,8 +433,8 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
             value={formatFundebCompactValue(ultimoRegistro?.disponibilidade_financeira_ate_bimestre, 'financeiro')}
             valueSize="compact"
           />
-        </div>
-      </section>
+        </FinancialMetricStrip>
+      </FinancialSection>
 
       {isDetailOpen && selectedIndicatorModel ? (
         <div className="financial-detail-view education-detail-view" ref={detailNavigation.detailViewRef}>
@@ -448,7 +449,6 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
           />
           <section className="detail-panel educacao-detail-panel financial-detail-panel fundeb-detail">
             <FinancialDetailHeader indicator={selectedIndicatorModel} />
-            <FinancialReferenceBox>{selectedIndicatorModel.description}</FinancialReferenceBox>
             <FinancialMetricGrid indicator={selectedIndicatorModel} />
             <FinancialQuickReading text={selectedIndicatorModel.quickReading} tone={selectedIndicatorModel.statusTone} />
             <FinancialIndicatorMetadata metadata={getFinancialIndicatorMetadata('fundeb', selectedIndicatorModel.key)} />
@@ -474,7 +474,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
             >
               {validSeries.length >= 2 ? (
                 <IndicatorHistoryChart
-                  chartHeight={340}
+                  chartHeight={validSeries.length <= 5 ? 300 : 320}
                   endYear={series[series.length - 1].ano}
                   formatDataLabel={chartUnit === 'currency' ? (v) => formatCompactDataLabel(v, 'financeiro') : (v) => formatCompactDataLabel(v, 'percentual')}
                   formatYAxis={chartUnit === 'currency' ? formatCompactCurrency : undefined}
@@ -571,39 +571,34 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
           />
         </div>
       ) : (
-      <section className="financial-indicator-section fundeb-workspace financial-grid-workspace">
-        <div className="fundeb-workspace-layout educacao-analysis-layout">
-            <aside className="indicator-sidebar">
-              <div className="indicator-sidebar__heading">
-                <h3>Indicadores</h3>
-                <span>{indicatorModels.length}</span>
-              </div>
+      <FinancialSection
+        className="financial-indicator-section fundeb-workspace financial-grid-workspace"
+        eyebrow="Seção de indicadores"
+        meta={`${indicatorModels.length} indicadores`}
+        title="Indicadores do FUNDEB"
+        titleId="fundeb-indicators-title"
+      >
               <div className="financial-indicator-filters">
-                <label className="indicator-search">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <circle cx="11" cy="11" r="6.5" />
-                    <path d="m16 16 4 4" />
-                  </svg>
-                  <input
-                    type="search"
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="Buscar indicador"
-                    aria-label="Buscar indicador"
-                  />
-                </label>
+                <SearchField
+                  ariaLabel="Buscar indicador"
+                  className="platform-search-field"
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  onClear={() => setSearchQuery('')}
+                  placeholder="Buscar indicador"
+                  value={searchQuery}
+                />
                 <SegmentedControl
                   ariaLabel="Filtrar indicadores do FUNDEB por grupo"
-                  className="financial-indicator-segmented-control"
+                  className="platform-segmented-control platform-segmented-control--scrollable"
                   onSelect={setSelectedGroup}
-                  optionClassName="financial-indicator-segmented-control__option"
+                  optionClassName="platform-segmented-option"
                   options={FUNDEB_FILTER_OPTIONS}
                   selectedKey={selectedGroup}
                 />
               </div>
               <div className="indicator-list financial-indicator-card-grid">
                 {indicatorModels.length === 0 ? (
-                  <div className="indicator-sidebar__empty">
+                  <div className="financial-indicator-grid-empty">
                     <ContentState as="p" kind="noResults">Nenhum indicador encontrado.</ContentState>
                   </div>
                 ) : (
@@ -618,7 +613,6 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
                   ))
                 )}
               </div>
-            </aside>
 
           <div className="fundeb-detail fundeb-detail--legacy">
             <div className="fundeb-detail-header">
@@ -647,7 +641,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
                 {validSeries.length >= 2 && (
                 <div className="fundeb-chart-card">
                   <IndicatorHistoryChart
-                    chartHeight={340}
+                    chartHeight={validSeries.length <= 5 ? 300 : 320}
                     endYear={series[series.length - 1].ano}
                     formatDataLabel={chartUnit === 'currency' ? (v) => formatCompactDataLabel(v, 'financeiro') : (v) => formatCompactDataLabel(v, 'percentual')}
                     formatYAxis={chartUnit === 'currency' ? formatCompactCurrency : undefined}
@@ -736,8 +730,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
               </div>
             )}
           </div>
-        </div>
-      </section>
+      </FinancialSection>
       )}
     </div>
   )

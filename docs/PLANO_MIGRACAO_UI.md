@@ -125,6 +125,48 @@ A Home foi aproximada da composição da página “O que é o PNE” com a seç
 - gráficos e títulos: `Sparkline`, `ChartPrimitives`, `IndicatorChartHeader`, `FinancialChartFrame`, `PageHeadingText` e `DetailHeadingText`;
 - tabelas: `EducationTable`, captions semânticos e regiões roláveis nomeadas e focáveis.
 
+### Revisão sistêmica da família Financeiro (2026-07-12)
+
+Implementada uma rodada própria de refinamento visual e estrutural para Visão geral, SIOPE, FUNDEB, PNATE, VAAR, grades de indicadores, detalhes e estados vazios. A iniciativa não reabre UI-01 a UI-18 e não altera dados, JSONs, cálculos, filtros, regras de negócio, rotas ou textos analíticos.
+
+- `FinancialSectionHeader` e `FinancialMetricStrip` consolidam cabeçalhos editoriais e faixas de resumo; `financial-pages.css` concentra tokens, ritmo, superfícies, cards, controles, detalhes e responsividade da família financeira.
+- FUNDEB e PNATE compartilham busca com limpeza e foco restaurado; suas faixas de resumo ocupam a largura útil e usam o mesmo grid responsivo. SIOPE transforma o bloco duplicado em nota técnica compacta, mantendo fonte e metodologia.
+- Cards financeiros preservam os view-models atuais, mas estabilizam título, descrição, valor, ano, variação, sparkline e rodapé. A navegação inferior do detalhe mantém somente anterior/próximo; o retorno permanece na toolbar superior.
+- VAAR preserva a composição de resultado própria, com síntese e quatro métricas dimensionadas como uma unidade; componentes, pontos de atenção e accordions adotam o mesmo ritmo de superfícies.
+- Evidência: `npm run test:e2e`, `npm run test:visual`, `npm run lint`, `npm run build` e `git diff --check` passaram. Os 22 baselines visuais foram atualizados deliberadamente após a revisão.
+
+### Segunda rodada de refinamento da família Financeiro (2026-07-12)
+
+Esta rodada preservou a arquitetura, os view-models, dados, cálculos, filtros, rotas, textos analíticos e comportamento funcional da família financeira. O foco foi proporção, densidade, alinhamento, wrapping, leitura responsiva e equilíbrio entre visão geral e detalhe.
+
+- A visão geral passou a usar o hero em uma única coluna útil, sem reserva vazia; os acordeões editoriais ficaram mais curtos e os blocos mantêm o ritmo de 24 px entre seções e 16 px entre relações.
+- FUNDEB, PNATE e SIOPE usam 3 colunas no desktop, 2 no notebook e 1 no celular; PNATE alterna para 3+2 no intermediário. O SIOPE mantém 4 métricas equilibradas e o eixo horizontal rola dentro do seletor em 390 px, sem overflow do documento.
+- O SIOPE passou a limitar o título móvel a três linhas sem reduzir a escala tipográfica; os rodapés dos cards reservam a seta, mantêm chips em uma linha e alinham valor/ano na mesma base.
+- VAAR distribui a atenção em 3+2 cards quando a largura não comporta cinco; os accordions de detalhe foram reduzidos para uma faixa de aproximadamente 56–58 px fechada.
+- Detalhes FUNDEB e PNATE removem a caixa de referência redundante; gráficos passam a respeitar séries curtas/longas (~300/320 px) e tabelas de até 12 anos ficam abertas, sem scroll interno.
+- Evidência visual manual: 1366×768, 1280×720, 1024×768 e 390×844, incluindo visão geral, os quatro módulos, três detalhes, título longo, grade intermediária, eixo SIOPE, foco e overflow. Validação final: `npm run lint`, `npm run build`, `npm run test:e2e`, `npm run update:visual`, `npm run test:visual` (22 regiões, tolerância de 0,2%) e `git diff --check` passaram. `npm run check:units` continua bloqueado pelas 67 inconsistências `MISSING_VM` preexistentes do PNE.
+
+### Terceira rodada de convergência da família Financeiro (2026-07-12)
+
+Esta rodada comparou as quatro páginas de referência do painel com Visão geral, SIOPE, FUNDEB, PNATE e VAAR em 1366×768 antes da alteração. O escopo preservou dados, JSONs, cálculos, filtros, rotas, textos analíticos e regras de negócio.
+
+- `FinancialSection` e `FinancialSectionHeader` passaram a concentrar identificação, título, contexto/quantidade, ações e conteúdo na mesma superfície branca. Visão geral, indicadores, eixos, VAAR, histórico, contexto e estados relacionados seguem o mesmo ritmo de seção.
+- SIOPE, FUNDEB e PNATE deixaram de separar visualmente título, resumo, busca e grade; a navegação por eixo do SIOPE permanece dentro da seção. O título hero do SIOPE cabe em duas linhas no desktop sem reduzir a escala tipográfica.
+- FUNDEB e PNATE usam a mesma composição de indicadores e o mesmo espaçamento de grade; PNATE mantém cinco métricas em 5 colunas no desktop e 3+2 no intermediário. A nota metodológica do PNATE usa tratamento neutro/editorial, sem aparência de status.
+- VAAR adota o cabeçalho compartilhado nas seções de introdução, resultado, explicação, atenção e histórico, reduzindo painéis independentes sem alterar a leitura específica do módulo.
+- A revisão responsiva confirmou 3→2→1 colunas, eixos roláveis internamente no celular, foco visível, contraste, textos longos e ausência de overflow do documento. As referências visuais foram atualizadas somente depois da comparação: `npm run update:visual` e `npm run test:visual` passaram em 22 regiões, com tolerância de 0,2%.
+
+### Quarta rodada de convergência visual da família Financeiro (2026-07-12)
+
+Esta rodada fechou a equivalência visual entre Financeiro e as referências PNE 2026, Educação e Home sem alterar dados, JSONs, cálculos, filtros, rotas, fontes ou conteúdo analítico.
+
+- A anatomia de indicadores financeiros passou a ser compartilhada por `ExplorableIndicatorCardFrame`/`indicator-card-shell`, com a mesma tipografia, badge, valor/ano/variação, sparkline, rodapé de um chip e chevron circular de Educação; `MetaCard` permanece a exceção semântica do PNE por carregar meta legal, progresso e leitura específica.
+- SIOPE usa `CategoryTabs`/`platform-category-tabs`; FUNDEB usa `SegmentedControl` rolável internamente; FUNDEB e PNATE usam `SearchField`; estados e chevrons usam `StatusBadge` e `InteractionChevron`. As grades financeiras ficam em 3→2→1 colunas em 1280/1024/390 px, reservando quatro colunas apenas para larguras realmente amplas.
+- Acesso da Home e módulos financeiros usam `NavigationEntryCard`, mantendo a distribuição própria de três/quatro acessos sem duplicar shell, foco, ícone, descrição, contador e rodapé. `FinancialSection`/`FinancialSectionHeader` continuam como base dos cabeçalhos, contadores, busca e divisores.
+- VAAR reutiliza `MetricCard`, `StatusBadge`, `platform-info-card` e o padrão de acordeão `pne-expandable`; as grades de explicação, atenção, histórico e anos preservam seus dados e sua semântica de domínio.
+- Foram removidos de `financial-pages.css` os blocos duplicados de anatomia de card, segmented control, seletor de eixo, busca, grid-shell, cabeçalho e sidebar. Permanecem somente exceções de composição, conteúdo e visualização específicas de cada módulo.
+- Evidência comparativa em 1366×768: `scripts/checks/visual-comparisons/round4/` contém os seis pares solicitados — PNE×SIOPE, Educação×FUNDEB, Educação×PNATE, seletor PNE×SIOPE, seletor PNE×FUNDEB e acesso Home×Financeiro — revisados antes da atualização das referências visuais.
+
 ### Áreas migradas
 
 Home e shell, ciclos PNE 2014–2024 e PNE 2026–2036, metas legais, Educação, Diagnóstico, FUNDEB, PNATE, SIOPE, VAAR e Sistema S foram cobertos conforme os lotes aprovados. A migração preservou APIs públicas sempre que possível e manteve dados, cálculos, filtros, textos analíticos e regras de negócio fora do escopo visual.

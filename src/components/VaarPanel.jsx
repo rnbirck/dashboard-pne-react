@@ -1,5 +1,8 @@
 import { isMissing } from '../utils/educationFormatters'
 import { ContentState } from './ContentState'
+import { FinancialSection } from './FinancialIndicatorPrimitives'
+import { MetricCard } from './MetricCard'
+import { StatusBadge } from './StatusBadge'
 
 const EM = '\u2014'
 
@@ -283,12 +286,6 @@ function getLatestRow(rows, year) {
   return rows.find((row) => Number(row.ano_fundeb) === Number(year)) ?? rows.at(-1) ?? {}
 }
 
-function getStatusTone(value) {
-  if (value === true || value === 'Recebeu') return 'positive'
-  if (value === false || value === 'Não recebeu') return 'attention'
-  return 'neutral'
-}
-
 function buildAttentionCards(summary, learningRow, attendanceRow, year) {
   const cards = []
 
@@ -419,16 +416,20 @@ function FieldLabel({ field }) {
 }
 
 function VaarStatusPill({ value }) {
-  return <span className={`vaar-status-chip is-${getStatusTone(value)}`}>{formatReceived(value)}</span>
+  const tone = value === true ? 'success' : value === false ? 'warning' : 'default'
+  return <StatusBadge className="vaar-status-badge" displayStatus={formatReceived(value)} status={formatReceived(value)} tone={tone} />
 }
 
 function VaarResultMetric({ label, value, note }) {
+  return <MetricCard detail={note} label={label} value={value} />
+}
+
+function VaarAccordionSummary({ children }) {
   return (
-    <article className="vaar-result-metric">
-      <span>{label}</span>
-      <strong>{value}</strong>
-      {note ? <small>{note}</small> : null}
-    </article>
+    <>
+      <span className="pne-expandable__summary"><span>{children}</span></span>
+      <span className="pne-expandable__marker" aria-hidden="true" />
+    </>
   )
 }
 
@@ -440,23 +441,22 @@ function VaarWhatIs() {
   ]
 
   return (
-    <section className="page-card vaar-intro vaar-what-is" aria-labelledby="vaar-what-is-title">
-      <div className="vaar-what-is__header">
-        <span className="eyebrow">Complementação VAAR</span>
-        <h2 id="vaar-what-is-title">O que é o VAAR</h2>
-        <p>
-          VAAR é uma complementação da União ao Fundeb voltada a redes públicas que cumprem condicionalidades de gestão e apresentam evolução em indicadores educacionais. Em 2026, a complementação mínima da União ao FUNDEB é de 23% do total dos fundos. A sigla se refere ao Valor Aluno Ano Resultado, uma parcela vinculada a resultados de atendimento e aprendizagem.
-        </p>
-      </div>
+    <FinancialSection
+      className="vaar-intro vaar-what-is financial-intro-panel financial-intro-panel--vaar"
+      description="VAAR é uma complementação da União ao Fundeb voltada a redes públicas que cumprem condicionalidades de gestão e apresentam evolução em indicadores educacionais. Em 2026, a complementação mínima da União ao FUNDEB é de 23% do total dos fundos. A sigla se refere ao Valor Aluno Ano Resultado, uma parcela vinculada a resultados de atendimento e aprendizagem."
+      eyebrow="Complementação VAAR"
+      title="O que é o VAAR"
+      titleId="vaar-what-is-title"
+    >
       <div className="vaar-what-is__cards" aria-label="Pontos-chave do VAAR">
         {keyPoints.map(([title, text]) => (
-          <article className="vaar-what-is-card" key={title}>
+          <article className="platform-info-card vaar-what-is-card" key={title}>
             <strong>{title}</strong>
             <p>{text}</p>
           </article>
         ))}
       </div>
-    </section>
+    </FinancialSection>
   )
 }
 
@@ -481,15 +481,14 @@ function VaarResult2026({ summary, lastYear }) {
   const componentCount = getComponentCount(summary)
   const situation = buildSituationText(summary, lastYear ?? EM)
   return (
-    <section className="page-card vaar-executive-result" aria-labelledby="vaar-result-title">
-      <div className="vaar-executive-result__header">
-        <div>
-          <span className="eyebrow">Exercício financeiro</span>
-          <h2 id="vaar-result-title">Resultado VAAR {lastYear ?? EM}</h2>
-          <p>Síntese do recebimento da complementação VAAR no exercício.</p>
-        </div>
-        <span className="vaar-component-count">{componentCount} de 2 componentes</span>
-      </div>
+    <FinancialSection
+      className="vaar-executive-result"
+      description="Síntese do recebimento da complementação VAAR no exercício."
+      eyebrow="Exercício financeiro"
+      meta={<span className="vaar-component-count">{componentCount} de 2 componentes</span>}
+      title={`Resultado VAAR ${lastYear ?? EM}`}
+      titleId="vaar-result-title"
+    >
       <p className="vaar-executive-result__reading">{buildResultText(summary, lastYear ?? EM)}</p>
       <p className="vaar-executive-result__rule">
         O recebimento depende primeiro da habilitação nas condicionalidades e depois da regra de evolução em cada componente.
@@ -500,29 +499,28 @@ function VaarResult2026({ summary, lastYear }) {
           <strong>{situation}</strong>
           <small>Síntese administrativa do exercício financeiro.</small>
         </article>
-        <div className="vaar-result-metrics">
+        <div className="vaar-result-metrics metric-grid metric-grid--four">
           <VaarResultMetric label="Habilitação" value={formatBoolean(summary.habilitado_condicionalidades)} note="Condicionalidades" />
           <VaarResultMetric label="Aprendizagem com Equidade" value={formatReceived(summary.recebe_aprendizagem)} note="Componente" />
           <VaarResultMetric label="Atendimento" value={formatReceived(summary.recebe_atendimento)} note="Componente" />
           <VaarResultMetric label="Coeficiente de distribuição total" value={formatMetric(summary.coeficiente_total)} note="Distribuição" />
         </div>
       </div>
-    </section>
+    </FinancialSection>
   )
 }
 
 function VaarExplanation2026({ summary, learningRow, attendanceRow, lastYear }) {
   return (
-    <section className="page-card vaar-section" aria-labelledby="vaar-explain-title">
-      <div className="vaar-section__heading">
-        <div>
-          <span className="eyebrow">Componentes do resultado</span>
-          <h3 id="vaar-explain-title">O que explica o resultado de {lastYear ?? EM}</h3>
-        </div>
-        <p>Os dois componentes representam Aprendizagem com Equidade e Atendimento.</p>
-      </div>
+    <FinancialSection
+      className="vaar-section"
+      description="Os dois componentes representam Aprendizagem com Equidade e Atendimento."
+      eyebrow="Componentes do resultado"
+      title={`O que explica o resultado de ${lastYear ?? EM}`}
+      titleId="vaar-explain-title"
+    >
       <div className="vaar-explain-grid">
-        <article className="vaar-component-card">
+        <article className="platform-info-card vaar-component-card">
           <div className="vaar-component-card__header">
             <h4>Aprendizagem com Equidade</h4>
             <VaarStatusPill value={summary.recebe_aprendizagem} />
@@ -530,7 +528,7 @@ function VaarExplanation2026({ summary, learningRow, attendanceRow, lastYear }) 
           <p>Combina aprendizagem, avanço, aprovação, participação no Saeb e equidade em uma leitura composta.</p>
           <MetricList row={learningRow} metrics={LEARNING_EXPLANATION_METRICS} />
         </article>
-        <article className="vaar-component-card">
+        <article className="platform-info-card vaar-component-card">
           <div className="vaar-component-card__header">
             <h4>Atendimento</h4>
             <VaarStatusPill value={summary.recebe_atendimento} />
@@ -545,23 +543,22 @@ function VaarExplanation2026({ summary, learningRow, attendanceRow, lastYear }) 
           {hasText(summary.motivo_atendimento) ? <small><strong>Atendimento:</strong> {summary.motivo_atendimento}</small> : null}
         </div>
       ) : null}
-    </section>
+    </FinancialSection>
   )
 }
 
 function VaarAttention({ cards }) {
   return (
-    <section className="page-card vaar-section" aria-labelledby="vaar-attention-title">
-      <div className="vaar-section__heading">
-        <div>
-          <span className="eyebrow">Pontos de atenção</span>
-          <h3 id="vaar-attention-title">Pontos de atenção do município</h3>
-        </div>
-        <p>Leituras geradas somente com dados do próprio município.</p>
-      </div>
+    <FinancialSection
+      className="vaar-section"
+      description="Leituras geradas somente com dados do próprio município."
+      eyebrow="Pontos de atenção"
+      title="Pontos de atenção do município"
+      titleId="vaar-attention-title"
+    >
       <div className="vaar-attention-grid">
         {cards.map((card) => (
-          <article className="vaar-insight-card" key={`${card.title}-${card.text}`}>
+          <article className="platform-info-card vaar-insight-card" key={`${card.title}-${card.text}`}>
             <strong>{card.title}</strong>
             <p>{card.text}</p>
             <dl className="vaar-insight-values">
@@ -575,7 +572,7 @@ function VaarAttention({ cards }) {
           </article>
         ))}
       </div>
-    </section>
+    </FinancialSection>
   )
 }
 
@@ -583,25 +580,24 @@ function VaarHistory({ history, lastYear }) {
   if (!history.length) return null
   const orderedHistory = [...history].sort((a, b) => Number(b.ano_fundeb) - Number(a.ano_fundeb))
   return (
-    <section className="page-card vaar-section" aria-labelledby="vaar-history-title">
-      <div className="vaar-section__heading">
-        <div>
-          <span className="eyebrow">Histórico</span>
-          <h3 id="vaar-history-title">Histórico de recebimento VAAR</h3>
-        </div>
-        <p>Anos anteriores ajudam a consultar o histórico do município.</p>
-      </div>
+    <FinancialSection
+      className="vaar-section"
+      description="Anos anteriores ajudam a consultar o histórico do município."
+      eyebrow="Histórico"
+      title="Histórico de recebimento VAAR"
+      titleId="vaar-history-title"
+    >
       <p className="vaar-subtle-note">2023 e 2024 seguem regras anteriores e aparecem como histórico de recebimento.</p>
       <div className="vaar-history-grid">
         {orderedHistory.map((row) => {
           const isLatest = Number(row.ano_fundeb) === Number(lastYear)
           const isHistorical = Number(row.ano_fundeb) <= 2024
           return (
-            <article className={`vaar-history-card${isLatest ? ' is-latest' : ''}`} key={row.ano_fundeb}>
+            <article className={`platform-info-card vaar-history-card${isLatest ? ' is-latest' : ''}`} key={row.ano_fundeb}>
               <div className="vaar-history-card__top">
                 <strong>{row.ano_fundeb ?? EM}</strong>
-                {isLatest ? <span className="vaar-latest-chip">mais recente</span> : null}
-                {!isLatest && isHistorical ? <span className="vaar-history-chip">histórico</span> : null}
+                {isLatest ? <StatusBadge status="Mais recente" tone="info" /> : null}
+                {!isLatest && isHistorical ? <StatusBadge status="Histórico" tone="default" /> : null}
               </div>
               <dl>
                 <div>
@@ -623,18 +619,18 @@ function VaarHistory({ history, lastYear }) {
           )
         })}
       </div>
-    </section>
+    </FinancialSection>
   )
 }
 
 function TechnicalDetails({ title, rows, metrics, emptyText }) {
   return (
-    <details className="page-card vaar-detail-toggle vaar-technical-details">
-      <summary>{title}</summary>
+    <details className="page-card pne-expandable vaar-detail-toggle vaar-technical-details">
+      <summary><VaarAccordionSummary>{title}</VaarAccordionSummary></summary>
       {rows.length ? (
         <div className="vaar-year-grid">
           {rows.map((row) => (
-            <article className="vaar-year-card" key={row.ano_fundeb}>
+              <article className="platform-info-card vaar-year-card" key={row.ano_fundeb}>
               <div className="vaar-year-card__header">
                 <span>Exercício financeiro</span>
                 <strong>{row.ano_fundeb ?? EM}</strong>
@@ -653,12 +649,12 @@ function TechnicalDetails({ title, rows, metrics, emptyText }) {
 function VaarHistoricalDetails({ rows, availableYears }) {
   const missingYears = [2023, 2024].filter((year) => !availableYears.includes(year))
   return (
-    <details className="page-card vaar-detail-toggle vaar-technical-details">
-      <summary>Consultar dados históricos de 2023/2024</summary>
+    <details className="page-card pne-expandable vaar-detail-toggle vaar-technical-details">
+      <summary><VaarAccordionSummary>Consultar dados históricos de 2023/2024</VaarAccordionSummary></summary>
       {rows.length ? (
         <div className="vaar-year-grid">
           {rows.map((row) => (
-            <article className="vaar-year-card" key={row.ano_fundeb}>
+            <article className="platform-info-card vaar-year-card" key={row.ano_fundeb}>
               <div className="vaar-year-card__header">
                 <span>Exercício financeiro</span>
                 <strong>{row.ano_fundeb ?? EM}</strong>
@@ -680,11 +676,11 @@ function VaarHistoricalDetails({ rows, availableYears }) {
 
 function VaarGlossary() {
   return (
-    <details className="page-card vaar-detail-toggle vaar-technical-details">
-      <summary>Glossário e metodologia</summary>
+    <details className="page-card pne-expandable vaar-detail-toggle vaar-technical-details">
+      <summary><VaarAccordionSummary>Glossário e metodologia</VaarAccordionSummary></summary>
       <div className="vaar-glossary">
         {GLOSSARY_ITEMS.map(([title, text]) => (
-          <article className="vaar-glossary-card" key={title}>
+          <article className="platform-info-card vaar-glossary-card" key={title}>
             <strong>{title}</strong>
             <p>{text}</p>
           </article>

@@ -1,4 +1,4 @@
-import { InteractionChevron } from '../components/InteractionChevron'
+import { NavigationEntryCard } from '../components/NavigationEntryCard'
 import { SourceLine } from '../components/SourceLine'
 import { StatCard } from '../components/StatCard'
 
@@ -97,22 +97,14 @@ export function Home({ onNavigate, selectedMunicipio }) {
           {ENTRY_CARDS.map((card) => {
             const Icon = card.icon
             return (
-              <button
+              <NavigationEntryCard
                 aria-label={`Abrir ${card.title}`}
-                className="home-entry-card interaction-card--navigation"
+                footerText={card.detail}
+                icon={Icon}
                 key={card.key}
-                type="button"
                 onClick={() => onNavigate?.(card.key)}
-              >
-                <span className="home-entry-card__icon" aria-hidden="true">
-                  <Icon />
-                </span>
-                <strong>{card.title}</strong>
-                <span className="home-entry-card__footer">
-                  <span>{card.detail}</span>
-                  <InteractionChevron className="interaction-chevron--navigation" />
-                </span>
-              </button>
+                title={card.title}
+              />
             )
           })}
         </div>
