@@ -157,17 +157,23 @@ escolas_integral AS (
         GROUP BY 1, 2
     ) e
 ),
-eja_integrada_educacao_profissional AS (
+eja_integrada_educacao_profissional_percentual AS (
     SELECT
         e.ano,
         m.municipio,
-        'eja_integrada_educacao_profissional' AS indicador,
-        AVG(e.percentual_eja_integrada_educacao_profissional::double precision) AS valor
+        'eja_integrada_educacao_profissional_percentual' AS indicador,
+        100.0 * (
+            e.mat_eja_curso_tecnico_integrada
+            + e.mat_eja_fic_integrado_fundamental
+            + e.mat_eja_fic_integrado_medio
+        ) / NULLIF(
+            e.mat_eja_fundamental_total + e.mat_eja_medio_total,
+            0
+        )::double precision AS valor
     FROM eja_integrada_educacao_profissional e
     JOIN municipios_base m
       ON m.id_municipio = e.id_municipio::text
     WHERE e.ano BETWEEN 2014 AND 2024
-    GROUP BY 1, 2, 3
 ),
 medio_tecnico AS (
     SELECT
@@ -401,7 +407,7 @@ SELECT ano, municipio, indicador, valor
 FROM escolas_integral
 UNION ALL
 SELECT ano, municipio, indicador, valor
-FROM eja_integrada_educacao_profissional
+FROM eja_integrada_educacao_profissional_percentual
 UNION ALL
 SELECT ano, municipio, indicador, valor
 FROM medio_tecnico

@@ -46,6 +46,36 @@ const NAVIGATION_STEPS = [
   },
 ]
 
+const CONTEXT_BULLETS = [
+  'Leitura territorial do município.',
+  'Papel da rede municipal na educação básica.',
+  'Apoio à gestão com base em evidências.',
+  'Organização do acompanhamento educacional.',
+]
+
+const HOME_GUIDANCE_STEPS = [
+  {
+    detail: 'Use o seletor da barra superior para definir o território.',
+    number: '01',
+    title: 'Selecione o município',
+  },
+  {
+    detail: 'Acesse o PNE, a educação ou o financiamento.',
+    number: '02',
+    title: 'Escolha uma frente de análise',
+  },
+  {
+    detail: 'Use filtros e painéis para aprofundar a leitura.',
+    number: '03',
+    title: 'Explore os dados',
+  },
+  {
+    detail: 'Verifique períodos, conceitos e fontes oficiais.',
+    number: '04',
+    title: 'Consulte fontes e metodologia',
+  },
+]
+
 const ORIENTATION_CARDS = [
   {
     detail: 'Metas, indicadores e financiamento aparecem em uma leitura comum do território selecionado.',
@@ -76,14 +106,29 @@ export function Home({ onNavigate, selectedMunicipio }) {
           </p>
         </div>
 
-        <aside className="home-context-card" aria-label="Contexto operacional do município">
-          <span className="home-context-card__label">Contexto operacional</span>
+        <aside className="home-context-card" aria-label="Contexto municipal">
+          <span className="home-context-card__label">Contexto municipal</span>
           <strong>{municipioLabel}</strong>
-          <p>
-            {selectedMunicipio
-              ? 'Use o seletor acima para trocar o território analisado em todas as páginas do painel.'
-              : 'Selecione um município na barra de contexto para consultar os dados municipais.'}
-          </p>
+          <ul className="home-context-card__list">
+            {CONTEXT_BULLETS.map((bullet) => (
+              <li key={bullet}>{bullet}</li>
+            ))}
+          </ul>
+        </aside>
+
+        <aside className="home-guidance-card" aria-label="Como usar o painel">
+          <span className="home-context-card__label">Como usar o painel</span>
+          <ol className="home-guidance-list">
+            {HOME_GUIDANCE_STEPS.map((step) => (
+              <li className="home-guidance-step" key={step.number}>
+                <span className="home-guidance-step__number" aria-hidden="true">{step.number}</span>
+                <div>
+                  <strong>{step.title}</strong>
+                  <p>{step.detail}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
         </aside>
       </section>
 

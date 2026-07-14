@@ -163,6 +163,10 @@ def load_aggregate_payloads() -> dict[str, dict]:
     payloads["pnate"] = load_optional_json(
         SOURCE_DIR / "pnate_por_municipio.json"
     )
+    for cycle in CYCLES:
+        payloads[f"{cycle}_state_reference"] = load_optional_json(
+            SOURCE_DIR / cycle / "referencia_estadual.json"
+        )
     payloads["projecoes"] = load_optional_json(
         SOURCE_DIR / "pne_2026_2036" / "projecoes_por_municipio.json"
     )
@@ -401,6 +405,15 @@ def main() -> int:
         stats,
         expected_paths,
     )
+    for cycle in CYCLES:
+        state_reference_path = SOURCE_DIR / cycle / "referencia_estadual.json"
+        if state_reference_path.exists():
+            copy_file_if_changed(
+                state_reference_path,
+                OUTPUT_DIR / cycle / "referencia_estadual.json",
+                stats,
+                expected_paths,
+            )
 
     generated_at = resolve_generated_at(payloads)
     index_items = [

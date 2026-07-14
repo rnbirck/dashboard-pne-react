@@ -35,6 +35,7 @@ from src.data_loader import (
 from src.views.pne_shared import (
     GOAL_AT_LEAST,
     GOAL_AT_MOST,
+    _build_eja_integrada_percentual_result,
     _build_ratio_result,
     _build_result,
     _build_value_result,
@@ -455,21 +456,9 @@ def _calc_escolas_integral(municipio):
 
 
 def _calc_eja_integrada_educacao_profissional(municipio):
-    precomputed = _build_precomputed_result(
-        municipio,
-        "eja_integrada_educacao_profissional",
-        meta=META_EJA_INTEGRADA_EPT,
-        meta_label="Meta PNE 2024",
-        target_start_year=2014,
-        target_end_year=2024,
-    )
-    if precomputed is not None:
-        return precomputed
-
-    return _build_value_result(
+    return _build_eja_integrada_percentual_result(
         load_eja_integrada_educacao_profissional_data,
         municipio,
-        value_column="percentual_eja_integrada_educacao_profissional",
         meta=META_EJA_INTEGRADA_EPT,
         meta_label="Meta PNE 2024",
         target_start_year=2014,
@@ -534,6 +523,7 @@ def _calc_medio_tecnico_participacao_publica(municipio):
         yearly.dropna(
             subset=["mat_ept_nivel_medio_total", "mat_ept_nivel_medio_publica"]
         )
+        .loc[lambda frame: frame["ano"] <= TARGET_END_YEAR]
         .sort_values("ano")
         .reset_index(drop=True)
     )
@@ -1016,12 +1006,14 @@ INDICADORES = {
                 "compute": _calc_escolas_integral,
             },
             {
-                "key": "eja_integrada_educacao_profissional",
-                "label": "Matrículas do EJA integradas à educação profissional",
+                "key": "eja_integrada_educacao_profissional_percentual",
+                "label": "Percentual das matrículas da EJA articuladas à educação profissional",
                 "sub": "",
-                "desc": "Percentual de matrículas do EJA na forma integrada à educação profissional no município.",
+                "desc": "Percentual das matrículas da EJA articuladas à educação profissional no município.",
                 "meta_label": "Meta PNE 2024",
                 "compute": _calc_eja_integrada_educacao_profissional,
+                "tracks_goal": True,
+                "value_mode": "percent",
             },
             {
                 "key": "medio_tecnico_total",
@@ -1212,7 +1204,7 @@ INDICADORES["atendimento"]["items"] = [
         "basico_15_17",
         "basico_integral",
         "escolas_integral",
-        "eja_integrada_educacao_profissional",
+        "eja_integrada_educacao_profissional_percentual",
         "medio_tecnico_total",
         "medio_tecnico_participacao_publica",
         "medio_tecnico",

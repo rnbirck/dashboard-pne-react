@@ -58,6 +58,10 @@ export function loadIndicatorDetail(slug, indicatorKey) {
   return loadMunicipioDetails(slug).then((details) => details?.[indicatorKey] ?? null)
 }
 
+export function loadPneStateReference(cycle = 'pne_2026_2036') {
+  return loadJson(`/data/${cycle}/referencia_estadual.json`)
+}
+
 export function primeMunicipioCache(slug, data) {
   if (!slug) return
   dataCache.set(`/data/municipios/${slug}/index.json`, data)

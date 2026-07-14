@@ -160,7 +160,11 @@ Esta rodada comparou as quatro páginas de referência do painel com Visão gera
 
 Esta rodada fechou a equivalência visual entre Financeiro e as referências PNE 2026, Educação e Home sem alterar dados, JSONs, cálculos, filtros, rotas, fontes ou conteúdo analítico.
 
-- A anatomia de indicadores financeiros passou a ser compartilhada por `ExplorableIndicatorCardFrame`/`indicator-card-shell`, com a mesma tipografia, badge, valor/ano/variação, sparkline, rodapé de um chip e chevron circular de Educação; `MetaCard` permanece a exceção semântica do PNE por carregar meta legal, progresso e leitura específica.
+- A anatomia de indicadores financeiros passou a ser compartilhada por `ExplorableIndicatorCardFrame`/`indicator-card-shell`, com a mesma tipografia, badge, composição horizontal de valor e Ano/Variação, faixa Leitura/Período, rodapé de um chip e chevron simples de Educação; sparklines e botões circulares foram removidos destes cards. `MetaCard` permanece a exceção semântica do PNE por carregar meta legal, progresso e leitura específica.
+- Os cards das cinco páginas de Indicadores de Educação foram refinados para a gramática institucional neutra: superfície clara, borda e sombra discretas, verde único para hierarquia, direção restrita ao badge/variação e bloco `Leitura / Período` em superfície quente sem contorno decorativo.
+- A densidade dos cards de Educação foi alinhada à família dos cards de ciclo do PNE: escala tipográfica 12/16/32, espaçamento-base de 8 px, bloco informativo compacto e rodapé com divisor, chip e chevron de 24 px.
+- A calibração final fixa a medida comparável em 324 px para PNE, Educação e Financeiro no desktop/notebook e usa mínimo comum de 364 px no mobile. O valor principal retorna à mesma faixa vertical dos cards PNE; badges e variações passam a aplicar corretamente verde-azulado, areia e terracota conforme Alta, Estável e Queda.
+- Nos cards de Educação e Financiamento, o destaque principal foi alinhado à esquerda dentro da coluna de 60%, com recuo interno adicional de 16 px; divisor, coluna Ano/Variação e composição específica do PNE permanecem intactos.
 - SIOPE usa `CategoryTabs`/`platform-category-tabs`; FUNDEB usa `SegmentedControl` rolável internamente; FUNDEB e PNATE usam `SearchField`; estados e chevrons usam `StatusBadge` e `InteractionChevron`. As grades financeiras ficam em 3→2→1 colunas em 1280/1024/390 px, reservando quatro colunas apenas para larguras realmente amplas.
 - Acesso da Home e módulos financeiros usam `NavigationEntryCard`, mantendo a distribuição própria de três/quatro acessos sem duplicar shell, foco, ícone, descrição, contador e rodapé. `FinancialSection`/`FinancialSectionHeader` continuam como base dos cabeçalhos, contadores, busca e divisores.
 - VAAR reutiliza `MetricCard`, `StatusBadge`, `platform-info-card` e o padrão de acordeão `pne-expandable`; as grades de explicação, atenção, histórico e anos preservam seus dados e sua semântica de domínio.
@@ -281,3 +285,46 @@ A evidência final deve cobrir as 22 regiões visuais, as rotas solicitadas em
 longo, valores grandes, foco e teclado. O aceite é `npm run lint`,
 `npm run build`, `npm run test:e2e`, `npm run update:visual`,
 `npm run test:visual` e `git diff --check`.
+
+## Referência estadual do RS no PNE 2026-2036 (2026-07-13)
+
+O ciclo PNE 2026-2036 passou a carregar `referencia_estadual.json` em paralelo
+ao payload municipal. `MetaCard` mantém o valor municipal e a meta como foco,
+com a leitura secundária `Referência RS` e `Município vs RS` apenas quando há o
+mesmo ano comparável. O bloco reutiliza tokens existentes, mantém foco de
+teclado e não cria uma nova família visual.
+
+O cálculo, o registro metodológico e a auditoria ficam em
+`docs/pne2026_state_reference_methodology.md`; esta mudança de UI é apenas o
+consumidor da referência e não redefine a gramática visual do guia.
+
+## Referência estadual do RS no PNE 2014–2024 (2026-07-13)
+
+O ciclo encerrado passou a carregar um artefato estadual específico, com a
+mesma leitura secundária `Referência RS` / `Município vs RS` dos cards do ciclo
+2026–2036. A comparação usa o ano final efetivamente apresentado pelo
+município; portanto, indicadores censitários anteriores a 2024 não são
+forçados para o último ano do ciclo.
+
+Foram habilitados 10 indicadores com numerador e denominador brutos
+compatíveis; 12 permanecem bloqueados por índice, percentual sem contagens,
+razão de médias ou indicador meramente informativo. O registro, a cobertura,
+os exemplos e os motivos ficam em
+`docs/pne2014_state_reference_methodology.md` e no artefato publicado em
+`public/data/pne_2014_2024/referencia_estadual.json`.
+
+## Legibilidade da meta no detalhe do PNE (2026-07-14)
+
+O valor municipal no acompanhamento da meta passou a usar superfície neutra,
+texto forte e borda canônica, enquanto a linha do marcador preserva o tom de
+status. Nos gráficos do ciclo vigente, o rótulo visual da referência foi
+reduzido de `Referência 2036 {valor}` para `Meta {valor}`; ciclo, ano, série,
+fonte e alternativa textual permanecem disponíveis sem alteração de dados.
+
+## Contexto e leitura rápida em Educação (2026-07-14)
+
+O hero educacional passou a preencher o painel lateral com rótulo contextual,
+município em destaque, seção atual e quantidade de indicadores da seção,
+seguindo a hierarquia editorial de Home e PNE. A leitura rápida deixou de usar
+o ponto de status herdado; título, texto, tom semântico e dados foram
+preservados, com resposta fluida em desktop, notebook, tablet e celular.

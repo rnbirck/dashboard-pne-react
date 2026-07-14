@@ -325,3 +325,376 @@
     line-height: var(--line-height-tight);
   }
 }
+
+/* Referência estadual: leitura secundária, sem competir com o valor municipal. */
+.cycle-page .meta-card__state-reference {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  min-width: 0;
+  margin-top: -1px;
+  padding-top: var(--space-2);
+  border-top: var(--border-divider);
+  color: var(--text-soft);
+  font-size: var(--font-size-2xs);
+  line-height: var(--line-height-snug);
+}
+
+.cycle-page .meta-card__state-reference > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cycle-page .meta-card__state-reference > span + span {
+  text-align: right;
+}
+
+.cycle-page .meta-card__state-reference > span > span {
+  overflow: hidden;
+  color: var(--text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cycle-page .meta-card__state-reference strong {
+  color: var(--status-info-ink);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-semibold);
+}
+
+@media screen and (max-width: 680px) {
+  .cycle-page .meta-card__state-reference {
+    gap: var(--space-2);
+  }
+}
+
+/* PNE detail: keep the current value readable without turning the chart track
+ * into another status surface. The marker line still carries the status tone. */
+.cycle-page .goal-progress__marker em {
+  border: var(--border-default);
+  background: var(--surface-card);
+  color: var(--text-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Ciclos PNE: anatomia compacta do card, sem mini-grafico historico. */
+.cycle-page .meta-card--cycle {
+  min-height: 292px;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  grid-template-rows: none;
+}
+
+.cycle-page .meta-card--cycle .meta-card__topline {
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.cycle-page .meta-card--cycle .meta-card__identifier {
+  color: var(--green-deep);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+}
+
+.cycle-page .meta-card--cycle .meta-card__title {
+  min-height: 54px;
+  margin: 0;
+  color: var(--text-strong);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+  text-wrap: balance;
+  -webkit-line-clamp: 3;
+}
+
+.cycle-page .meta-card--cycle .meta-card__value-row {
+  display: grid;
+  grid-template-columns:
+    minmax(calc(var(--space-16) * 2), 1.2fr)
+    minmax(calc(var(--space-16) - var(--space-2)), 0.75fr)
+    minmax(0, 1.05fr);
+  align-items: end;
+  gap: var(--space-1);
+  min-height: 50px;
+  margin: 0;
+}
+
+.cycle-page .meta-card--cycle.meta-card--has-trend .meta-card__value-row {
+  grid-template-columns: minmax(0, 1.2fr) repeat(3, minmax(0, 0.9fr));
+}
+
+.cycle-page .meta-card--cycle .meta-card__metric {
+  min-width: 0;
+  display: grid;
+  align-content: end;
+  gap: var(--space-1);
+}
+
+.cycle-page .meta-card--cycle .meta-card__metric > span {
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cycle-page .meta-card--cycle .meta-card__metric--target,
+.cycle-page .meta-card--cycle .meta-card__metric--distance,
+.cycle-page .meta-card--cycle .meta-card__metric--trend {
+  text-align: right;
+}
+
+.cycle-page .meta-card--cycle .meta-card__metric strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cycle-page .meta-card--cycle .meta-card__metric--current strong {
+  color: var(--meta-status-color);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
+}
+
+.cycle-page .meta-card--cycle .meta-card__metric--target strong,
+.cycle-page .meta-card--cycle .meta-card__metric--distance strong {
+  font-size: var(--font-size-md);
+}
+
+.cycle-page .meta-card--cycle .meta-card__metric--distance strong {
+  color: var(--meta-status-color);
+}
+
+.cycle-page .meta-card--cycle .meta-card__metric--trend strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  color: var(--text-soft);
+  font-size: var(--font-size-md);
+}
+
+.cycle-page .meta-card--cycle .meta-card__trend-icon {
+  flex: 0 0 auto;
+  color: inherit;
+  font-size: 1.1em;
+  line-height: 1;
+}
+
+.cycle-page .meta-card--cycle .meta-card__trend-value > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cycle-page .meta-card--cycle .meta-card__progress-group {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.cycle-page .meta-card--cycle .meta-card__progress {
+  width: 100%;
+  height: 7px;
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-pill);
+  background: var(--surface-muted);
+  overflow: hidden;
+}
+
+.cycle-page .meta-card--cycle .meta-card__progress > span {
+  display: block;
+  height: 100%;
+  min-width: 5px;
+  max-width: 100%;
+  border-radius: inherit;
+  background: var(--meta-status-color);
+  opacity: 0.86;
+}
+
+.cycle-page .meta-card--cycle .meta-card__no-progress {
+  min-height: 26px;
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.cycle-page .meta-card--cycle .meta-card__state-reference {
+  min-height: 48px;
+  margin-top: 0;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-default);
+  border-color: var(--border-faint);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  color: var(--text-soft);
+  font-size: var(--font-size-2xs);
+}
+
+.cycle-page .meta-card--cycle .meta-card__state-reference > span {
+  gap: var(--space-1);
+}
+
+.cycle-page .meta-card--cycle .meta-card__state-reference > span > span {
+  padding: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+}
+
+.cycle-page .meta-card--cycle .meta-card__state-reference strong {
+  color: var(--text-strong);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.2;
+}
+
+.cycle-page .meta-card--cycle .meta-card__state-reference--positive > span + span strong {
+  color: var(--status-ok-ink);
+}
+
+.cycle-page .meta-card--cycle .meta-card__state-reference--negative > span + span strong {
+  color: var(--status-far-ink);
+}
+
+.cycle-page .meta-card--cycle .meta-card__state-reference--neutral > span + span strong {
+  color: var(--text-soft);
+}
+
+.cycle-page .meta-card--cycle .meta-card__footer {
+  min-height: 24px;
+  margin-top: auto;
+  padding-top: var(--space-2);
+  border-top: var(--border-divider);
+  flex-wrap: nowrap;
+}
+
+.cycle-page .meta-card--cycle .meta-card__footer > span:not(.interaction-chevron) {
+  min-width: 0;
+  max-width: calc(100% - 32px);
+  overflow: hidden;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface-muted);
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-tight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cycle-page .meta-card--cycle .meta-card__footer .interaction-chevron {
+  min-height: 24px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+@media screen and (max-width: 420px) {
+  .cycle-page .meta-card--cycle {
+    min-height: 332px;
+    padding: var(--space-3);
+  }
+
+  .cycle-page .meta-card--cycle .meta-card__value-row {
+    gap: var(--space-1);
+  }
+
+  .cycle-page .meta-card--cycle .meta-card__metric--current strong {
+    font-size: var(--font-size-2xl);
+  }
+
+  .cycle-page .meta-card--cycle .meta-card__state-reference {
+    padding: var(--space-2);
+  }
+}
+
+@media screen and (max-width: 680px) {
+  .cycle-page .meta-card--cycle.meta-card--has-trend .meta-card__value-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: var(--space-3);
+  }
+
+  .cycle-page .meta-card--closed-cycle .meta-card__value-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: var(--space-3);
+  }
+
+  .cycle-page .meta-card--closed-cycle .meta-card__metric--current {
+    grid-column: 1 / -1;
+  }
+
+  .cycle-page .meta-card--closed-cycle .meta-card__metric > span,
+  .cycle-page .meta-card--closed-cycle .meta-card__metric strong {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+}
+
+.cycle-page .complementary-components__table--eja {
+  table-layout: fixed;
+}
+
+.cycle-page .complementary-components__table--eja th,
+.cycle-page .complementary-components__table--eja td {
+  min-width: 0;
+  padding-inline: var(--space-1);
+}
+
+.cycle-page .complementary-components__table--eja th {
+  white-space: normal;
+  line-height: var(--line-height-snug);
+  letter-spacing: normal;
+  text-transform: none;
+  text-wrap: pretty;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.cycle-page .complementary-components__table--eja th:first-child {
+  width: 14%;
+}
+
+.cycle-page .complementary-components__table--eja th:nth-child(2) {
+  width: 32%;
+}
+
+.cycle-page .complementary-components__table--eja th:nth-child(3) {
+  width: 34%;
+}
+
+.cycle-page .complementary-components__table--eja th:nth-child(4) {
+  width: 20%;
+}
+
+.cycle-page .complementary-components__table--eja .complementary-components__table-header {
+  display: block;
+  white-space: pre-line;
+}
+
+@media screen and (max-width: 680px) {
+  .cycle-page .complementary-components__table--eja {
+    min-width: 300px;
+  }
+}

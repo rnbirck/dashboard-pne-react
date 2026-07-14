@@ -29,8 +29,17 @@ function shouldShowValueLabel(point, index, points, maxValue) {
   return point.value === maxValue && points.length > 4
 }
 
-export function ComplementaryEnrollmentChart({ series, showHeading = true, title = 'Matrículas em creche', unit = 'Matrículas' }) {
+export function ComplementaryEnrollmentChart({
+  series,
+  showHeading = true,
+  title = 'Matrículas em creche',
+  unit = 'Matrículas',
+  valueMode = 'legacy',
+  valueFormatter,
+}) {
   const [activePoint, setActivePoint] = useState(null)
+  const formatValue = typeof valueFormatter === 'function' ? valueFormatter : formatNumber
+  const displayUnit = valueMode === 'count' ? 'Matrículas' : unit
   const rawPoints = useMemo(() => {
     return (series ?? [])
       .map((p) => ({ year: Number(p?.ano), value: Number(p?.valor) }))
@@ -128,7 +137,7 @@ export function ComplementaryEnrollmentChart({ series, showHeading = true, title
           />
 
           <text x={PADDING.left - 10} y={PADDING.top + 6} textAnchor="end" className="complementary-chart__tick">
-            {formatNumber(yMax)}
+            {formatValue(yMax)}
           </text>
           <text x={PADDING.left - 10} y={CHART_HEIGHT - PADDING.bottom} textAnchor="end" className="complementary-chart__tick">
             0
@@ -153,7 +162,7 @@ export function ComplementaryEnrollmentChart({ series, showHeading = true, title
 
           {scaledPoints.map((p, index) => (
             <circle
-              aria-label={`${p.year}: ${formatNumber(p.value)} ${unit}`}
+              aria-label={`${p.year}: ${formatValue(p.value)} ${displayUnit}`}
               className={`chart-mark complementary-chart__point${activePoint?.year === p.year ? ' is-active' : ''}${index === scaledPoints.length - 1 ? ' is-last' : ''}`}
               cx={p.x}
               cy={p.y}
@@ -180,7 +189,7 @@ export function ComplementaryEnrollmentChart({ series, showHeading = true, title
                 x={p.x}
                 y={y}
               >
-                {formatNumber(p.value)}
+                {formatValue(p.value)}
               </text>
             )
           })}
@@ -208,7 +217,7 @@ export function ComplementaryEnrollmentChart({ series, showHeading = true, title
             className="complementary-chart__tooltip"
             label={activePoint.year}
             series={title}
-            value={`${formatNumber(activePoint.value)} ${unit.toLocaleLowerCase('pt-BR')}`}
+            value={`${formatValue(activePoint.value)} ${displayUnit.toLocaleLowerCase('pt-BR')}`}
             style={{
               left: `${Math.min(92, Math.max(10, (activePoint.x / CHART_WIDTH) * 100))}%`,
               top: `${(activePoint.y / CHART_HEIGHT) * 100}%`,

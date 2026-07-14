@@ -418,7 +418,7 @@
           "interpretation": "Em 2024, o município alcançou 63,3% e superou a meta definida (50,0%). O desempenho ficou +13,3 p.p. acima da referência."
         }
       },
-      "eja_integrada_educacao_profissional": {
+      "eja_integrada_educacao_profissional_percentual": {
         "available": true,
         "start_year": 2014,
         "end_year": 2024,
@@ -443,15 +443,15 @@
           },
           {
             "ano": 2016,
-            "valor": 2.1671826625387
+            "valor": 0.0
           },
           {
             "ano": 2017,
-            "valor": 1.282051282051282
+            "valor": 0.0
           },
           {
             "ano": 2018,
-            "valor": 1.7241379310344827
+            "valor": 0.0
           },
           {
             "ano": 2019,
@@ -689,36 +689,26 @@
         }
       },
       "alfabetizacao": {
-        "available": true,
-        "start_year": 2023,
-        "end_year": 2024,
-        "start_value": 76.13,
-        "end_value": 46.8,
-        "raw_delta": -29.33,
-        "progress_delta": -29.33,
+        "available": false,
+        "start_year": null,
+        "end_year": null,
+        "start_value": null,
+        "end_value": null,
+        "raw_delta": null,
+        "progress_delta": null,
         "meta": 100.0,
         "meta_label": "Meta PNE 2024",
         "direction": "at_least",
-        "distance": -53.2,
+        "distance": null,
         "atingida": false,
         "tracks_goal": true,
-        "series": [
-          {
-            "ano": 2023,
-            "valor": 76.13
-          },
-          {
-            "ano": 2024,
-            "valor": 46.8
-          }
-        ],
         "display": {
-          "start_value": "76,1%",
-          "end_value": "46,8%",
-          "variation": "Queda de 29,3 p.p.",
-          "distance": "-53,2 p.p.",
-          "status": "Meta não atingida",
-          "interpretation": "Em 2024, o município chegou a 46,8%, mas não alcançou a meta definida (100,0%). A distância atual para a referência é de -53,2 p.p.."
+          "start_value": "-",
+          "end_value": "-",
+          "variation": "-",
+          "distance": "-",
+          "status": "Sem dados suficientes",
+          "interpretation": "Não foi possível montar a comparação desse indicador com os dados disponíveis para o município selecionado."
         }
       },
       "pos_graduacao": {
@@ -1463,8 +1453,8 @@
             }
           },
           {
-            "indicator_key": "eja_integrada_educacao_profissional",
-            "label": "Matrículas do EJA integradas à educação profissional",
+            "indicator_key": "eja_integrada_educacao_profissional_percentual",
+            "label": "Percentual das matrículas da EJA articuladas à educação profissional",
             "sub": "",
             "category": "atendimento",
             "progress_delta": 0.0,
@@ -1586,29 +1576,6 @@
         ],
         "top_atencao": [
           {
-            "indicator_key": "alfabetizacao",
-            "label": "Estudantes alfabetizados na rede pública",
-            "sub": "",
-            "category": "rendimento",
-            "progress_delta": -29.33,
-            "distance": -53.2,
-            "atingida": false,
-            "available": true,
-            "value_mode": "percent",
-            "start_year": 2023,
-            "end_year": 2024,
-            "start_value": 76.13,
-            "end_value": 46.8,
-            "display": {
-              "start_value": "76,1%",
-              "end_value": "46,8%",
-              "variation": "Queda de 29,3 p.p.",
-              "distance": "-53,2 p.p.",
-              "status": "Meta não atingida",
-              "interpretation": "Em 2024, o município chegou a 46,8%, mas não alcançou a meta definida (100,0%). A distância atual para a referência é de -53,2 p.p.."
-            }
-          },
-          {
             "indicator_key": "ideb_ensino_medio",
             "label": "IDEB da rede pública no ensino médio",
             "sub": "",
@@ -1652,6 +1619,29 @@
               "distance": "-0,8",
               "status": "Meta não atingida",
               "interpretation": "Em 2023, o município chegou a 4,7, mas não alcançou a meta definida (5,5). A distância atual para a referência é de -0,8."
+            }
+          },
+          {
+            "indicator_key": "ideb_anos_iniciais",
+            "label": "IDEB da rede pública nos anos iniciais do ensino fundamental",
+            "sub": "",
+            "category": "rendimento",
+            "progress_delta": 0.2999999999999998,
+            "distance": -0.20000000000000018,
+            "atingida": false,
+            "available": true,
+            "value_mode": "index",
+            "start_year": 2013,
+            "end_year": 2023,
+            "start_value": 5.5,
+            "end_value": 5.8,
+            "display": {
+              "start_value": "5,5",
+              "end_value": "5,8",
+              "variation": "Alta de 0,3",
+              "distance": "-0,2",
+              "status": "Meta não atingida",
+              "interpretation": "Em 2023, o município chegou a 5,8, mas não alcançou a meta definida (6,0). A distância atual para a referência é de -0,2."
             }
           }
         ]
@@ -2012,6 +2002,19 @@
             "valor": 57.33435465338951
           }
         ],
+        "trend": {
+          "status": "up",
+          "label": "Alta",
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 1.7364147856214132,
+          "threshold": 0.5,
+          "consistency": 1.0,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "35,3%",
           "end_value": "57,3%",
@@ -2081,6 +2084,19 @@
             "valor": 106.65204678362572
           }
         ],
+        "trend": {
+          "status": "up",
+          "label": "Alta",
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 3.220374236504483,
+          "threshold": 0.754814378969634,
+          "consistency": 1.0,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "87,6%",
           "end_value": "106,7%",
@@ -2150,6 +2166,19 @@
             "valor": 101.730273653209
           }
         ],
+        "trend": {
+          "status": "inconclusive",
+          "label": null,
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 0.4853395334805744,
+          "threshold": 0.5587118031713381,
+          "consistency": 0.75,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "92,8%",
           "end_value": "101,7%",
@@ -2219,6 +2248,19 @@
             "valor": 88.59832635983264
           }
         ],
+        "trend": {
+          "status": "inconclusive",
+          "label": null,
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": -0.4779135999536474,
+          "threshold": 1.9912858038991672,
+          "consistency": 0.5,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "74,3%",
           "end_value": "88,6%",
@@ -2288,6 +2330,19 @@
             "valor": 59.84334203655352
           }
         ],
+        "trend": {
+          "status": "up",
+          "label": "Alta",
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 5.735504461824846,
+          "threshold": 0.5,
+          "consistency": 1.0,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "26,8%",
           "end_value": "59,8%",
@@ -2357,6 +2412,19 @@
             "valor": 61.29032258064516
           }
         ],
+        "trend": {
+          "status": "inconclusive",
+          "label": null,
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": -0.6362007168458785,
+          "threshold": 0.5,
+          "consistency": 0.5,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "40,0%",
           "end_value": "61,3%",
@@ -2425,6 +2493,19 @@
             "valor": 10.344827586206897
           }
         ],
+        "trend": {
+          "status": "inconclusive",
+          "label": null,
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": -0.2931200859563807,
+          "threshold": 0.6370294819852029,
+          "consistency": 0.5,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "14,6%",
           "end_value": "10,3%",
@@ -2433,7 +2514,7 @@
           "interpretation": "Entre 2015 e 2025, o indicador passou de 14,6% para 10,3%. A variação no período foi de queda de 4,2 p.p.."
         }
       },
-      "eja_integrada_educacao_profissional": {
+      "eja_integrada_educacao_profissional_percentual": {
         "available": true,
         "start_year": 2015,
         "end_year": 2025,
@@ -2441,11 +2522,12 @@
         "end_value": 0.0,
         "raw_delta": 0.0,
         "progress_delta": 0.0,
-        "meta": null,
-        "meta_label": "Visualização informativa",
+        "meta": 25.0,
+        "meta_label": "Referência intermediária PNE 2031",
         "direction": "at_least",
+        "distance": -25.0,
         "atingida": false,
-        "tracks_goal": false,
+        "tracks_goal": true,
         "series": [
           {
             "ano": 2015,
@@ -2453,15 +2535,15 @@
           },
           {
             "ano": 2016,
-            "valor": 7.0
+            "valor": 0.0
           },
           {
             "ano": 2017,
-            "valor": 5.0
+            "valor": 0.0
           },
           {
             "ano": 2018,
-            "valor": 5.0
+            "valor": 0.0
           },
           {
             "ano": 2019,
@@ -2492,79 +2574,137 @@
             "valor": 0.0
           }
         ],
-        "display": {
-          "start_value": "0",
-          "end_value": "0",
-          "variation": "Sem variação",
-          "status": "Visualização informativa",
-          "interpretation": "Entre 2015 e 2025, o indicador passou de 0 para 0. A variação no período foi de sem variação."
-        }
-      },
-      "medio_tecnico": {
-        "available": true,
-        "start_year": 2015,
-        "end_year": 2025,
-        "start_value": 0.0,
-        "end_value": 0.0,
-        "raw_delta": 0.0,
-        "progress_delta": 0.0,
-        "meta": null,
-        "meta_label": "Visualização informativa",
-        "direction": "at_least",
-        "atingida": false,
-        "tracks_goal": false,
-        "series": [
+        "trend": {
+          "status": "stable",
+          "label": "Estável",
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 0.0,
+          "threshold": 0.5,
+          "consistency": 1.0,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
+        "meta_references": [
           {
-            "ano": 2015,
-            "valor": 0.0
+            "year": 2031,
+            "value": 25.0,
+            "label": "Referência intermediária"
           },
           {
-            "ano": 2016,
-            "valor": 0.0
-          },
-          {
-            "ano": 2017,
-            "valor": 0.0
-          },
-          {
-            "ano": 2018,
-            "valor": 0.0
-          },
-          {
-            "ano": 2019,
-            "valor": 0.0
-          },
-          {
-            "ano": 2020,
-            "valor": 0.0
-          },
-          {
-            "ano": 2021,
-            "valor": 0.0
-          },
-          {
-            "ano": 2022,
-            "valor": 2.8083028083028085
-          },
-          {
-            "ano": 2023,
-            "valor": 0.0
-          },
-          {
-            "ano": 2024,
-            "valor": 2.231237322515213
-          },
-          {
-            "ano": 2025,
-            "valor": 0.0
+            "year": 2036,
+            "value": 50.0,
+            "label": "Meta final"
           }
         ],
         "display": {
           "start_value": "0,0%",
           "end_value": "0,0%",
           "variation": "Sem variação",
-          "status": "Visualização informativa",
-          "interpretation": "Entre 2015 e 2025, o indicador passou de 0,0% para 0,0%. A variação no período foi de sem variação."
+          "distance": "-25,0 p.p.",
+          "status": "Ainda não atinge a meta",
+          "interpretation": "Em 2025, o município chegou a 0,0%, mas não alcançou a meta definida (25,0%). A distância atual para a referência é de -25,0 p.p.."
+        }
+      },
+      "medio_tecnico_articulado_percentual": {
+        "available": true,
+        "start_year": 2015,
+        "end_year": 2025,
+        "start_value": 0.0,
+        "end_value": 0.0,
+        "raw_delta": 0.0,
+        "progress_delta": 0.0,
+        "meta": 50.0,
+        "meta_label": "Meta PNE 2036",
+        "direction": "at_least",
+        "distance": -50.0,
+        "atingida": false,
+        "tracks_goal": true,
+        "show_in_cycle": true,
+        "include_in_cycle_summary": true,
+        "coverage": "aproximada",
+        "value_mode": "percent",
+        "acima_de_100": false,
+        "acima_de_100_anos": [],
+        "series": [
+          {
+            "ano": 2015,
+            "valor": 0.0,
+            "acima_de_100": false
+          },
+          {
+            "ano": 2016,
+            "valor": 0.0,
+            "acima_de_100": false
+          },
+          {
+            "ano": 2017,
+            "valor": 0.0,
+            "acima_de_100": false
+          },
+          {
+            "ano": 2018,
+            "valor": 0.0,
+            "acima_de_100": false
+          },
+          {
+            "ano": 2019,
+            "valor": 0.0,
+            "acima_de_100": false
+          },
+          {
+            "ano": 2020,
+            "valor": 0.0,
+            "acima_de_100": false
+          },
+          {
+            "ano": 2021,
+            "valor": 0.0,
+            "acima_de_100": false
+          },
+          {
+            "ano": 2022,
+            "valor": 2.808302808302808,
+            "acima_de_100": false
+          },
+          {
+            "ano": 2023,
+            "valor": 0.0,
+            "acima_de_100": false
+          },
+          {
+            "ano": 2024,
+            "valor": 2.231237322515213,
+            "acima_de_100": false
+          },
+          {
+            "ano": 2025,
+            "valor": 0.0,
+            "acima_de_100": false
+          }
+        ],
+        "trend": {
+          "status": "inconclusive",
+          "label": null,
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 0.0,
+          "threshold": 1.2598850327045052,
+          "consistency": 0.5,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
+        "display": {
+          "start_value": "0,0%",
+          "end_value": "0,0%",
+          "variation": "Sem variação",
+          "distance": "-50,0 p.p.",
+          "status": "Meta não atingida",
+          "interpretation": "Em 2025, o município chegou a 0,0%, mas não alcançou a meta definida (50,0%). A distância atual para a referência é de -50,0 p.p.."
         }
       },
       "medio_tecnico_participacao_publica": {
@@ -2623,6 +2763,19 @@
             "valor": 31.275720164609055
           }
         ],
+        "trend": {
+          "status": "inconclusive",
+          "label": null,
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 1.2425521015623726,
+          "threshold": 1.7103327560843908,
+          "consistency": 0.5,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "0,0%",
           "end_value": "31,3%",
@@ -2684,6 +2837,19 @@
             "valor": -100.0
           }
         ],
+        "trend": {
+          "status": "inconclusive",
+          "label": null,
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": -15.625000000000002,
+          "threshold": 42.045454545454554,
+          "consistency": 0.5,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "0,0%",
           "end_value": "-100,0%",
@@ -2697,26 +2863,39 @@
         "available": true,
         "start_year": 2010,
         "end_year": 2022,
-        "start_value": 95.79,
-        "end_value": 97.54,
-        "raw_delta": 1.75,
-        "progress_delta": 1.75,
+        "start_value": 95.79478553406223,
+        "end_value": 97.54487048745666,
+        "raw_delta": 1.7500849533944347,
+        "progress_delta": 1.7500849533944347,
         "meta": 97.0,
         "meta_label": "Meta PNE 2031",
         "direction": "at_least",
-        "distance": 0.5400000000000063,
+        "distance": 0.544870487456663,
         "atingida": true,
         "tracks_goal": true,
         "series": [
           {
             "ano": 2010,
-            "valor": 95.79
+            "valor": 95.79478553406223
           },
           {
             "ano": 2022,
-            "valor": 97.54
+            "valor": 97.54487048745666
           }
         ],
+        "trend": {
+          "status": "unavailable",
+          "label": null,
+          "start_year": null,
+          "end_year": null,
+          "observations": 1,
+          "method": "theil_sen_v1",
+          "slope": null,
+          "threshold": null,
+          "consistency": null,
+          "unavailable_reason": "insufficient_observations",
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "95,8%",
           "end_value": "97,5%",
@@ -2746,6 +2925,19 @@
             "valor": 71.59192521338572
           }
         ],
+        "trend": {
+          "status": "unavailable",
+          "label": null,
+          "start_year": null,
+          "end_year": null,
+          "observations": 1,
+          "method": "theil_sen_v1",
+          "slope": null,
+          "threshold": null,
+          "consistency": null,
+          "unavailable_reason": "insufficient_observations",
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "71,6%",
           "end_value": "71,6%",
@@ -2775,6 +2967,19 @@
             "valor": 77.72065870872179
           }
         ],
+        "trend": {
+          "status": "unavailable",
+          "label": null,
+          "start_year": null,
+          "end_year": null,
+          "observations": 1,
+          "method": "theil_sen_v1",
+          "slope": null,
+          "threshold": null,
+          "consistency": null,
+          "unavailable_reason": "insufficient_observations",
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "77,7%",
           "end_value": "77,7%",
@@ -2788,22 +2993,35 @@
         "available": true,
         "start_year": 2022,
         "end_year": 2022,
-        "start_value": 52.14740550060967,
-        "end_value": 52.14740550060967,
+        "start_value": 52.14740550060968,
+        "end_value": 52.14740550060968,
         "raw_delta": 0.0,
         "progress_delta": 0.0,
         "meta": 75.0,
         "meta_label": "Meta PNE 2036",
         "direction": "at_least",
-        "distance": -22.852594499390328,
+        "distance": -22.85259449939032,
         "atingida": false,
         "tracks_goal": true,
         "series": [
           {
             "ano": 2022,
-            "valor": 52.14740550060967
+            "valor": 52.14740550060968
           }
         ],
+        "trend": {
+          "status": "unavailable",
+          "label": null,
+          "start_year": null,
+          "end_year": null,
+          "observations": 1,
+          "method": "theil_sen_v1",
+          "slope": null,
+          "threshold": null,
+          "consistency": null,
+          "unavailable_reason": "insufficient_observations",
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "52,1%",
           "end_value": "52,1%",
@@ -2833,6 +3051,19 @@
             "valor": 57.46078846969055
           }
         ],
+        "trend": {
+          "status": "unavailable",
+          "label": null,
+          "start_year": null,
+          "end_year": null,
+          "observations": 1,
+          "method": "theil_sen_v1",
+          "slope": null,
+          "threshold": null,
+          "consistency": null,
+          "unavailable_reason": "insufficient_observations",
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "57,5%",
           "end_value": "57,5%",
@@ -2843,40 +3074,39 @@
         }
       },
       "alfabetizacao": {
-        "available": true,
-        "start_year": 2023,
-        "end_year": 2025,
-        "start_value": 76.13,
-        "end_value": 53.72,
-        "raw_delta": -22.409999999999997,
-        "progress_delta": -22.409999999999997,
+        "available": false,
+        "start_year": null,
+        "end_year": null,
+        "start_value": null,
+        "end_value": null,
+        "raw_delta": null,
+        "progress_delta": null,
         "meta": 100.0,
         "meta_label": "Meta PNE 2036",
         "direction": "at_least",
-        "distance": -46.28,
+        "distance": null,
         "atingida": false,
         "tracks_goal": true,
-        "series": [
-          {
-            "ano": 2023,
-            "valor": 76.13
-          },
-          {
-            "ano": 2024,
-            "valor": 46.8
-          },
-          {
-            "ano": 2025,
-            "valor": 53.72
-          }
-        ],
+        "trend": {
+          "status": "unavailable",
+          "label": null,
+          "start_year": null,
+          "end_year": null,
+          "observations": 0,
+          "method": "theil_sen_v1",
+          "slope": null,
+          "threshold": null,
+          "consistency": null,
+          "unavailable_reason": "indicator_unavailable",
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
-          "start_value": "76,1%",
-          "end_value": "53,7%",
-          "variation": "Queda de 22,4 p.p.",
-          "distance": "-46,3 p.p.",
-          "status": "Meta não atingida",
-          "interpretation": "Em 2025, o município chegou a 53,7%, mas não alcançou a meta definida (100,0%). A distância atual para a referência é de -46,3 p.p.."
+          "start_value": "-",
+          "end_value": "-",
+          "variation": "-",
+          "distance": "-",
+          "status": "Sem dados suficientes",
+          "interpretation": "Não foi possível montar a comparação desse indicador com os dados disponíveis para o município selecionado."
         }
       },
       "pos_graduacao": {
@@ -2939,6 +3169,19 @@
             "valor": 44.024205748865356
           }
         ],
+        "trend": {
+          "status": "down",
+          "label": "Queda",
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": -1.036554198897555,
+          "threshold": 0.5598665770029783,
+          "consistency": 0.75,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "21,6%",
           "end_value": "44,0%",
@@ -3008,6 +3251,19 @@
             "valor": 79.28092997943638
           }
         ],
+        "trend": {
+          "status": "up",
+          "label": "Alta",
+          "start_year": 2020,
+          "end_year": 2024,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 4.4825123600470995,
+          "threshold": 1.747473945126643,
+          "consistency": 0.75,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "52,5%",
           "end_value": "79,3%",
@@ -3077,6 +3333,19 @@
             "valor": 27.09677419354839
           }
         ],
+        "trend": {
+          "status": "inconclusive",
+          "label": null,
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": -0.45905238910895196,
+          "threshold": 0.5264591082801244,
+          "consistency": 0.25,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "27,1%",
           "end_value": "27,1%",
@@ -3107,7 +3376,7 @@
           },
           {
             "ano": 2019,
-            "valor": 50.89
+            "valor": 50.88999999999999
           },
           {
             "ano": 2021,
@@ -3118,6 +3387,19 @@
             "valor": 47.61
           }
         ],
+        "trend": {
+          "status": "unavailable",
+          "label": null,
+          "start_year": null,
+          "end_year": null,
+          "observations": 3,
+          "method": "theil_sen_v1",
+          "slope": null,
+          "threshold": null,
+          "consistency": null,
+          "unavailable_reason": "three_observations_not_consecutive",
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "50,8%",
           "end_value": "47,6%",
@@ -3159,6 +3441,19 @@
             "valor": 16.39
           }
         ],
+        "trend": {
+          "status": "unavailable",
+          "label": null,
+          "start_year": null,
+          "end_year": null,
+          "observations": 3,
+          "method": "theil_sen_v1",
+          "slope": null,
+          "threshold": null,
+          "consistency": null,
+          "unavailable_reason": "three_observations_not_consecutive",
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "17,0%",
           "end_value": "16,4%",
@@ -3196,6 +3491,19 @@
             "valor": 6.53
           }
         ],
+        "trend": {
+          "status": "unavailable",
+          "label": null,
+          "start_year": null,
+          "end_year": null,
+          "observations": 3,
+          "method": "theil_sen_v1",
+          "slope": null,
+          "threshold": null,
+          "consistency": null,
+          "unavailable_reason": "three_observations_not_consecutive",
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "9,3%",
           "end_value": "6,5%",
@@ -3209,10 +3517,10 @@
         "available": true,
         "start_year": 2017,
         "end_year": 2023,
-        "start_value": 61.71000000000001,
+        "start_value": 61.71,
         "end_value": 58.3,
-        "raw_delta": -3.410000000000011,
-        "progress_delta": -3.410000000000011,
+        "raw_delta": -3.4100000000000037,
+        "progress_delta": -3.4100000000000037,
         "meta": 70.0,
         "meta_label": "Meta PNE 2031",
         "direction": "at_least",
@@ -3222,7 +3530,7 @@
         "series": [
           {
             "ano": 2017,
-            "valor": 61.71000000000001
+            "valor": 61.71
           },
           {
             "ano": 2019,
@@ -3237,6 +3545,19 @@
             "valor": 58.3
           }
         ],
+        "trend": {
+          "status": "unavailable",
+          "label": null,
+          "start_year": null,
+          "end_year": null,
+          "observations": 3,
+          "method": "theil_sen_v1",
+          "slope": null,
+          "threshold": null,
+          "consistency": null,
+          "unavailable_reason": "three_observations_not_consecutive",
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "61,7%",
           "end_value": "58,3%",
@@ -3278,6 +3599,19 @@
             "valor": 36.650000000000006
           }
         ],
+        "trend": {
+          "status": "unavailable",
+          "label": null,
+          "start_year": null,
+          "end_year": null,
+          "observations": 3,
+          "method": "theil_sen_v1",
+          "slope": null,
+          "threshold": null,
+          "consistency": null,
+          "unavailable_reason": "three_observations_not_consecutive",
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "42,3%",
           "end_value": "36,7%",
@@ -3291,10 +3625,10 @@
         "available": true,
         "start_year": 2019,
         "end_year": 2023,
-        "start_value": 52.85,
+        "start_value": 52.849999999999994,
         "end_value": 40.14,
-        "raw_delta": -12.71,
-        "progress_delta": -12.71,
+        "raw_delta": -12.709999999999994,
+        "progress_delta": -12.709999999999994,
         "meta": 50.0,
         "meta_label": "Meta PNE 2031",
         "direction": "at_least",
@@ -3304,7 +3638,7 @@
         "series": [
           {
             "ano": 2019,
-            "valor": 52.85
+            "valor": 52.849999999999994
           },
           {
             "ano": 2021,
@@ -3315,8 +3649,21 @@
             "valor": 40.14
           }
         ],
+        "trend": {
+          "status": "unavailable",
+          "label": null,
+          "start_year": null,
+          "end_year": null,
+          "observations": 3,
+          "method": "theil_sen_v1",
+          "slope": null,
+          "threshold": null,
+          "consistency": null,
+          "unavailable_reason": "three_observations_not_consecutive",
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
-          "start_value": "52,9%",
+          "start_value": "52,8%",
           "end_value": "40,1%",
           "variation": "Queda de 12,7 p.p.",
           "distance": "-9,9 p.p.",
@@ -3368,6 +3715,19 @@
             "valor": 94.5
           }
         ],
+        "trend": {
+          "status": "inconclusive",
+          "label": null,
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 0.16666666666666902,
+          "threshold": 0.5,
+          "consistency": 0.75,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "91,9%",
           "end_value": "94,5%",
@@ -3421,6 +3781,19 @@
             "valor": 85.9
           }
         ],
+        "trend": {
+          "status": "up",
+          "label": "Alta",
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 1.9499999999999993,
+          "threshold": 0.5,
+          "consistency": 1.0,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "74,6%",
           "end_value": "85,9%",
@@ -3474,6 +3847,19 @@
             "valor": 89.8
           }
         ],
+        "trend": {
+          "status": "inconclusive",
+          "label": null,
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 1.1125000000000007,
+          "threshold": 0.7499999999999964,
+          "consistency": 0.5,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "82,7%",
           "end_value": "89,8%",
@@ -3527,6 +3913,19 @@
             "valor": 69.3
           }
         ],
+        "trend": {
+          "status": "inconclusive",
+          "label": null,
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 1.500000000000001,
+          "threshold": 1.5500000000000007,
+          "consistency": 0.5,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "61,3%",
           "end_value": "69,3%",
@@ -3580,6 +3979,19 @@
             "valor": 49.7
           }
         ],
+        "trend": {
+          "status": "inconclusive",
+          "label": null,
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": -0.17499999999999982,
+          "threshold": 1.799999999999999,
+          "consistency": 0.5,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "42,6%",
           "end_value": "49,7%",
@@ -3633,6 +4045,19 @@
             "valor": 58.6
           }
         ],
+        "trend": {
+          "status": "inconclusive",
+          "label": null,
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 0.4499999999999993,
+          "threshold": 1.450000000000001,
+          "consistency": 0.5,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "50,8%",
           "end_value": "58,6%",
@@ -3701,6 +4126,19 @@
             "valor": 92.15686274509804
           }
         ],
+        "trend": {
+          "status": "inconclusive",
+          "label": null,
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": -0.5375816993464053,
+          "threshold": 0.5,
+          "consistency": 0.25,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "95,6%",
           "end_value": "92,2%",
@@ -3752,6 +4190,19 @@
             "valor": 33.33333333333333
           }
         ],
+        "trend": {
+          "status": "inconclusive",
+          "label": null,
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 0.7205882352941178,
+          "threshold": 1.7745098039215712,
+          "consistency": 0.5,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "36,0%",
           "end_value": "33,3%",
@@ -3803,6 +4254,19 @@
             "valor": 76.47058823529412
           }
         ],
+        "trend": {
+          "status": "up",
+          "label": "Alta",
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 7.2058823529411775,
+          "threshold": 1.5,
+          "consistency": 1.0,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "46,0%",
           "end_value": "76,5%",
@@ -3854,6 +4318,19 @@
             "valor": 11.76470588235294
           }
         ],
+        "trend": {
+          "status": "up",
+          "label": "Alta",
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 1.9117647058823526,
+          "threshold": 0.5,
+          "consistency": 0.75,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "4,0%",
           "end_value": "11,8%",
@@ -3905,6 +4382,19 @@
             "valor": 29.411764705882355
           }
         ],
+        "trend": {
+          "status": "inconclusive",
+          "label": null,
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 1.4346405228758172,
+          "threshold": 1.0,
+          "consistency": 0.5,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "26,0%",
           "end_value": "29,4%",
@@ -3956,6 +4446,19 @@
             "valor": 11.76470588235294
           }
         ],
+        "trend": {
+          "status": "inconclusive",
+          "label": null,
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 0.7843137254901968,
+          "threshold": 1.0,
+          "consistency": 0.5,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "10,0%",
           "end_value": "11,8%",
@@ -4007,6 +4510,19 @@
             "valor": 78.43137254901961
           }
         ],
+        "trend": {
+          "status": "inconclusive",
+          "label": null,
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": -0.19607843137254832,
+          "threshold": 0.5,
+          "consistency": 0.5,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "76,0%",
           "end_value": "78,4%",
@@ -4058,6 +4574,19 @@
             "valor": 52.94117647058824
           }
         ],
+        "trend": {
+          "status": "up",
+          "label": "Alta",
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 5.372549019607843,
+          "threshold": 0.5,
+          "consistency": 1.0,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "28,0%",
           "end_value": "52,9%",
@@ -4125,6 +4654,19 @@
             "valor": 84.31372549019608
           }
         ],
+        "trend": {
+          "status": "inconclusive",
+          "label": null,
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": -0.49183006535947743,
+          "threshold": 0.5,
+          "consistency": 0.25,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "88,9%",
           "end_value": "84,3%",
@@ -4157,6 +4699,19 @@
             "valor": 62.745098039215684
           }
         ],
+        "trend": {
+          "status": "unavailable",
+          "label": null,
+          "start_year": null,
+          "end_year": null,
+          "observations": 2,
+          "method": "theil_sen_v1",
+          "slope": null,
+          "threshold": null,
+          "consistency": null,
+          "unavailable_reason": "insufficient_observations",
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "76,5%",
           "end_value": "62,7%",
@@ -4210,6 +4765,19 @@
             "valor": 93.54838709677419
           }
         ],
+        "trend": {
+          "status": "up",
+          "label": "Alta",
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 4.516129032258064,
+          "threshold": 0.887096774193548,
+          "consistency": 0.75,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "74,2%",
           "end_value": "93,5%",
@@ -4278,6 +4846,19 @@
             "valor": 96.7741935483871
           }
         ],
+        "trend": {
+          "status": "inconclusive",
+          "label": null,
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 0.4211469534050192,
+          "threshold": 0.5,
+          "consistency": 0.75,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "100,0%",
           "end_value": "96,8%",
@@ -4330,6 +4911,19 @@
             "valor": 79.02542372881356
           }
         ],
+        "trend": {
+          "status": "up",
+          "label": "Alta",
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 7.071078828469615,
+          "threshold": 0.5893562366869105,
+          "consistency": 1.0,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "37,9%",
           "end_value": "79,0%",
@@ -4383,6 +4977,19 @@
             "valor": 24.78813559322034
           }
         ],
+        "trend": {
+          "status": "up",
+          "label": "Alta",
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 2.912763632482521,
+          "threshold": 1.5236943568113057,
+          "consistency": 0.75,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "8,0%",
           "end_value": "24,8%",
@@ -4435,6 +5042,19 @@
             "valor": 29.411764705882355
           }
         ],
+        "trend": {
+          "status": "down",
+          "label": "Queda",
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": -2.931372549019607,
+          "threshold": 1.5,
+          "consistency": 0.75,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "46,0%",
           "end_value": "29,4%",
@@ -4486,6 +5106,19 @@
             "valor": 45.09803921568628
           }
         ],
+        "trend": {
+          "status": "up",
+          "label": "Alta",
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 2.0,
+          "threshold": 0.5,
+          "consistency": 1.0,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "36,0%",
           "end_value": "45,1%",
@@ -4537,6 +5170,19 @@
             "valor": 23.52941176470588
           }
         ],
+        "trend": {
+          "status": "up",
+          "label": "Alta",
+          "start_year": 2021,
+          "end_year": 2025,
+          "observations": 5,
+          "method": "theil_sen_v1",
+          "slope": 3.3627450980392153,
+          "threshold": 1.53921568627451,
+          "consistency": 0.75,
+          "unavailable_reason": null,
+          "threshold_method": "percent_tau_mad_v1"
+        },
         "display": {
           "start_value": "12,0%",
           "end_value": "23,5%",
@@ -4646,12 +5292,12 @@
             }
           },
           {
-            "indicator_key": "medio_tecnico",
-            "label": "Matrículas do ensino médio integradas à educação profissional técnica",
+            "indicator_key": "eja_integrada_educacao_profissional_percentual",
+            "label": "Percentual das matrículas da EJA articuladas à educação profissional",
             "sub": "",
             "category": "atendimento",
             "progress_delta": 0.0,
-            "distance": -50.0,
+            "distance": -25.0,
             "atingida": false,
             "available": true,
             "value_mode": "percent",
@@ -4663,9 +5309,9 @@
               "start_value": "0,0%",
               "end_value": "0,0%",
               "variation": "Sem variação",
-              "distance": "-50,0 p.p.",
-              "status": "Meta não atingida",
-              "interpretation": "Em 2025, o município chegou a 0,0%, mas não alcançou a meta definida (50,0%). A distância atual para a referência é de -50,0 p.p.."
+              "distance": "-25,0 p.p.",
+              "status": "Ainda não atinge a meta",
+              "interpretation": "Em 2025, o município chegou a 0,0%, mas não alcançou a meta definida (25,0%). A distância atual para a referência é de -25,0 p.p.."
             }
           },
           {
@@ -4769,29 +5415,6 @@
         ],
         "top_atencao": [
           {
-            "indicator_key": "alfabetizacao",
-            "label": "Estudantes alfabetizados na rede pública",
-            "sub": "",
-            "category": "rendimento",
-            "progress_delta": -22.409999999999997,
-            "distance": -46.28,
-            "atingida": false,
-            "available": true,
-            "value_mode": "percent",
-            "start_year": 2023,
-            "end_year": 2025,
-            "start_value": 76.13,
-            "end_value": 53.72,
-            "display": {
-              "start_value": "76,1%",
-              "end_value": "53,7%",
-              "variation": "Queda de 22,4 p.p.",
-              "distance": "-46,3 p.p.",
-              "status": "Meta não atingida",
-              "interpretation": "Em 2025, o município chegou a 53,7%, mas não alcançou a meta definida (100,0%). A distância atual para a referência é de -46,3 p.p.."
-            }
-          },
-          {
             "indicator_key": "saeb_matematica_anos_finais",
             "label": "Desempenho em Matemática - anos finais",
             "sub": "",
@@ -4835,6 +5458,29 @@
               "distance": "-43,5 p.p.",
               "status": "Meta não atingida",
               "interpretation": "Em 2023, o município chegou a 6,5%, mas não alcançou a meta definida (50,0%). A distância atual para a referência é de -43,5 p.p.."
+            }
+          },
+          {
+            "indicator_key": "saeb_portugues_anos_finais",
+            "label": "Desempenho em Português - anos finais",
+            "sub": "",
+            "category": "rendimento",
+            "progress_delta": -5.61999999999999,
+            "distance": -23.349999999999994,
+            "atingida": false,
+            "available": true,
+            "value_mode": "percent",
+            "start_year": 2017,
+            "end_year": 2023,
+            "start_value": 42.269999999999996,
+            "end_value": 36.650000000000006,
+            "display": {
+              "start_value": "42,3%",
+              "end_value": "36,7%",
+              "variation": "Queda de 5,6 p.p.",
+              "distance": "-23,3 p.p.",
+              "status": "Meta não atingida",
+              "interpretation": "Em 2023, o município chegou a 36,7%, mas não alcançou a meta definida (60,0%). A distância atual para a referência é de -23,3 p.p.."
             }
           }
         ]
@@ -5140,15 +5786,15 @@
             "label": "Taxa de alfabetização da população de 15 anos ou mais",
             "sub": "",
             "category": "escolaridade_populacao",
-            "progress_delta": 1.75,
-            "distance": 0.5400000000000063,
+            "progress_delta": 1.7500849533944347,
+            "distance": 0.544870487456663,
             "atingida": true,
             "available": true,
             "value_mode": "percent",
             "start_year": 2010,
             "end_year": 2022,
-            "start_value": 95.79,
-            "end_value": 97.54,
+            "start_value": 95.79478553406223,
+            "end_value": 97.54487048745666,
             "display": {
               "start_value": "95,8%",
               "end_value": "97,5%",
@@ -5189,14 +5835,14 @@
             "sub": "",
             "category": "escolaridade_populacao",
             "progress_delta": 0.0,
-            "distance": -22.852594499390328,
+            "distance": -22.85259449939032,
             "atingida": false,
             "available": true,
             "value_mode": "percent",
             "start_year": 2022,
             "end_year": 2022,
-            "start_value": 52.14740550060967,
-            "end_value": 52.14740550060967,
+            "start_value": 52.14740550060968,
+            "end_value": 52.14740550060968,
             "display": {
               "start_value": "52,1%",
               "end_value": "52,1%",
@@ -5235,15 +5881,15 @@
     "diagnostico": {
       "active_category": "rendimento",
       "summary": {
-        "indicadores_analisados": 49,
+        "indicadores_analisados": 48,
         "metas_atingidas": 7,
-        "pontos_de_atencao": 27
+        "pontos_de_atencao": 26
       },
       "principais_desafios": [
         "Ampliar a cobertura em Expansão acumulada das matrículas em cursos técnicos subsequentes.",
         "Mapear escolas com maior necessidade em Salas de aula com acessibilidade.",
         "Apoiar formação e gestão de equipes em Docentes com formação adequada nos anos finais.",
-        "Ampliar a cobertura em Matrículas do ensino médio integradas à educação profissional técnica."
+        "Reforçar a aprendizagem em Desempenho em Matemática - anos finais."
       ],
       "pontos_positivos": [
         "Meta alcançada: População de 4 a 5 anos que frequenta a escola/creche.",
@@ -5268,13 +5914,13 @@
           "counter_text": "5 de 9 metas atingidas; 2 informativos",
           "evidence_lines": [
             "Expansão acumulada das matrículas em cursos técnicos subsequentes: -100,0%, abaixo da meta acompanhada.",
-            "Matrículas do ensino médio integradas à educação profissional técnica: 0,0%, abaixo da meta acompanhada.",
+            "Percentual das matrículas da EJA articuladas à educação profissional: 0,0%, abaixo da meta acompanhada.",
             "Participação acumulada do segmento público na expansão da EPT de nível médio: 31,3%, abaixo da meta acompanhada.",
             "A dimensão atingiu 5 de 9 metas acompanhadas."
           ],
           "attention_indicators": [
             "creche",
-            "medio_tecnico",
+            "eja_integrada_educacao_profissional_percentual",
             "medio_tecnico_participacao_publica",
             "subsequente_expansao"
           ],
@@ -5287,7 +5933,7 @@
           ],
           "informative_indicators": [
             "aee",
-            "eja_integrada_educacao_profissional"
+            "medio_tecnico"
           ],
           "indicators": [
             {
@@ -5356,6 +6002,19 @@
                     "valor": 57.33435465338951
                   }
                 ],
+                "trend": {
+                  "status": "up",
+                  "label": "Alta",
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 1.7364147856214132,
+                  "threshold": 0.5,
+                  "consistency": 1.0,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "35,3%",
                   "end_value": "57,3%",
@@ -5432,6 +6091,19 @@
                     "valor": 106.65204678362572
                   }
                 ],
+                "trend": {
+                  "status": "up",
+                  "label": "Alta",
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 3.220374236504483,
+                  "threshold": 0.754814378969634,
+                  "consistency": 1.0,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "87,6%",
                   "end_value": "106,7%",
@@ -5508,6 +6180,19 @@
                     "valor": 101.730273653209
                   }
                 ],
+                "trend": {
+                  "status": "inconclusive",
+                  "label": null,
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 0.4853395334805744,
+                  "threshold": 0.5587118031713381,
+                  "consistency": 0.75,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "92,8%",
                   "end_value": "101,7%",
@@ -5584,6 +6269,19 @@
                     "valor": 88.59832635983264
                   }
                 ],
+                "trend": {
+                  "status": "inconclusive",
+                  "label": null,
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": -0.4779135999536474,
+                  "threshold": 1.9912858038991672,
+                  "consistency": 0.5,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "74,3%",
                   "end_value": "88,6%",
@@ -5660,6 +6358,19 @@
                     "valor": 59.84334203655352
                   }
                 ],
+                "trend": {
+                  "status": "up",
+                  "label": "Alta",
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 5.735504461824846,
+                  "threshold": 0.5,
+                  "consistency": 1.0,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "26,8%",
                   "end_value": "59,8%",
@@ -5736,6 +6447,19 @@
                     "valor": 61.29032258064516
                   }
                 ],
+                "trend": {
+                  "status": "inconclusive",
+                  "label": null,
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": -0.6362007168458785,
+                  "threshold": 0.5,
+                  "consistency": 0.5,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "40,0%",
                   "end_value": "61,3%",
@@ -5811,6 +6535,19 @@
                     "valor": 10.344827586206897
                   }
                 ],
+                "trend": {
+                  "status": "inconclusive",
+                  "label": null,
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": -0.2931200859563807,
+                  "threshold": 0.6370294819852029,
+                  "consistency": 0.5,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "14,6%",
                   "end_value": "10,3%",
@@ -5821,9 +6558,110 @@
               }
             },
             {
-              "key": "eja_integrada_educacao_profissional",
-              "label": "Matrículas do EJA integradas à educação profissional",
-              "desc": "Número de matrículas do EJA na forma integrada à educação profissional no município.",
+              "key": "eja_integrada_educacao_profissional_percentual",
+              "label": "Percentual das matrículas da EJA articuladas à educação profissional",
+              "desc": "Percentual das matrículas da EJA articuladas à educação profissional no município.",
+              "tracks_goal": true,
+              "achieved": false,
+              "result": {
+                "available": true,
+                "start_year": 2015,
+                "end_year": 2025,
+                "start_value": 0.0,
+                "end_value": 0.0,
+                "raw_delta": 0.0,
+                "progress_delta": 0.0,
+                "meta": 25.0,
+                "meta_label": "Referência intermediária PNE 2031",
+                "direction": "at_least",
+                "distance": -25.0,
+                "atingida": false,
+                "tracks_goal": true,
+                "series": [
+                  {
+                    "ano": 2015,
+                    "valor": 0.0
+                  },
+                  {
+                    "ano": 2016,
+                    "valor": 2.1671826625387
+                  },
+                  {
+                    "ano": 2017,
+                    "valor": 1.282051282051282
+                  },
+                  {
+                    "ano": 2018,
+                    "valor": 1.7241379310344827
+                  },
+                  {
+                    "ano": 2019,
+                    "valor": 0.0
+                  },
+                  {
+                    "ano": 2020,
+                    "valor": 0.0
+                  },
+                  {
+                    "ano": 2021,
+                    "valor": 0.0
+                  },
+                  {
+                    "ano": 2022,
+                    "valor": 0.0
+                  },
+                  {
+                    "ano": 2023,
+                    "valor": 0.0
+                  },
+                  {
+                    "ano": 2024,
+                    "valor": 0.0
+                  },
+                  {
+                    "ano": 2025,
+                    "valor": 0.0
+                  }
+                ],
+                "trend": {
+                  "status": "stable",
+                  "label": "Estável",
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 0.0,
+                  "threshold": 0.5,
+                  "consistency": 1.0,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
+                "meta_references": [
+                  {
+                    "year": 2031,
+                    "value": 25.0,
+                    "label": "Referência intermediária"
+                  },
+                  {
+                    "year": 2036,
+                    "value": 50.0,
+                    "label": "Meta final"
+                  }
+                ],
+                "display": {
+                  "start_value": "0,0%",
+                  "end_value": "0,0%",
+                  "variation": "Sem variação",
+                  "distance": "-25,0 p.p.",
+                  "status": "Meta não atingida",
+                  "interpretation": "Em 2025, o município chegou a 0,0%, mas não alcançou a meta definida (25,0%). A distância atual para a referência é de -25,0 p.p.."
+                }
+              }
+            },
+            {
+              "key": "medio_tecnico",
+              "label": "Matrículas do ensino médio integradas à educação profissional técnica",
+              "desc": "Percentual de matrículas do ensino médio na forma integrada à educação profissional técnica.",
               "tracks_goal": false,
               "achieved": false,
               "result": {
@@ -5846,81 +6684,6 @@
                   },
                   {
                     "ano": 2016,
-                    "valor": 7.0
-                  },
-                  {
-                    "ano": 2017,
-                    "valor": 5.0
-                  },
-                  {
-                    "ano": 2018,
-                    "valor": 5.0
-                  },
-                  {
-                    "ano": 2019,
-                    "valor": 0.0
-                  },
-                  {
-                    "ano": 2020,
-                    "valor": 0.0
-                  },
-                  {
-                    "ano": 2021,
-                    "valor": 0.0
-                  },
-                  {
-                    "ano": 2022,
-                    "valor": 0.0
-                  },
-                  {
-                    "ano": 2023,
-                    "valor": 0.0
-                  },
-                  {
-                    "ano": 2024,
-                    "valor": 0.0
-                  },
-                  {
-                    "ano": 2025,
-                    "valor": 0.0
-                  }
-                ],
-                "display": {
-                  "start_value": "0",
-                  "end_value": "0",
-                  "variation": "Sem variação",
-                  "status": "Visualização informativa",
-                  "interpretation": "Entre 2015 e 2025, o indicador passou de 0 para 0. A variação no período foi de sem variação."
-                }
-              }
-            },
-            {
-              "key": "medio_tecnico",
-              "label": "Matrículas do ensino médio integradas à educação profissional técnica",
-              "desc": "Percentual de matrículas do ensino médio articuladas à educação profissional técnica.",
-              "tracks_goal": true,
-              "achieved": false,
-              "result": {
-                "available": true,
-                "start_year": 2015,
-                "end_year": 2025,
-                "start_value": 0.0,
-                "end_value": 0.0,
-                "raw_delta": 0.0,
-                "progress_delta": 0.0,
-                "meta": 50.0,
-                "meta_label": "Meta PNE 2036",
-                "direction": "at_least",
-                "distance": -50.0,
-                "atingida": false,
-                "tracks_goal": true,
-                "series": [
-                  {
-                    "ano": 2015,
-                    "valor": 0.0
-                  },
-                  {
-                    "ano": 2016,
                     "valor": 0.0
                   },
                   {
@@ -5945,7 +6708,7 @@
                   },
                   {
                     "ano": 2022,
-                    "valor": 0.0
+                    "valor": 2.8083028083028085
                   },
                   {
                     "ano": 2023,
@@ -5960,13 +6723,25 @@
                     "valor": 0.0
                   }
                 ],
+                "trend": {
+                  "status": "inconclusive",
+                  "label": null,
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 0.0,
+                  "threshold": 1.2598850327045055,
+                  "consistency": 0.5,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "0,0%",
                   "end_value": "0,0%",
                   "variation": "Sem variação",
-                  "distance": "-50,0 p.p.",
-                  "status": "Meta não atingida",
-                  "interpretation": "Em 2025, o município chegou a 0,0%, mas não alcançou a meta definida (50,0%). A distância atual para a referência é de -50,0 p.p.."
+                  "status": "Visualização informativa",
+                  "interpretation": "Entre 2015 e 2025, o indicador passou de 0,0% para 0,0%. A variação no período foi de sem variação."
                 }
               }
             },
@@ -6032,6 +6807,19 @@
                     "valor": 31.275720164609055
                   }
                 ],
+                "trend": {
+                  "status": "inconclusive",
+                  "label": null,
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 1.2425521015623726,
+                  "threshold": 1.7103327560843908,
+                  "consistency": 0.5,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "0,0%",
                   "end_value": "31,3%",
@@ -6100,6 +6888,19 @@
                     "valor": -100.0
                   }
                 ],
+                "trend": {
+                  "status": "inconclusive",
+                  "label": null,
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": -15.625000000000002,
+                  "threshold": 42.045454545454554,
+                  "consistency": 0.5,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "0,0%",
                   "end_value": "-100,0%",
@@ -6120,19 +6921,18 @@
           "accent": "#10b981",
           "observed": "O município apresenta desafios importantes de aprendizagem e desempenho, com necessidade de apoio pedagógico nos indicadores em atenção.",
           "reading": "O maior desafio está em recuperar aprendizagem e elevar resultados de alfabetização, desempenho e conclusão escolar nas metas ainda pendentes.",
-          "total": 10,
-          "goal_total": 10,
+          "total": 9,
+          "goal_total": 9,
           "informative_total": 0,
           "achieved": 0,
-          "attention_count": 10,
-          "counter_text": "0 de 10 metas atingidas",
+          "attention_count": 9,
+          "counter_text": "0 de 9 metas atingidas",
           "evidence_lines": [
-            "Estudantes alfabetizados na rede pública: 53,7%, abaixo da meta acompanhada.",
             "Desempenho em Matemática - anos finais: 16,4%, abaixo da meta acompanhada.",
-            "Desempenho em Matemática - ensino médio: 6,5%, abaixo da meta acompanhada."
+            "Desempenho em Matemática - ensino médio: 6,5%, abaixo da meta acompanhada.",
+            "Desempenho em Português - anos finais: 36,7%, abaixo da meta acompanhada."
           ],
           "attention_indicators": [
-            "alfabetizacao",
             "saeb_matematica_anos_iniciais",
             "saeb_matematica_anos_finais",
             "saeb_matematica_ensino_medio",
@@ -6147,50 +6947,6 @@
           "informative_indicators": [],
           "indicators": [
             {
-              "key": "alfabetizacao",
-              "label": "Estudantes alfabetizados na rede pública",
-              "desc": "Percentual de estudantes alfabetizados na rede pública do município.",
-              "tracks_goal": true,
-              "achieved": false,
-              "result": {
-                "available": true,
-                "start_year": 2023,
-                "end_year": 2025,
-                "start_value": 76.13,
-                "end_value": 53.72,
-                "raw_delta": -22.409999999999997,
-                "progress_delta": -22.409999999999997,
-                "meta": 100.0,
-                "meta_label": "Meta PNE 2036",
-                "direction": "at_least",
-                "distance": -46.28,
-                "atingida": false,
-                "tracks_goal": true,
-                "series": [
-                  {
-                    "ano": 2023,
-                    "valor": 76.13
-                  },
-                  {
-                    "ano": 2024,
-                    "valor": 46.8
-                  },
-                  {
-                    "ano": 2025,
-                    "valor": 53.72
-                  }
-                ],
-                "display": {
-                  "start_value": "76,1%",
-                  "end_value": "53,7%",
-                  "variation": "Queda de 22,4 p.p.",
-                  "distance": "-46,3 p.p.",
-                  "status": "Meta não atingida",
-                  "interpretation": "Em 2025, o município chegou a 53,7%, mas não alcançou a meta definida (100,0%). A distância atual para a referência é de -46,3 p.p.."
-                }
-              }
-            },
-            {
               "key": "saeb_matematica_anos_iniciais",
               "label": "Desempenho em Matemática - anos iniciais",
               "desc": "Percentual de estudantes nos níveis básico ou superior e adequado ou superior em Matemática - anos iniciais.",
@@ -6201,13 +6957,13 @@
                 "start_year": 2017,
                 "end_year": 2023,
                 "start_value": 50.79,
-                "end_value": 47.60999999999999,
-                "raw_delta": -3.180000000000007,
-                "progress_delta": -3.180000000000007,
+                "end_value": 47.61,
+                "raw_delta": -3.1799999999999997,
+                "progress_delta": -3.1799999999999997,
                 "meta": 70.0,
                 "meta_label": "Meta PNE 2031",
                 "direction": "at_least",
-                "distance": -22.390000000000008,
+                "distance": -22.39,
                 "atingida": false,
                 "tracks_goal": true,
                 "series": [
@@ -6217,7 +6973,7 @@
                   },
                   {
                     "ano": 2019,
-                    "valor": 50.88999999999999
+                    "valor": 50.89
                   },
                   {
                     "ano": 2021,
@@ -6225,9 +6981,22 @@
                   },
                   {
                     "ano": 2023,
-                    "valor": 47.60999999999999
+                    "valor": 47.61
                   }
                 ],
+                "trend": {
+                  "status": "unavailable",
+                  "label": null,
+                  "start_year": null,
+                  "end_year": null,
+                  "observations": 3,
+                  "method": "theil_sen_v1",
+                  "slope": null,
+                  "threshold": null,
+                  "consistency": null,
+                  "unavailable_reason": "three_observations_not_consecutive",
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "50,8%",
                   "end_value": "47,6%",
@@ -6269,13 +7038,26 @@
                   },
                   {
                     "ano": 2021,
-                    "valor": 14.690000000000001
+                    "valor": 14.69
                   },
                   {
                     "ano": 2023,
                     "valor": 16.39
                   }
                 ],
+                "trend": {
+                  "status": "unavailable",
+                  "label": null,
+                  "start_year": null,
+                  "end_year": null,
+                  "observations": 3,
+                  "method": "theil_sen_v1",
+                  "slope": null,
+                  "threshold": null,
+                  "consistency": null,
+                  "unavailable_reason": "three_observations_not_consecutive",
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "17,0%",
                   "end_value": "16,4%",
@@ -6320,6 +7102,19 @@
                     "valor": 6.53
                   }
                 ],
+                "trend": {
+                  "status": "unavailable",
+                  "label": null,
+                  "start_year": null,
+                  "end_year": null,
+                  "observations": 3,
+                  "method": "theil_sen_v1",
+                  "slope": null,
+                  "threshold": null,
+                  "consistency": null,
+                  "unavailable_reason": "three_observations_not_consecutive",
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "9,3%",
                   "end_value": "6,5%",
@@ -6357,7 +7152,7 @@
                   },
                   {
                     "ano": 2019,
-                    "valor": 65.83000000000001
+                    "valor": 65.83
                   },
                   {
                     "ano": 2021,
@@ -6368,6 +7163,19 @@
                     "valor": 58.3
                   }
                 ],
+                "trend": {
+                  "status": "unavailable",
+                  "label": null,
+                  "start_year": null,
+                  "end_year": null,
+                  "observations": 3,
+                  "method": "theil_sen_v1",
+                  "slope": null,
+                  "threshold": null,
+                  "consistency": null,
+                  "unavailable_reason": "three_observations_not_consecutive",
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "61,7%",
                   "end_value": "58,3%",
@@ -6416,6 +7224,19 @@
                     "valor": 36.650000000000006
                   }
                 ],
+                "trend": {
+                  "status": "unavailable",
+                  "label": null,
+                  "start_year": null,
+                  "end_year": null,
+                  "observations": 3,
+                  "method": "theil_sen_v1",
+                  "slope": null,
+                  "threshold": null,
+                  "consistency": null,
+                  "unavailable_reason": "three_observations_not_consecutive",
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "42,3%",
                   "end_value": "36,7%",
@@ -6460,6 +7281,19 @@
                     "valor": 40.14
                   }
                 ],
+                "trend": {
+                  "status": "unavailable",
+                  "label": null,
+                  "start_year": null,
+                  "end_year": null,
+                  "observations": 3,
+                  "method": "theil_sen_v1",
+                  "slope": null,
+                  "threshold": null,
+                  "consistency": null,
+                  "unavailable_reason": "three_observations_not_consecutive",
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "52,8%",
                   "end_value": "40,1%",
@@ -6520,6 +7354,19 @@
                     "valor": 94.5
                   }
                 ],
+                "trend": {
+                  "status": "inconclusive",
+                  "label": null,
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 0.16666666666666902,
+                  "threshold": 0.5,
+                  "consistency": 0.75,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "91,9%",
                   "end_value": "94,5%",
@@ -6580,6 +7427,19 @@
                     "valor": 85.9
                   }
                 ],
+                "trend": {
+                  "status": "up",
+                  "label": "Alta",
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 1.9499999999999993,
+                  "threshold": 0.5,
+                  "consistency": 1.0,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "74,6%",
                   "end_value": "85,9%",
@@ -6640,6 +7500,19 @@
                     "valor": 89.8
                   }
                 ],
+                "trend": {
+                  "status": "inconclusive",
+                  "label": null,
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 1.1125000000000007,
+                  "threshold": 0.7499999999999964,
+                  "consistency": 0.5,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "82,7%",
                   "end_value": "89,8%",
@@ -6734,6 +7607,19 @@
                     "valor": 69.3
                   }
                 ],
+                "trend": {
+                  "status": "inconclusive",
+                  "label": null,
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 1.500000000000001,
+                  "threshold": 1.5500000000000007,
+                  "consistency": 0.5,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "61,3%",
                   "end_value": "69,3%",
@@ -6794,6 +7680,19 @@
                     "valor": 49.7
                   }
                 ],
+                "trend": {
+                  "status": "inconclusive",
+                  "label": null,
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": -0.17499999999999982,
+                  "threshold": 1.799999999999999,
+                  "consistency": 0.5,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "42,6%",
                   "end_value": "49,7%",
@@ -6854,6 +7753,19 @@
                     "valor": 58.6
                   }
                 ],
+                "trend": {
+                  "status": "inconclusive",
+                  "label": null,
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 0.4499999999999993,
+                  "threshold": 1.450000000000001,
+                  "consistency": 0.5,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "50,8%",
                   "end_value": "58,6%",
@@ -6930,6 +7842,19 @@
                     "valor": 44.024205748865356
                   }
                 ],
+                "trend": {
+                  "status": "down",
+                  "label": "Queda",
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": -1.036554198897555,
+                  "threshold": 0.5598665770029783,
+                  "consistency": 0.75,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "21,6%",
                   "end_value": "44,0%",
@@ -7006,6 +7931,19 @@
                     "valor": 79.28092997943638
                   }
                 ],
+                "trend": {
+                  "status": "up",
+                  "label": "Alta",
+                  "start_year": 2020,
+                  "end_year": 2024,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 4.4825123600470995,
+                  "threshold": 1.747473945126643,
+                  "consistency": 0.75,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "52,5%",
                   "end_value": "79,3%",
@@ -7082,6 +8020,19 @@
                     "valor": 27.09677419354839
                   }
                 ],
+                "trend": {
+                  "status": "inconclusive",
+                  "label": null,
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": -0.45905238910895196,
+                  "threshold": 0.5264591082801244,
+                  "consistency": 0.25,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "27,1%",
                   "end_value": "27,1%",
@@ -7201,6 +8152,19 @@
                     "valor": 92.15686274509804
                   }
                 ],
+                "trend": {
+                  "status": "inconclusive",
+                  "label": null,
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": -0.5375816993464053,
+                  "threshold": 0.5,
+                  "consistency": 0.25,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "95,6%",
                   "end_value": "92,2%",
@@ -7259,6 +8223,19 @@
                     "valor": 33.33333333333333
                   }
                 ],
+                "trend": {
+                  "status": "inconclusive",
+                  "label": null,
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 0.7205882352941178,
+                  "threshold": 1.7745098039215712,
+                  "consistency": 0.5,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "36,0%",
                   "end_value": "33,3%",
@@ -7317,6 +8294,19 @@
                     "valor": 76.47058823529412
                   }
                 ],
+                "trend": {
+                  "status": "up",
+                  "label": "Alta",
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 7.2058823529411775,
+                  "threshold": 1.5,
+                  "consistency": 1.0,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "46,0%",
                   "end_value": "76,5%",
@@ -7375,6 +8365,19 @@
                     "valor": 11.76470588235294
                   }
                 ],
+                "trend": {
+                  "status": "up",
+                  "label": "Alta",
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 1.9117647058823526,
+                  "threshold": 0.5,
+                  "consistency": 0.75,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "4,0%",
                   "end_value": "11,8%",
@@ -7433,6 +8436,19 @@
                     "valor": 29.411764705882355
                   }
                 ],
+                "trend": {
+                  "status": "inconclusive",
+                  "label": null,
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 1.4346405228758172,
+                  "threshold": 1.0,
+                  "consistency": 0.5,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "26,0%",
                   "end_value": "29,4%",
@@ -7491,6 +8507,19 @@
                     "valor": 11.76470588235294
                   }
                 ],
+                "trend": {
+                  "status": "inconclusive",
+                  "label": null,
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 0.7843137254901968,
+                  "threshold": 1.0,
+                  "consistency": 0.5,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "10,0%",
                   "end_value": "11,8%",
@@ -7549,6 +8578,19 @@
                     "valor": 78.43137254901961
                   }
                 ],
+                "trend": {
+                  "status": "inconclusive",
+                  "label": null,
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": -0.19607843137254832,
+                  "threshold": 0.5,
+                  "consistency": 0.5,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "76,0%",
                   "end_value": "78,4%",
@@ -7607,6 +8649,19 @@
                     "valor": 52.94117647058824
                   }
                 ],
+                "trend": {
+                  "status": "up",
+                  "label": "Alta",
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 5.372549019607843,
+                  "threshold": 0.5,
+                  "consistency": 1.0,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "28,0%",
                   "end_value": "52,9%",
@@ -7681,6 +8736,19 @@
                     "valor": 84.31372549019608
                   }
                 ],
+                "trend": {
+                  "status": "inconclusive",
+                  "label": null,
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": -0.49183006535947743,
+                  "threshold": 0.5,
+                  "consistency": 0.25,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "88,9%",
                   "end_value": "84,3%",
@@ -7720,6 +8788,19 @@
                     "valor": 62.745098039215684
                   }
                 ],
+                "trend": {
+                  "status": "unavailable",
+                  "label": null,
+                  "start_year": null,
+                  "end_year": null,
+                  "observations": 2,
+                  "method": "theil_sen_v1",
+                  "slope": null,
+                  "threshold": null,
+                  "consistency": null,
+                  "unavailable_reason": "insufficient_observations",
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "76,5%",
                   "end_value": "62,7%",
@@ -7780,6 +8861,19 @@
                     "valor": 93.54838709677419
                   }
                 ],
+                "trend": {
+                  "status": "up",
+                  "label": "Alta",
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 4.516129032258064,
+                  "threshold": 0.887096774193548,
+                  "consistency": 0.75,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "74,2%",
                   "end_value": "93,5%",
@@ -7855,6 +8949,19 @@
                     "valor": 96.7741935483871
                   }
                 ],
+                "trend": {
+                  "status": "inconclusive",
+                  "label": null,
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 0.4211469534050192,
+                  "threshold": 0.5,
+                  "consistency": 0.75,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "100,0%",
                   "end_value": "96,8%",
@@ -7914,6 +9021,19 @@
                     "valor": 79.02542372881356
                   }
                 ],
+                "trend": {
+                  "status": "up",
+                  "label": "Alta",
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 7.071078828469615,
+                  "threshold": 0.5893562366869105,
+                  "consistency": 1.0,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "37,9%",
                   "end_value": "79,0%",
@@ -7974,6 +9094,19 @@
                     "valor": 24.78813559322034
                   }
                 ],
+                "trend": {
+                  "status": "up",
+                  "label": "Alta",
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 2.912763632482521,
+                  "threshold": 1.5236943568113057,
+                  "consistency": 0.75,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "8,0%",
                   "end_value": "24,8%",
@@ -8033,6 +9166,19 @@
                     "valor": 29.411764705882355
                   }
                 ],
+                "trend": {
+                  "status": "down",
+                  "label": "Queda",
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": -2.931372549019607,
+                  "threshold": 1.5,
+                  "consistency": 0.75,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "46,0%",
                   "end_value": "29,4%",
@@ -8091,6 +9237,19 @@
                     "valor": 45.09803921568628
                   }
                 ],
+                "trend": {
+                  "status": "up",
+                  "label": "Alta",
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 2.0,
+                  "threshold": 0.5,
+                  "consistency": 1.0,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "36,0%",
                   "end_value": "45,1%",
@@ -8149,6 +9308,19 @@
                     "valor": 23.52941176470588
                   }
                 ],
+                "trend": {
+                  "status": "up",
+                  "label": "Alta",
+                  "start_year": 2021,
+                  "end_year": 2025,
+                  "observations": 5,
+                  "method": "theil_sen_v1",
+                  "slope": 3.3627450980392153,
+                  "threshold": 1.53921568627451,
+                  "consistency": 0.75,
+                  "unavailable_reason": null,
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "12,0%",
                   "end_value": "23,5%",
@@ -8201,26 +9373,39 @@
                 "available": true,
                 "start_year": 2010,
                 "end_year": 2022,
-                "start_value": 95.79,
-                "end_value": 97.54,
-                "raw_delta": 1.75,
-                "progress_delta": 1.75,
+                "start_value": 95.79478553406223,
+                "end_value": 97.54487048745666,
+                "raw_delta": 1.7500849533944347,
+                "progress_delta": 1.7500849533944347,
                 "meta": 97.0,
                 "meta_label": "Meta PNE 2031",
                 "direction": "at_least",
-                "distance": 0.5400000000000063,
+                "distance": 0.544870487456663,
                 "atingida": true,
                 "tracks_goal": true,
                 "series": [
                   {
                     "ano": 2010,
-                    "valor": 95.79
+                    "valor": 95.79478553406223
                   },
                   {
                     "ano": 2022,
-                    "valor": 97.54
+                    "valor": 97.54487048745666
                   }
                 ],
+                "trend": {
+                  "status": "unavailable",
+                  "label": null,
+                  "start_year": null,
+                  "end_year": null,
+                  "observations": 1,
+                  "method": "theil_sen_v1",
+                  "slope": null,
+                  "threshold": null,
+                  "consistency": null,
+                  "unavailable_reason": "insufficient_observations",
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "95,8%",
                   "end_value": "97,5%",
@@ -8257,6 +9442,19 @@
                     "valor": 71.59192521338572
                   }
                 ],
+                "trend": {
+                  "status": "unavailable",
+                  "label": null,
+                  "start_year": null,
+                  "end_year": null,
+                  "observations": 1,
+                  "method": "theil_sen_v1",
+                  "slope": null,
+                  "threshold": null,
+                  "consistency": null,
+                  "unavailable_reason": "insufficient_observations",
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "71,6%",
                   "end_value": "71,6%",
@@ -8293,6 +9491,19 @@
                     "valor": 77.72065870872179
                   }
                 ],
+                "trend": {
+                  "status": "unavailable",
+                  "label": null,
+                  "start_year": null,
+                  "end_year": null,
+                  "observations": 1,
+                  "method": "theil_sen_v1",
+                  "slope": null,
+                  "threshold": null,
+                  "consistency": null,
+                  "unavailable_reason": "insufficient_observations",
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "77,7%",
                   "end_value": "77,7%",
@@ -8313,22 +9524,35 @@
                 "available": true,
                 "start_year": 2022,
                 "end_year": 2022,
-                "start_value": 52.14740550060967,
-                "end_value": 52.14740550060967,
+                "start_value": 52.14740550060968,
+                "end_value": 52.14740550060968,
                 "raw_delta": 0.0,
                 "progress_delta": 0.0,
                 "meta": 75.0,
                 "meta_label": "Meta PNE 2036",
                 "direction": "at_least",
-                "distance": -22.852594499390328,
+                "distance": -22.85259449939032,
                 "atingida": false,
                 "tracks_goal": true,
                 "series": [
                   {
                     "ano": 2022,
-                    "valor": 52.14740550060967
+                    "valor": 52.14740550060968
                   }
                 ],
+                "trend": {
+                  "status": "unavailable",
+                  "label": null,
+                  "start_year": null,
+                  "end_year": null,
+                  "observations": 1,
+                  "method": "theil_sen_v1",
+                  "slope": null,
+                  "threshold": null,
+                  "consistency": null,
+                  "unavailable_reason": "insufficient_observations",
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "52,1%",
                   "end_value": "52,1%",
@@ -8365,6 +9589,19 @@
                     "valor": 57.46078846969055
                   }
                 ],
+                "trend": {
+                  "status": "unavailable",
+                  "label": null,
+                  "start_year": null,
+                  "end_year": null,
+                  "observations": 1,
+                  "method": "theil_sen_v1",
+                  "slope": null,
+                  "threshold": null,
+                  "consistency": null,
+                  "unavailable_reason": "insufficient_observations",
+                  "threshold_method": "percent_tau_mad_v1"
+                },
                 "display": {
                   "start_value": "57,5%",
                   "end_value": "57,5%",

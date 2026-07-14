@@ -14,7 +14,7 @@ const LEGAL_GOALS_TITLE = 'Metas legais do PNE 2026\u20132036';
 const DIAGNOSIS = 'Diagn\u00f3stico municipal';
 const EDUCATION_EMPTY = 'Nenhum indicador encontrado para \u201cconsulta sem resultado\u201d nesta se\u00e7\u00e3o.';
 const EDUCATION_DEMAND_NOTE = 'Os indicadores consideram os dados dispon\u00edveis para o munic\u00edpio. Matr\u00edculas localizadas no territ\u00f3rio n\u00e3o representam necessariamente a resid\u00eancia dos estudantes. As proje\u00e7\u00f5es s\u00e3o cen\u00e1rios estimados e n\u00e3o constituem previs\u00e3o oficial nem c\u00e1lculo direto de d\u00e9ficit de vagas.';
-const EDUCATION_EMPTY_SPARKLINE_CARD = /^Abrir detalhe do indicador Matr\u00edculas na rede privada\./;
+const EDUCATION_NO_COMPARISON_CARD = /^Abrir detalhe do indicador Matr\u00edculas na rede privada\./;
 const EDUCATION_SCHOOL_STAGE_METHOD = 'Uma mesma escola pode ofertar mais de uma etapa; por isso, a soma por etapa pode ser maior que o total de escolas.';
 const LEGAL_GOALS_EMPTY = 'Nenhuma meta com acompanhamento municipal compar\u00e1vel encontrada para os filtros selecionados.';
 const EXPLORABLE_CARD_NAME = /^Abrir detalhe do indicador /;
@@ -57,6 +57,17 @@ const RESPONSIVE_VIEWPORTS = [
   { width: 320, height: 568 },
 ];
 const MOBILE_DATA_SOURCE_VIEWPORT = { width: 390, height: 844 };
+const SIDEBAR_GROUP_IDS = Object.freeze(['pne', 'educacao', 'financeiros']);
+const EDUCATION_SIDEBAR_ROUTES = Object.freeze([
+  { key: 'visao-geral', href: '#educacao?secao=visao-geral' },
+  { key: 'atendimento', href: '#educacao?secao=atendimento' },
+  { key: 'trajetoria', href: '#educacao?secao=trajetoria' },
+  { key: 'profissionais', href: '#educacao?secao=profissionais' },
+  { key: 'infraestrutura', href: '#educacao?secao=infraestrutura' },
+  { key: 'modalidades', href: '#educacao?secao=modalidades' },
+  { key: 'demanda', href: '#educacao?secao=demanda' },
+  { key: 'metodologia', href: '#educacao?secao=metodologia' },
+]);
 const EDUCATION_CARD_CLASSES = Object.freeze({
   root: 'education-indicator-card',
   statusPrefix: 'education-indicator-card--',
@@ -65,13 +76,12 @@ const EDUCATION_CARD_CLASSES = Object.freeze({
   title: 'education-indicator-card__title',
   description: 'education-indicator-card__description',
   valueRow: 'education-indicator-card__value-row',
-  support: 'education-indicator-card__support',
+  metadata: 'education-indicator-card__metadata',
+  metadataItem: 'education-indicator-card__metadata-item',
+  divider: 'education-indicator-card__divider',
+  insight: 'education-indicator-card__insight',
   footer: 'education-indicator-card__footer',
-  sparkline: Object.freeze({
-    root: 'education-indicator-card__sparkline',
-    period: 'education-indicator-card__sparkline-period',
-    empty: 'education-indicator-card__sparkline--empty',
-  }),
+  action: 'education-indicator-card__action',
 });
 const FINANCIAL_CARD_CLASSES = Object.freeze({
   root: 'financial-indicator-card',
@@ -81,13 +91,12 @@ const FINANCIAL_CARD_CLASSES = Object.freeze({
   title: 'financial-indicator-card__title',
   description: 'financial-indicator-card__description',
   valueRow: 'financial-indicator-card__value-row',
-  support: 'financial-indicator-card__support',
+  metadata: 'financial-indicator-card__metadata',
+  metadataItem: 'financial-indicator-card__metadata-item',
+  divider: 'financial-indicator-card__divider',
+  insight: 'financial-indicator-card__insight',
   footer: 'financial-indicator-card__footer',
-  sparkline: Object.freeze({
-    root: 'financial-indicator-card__sparkline',
-    period: 'financial-indicator-card__sparkline-period',
-    empty: 'financial-indicator-card__sparkline--empty',
-  }),
+  action: 'financial-indicator-card__action',
 });
 
 const dataSourceLegibilityEvidence = [];
@@ -244,7 +253,7 @@ async function selectMunicipality(page, municipality = MUNICIPALITY, waitForTitl
       name: 'Informação para compreender, acompanhar e planejar a educação municipal',
       exact: true,
     }).waitFor({ state: 'visible' });
-    await page.getByRole('complementary', { name: 'Contexto operacional do município' })
+    await page.getByRole('complementary', { name: 'Contexto municipal' })
       .getByText(municipality, { exact: true })
       .waitFor({ state: 'visible' });
   }
@@ -330,6 +339,334 @@ async function navigateTo(page, navigationName, pageTitle) {
   await waitForPageTitle(page, pageTitle);
 }
 
+async function readSidebarState(page) {
+  return page.evaluate(() => {
+    const groups = {};
+    for (const group of document.querySelectorAll('.nav-group')) {
+      const groupClass = [...group.classList].find((value) => value.startsWith('nav-group--'));
+      const id = groupClass?.replace('nav-group--', '');
+      if (!id) continue;
+
+      const button = group.querySelector('.nav-item--group');
+      const panel = group.querySelector('.nav-subitems');
+      groups[id] = {
+        display: panel ? getComputedStyle(panel).display : 'none',
+        expanded: button?.getAttribute('aria-expanded'),
+        hidden: panel?.hidden ?? true,
+      };
+    }
+
+    const drawer = document.querySelector('.app-header');
+    const menuButton = document.querySelector('.sidebar-menu-button');
+    return {
+      drawer: {
+        ariaHidden: drawer?.getAttribute('aria-hidden') ?? null,
+        inert: drawer?.hasAttribute('inert') ?? false,
+        open: drawer?.classList.contains('is-drawer-open') ?? false,
+      },
+      groups,
+      menuExpanded: menuButton?.getAttribute('aria-expanded') ?? null,
+    };
+  });
+}
+
+async function assertSidebarState(page, openGroup, context) {
+  const state = await readSidebarState(page);
+  for (const groupId of SIDEBAR_GROUP_IDS) {
+    const group = state.groups[groupId];
+    assert.ok(group, `${context}: grupo ${groupId} presente`);
+    const isOpen = openGroup === groupId;
+    assert.equal(group.expanded, String(isOpen), `${context}: aria-expanded de ${groupId}`);
+    assert.equal(group.hidden, !isOpen, `${context}: hidden de ${groupId}`);
+    assert.equal(group.display, isOpen ? 'block' : 'none', `${context}: display de ${groupId}`);
+  }
+}
+
+async function clickSidebarGroup(page, groupId, shouldOpen, context) {
+  const selector = `.nav-group--${groupId} .nav-item--group`;
+  const control = page.locator(selector);
+  assert.equal(await control.count(), 1, `${context}: controle ${groupId} único`);
+  await control.evaluate((element) => element.click());
+  await page.waitForFunction(
+    ({ targetSelector, expected }) => document.querySelector(targetSelector)?.getAttribute('aria-expanded') === expected,
+    { targetSelector: selector, expected: shouldOpen ? 'true' : 'false' },
+  );
+}
+
+async function clickSidebarLink(page, href, pageTitle, context) {
+  const link = page.locator(`.top-nav a[href="${href}"]`);
+  assert.equal(await link.count(), 1, `${context}: link ${href} único`);
+  await link.click();
+  await page.waitForFunction((expected) => window.location.hash === expected, href);
+  if (pageTitle) await waitForPageTitle(page, pageTitle);
+}
+
+async function assertSidebarCurrentLink(page, groupId, href, context) {
+  const link = page.locator(`.nav-group--${groupId} a[href="${href}"]`);
+  assert.equal(await link.count(), 1, `${context}: item corrente ${href} único`);
+  await page.waitForFunction(
+    ({ targetGroupId, targetHref }) => document.querySelector(`.nav-group--${targetGroupId} a[aria-current="page"]`)?.getAttribute('href') === targetHref,
+    { targetGroupId: groupId, targetHref: href },
+  );
+  assert.equal(await link.getAttribute('aria-current'), 'page', `${context}: aria-current em ${href}`);
+  assert.ok(
+    (await link.getAttribute('class'))?.includes('is-active'),
+    `${context}: classe ativa em ${href}`,
+  );
+}
+
+async function assertSidebarVerticalLayout(page, groupId, context) {
+  const layout = await page.evaluate((targetGroupId) => {
+    const sidebar = document.querySelector('.app-header');
+    const navigation = document.querySelector('.top-nav');
+    const group = document.querySelector(`.nav-group--${targetGroupId}`);
+    const button = group?.querySelector(':scope > .nav-item--group');
+    const submenu = group?.querySelector(':scope > .nav-subitems');
+    const submenuList = submenu?.querySelector(':scope > ul');
+    const links = submenu ? [...submenu.querySelectorAll(':scope a')] : [];
+    const directGroups = navigation ? [...navigation.querySelectorAll(':scope > .nav-group')] : [];
+    const rectOf = (node) => {
+      if (!node) return null;
+      const rect = node.getBoundingClientRect();
+      return {
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+      };
+    };
+    const styleOf = (node, properties) => {
+      if (!node) return null;
+      const style = getComputedStyle(node);
+      return Object.fromEntries(properties.map((property) => [property, style[property]]));
+    };
+    const flowProperties = [
+      'display',
+      'flexDirection',
+      'flexWrap',
+      'gridAutoFlow',
+      'position',
+      'left',
+      'right',
+      'transform',
+      'width',
+      'minWidth',
+      'flexBasis',
+      'whiteSpace',
+      'overflowX',
+      'overflowY',
+    ];
+    return {
+      viewport: { width: window.innerWidth, height: window.innerHeight },
+      sidebar: { rect: rectOf(sidebar), styles: styleOf(sidebar, flowProperties) },
+      navigation: {
+        rect: rectOf(navigation),
+        styles: styleOf(navigation, flowProperties),
+        clientWidth: navigation?.clientWidth ?? null,
+        scrollWidth: navigation?.scrollWidth ?? null,
+        scrollLeft: navigation?.scrollLeft ?? null,
+      },
+      group: { rect: rectOf(group), styles: styleOf(group, flowProperties) },
+      button: { rect: rectOf(button), styles: styleOf(button, flowProperties) },
+      submenu: { rect: rectOf(submenu), styles: styleOf(submenu, flowProperties) },
+      submenuList: { rect: rectOf(submenuList), styles: styleOf(submenuList, flowProperties) },
+      firstItem: { rect: rectOf(links[0]), styles: styleOf(links[0], flowProperties) },
+      lastItem: { rect: rectOf(links.at(-1)), styles: styleOf(links.at(-1), flowProperties) },
+      directGroups: directGroups.map((node) => rectOf(node)),
+      body: { clientWidth: document.body.clientWidth, scrollWidth: document.body.scrollWidth },
+    };
+  }, groupId);
+
+  const tolerance = 1.5;
+  assert.ok(layout.sidebar.rect, `${context}: sidebar encontrada`);
+  assert.ok(layout.navigation.rect, `${context}: área rolável encontrada`);
+  assert.ok(layout.group.rect, `${context}: grupo ${groupId} encontrado`);
+  assert.ok(layout.submenu.rect, `${context}: submenu encontrado`);
+  assert.ok(
+    ['flex', 'block'].includes(layout.navigation.styles.display),
+    `${context}: navegação mantém um modo de fluxo vertical válido`,
+  );
+  if (layout.navigation.styles.display === 'flex') {
+    assert.equal(layout.navigation.styles.flexDirection, 'column', `${context}: navegação vertical`);
+    assert.equal(layout.navigation.styles.flexWrap, 'nowrap', `${context}: navegação não cria colunas`);
+  }
+  assert.equal(layout.navigation.styles.overflowX, 'hidden', `${context}: navegação sem overflow horizontal`);
+  assert.equal(layout.group.styles.flexBasis, 'auto', `${context}: grupo mantém flex-basis natural`);
+  assert.equal(layout.group.styles.minWidth, '0px', `${context}: grupo aceita min-width 0`);
+  assert.equal(layout.group.styles.position, 'relative', `${context}: grupo permanece no fluxo`);
+  assert.equal(layout.submenu.styles.position, 'static', `${context}: submenu em fluxo estático`);
+  assert.equal(layout.submenu.styles.left, 'auto', `${context}: submenu sem left lateral`);
+  assert.equal(layout.submenu.styles.right, 'auto', `${context}: submenu sem right lateral`);
+  assert.equal(layout.submenu.styles.transform, 'none', `${context}: submenu sem transform lateral`);
+  assert.equal(layout.submenuList.styles.gridAutoFlow, 'row', `${context}: itens do submenu em fluxo vertical`);
+  assert.ok(
+    layout.submenu.rect.right <= layout.navigation.rect.right + tolerance,
+    `${context}: submenu cabe na largura da navegação`,
+  );
+  assert.ok(
+    layout.submenu.rect.left >= layout.navigation.rect.left - tolerance,
+    `${context}: submenu não sai pela esquerda`,
+  );
+  assert.ok(
+    layout.navigation.scrollWidth <= layout.navigation.clientWidth + tolerance,
+    `${context}: scrollWidth da navegação não excede a largura visível`,
+  );
+  assert.ok(
+    layout.body.scrollWidth <= layout.body.clientWidth + tolerance,
+    `${context}: documento não cria rolagem horizontal`,
+  );
+  assert.ok(
+    layout.directGroups.every((rect) => rect.left >= layout.navigation.rect.left - tolerance),
+    `${context}: grupos permanecem dentro da navegação`,
+  );
+  const groupLefts = layout.directGroups.map((rect) => rect.left);
+  assert.ok(
+    Math.max(...groupLefts) - Math.min(...groupLefts) <= tolerance,
+    `${context}: grupos mantêm o mesmo eixo vertical`,
+  );
+  assert.ok(
+    layout.firstItem.rect.top < layout.lastItem.rect.top,
+    `${context}: primeiro e último item seguem para baixo`,
+  );
+}
+
+async function verifySidebarDesktopFlow(page, viewport) {
+  const context = `Sidebar desktop ${viewport.width}x${viewport.height}`;
+  await page.goto(`${BASE_URL}/#home`, { waitUntil: 'domcontentloaded' });
+  await page.getByRole('heading', { level: 1 }).waitFor({ state: 'visible' });
+  await assertSidebarState(page, null, `${context}: inicial`);
+
+  const educationControl = page.locator('.nav-group--educacao .nav-item--group');
+  await clickSidebarGroup(page, 'educacao', true, context);
+  await assertSidebarState(page, 'educacao', `${context}: abertura`);
+  await assertSidebarVerticalLayout(page, 'educacao', `${context}: abertura`);
+
+  await educationControl.press('Enter');
+  await assertSidebarState(page, null, `${context}: Enter fecha somente educação`);
+  assert.equal(
+    await page.evaluate(() => document.activeElement?.matches('.nav-group--educacao .nav-item--group')),
+    true,
+    `${context}: foco permanece no controle após Enter`,
+  );
+  await educationControl.press('Space');
+  await assertSidebarState(page, 'educacao', `${context}: Espaço reabre educação`);
+
+  for (const route of EDUCATION_SIDEBAR_ROUTES) {
+    await clickSidebarLink(page, route.href, EDUCATION, `${context}: rota ${route.key}`);
+    await assertSidebarState(page, 'educacao', `${context}: rota ${route.key}`);
+    await assertSidebarCurrentLink(page, 'educacao', route.href, `${context}: rota ${route.key}`);
+  }
+
+  const reloadRoute = EDUCATION_SIDEBAR_ROUTES.at(-1);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await waitForPageTitle(page, EDUCATION);
+  await assertSidebarState(page, 'educacao', `${context}: reload ${reloadRoute.key}`);
+  await assertSidebarCurrentLink(page, 'educacao', reloadRoute.href, `${context}: reload ${reloadRoute.key}`);
+
+  const backRoute = EDUCATION_SIDEBAR_ROUTES[0];
+  const forwardRoute = EDUCATION_SIDEBAR_ROUTES[2];
+  await clickSidebarLink(page, backRoute.href, EDUCATION, `${context}: prepara Back`);
+  await clickSidebarLink(page, forwardRoute.href, EDUCATION, `${context}: prepara Forward`);
+  await page.goBack();
+  await page.waitForFunction((expected) => window.location.hash === expected, backRoute.href);
+  await waitForPageTitle(page, EDUCATION);
+  await assertSidebarState(page, 'educacao', `${context}: Back`);
+  await assertSidebarCurrentLink(page, 'educacao', backRoute.href, `${context}: Back`);
+  await page.goForward();
+  await page.waitForFunction((expected) => window.location.hash === expected, forwardRoute.href);
+  await waitForPageTitle(page, EDUCATION);
+  await assertSidebarState(page, 'educacao', `${context}: Forward`);
+  await assertSidebarCurrentLink(page, 'educacao', forwardRoute.href, `${context}: Forward`);
+
+  await clickSidebarGroup(page, 'pne', true, context);
+  await assertSidebarState(page, 'pne', `${context}: alternância para PNE`);
+  await clickSidebarLink(page, '#pne-overview', null, `${context}: rota PNE`);
+  await page.getByRole('heading', { level: 1 }).waitFor({ state: 'visible' });
+  await assertSidebarState(page, 'pne', `${context}: PNE ativo`);
+  await assertSidebarCurrentLink(page, 'pne', '#pne-overview', `${context}: PNE ativo`);
+
+  await clickSidebarGroup(page, 'educacao', true, context);
+  await assertSidebarState(page, 'educacao', `${context}: volta para educação`);
+  await clickSidebarLink(page, EDUCATION_SIDEBAR_ROUTES[0].href, EDUCATION, `${context}: educação após PNE`);
+
+  await clickSidebarGroup(page, 'financeiros', true, context);
+  await assertSidebarState(page, 'financeiros', `${context}: alternância para financiamento`);
+  await assertSidebarVerticalLayout(page, 'financeiros', `${context}: alternância para financiamento`);
+  await clickSidebarLink(page, '#financeiros', FINANCE_TITLE, `${context}: financiamento ativo`);
+  await assertSidebarState(page, 'financeiros', `${context}: financiamento após navegação`);
+  await assertSidebarCurrentLink(page, 'financeiros', '#financeiros', `${context}: financiamento ativo`);
+
+  await page.goto(`${BASE_URL}/${EDUCATION_SIDEBAR_ROUTES[0].href}`, { waitUntil: 'domcontentloaded' });
+  await waitForPageTitle(page, EDUCATION);
+  await assertSidebarState(page, 'educacao', `${context}: URL direta`);
+  await assertSidebarCurrentLink(page, 'educacao', EDUCATION_SIDEBAR_ROUTES[0].href, `${context}: URL direta`);
+}
+
+async function verifySidebarMobileDrawerFlow(page, viewport) {
+  const context = `Sidebar drawer ${viewport.width}x${viewport.height}`;
+  await page.goto(`${BASE_URL}/#home`, { waitUntil: 'domcontentloaded' });
+  await page.getByRole('heading', { level: 1 }).waitFor({ state: 'visible' });
+
+  const menuButton = page.locator('.sidebar-menu-button');
+  assert.equal(await menuButton.count(), 1, `${context}: botão Menu único`);
+  assert.equal(await menuButton.getAttribute('aria-expanded'), 'false', `${context}: drawer começa fechado`);
+  await assertSidebarState(page, null, `${context}: inicial`);
+  let state = await readSidebarState(page);
+  assert.equal(state.drawer.ariaHidden, 'true', `${context}: drawer fechado usa aria-hidden`);
+  assert.equal(state.drawer.inert, true, `${context}: drawer fechado usa inert`);
+
+  await menuButton.click();
+  await page.waitForFunction(() => document.querySelector('.sidebar-menu-button')?.getAttribute('aria-expanded') === 'true');
+  state = await readSidebarState(page);
+  assert.equal(state.drawer.open, true, `${context}: drawer abre`);
+  assert.equal(state.drawer.ariaHidden, null, `${context}: drawer aberto fica exposto`);
+  assert.equal(state.drawer.inert, false, `${context}: drawer aberto fica interativo`);
+  await assertSidebarState(page, null, `${context}: grupos recolhidos no Home`);
+
+  await clickSidebarGroup(page, 'educacao', true, context);
+  await assertSidebarState(page, 'educacao', `${context}: abertura do grupo`);
+  await assertSidebarVerticalLayout(page, 'educacao', `${context}: abertura do grupo`);
+  const selectedRoute = EDUCATION_SIDEBAR_ROUTES[1];
+  await clickSidebarLink(page, selectedRoute.href, EDUCATION, `${context}: item do submenu`);
+  state = await readSidebarState(page);
+  assert.equal(state.menuExpanded, 'false', `${context}: navegação fecha o drawer`);
+  assert.equal(state.drawer.ariaHidden, 'true', `${context}: drawer fechado após navegação`);
+  assert.equal(state.drawer.inert, true, `${context}: drawer inerte após navegação`);
+  await assertSidebarState(page, 'educacao', `${context}: grupo preservado após navegação`);
+  await assertSidebarCurrentLink(page, 'educacao', selectedRoute.href, `${context}: item selecionado`);
+
+  await menuButton.click();
+  await page.waitForFunction(() => document.querySelector('.sidebar-menu-button')?.getAttribute('aria-expanded') === 'true');
+  await assertSidebarState(page, 'educacao', `${context}: reabertura preserva grupo`);
+
+  const closeButton = page.locator('.sidebar-close-button');
+  await closeButton.waitFor({ state: 'visible' });
+  await closeButton.press('Escape');
+  await page.waitForFunction(() => document.querySelector('.sidebar-menu-button')?.getAttribute('aria-expanded') === 'false');
+  assert.equal(
+    await page.evaluate(() => document.activeElement?.matches('.sidebar-menu-button')),
+    true,
+    `${context}: Escape devolve foco ao botão Menu`,
+  );
+
+  const directRoute = EDUCATION_SIDEBAR_ROUTES.at(-1);
+  await page.goto(`${BASE_URL}/${directRoute.href}`, { waitUntil: 'domcontentloaded' });
+  await waitForPageTitle(page, EDUCATION);
+  await assertSidebarState(page, 'educacao', `${context}: URL direta/reload`);
+  await assertSidebarCurrentLink(page, 'educacao', directRoute.href, `${context}: URL direta/reload`);
+
+  await menuButton.click();
+  await page.waitForFunction(() => document.querySelector('.sidebar-menu-button')?.getAttribute('aria-expanded') === 'true');
+  await clickSidebarGroup(page, 'pne', true, context);
+  await assertSidebarState(page, 'pne', `${context}: alternância para PNE`);
+  await clickSidebarGroup(page, 'financeiros', true, context);
+  await assertSidebarState(page, 'financeiros', `${context}: alternância para financiamento`);
+  await clickSidebarGroup(page, 'educacao', true, context);
+  await assertSidebarState(page, 'educacao', `${context}: retorno para educação`);
+}
+
 async function firstExplorableCard(page) {
   const card = page.getByRole('button', { name: EXPLORABLE_CARD_NAME }).first();
   await card.waitFor({ state: 'visible' });
@@ -344,7 +681,7 @@ async function assertExplorableCardGridColumns(grid, viewport, context) {
       .filter(Boolean)
       .length
   ));
-  const expectedColumnCount = viewport.width > 1180 ? 3 : 2;
+  const expectedColumnCount = viewport.width > 1180 ? 3 : viewport.width > 700 ? 2 : 1;
 
   assert.equal(
     columnCount,
@@ -428,6 +765,52 @@ async function assertControlledAriaPressedTransition(page) {
 }
 
 async function assertExplorableIndicatorCardStructure(card, { classes, context }) {
+  if (classes.root === 'financial-indicator-card') {
+    const evidence = await card.evaluate((element) => ({
+      actionChildren: Array.from(element.querySelector('.financial-indicator-card__action')?.children ?? []).map((child) => Array.from(child.classList)),
+      actionText: element.querySelector('.financial-indicator-card__action')?.textContent?.trim(),
+      ariaLabel: element.getAttribute('aria-label'),
+      ariaPressed: element.getAttribute('aria-pressed'),
+      classNames: Array.from(element.classList),
+      hasSparkline: Boolean(element.querySelector('[class*="sparkline"]')),
+      insightText: element.querySelector('.financial-indicator-card__insight')?.textContent?.trim(),
+      metadataLabels: Array.from(element.querySelectorAll('.financial-indicator-card__metadata-label')).map((node) => node.textContent?.trim()),
+      regionClasses: Array.from(element.children).map((region) => Array.from(region.classList)[0]),
+      regionTags: Array.from(element.children).map((region) => region.tagName),
+      title: element.getAttribute('title'),
+      type: element.getAttribute('type'),
+      valueRowTags: Array.from(element.querySelector('.financial-indicator-card__value-row')?.children ?? []).map((child) => child.tagName),
+      visibleTitle: element.querySelector('.financial-indicator-card__title')?.textContent?.trim(),
+    }));
+    const expectedRegionClasses = [
+      classes.topline,
+      classes.title,
+      classes.description,
+      classes.valueRow,
+      classes.metadata,
+      classes.divider,
+      classes.insight,
+      classes.footer,
+    ];
+
+    assert.equal(evidence.type, 'button', `${context}: card preserva type=button`);
+    assert.equal(evidence.ariaPressed, 'false', `${context}: card preserva aria-pressed inicial`);
+    assert.equal(evidence.title, evidence.visibleTitle, `${context}: title preserva o nome visível do indicador`);
+    assert.ok(evidence.ariaLabel.startsWith('Abrir detalhe do indicador '), `${context}: card preserva aria-label`);
+    assert.ok(evidence.classNames.includes(classes.root), `${context}: classe raiz específica`);
+    assert.ok(evidence.classNames.includes('indicator-card-shell--financial'), `${context}: anatomia editorial de Financiamento`);
+    assert.ok(evidence.classNames.includes('interaction-card--explorable'), `${context}: classe de interação`);
+    assert.deepEqual(evidence.regionTags, Array(8).fill('SPAN'), `${context}: oito regiões diretas em spans`);
+    assert.deepEqual(evidence.regionClasses, expectedRegionClasses, `${context}: ordem e classes das oito regiões`);
+    assert.ok(evidence.metadataLabels.includes('Ano'), `${context}: rótulo Ano permanece no bloco de metadados`);
+    assert.deepEqual(evidence.valueRowTags.slice(0, 1), ['STRONG'], `${context}: valor principal usa strong`);
+    assert.match(evidence.insightText, /Leitura/, `${context}: bloco secundário preserva Leitura`);
+    assert.equal(evidence.actionText, '', `${context}: ação visual permanece reduzida ao chevron`);
+    assert.ok(evidence.actionChildren.at(-1).includes('interaction-chevron'), `${context}: InteractionChevron preservado`);
+    assert.equal(evidence.hasSparkline, false, `${context}: card financeiro não renderiza sparkline`);
+    return;
+  }
+
   const evidence = await card.evaluate((element) => {
     const regions = Array.from(element.children);
     const sparkline = regions[5];
@@ -490,22 +873,83 @@ async function assertExplorableIndicatorCardStructure(card, { classes, context }
   assert.equal(evidence.sparkline.childClasses[1][0], classes.sparkline.period, `${context}: classe do per\u00edodo da sparkline`);
 }
 
-async function assertEmptySparklineState(card, { classes, context }) {
+async function assertEducationIndicatorCardStructure(card, { classes, context }) {
   const evidence = await card.evaluate((element) => {
-    const sparkline = element.children[5];
+    const regions = Array.from(element.children);
+    const footer = element.querySelector('.education-indicator-card__footer');
+    const action = element.querySelector('.education-indicator-card__action');
+    const metadata = element.querySelector('.education-indicator-card__metadata');
+    const insight = element.querySelector('.education-indicator-card__insight');
+
     return {
-      ariaHidden: sparkline?.getAttribute('aria-hidden') ?? null,
-      childElementCount: sparkline?.childElementCount,
-      classNames: Array.from(sparkline?.classList ?? []),
-      text: sparkline?.textContent?.trim(),
+      actionChildren: Array.from(action?.children ?? []).map((child) => Array.from(child.classList)),
+      actionText: action?.textContent?.trim(),
+      ariaLabel: element.getAttribute('aria-label'),
+      ariaPressed: element.getAttribute('aria-pressed'),
+      classNames: Array.from(element.classList),
+      footerChildren: Array.from(footer?.children ?? []).map((child) => Array.from(child.classList)),
+      hasHistoryCopy: (element.textContent ?? '').includes('Histórico não disponível'),
+      hasSparkline: Boolean(element.querySelector('[class*="sparkline"]')),
+      insightText: insight?.textContent?.trim(),
+      metadataLabels: Array.from(metadata?.querySelectorAll('.education-indicator-card__metadata-label') ?? []).map((node) => node.textContent?.trim()),
+      metadataItemCount: metadata?.querySelectorAll('.education-indicator-card__metadata-item').length ?? 0,
+      regionClasses: regions.map((region) => Array.from(region.classList)),
+      regionTags: regions.map((region) => region.tagName),
+      title: element.getAttribute('title'),
+      type: element.getAttribute('type'),
+      valueRowTags: Array.from(element.querySelector('.education-indicator-card__value-row')?.children ?? []).map((child) => child.tagName),
+      visibleTitle: element.querySelector('.education-indicator-card__title')?.textContent?.trim(),
     };
   });
+  const expectedRegionClasses = [
+    classes.topline,
+    classes.title,
+    classes.description,
+    classes.valueRow,
+    classes.metadata,
+    classes.divider,
+    classes.insight,
+    classes.footer,
+  ];
 
-  assert.ok(evidence.classNames.includes(classes.sparkline.root), `${context}: classe raiz da sparkline vazia`);
-  assert.ok(evidence.classNames.includes(classes.sparkline.empty), `${context}: estado vazio da sparkline`);
-  assert.equal(evidence.childElementCount, 0, `${context}: sparkline vazia n\u00e3o adiciona estrutura`);
-  assert.equal(evidence.text, 'Hist\u00f3rico n\u00e3o dispon\u00edvel.', `${context}: texto da sparkline vazia`);
-  assert.equal(evidence.ariaHidden, null, `${context}: atributo ARIA da sparkline vazia permanece inalterado`);
+  assert.equal(evidence.type, 'button', `${context}: card preserva type=button`);
+  assert.equal(evidence.ariaPressed, 'false', `${context}: card preserva aria-pressed inicial`);
+  assert.equal(evidence.title, evidence.visibleTitle, `${context}: title preserva o nome visível do indicador`);
+  assert.ok(evidence.ariaLabel.startsWith('Abrir detalhe do indicador '), `${context}: card preserva aria-label`);
+  assert.ok(evidence.classNames.includes(classes.root), `${context}: classe raiz específica`);
+  assert.ok(evidence.classNames.includes('indicator-card-shell--education'), `${context}: anatomia editorial de Educação`);
+  assert.ok(evidence.classNames.includes('interaction-card--explorable'), `${context}: classe de interação`);
+  assert.ok(evidence.classNames.some((className) => className.startsWith(classes.statusPrefix)), `${context}: modificador de status específico`);
+  assert.deepEqual(evidence.regionTags, Array(8).fill('SPAN'), `${context}: oito regiões diretas em spans`);
+  assert.deepEqual(
+    evidence.regionClasses.map((classNames) => classNames[0]),
+    expectedRegionClasses,
+    `${context}: ordem e classes das oito regiões`,
+  );
+  assert.ok(evidence.metadataItemCount >= 1, `${context}: ano permanece no bloco de metadados`);
+  assert.ok(evidence.metadataLabels.includes('Ano'), `${context}: rótulo Ano permanece no bloco de metadados`);
+  assert.deepEqual(evidence.valueRowTags.slice(0, 1), ['STRONG'], `${context}: valor principal usa strong`);
+  assert.match(evidence.insightText, /Leitura/, `${context}: bloco secundário preserva Leitura`);
+  assert.equal(evidence.actionText, '', `${context}: ação visual permanece reduzida ao chevron`);
+  assert.ok(evidence.actionChildren.at(-1).includes('interaction-chevron'), `${context}: InteractionChevron preservado`);
+  assert.equal(evidence.hasSparkline, false, `${context}: card de Educação não renderiza sparkline`);
+  assert.equal(evidence.hasHistoryCopy, false, `${context}: card de Educação não renderiza mensagem de histórico`);
+}
+
+async function assertEducationCardWithoutComparison(card, context) {
+  const evidence = await card.evaluate((element) => ({
+    hasSparkline: Boolean(element.querySelector('[class*="sparkline"]')),
+    insightText: element.querySelector('.education-indicator-card__insight')?.textContent?.trim() ?? '',
+    metadataLabels: Array.from(element.querySelectorAll('.education-indicator-card__metadata-label')).map((node) => node.textContent?.trim()),
+    periodCount: element.querySelectorAll('.education-indicator-card__insight-item').length,
+    text: element.textContent ?? '',
+  }));
+
+  assert.equal(evidence.hasSparkline, false, `${context}: card sem comparação não recebe área de gráfico`);
+  assert.equal(evidence.metadataLabels.some((label) => label?.startsWith('Variação')), false, `${context}: variação ausente sem série comparável`);
+  assert.equal(evidence.periodCount, 1, `${context}: período de comparação oculto para série insuficiente`);
+  assert.match(evidence.insightText, /Série disponível|Leitura recente indisponível/, `${context}: leitura sem comparação é contextual`);
+  assert.equal(evidence.text.includes('Histórico não disponível'), false, `${context}: mensagem de histórico removida`);
 }
 
 async function selectedPressedButton(scope, context) {
@@ -527,6 +971,34 @@ async function verifyPne2014Flow(page, viewport) {
   const cards = page.getByRole('button', { name: EXPLORABLE_CARD_NAME });
   const initialCardCount = await cards.count();
   assert.ok(initialCardCount > 0, `${PNE_2014}: deve haver ao menos um card explorável`);
+
+  const closedCards = page.locator('.meta-card--closed-cycle');
+  await closedCards.first().waitFor({ state: 'visible' });
+  const closedCardEvidence = await closedCards.evaluateAll((elements) => elements.map((element) => ({
+    hasHistory: /histórico não disponível|histórico/i.test(element.textContent ?? ''),
+    hasReading: Boolean(element.querySelector('.meta-card__reading')),
+    hasSparkline: Boolean(element.querySelector('.meta-card__sparkline')),
+    metricCount: element.querySelectorAll('.meta-card__metric').length,
+    referenceCount: element.querySelectorAll('.meta-card__state-reference').length,
+  })));
+  assert.ok(
+    closedCardEvidence.every(({ hasHistory, hasReading, hasSparkline, metricCount }) => (
+      !hasHistory && !hasReading && !hasSparkline && metricCount === 3
+    )),
+    `${PNE_2014}: cards encerrados exibem somente as três métricas, barra e rodapé`,
+  );
+  assert.ok(
+    closedCardEvidence.some(({ referenceCount }) => referenceCount === 1),
+    `${PNE_2014}: ao menos um indicador comparável exibe Referência RS`,
+  );
+  const closedValueColumns = await closedCards.first().locator('.meta-card__value-row').evaluate(
+    (element) => getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length,
+  );
+  assert.equal(
+    closedValueColumns,
+    viewport.width <= 680 ? 2 : 3,
+    `${PNE_2014}: bloco municipal/meta/distância usa ${viewport.width <= 680 ? 2 : 3} colunas`,
+  );
 
   const card = await firstExplorableCard(page);
   const cardName = await card.getAttribute('aria-label');
@@ -591,7 +1063,39 @@ async function verifyPne2014Flow(page, viewport) {
 
 async function verifyPne2026Flow(page, viewport) {
   await navigateTo(page, PNE_2026, PNE_2026);
+  const stages = page.getByRole('group', { name: BASIC_EDUCATION_STAGES });
+  const allStagesOption = stages.getByRole('button', { name: 'Todos', exact: true });
+  if (await allStagesOption.getAttribute('aria-pressed') !== 'true') {
+    await allStagesOption.click();
+  }
   const card = await firstExplorableCard(page);
+  const trendCards = page.locator('.meta-card--next-cycle.meta-card--has-trend');
+  const cardsWithoutTrend = page.locator('.meta-card--next-cycle:not(.meta-card--has-trend)');
+  await trendCards.first().waitFor({ state: 'visible' });
+  await cardsWithoutTrend.first().waitFor({ state: 'visible' });
+  const trendCard = trendCards.first();
+  const trendAriaLabel = await trendCard.getAttribute('aria-label');
+  assert.match(
+    trendAriaLabel,
+    /Tendência: (alta|estável|queda), de \d{4} a \d{4}\./i,
+    `${PNE_2026}: o aria-label inclui a tendência e o intervalo observado`,
+  );
+  assert.equal(
+    await trendCard.locator('.meta-card__metric--trend').count(),
+    1,
+    `${PNE_2026}: tendência disponível ocupa uma métrica`,
+  );
+  assert.equal(
+    await trendCard.locator('.meta-card__trend-icon[aria-hidden="true"]').count(),
+    1,
+    `${PNE_2026}: seta é decorativa para leitores de tela`,
+  );
+  assert.doesNotMatch(
+    await trendCard.innerText(),
+    /slope|threshold|consistency|p\.p\.\/ano|inclinação|taxa/i,
+    `${PNE_2026}: auditoria não aparece no card`,
+  );
+  await assertTrendAndReferenceIndependence(page);
   await assertDataSourceLegibility(
     page.locator('.data-source-note').first(),
     `${PNE_2026} em ${viewport.width}x${viewport.height}`,
@@ -616,6 +1120,209 @@ async function verifyPne2026Flow(page, viewport) {
     await page.keyboard.press('Home');
     assert.equal(await firstTab.getAttribute('aria-selected'), 'true', 'PNE: Home retorna à primeira aba');
   }
+}
+
+async function assertTrendAndReferenceIndependence(page) {
+  const evidence = await page.evaluate(async () => {
+    const React = (await import('/node_modules/.vite/deps/react.js')).default;
+    const { createRoot } = (await import('/node_modules/.vite/deps/react-dom_client.js')).default;
+    const { MetaCard } = await import('/src/components/MetaCard.jsx');
+    const host = document.createElement('div');
+    host.className = 'content-area';
+    document.body.append(host);
+    const root = createRoot(host);
+    const item = {
+      key: 'trend-independence-fixture',
+      label: 'Indicador de independência',
+      value_mode: 'percent',
+    };
+    const baseResult = {
+      available: true,
+      end_value: 50,
+      end_year: 2025,
+      meta: 60,
+      distance: -10,
+      direction: 'at_least',
+      atingida: false,
+      display: {
+        distance: '-10,0 p.p.',
+        end_value: '50,0%',
+        interpretation: 'Fixture',
+        start_value: '40,0%',
+        status: 'Meta não atingida',
+        variation: 'Alta de 10,0 p.p.',
+      },
+      series: [
+        { ano: 2021, valor: 40 },
+        { ano: 2022, valor: 42 },
+        { ano: 2023, valor: 44 },
+        { ano: 2024, valor: 47 },
+        { ano: 2025, valor: 50 },
+      ],
+    };
+    const reference = {
+      indicators: {
+        'trend-independence-fixture': {
+          comparison_status: 'comparable',
+          series: [{ comparison_status: 'comparable', value: 48, year: 2025 }],
+        },
+      },
+    };
+    const trend = {
+      consistency: 1,
+      end_year: 2025,
+      label: 'Alta',
+      method: 'theil_sen_v1',
+      observations: 5,
+      slope: 2.5,
+      start_year: 2021,
+      status: 'up',
+      threshold: 0.5,
+      unavailable_reason: null,
+    };
+
+    root.render(React.createElement('div', null,
+      React.createElement(MetaCard, {
+        cycle: 'pne_2026_2036',
+        item,
+        onSelect: () => {},
+        result: { ...baseResult, trend },
+        stateReference: null,
+      }),
+      React.createElement(MetaCard, {
+        cycle: 'pne_2026_2036',
+        item,
+        onSelect: () => {},
+        result: baseResult,
+        stateReference: reference,
+      }),
+      React.createElement(MetaCard, {
+        cycle: 'pne_2014_2024',
+        item,
+        onSelect: () => {},
+        result: {
+          ...baseResult,
+          end_value: 23,
+          end_year: 2024,
+          meta: 50,
+          distance: -27,
+          display: {
+            ...baseResult.display,
+            distance: '-27,0 p.p.',
+            end_value: '23,0%',
+          },
+        },
+        stateReference: {
+          indicators: {
+            'trend-independence-fixture': {
+              comparison_status: 'methodology_pending',
+              series: [],
+            },
+          },
+        },
+      }),
+      React.createElement(MetaCard, {
+        cycle: 'pne_2014_2024',
+        item,
+        onSelect: () => {},
+        result: {
+          ...baseResult,
+          end_value: 70,
+          end_year: 2024,
+          meta: 60,
+          distance: 10,
+          atingida: true,
+          display: {
+            ...baseResult.display,
+            distance: '+10,0 p.p.',
+            end_value: '70,0%',
+            status: 'Meta atingida',
+          },
+        },
+        stateReference: {
+          indicators: {
+            'trend-independence-fixture': {
+              comparison_status: 'comparable',
+              series: [{ comparison_status: 'comparable', value: 80, year: 2024 }],
+            },
+          },
+        },
+      }),
+      React.createElement(MetaCard, {
+        cycle: 'pne_2014_2024',
+        item,
+        onSelect: () => {},
+        result: {
+          ...baseResult,
+          end_value: 60,
+          end_year: 2024,
+          meta: 60,
+          distance: 0,
+          atingida: true,
+          display: {
+            ...baseResult.display,
+            distance: '0,0 p.p.',
+            end_value: '60,0%',
+            status: 'Meta atingida',
+          },
+        },
+        stateReference: {
+          indicators: {
+            'trend-independence-fixture': {
+              comparison_status: 'comparable',
+              series: [{ comparison_status: 'comparable', value: 60.02, year: 2024 }],
+            },
+          },
+        },
+      }),
+    ));
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const cards = [...host.querySelectorAll('.meta-card')];
+    const result = cards.map((card) => ({
+      hasStateReference: Boolean(card.querySelector('.meta-card__state-reference')),
+      hasTrend: Boolean(card.querySelector('.meta-card__metric--trend')),
+      hasReading: Boolean(card.querySelector('.meta-card__reading')),
+      hasSparkline: Boolean(card.querySelector('.meta-card__sparkline')),
+      metricCount: card.querySelectorAll('.meta-card__metric').length,
+      isMetaSuccess: card.classList.contains('meta-card--success'),
+      referenceTone: card.querySelector('.meta-card__state-reference')?.className.match(/--(positive|negative|neutral)/)?.[1] ?? null,
+      ariaLabel: card.getAttribute('aria-label'),
+    }));
+    root.unmount();
+    host.remove();
+    return result;
+  });
+
+  assert.equal(evidence.length, 5, 'Tendência/Referência RS: fixture monta os cinco cenários');
+  assert.deepEqual(
+    evidence.map(({ hasTrend, hasStateReference, hasReading, hasSparkline, metricCount, isMetaSuccess, referenceTone }) => ({
+      hasTrend,
+      hasStateReference,
+      hasReading,
+      hasSparkline,
+      metricCount,
+      isMetaSuccess,
+      referenceTone,
+    })),
+    [
+      { hasTrend: true, hasStateReference: false, hasReading: false, hasSparkline: false, metricCount: 4, isMetaSuccess: false, referenceTone: null },
+      { hasTrend: false, hasStateReference: true, hasReading: false, hasSparkline: false, metricCount: 3, isMetaSuccess: false, referenceTone: 'positive' },
+      { hasTrend: false, hasStateReference: false, hasReading: false, hasSparkline: false, metricCount: 3, isMetaSuccess: false, referenceTone: null },
+      { hasTrend: false, hasStateReference: true, hasReading: false, hasSparkline: false, metricCount: 3, isMetaSuccess: true, referenceTone: 'negative' },
+      { hasTrend: false, hasStateReference: true, hasReading: false, hasSparkline: false, metricCount: 3, isMetaSuccess: true, referenceTone: 'neutral' },
+    ],
+    'Tendência/Referência RS: status da meta e tom do RS permanecem independentes',
+  );
+  assert.match(
+    evidence[0].ariaLabel,
+    /Tendência: alta, de 2021 a 2025\./i,
+    'Tendência/Referência RS: aria-label não anuncia inclinação',
+  );
+  assert.doesNotMatch(evidence[0].ariaLabel, /2\.5|p\.p\.\/ano|slope|taxa/i);
+  assert.doesNotMatch(evidence[2].ariaLabel, /Tendência|histórico/i);
+  assert.equal(evidence[3].isMetaSuccess, true, 'Tendência/Referência RS: acima da meta mantém status positivo');
+  assert.equal(evidence[3].referenceTone, 'negative', 'Tendência/Referência RS: acima da meta e abaixo do RS usa tom negativo');
+  assert.equal(evidence[4].referenceTone, 'neutral', 'Tendência/Referência RS: diferença próxima de zero usa tom neutro');
 }
 
 async function verifyEducationFlow(page, viewport) {
@@ -702,7 +1409,7 @@ async function verifyEducationFlow(page, viewport) {
   const cardName = await card.getAttribute('aria-label');
   const cardSearchLabel = await card.locator('.education-indicator-card__title').innerText();
   assert.match(cardName, /Valor .+, ano \d{4}|ano indispon\u00edvel/, 'Educa\u00e7\u00e3o: nome acess\u00edvel do card inclui valor e ano');
-  await assertExplorableIndicatorCardStructure(card, {
+  await assertEducationIndicatorCardStructure(card, {
     classes: EDUCATION_CARD_CLASSES,
     context: 'Educa\u00e7\u00e3o: card com hist\u00f3rico',
   });
@@ -710,12 +1417,9 @@ async function verifyEducationFlow(page, viewport) {
     card.locator('.education-indicator-card__footer > span').first(),
     `Educa\u00e7\u00e3o em ${viewport.width}x${viewport.height}`,
   );
-  const emptySparklineCard = page.getByRole('button', { name: EDUCATION_EMPTY_SPARKLINE_CARD });
-  assert.equal(await emptySparklineCard.count(), 1, 'Educa\u00e7\u00e3o: card de s\u00e9rie insuficiente deve ser \u00fanico');
-  await assertEmptySparklineState(emptySparklineCard, {
-    classes: EDUCATION_CARD_CLASSES,
-    context: 'Educa\u00e7\u00e3o: card sem hist\u00f3rico',
-  });
+  const noComparisonCard = page.getByRole('button', { name: EDUCATION_NO_COMPARISON_CARD });
+  assert.equal(await noComparisonCard.count(), 1, 'Educa\u00e7\u00e3o: card de s\u00e9rie insuficiente deve ser \u00fanico');
+  await assertEducationCardWithoutComparison(noComparisonCard, 'Educa\u00e7\u00e3o: card sem compara\u00e7\u00e3o');
   await assertControlledAriaPressedTransition(page);
   await assertCardActivationAndFocusRestoration(
     page,
@@ -1526,6 +2230,9 @@ async function runViewport(browser, viewport, errors) {
     await selectMunicipality(page);
     await assertNoHorizontalOverflow(page, `Home com município em ${viewportLabel}`);
     await assertPriorityContentInFirstFold(page, viewport);
+    if (viewport.width === 1366) {
+      await verifySidebarDesktopFlow(page, viewport);
+    }
 
     await verifyPne2014Flow(page, viewport);
     await verifyPne2026Flow(page, viewport);
@@ -1557,6 +2264,9 @@ async function runResponsiveViewport(browser, viewport, errors) {
     await page.getByRole('heading', { level: 1 }).waitFor({ state: 'visible' });
     await selectMunicipality(page);
     await assertNoHorizontalOverflow(page, `Home em ${viewportLabel}`);
+    if (viewport.width === 390) {
+      await verifySidebarMobileDrawerFlow(page, viewport);
+    }
     await navigateTo(page, EDUCATION, EDUCATION);
     await page.goto(`${BASE_URL}/#educacao?secao=atendimento`, { waitUntil: 'domcontentloaded' });
     const educationGrids = page.locator('.education-indicator-card-grid');
@@ -1571,6 +2281,17 @@ async function runResponsiveViewport(browser, viewport, errors) {
     assert.equal(columns, expectedColumns, `Educação: ${expectedColumns} coluna(s) na grade em ${viewportLabel}`);
     await navigateTo(page, PNE_2026, PNE_2026);
     await assertNoHorizontalOverflow(page, `${PNE_2026} em ${viewportLabel}`);
+    const trendCard = page.locator('.meta-card--next-cycle.meta-card--has-trend').first();
+    await trendCard.waitFor({ state: 'visible' });
+    const trendColumns = await trendCard.locator('.meta-card__value-row').evaluate(
+      (element) => getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length,
+    );
+    const expectedTrendColumns = viewport.width <= 680 ? 2 : 4;
+    assert.equal(
+      trendColumns,
+      expectedTrendColumns,
+      `${PNE_2026}: tendência usa ${expectedTrendColumns} colunas em ${viewportLabel}`,
+    );
     if (viewport.width <= 390) {
       const themes = page.getByRole('group', { name: 'Temas' });
       const scrollEvidence = await themes.evaluate((element) => ({
@@ -1581,6 +2302,25 @@ async function runResponsiveViewport(browser, viewport, errors) {
       assert.equal(scrollEvidence.overflowX, 'auto', `${PNE_2026}: rolagem de temas fica contida`);
       assert.ok(scrollEvidence.scrollWidth > scrollEvidence.clientWidth, `${PNE_2026}: conteúdo extenso permanece alcançável`);
     }
+    await navigateTo(page, PNE_2014, PNE_2014);
+    const closedCard = page.locator('.meta-card--closed-cycle').first();
+    await closedCard.waitFor({ state: 'visible' });
+    const closedColumns = await closedCard.locator('.meta-card__value-row').evaluate(
+      (element) => getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length,
+    );
+    assert.equal(
+      closedColumns,
+      viewport.width <= 680 ? 2 : 3,
+      `${PNE_2014}: card encerrado reorganiza as três métricas em ${viewportLabel}`,
+    );
+    assert.equal(
+      await closedCard.locator('.meta-card__metric--current').evaluate((element) => getComputedStyle(element).gridColumn),
+      viewport.width <= 680 ? '1 / -1' : 'auto',
+      `${PNE_2014}: resultado municipal preserva destaque em ${viewportLabel}`,
+    );
+    assert.equal(await closedCard.locator('.meta-card__sparkline').count(), 0, `${PNE_2014}: sem sparkline no mobile`);
+    assert.equal(await closedCard.locator('.meta-card__reading').count(), 0, `${PNE_2014}: sem leitura textual no mobile`);
+    await assertNoHorizontalOverflow(page, `${PNE_2014} em ${viewportLabel}`);
   } finally {
     await context.close();
   }

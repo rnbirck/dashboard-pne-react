@@ -13,6 +13,18 @@ const percentFormatter = new Intl.NumberFormat('pt-BR', {
   minimumFractionDigits: 0,
 })
 
+const EJA_PERCENTUAL_INDICATOR_KEY = 'eja_integrada_educacao_profissional_percentual'
+const MEDIO_TECNICO_ARTICULADO_INDICATOR_KEY = 'medio_tecnico_articulado_percentual'
+const EJA_PERCENTUAL_NUMERATOR_LABEL =
+  'Matrículas articuladas à\neducação profissional'
+const EJA_PERCENTUAL_DENOMINATOR_LABEL =
+  'Matrículas da EJA fundamental +\nmatrículas da EJA médio'
+const EJA_AUXILIARY_HISTORY_LABEL = 'Matrículas da EJA articuladas à educação profissional'
+const EJA_AUXILIARY_HISTORY_FORMATTER = (value) => {
+  if (!Number.isFinite(value)) return '-'
+  return value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })
+}
+
 export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData, result }) {
   const slug = municipioData?.slug
   const fallbackDetails = municipioData?.indicator_details?.[indicatorKey] ?? null
@@ -97,7 +109,15 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
     },
     [calculationComponents, cycleRange, isCensusIndicator],
   )
-
+  const filteredAuxiliarySeries = useMemo(() => {
+    const auxiliarySeries = details?.series_auxiliares ?? {}
+    return Object.fromEntries(
+      Object.entries(auxiliarySeries).map(([key, rows]) => [
+        key,
+        normalizeCycleSeries(filterRowsByCycle(rows, cycleRange), cycleRange),
+      ]),
+    )
+  }, [details?.series_auxiliares, cycleRange])
   const totalPrivadaRede = useMemo(() => {
     if (!Array.isArray(filteredDependencia)) return null
     const withPrivada = filteredDependencia
@@ -109,7 +129,12 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
   const hasTotal = isCensusIndicator
     ? countRowsWithValue(filteredTotal, 'valor') >= 2
     : filteredTotal.length > 0
-  const hasDependencia = filteredDependencia.length > 0
+  const isEjaPercentualIndicator = indicatorKey === EJA_PERCENTUAL_INDICATOR_KEY
+  const isMedioTecnicoArticuladoIndicator = indicatorKey === MEDIO_TECNICO_ARTICULADO_INDICATOR_KEY
+  const hasDependencia =
+    !isEjaPercentualIndicator &&
+    !isMedioTecnicoArticuladoIndicator &&
+    filteredDependencia.length > 0
   const hasComponents = filteredComponents.length > 0
   const numeratorLabel = details?.calculation?.numerator_label || 'Numerador'
   const denominatorLabel = details?.calculation?.denominator_label || 'Denominador'
@@ -121,7 +146,37 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
     const availableOptions = []
 
     if (details) {
-      if (hasTotal) {
+      if (isMedioTecnicoArticuladoIndicator) {
+        const supportingSeries = [
+          ['integrado', 'Matrículas integradas'],
+          ['concomitante', 'Matrículas concomitantes'],
+          ['articulado', 'Matrículas articuladas'],
+        ]
+        supportingSeries.forEach(([key, label]) => {
+          const series = filteredAuxiliarySeries[key] ?? []
+          if (series.length === 0) return
+          availableOptions.push({
+            key: `supporting-${key}`,
+            label,
+            description: key === 'articulado'
+              ? 'Soma das matrículas integradas e concomitantes, apresentada somente como informação complementar.'
+              : 'Evolução anual desta modalidade no aprofundamento do indicador.',
+            content: (
+              <ComplementaryEnrollmentChart
+                showHeading={false}
+                series={series}
+                title={label}
+                unit="Matrículas"
+                valueMode="count"
+                valueFormatter={EJA_AUXILIARY_HISTORY_FORMATTER}
+              />
+            ),
+          })
+        })
+      }
+
+      if (!isMedioTecnicoArticuladoIndicator && hasTotal) {
+        const isCountHistory = isEjaPercentualIndicator || isMedioTecnicoArticuladoIndicator
         availableOptions.push({
           key: 'enrollment-history',
           label: isCensusIndicator ? 'Histórico' : 'Histórico de matrículas',
@@ -130,8 +185,12 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
             <ComplementaryEnrollmentChart
               showHeading={false}
               series={filteredTotal}
-              title={details.title || 'Matrículas em creche'}
-              unit={details.unit || 'Matrículas'}
+              title={isEjaPercentualIndicator
+                ? EJA_AUXILIARY_HISTORY_LABEL
+                : details.title || 'Matrículas em creche'}
+              unit={isCountHistory ? 'Matrículas' : details.unit || 'Matrículas'}
+              valueMode={isCountHistory ? 'count' : undefined}
+              valueFormatter={isCountHistory ? EJA_AUXILIARY_HISTORY_FORMATTER : undefined}
             />
           ),
         })
@@ -161,9 +220,11 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
           description: 'Numerador, denominador e percentual que comp\u00f5em o indicador selecionado.',
           content: (
             <CalculationComponentsTable
-              denominatorLabel={denominatorLabel}
-              numeratorLabel={numeratorLabel}
+              denominatorLabel={isEjaPercentualIndicator ? EJA_PERCENTUAL_DENOMINATOR_LABEL : denominatorLabel}
+              numeratorLabel={isEjaPercentualIndicator ? EJA_PERCENTUAL_NUMERATOR_LABEL : numeratorLabel}
               rows={filteredComponents}
+              showArticulatedBreakdown={isMedioTecnicoArticuladoIndicator}
+              wrapHeaders={isEjaPercentualIndicator}
               showHeading={false}
             />
           ),
@@ -187,11 +248,14 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
     details,
     filteredComponents,
     filteredDependencia,
+    filteredAuxiliarySeries,
     filteredTotal,
     hasComponents,
     hasDependencia,
     hasTotal,
     isCensusIndicator,
+    isEjaPercentualIndicator,
+    isMedioTecnicoArticuladoIndicator,
     numeratorLabel,
     hasProjection,
     projection,
@@ -287,13 +351,15 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
               }}
             />
           </div>
-          <PrivadasConveniadasSection
-            data={sharedPrivadas}
-            numberFormatter={numberFormatter}
-            indicatorKey={indicatorKey}
-            activeTab={activeTab}
-            totalPrivadaRede={totalPrivadaRede}
-          />
+          {hasDependencia ? (
+            <PrivadasConveniadasSection
+              data={sharedPrivadas}
+              numberFormatter={numberFormatter}
+              indicatorKey={indicatorKey}
+              activeTab={activeTab}
+              totalPrivadaRede={totalPrivadaRede}
+            />
+          ) : null}
       </div>
     </section>
   )
@@ -313,10 +379,12 @@ const INDICATOR_TO_SECAO = {
   medio_concluido_18_mais: 'ensino_medio',
   medio_concluido_18_29: 'ensino_medio',
   medio_tecnico: 'educacao_profissional',
+  medio_tecnico_articulado_percentual: 'educacao_profissional',
   medio_tecnico_total: 'educacao_profissional',
   medio_tecnico_participacao_publica: 'educacao_profissional',
   subsequente_expansao: 'educacao_profissional',
   eja_integrada_educacao_profissional: 'eja',
+  eja_integrada_educacao_profissional_percentual: 'eja',
   aee: 'educacao_especial',
 }
 
@@ -466,28 +534,72 @@ function PrivadasConveniadasSection({ data, numberFormatter, indicatorKey, activ
   )
 }
 
-function CalculationComponentsTable({ denominatorLabel, numeratorLabel, rows, showHeading = true }) {
+function CalculationComponentsTable({
+  denominatorLabel,
+  numeratorLabel,
+  rows,
+  showHeading = true,
+  showArticulatedBreakdown = false,
+  wrapHeaders = false,
+}) {
+  const tableClassName = wrapHeaders
+    ? 'complementary-components__table complementary-components__table--eja'
+    : 'complementary-components__table'
+  const renderHeader = (label) => (
+    wrapHeaders ? <span className="complementary-components__table-header">{label}</span> : label
+  )
+
   return (
     <div className="complementary-components">
       {showHeading ? <h5>Dados usados no cálculo</h5> : null}
       <div className="complementary-components__table-wrap" role="region" aria-label="Dados usados no cálculo do indicador" tabIndex={0}>
-        <table className="complementary-components__table">
+        <table className={tableClassName}>
           <caption className="u-sr-only">Dados usados no cálculo do indicador</caption>
           <thead>
             <tr>
               <th scope="col">Ano</th>
-              <th scope="col">{numeratorLabel}</th>
-              <th scope="col">{denominatorLabel}</th>
-              <th scope="col">Percentual</th>
+              {showArticulatedBreakdown ? (
+                <>
+                  <th scope="col">Matrículas integradas</th>
+                  <th scope="col">Matrículas concomitantes</th>
+                </>
+              ) : null}
+              <th scope="col">{renderHeader(
+                showArticulatedBreakdown
+                  ? 'Matrículas articuladas (integrada + concomitante)'
+                  : numeratorLabel,
+              )}</th>
+              <th scope="col">{renderHeader(
+                showArticulatedBreakdown ? 'Total do ensino médio' : denominatorLabel,
+              )}</th>
+              <th scope="col">{renderHeader(
+                showArticulatedBreakdown
+                  ? 'Percentual principal (integrado / ensino médio)'
+                  : 'Percentual',
+              )}</th>
+              {showArticulatedBreakdown ? (
+                <th scope="col">{renderHeader('Percentual articulado total')}</th>
+              ) : null}
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => (
               <tr key={row.ano}>
                 <td>{row.ano}</td>
-                <td>{numberFormatter.format(row.numerador)}</td>
+                {showArticulatedBreakdown ? (
+                  <>
+                    <td>{numberFormatter.format(row.integrado)}</td>
+                    <td>{numberFormatter.format(row.concomitante)}</td>
+                  </>
+                ) : null}
+                <td>{numberFormatter.format(
+                  showArticulatedBreakdown ? row.articulado : row.numerador,
+                )}</td>
                 <td>{numberFormatter.format(row.denominador)}</td>
                 <td>{percentFormatter.format(row.percentual)}%</td>
+                {showArticulatedBreakdown ? (
+                  <td>{percentFormatter.format(row.percentual_articulado)}%</td>
+                ) : null}
               </tr>
             ))}
           </tbody>
@@ -533,6 +645,7 @@ function resolveCycleRange(cycle, result, details) {
     ...collectYears(details?.series_total),
     ...collectYears(details?.series_dependencia),
     ...collectYears(details?.series_components_by_cycle?.[cycle] ?? details?.series_components),
+    ...Object.values(details?.series_auxiliares ?? {}).flatMap((rows) => collectYears(rows)),
   ]
 
   if (cycle === 'pne_2014_2024') {

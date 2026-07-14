@@ -157,7 +157,14 @@ def _safe_display(
             "distance",
             lambda: shared._format_metric_distance(item, result.get("distance")),
         )
-    assign("status", lambda: shared._status_theme(result).get("text"))
+    custom_status = (result.get("display") or {}).get("status")
+    assign("status", lambda: custom_status or shared._status_theme(result).get("text"))
+    custom_reference = (result.get("display") or {}).get("reference")
+    if custom_reference:
+        display["reference"] = custom_reference
+    custom_warning = (result.get("display") or {}).get("warning")
+    if custom_warning:
+        display["warning"] = custom_warning
     assign("interpretation", lambda: shared._interpretation(item, result))
 
     return display
@@ -187,7 +194,20 @@ def _serialize_result(
         "distance",
         "atingida",
         "tracks_goal",
+        "monitoring_mode",
+        "show_in_cycle",
+        "include_in_cycle_summary",
+        "coverage",
+        "value_mode",
+        "reference_year",
+        "reference_value",
+        "reference_label",
+        "reference_difference",
+        "acima_de_100",
+        "acima_de_100_anos",
         "series",
+        "trend",
+        "meta_references",
     )
     payload = {field: result.get(field) for field in fields if field in result}
     if item is not None and not shared._tracks_goal(item, result):
@@ -790,6 +810,48 @@ def _export_projections(
     }
 
 
+def _export_state_reference(
+    cycle: str,
+    errors: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Exporta a referência do RS sempre sobre o universo estadual completo."""
+
+    if cycle == "pne_2014_2024":
+        from src.pne_2014_state_reference import build_state_reference
+
+        methodology_version = "pne2014-rs-reference-v1"
+    else:
+        from src.pne_state_reference import build_state_reference
+
+        methodology_version = "pne2026-rs-reference-v1"
+
+    try:
+        payload = build_state_reference()
+    except Exception as exc:  # noqa: BLE001 - preserve a valid artifact for diagnosis.
+        errors.append(
+            {
+                "stage": f"state_reference:{cycle}",
+                "error": str(exc),
+                "traceback": traceback.format_exc(limit=6),
+            }
+        )
+        payload = {
+            "cycle": cycle,
+            "state": "RS",
+            "state_name": "Rio Grande do Sul",
+            "municipalities_expected": 497,
+            "methodology_version": methodology_version,
+            "registry": {},
+            "indicators": {},
+            "projections": {},
+            "totals_audit": [],
+            "source_load_errors": {"state_reference": str(exc)},
+            "notes": "Falha ao construir a referência estadual; comparação indisponível.",
+        }
+    payload["generated_at"] = _generated_at()
+    return payload
+
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Exporta dados finais do dashboard Dash para JSON estático."
@@ -982,6 +1044,17 @@ def main() -> int:
     indicator_details_path = EXPORT_DIR / "indicator_details_por_municipio.json"
     _write_json(indicator_details_path, indicator_details_payload)
     generated_files.append(indicator_details_path)
+
+    for state_reference_cycle in ("pne_2014_2024", "pne_2026_2036"):
+        state_reference_payload = _export_state_reference(
+            state_reference_cycle,
+            errors,
+        )
+        state_reference_path = (
+            EXPORT_DIR / state_reference_cycle / "referencia_estadual.json"
+        )
+        _write_json(state_reference_path, state_reference_payload)
+        generated_files.append(state_reference_path)
 
     from src.views.pne_2026_projections import build_all_projections
 

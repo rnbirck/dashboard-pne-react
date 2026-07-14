@@ -6,6 +6,8 @@ const SOURCE_IDEB_SAEB = 'IDEB / SAEB — INEP'
 const SOURCE_FUNDEB = 'SIOPE / FNDE'
 const SOURCE_PNATE = 'PNATE / FNDE'
 const SOURCE_CENSO_DEMOGRAFICO = 'Censo Demográfico — IBGE'
+const SOURCE_EJA_INTEGRADA = 'INEP — Sinopse Estatística da Educação Básica.'
+const SOURCE_MEDIO_TECNICO_ARTICULADO = 'INEP — Sinopse Estatística da Educação Básica.'
 
 const EDUCATION_THEME_SOURCES = {
   aprendizagem: SOURCE_IDEB_SAEB,
@@ -35,6 +37,7 @@ const CENSO_ESCOLAR_KEYS = new Set([
   'conselho_escolar',
   'desktop_aluno',
   'eja_integrada_educacao_profissional',
+  'eja_integrada_educacao_profissional_percentual',
   'escolas_integral',
   'internet',
   'internet_comunidade',
@@ -45,6 +48,7 @@ const CENSO_ESCOLAR_KEYS = new Set([
   'banda_larga',
   'comp_portatil_aluno',
   'medio_tecnico',
+  'medio_tecnico_articulado_percentual',
   'medio_tecnico_participacao_publica',
   'medio_tecnico_total',
   'pos_graduacao',
@@ -61,6 +65,8 @@ const CENSO_ESCOLAR_KEYS = new Set([
 const METHODOLOGY_NOTES_BY_KEY = {
   aee: 'Indicador de contexto/proxy; a base aberta atual não oferece denominador municipal seguro para medir diretamente o público-alvo do AEE.',
   eja_integrada_educacao_profissional: 'Indicador de contexto; mostra volume absoluto e não calcula a proporção legal da meta.',
+  eja_integrada_educacao_profissional_percentual: 'indicador calculado a partir das matrículas da EJA articuladas à educação profissional, considerando curso técnico integrado à EJA, FIC integrado à EJA de nível fundamental, FIC integrado à EJA de nível médio e o total de matrículas da EJA.',
+  medio_tecnico_articulado_percentual: 'Indicador calculado pela relação entre as matrículas em cursos técnicos integrados ao ensino médio e o total de matrículas do ensino médio. As matrículas concomitantes permanecem apresentadas no aprofundamento como informação complementar.',
   internet: 'Indicador de contexto; não gera distância de meta legal por não medir velocidade, qualidade ou uso pedagógico.',
   internet_alunos: 'Indicador de contexto; não gera distância de meta legal por não medir velocidade, qualidade ou uso pedagógico.',
   internet_aprendizagem: 'Indicador de contexto; não gera distância de meta legal por não medir velocidade, qualidade ou uso pedagógico.',
@@ -116,6 +122,10 @@ export function getDataSourceParts(context = {}) {
     source = SOURCE_PNATE
   } else if (POPULATION_ATTENDANCE_KEYS.has(indicatorKey)) {
     source = SOURCE_POPULATION_ATTENDANCE
+  } else if (indicatorKey === 'eja_integrada_educacao_profissional_percentual') {
+    source = SOURCE_EJA_INTEGRADA
+  } else if (indicatorKey === 'medio_tecnico_articulado_percentual') {
+    source = SOURCE_MEDIO_TECNICO_ARTICULADO
   } else if (isCensoDemografico(indicatorKey, text)) {
     source = SOURCE_CENSO_DEMOGRAFICO
   } else if (CENSO_ESCOLAR_KEYS.has(indicatorKey)) {
@@ -150,6 +160,7 @@ function getMethodologyNote(indicatorKey, text, context) {
   const declaredNote = [
     context.details?.methodology ??
       context.details?.methodological_note ??
+      context.details?.methodology_note ??
       context.result?.methodology ??
       context.methodology,
   ].find(Boolean)
@@ -182,7 +193,7 @@ function getMethodologyNote(indicatorKey, text, context) {
 function withMethodology(source, note) {
   if (!note) return source
   if (!source) return `Nota metodológica: ${note}`
-  return `${source}. Nota metodológica: ${note}`
+  return `${source.replace(/[.]\s*$/, '')}. Nota metodológica: ${note}`
 }
 
 function sourceFromDeclaredMetadata(context, normalizedText) {

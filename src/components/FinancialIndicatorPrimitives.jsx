@@ -14,41 +14,74 @@ const FINANCIAL_CARD_CLASS_CONTRACT = Object.freeze({
   title: 'financial-indicator-card__title',
   description: 'financial-indicator-card__description',
   valueRow: 'financial-indicator-card__value-row',
-  support: 'financial-indicator-card__support',
+  metadata: 'financial-indicator-card__metadata',
+  metadataItem: 'financial-indicator-card__metadata-item',
+  metadataLabel: 'financial-indicator-card__metadata-label',
+  metadataValue: 'financial-indicator-card__metadata-value',
+  divider: 'financial-indicator-card__divider',
+  insight: 'financial-indicator-card__insight',
+  insightItem: 'financial-indicator-card__insight-item',
+  insightLabel: 'financial-indicator-card__insight-label',
+  insightValue: 'financial-indicator-card__insight-value',
   footer: 'financial-indicator-card__footer',
-  sparkline: Object.freeze({
-    root: 'financial-indicator-card__sparkline',
-    area: 'financial-indicator-card__sparkline-area',
-    line: 'financial-indicator-card__sparkline-line',
-    end: 'financial-indicator-card__sparkline-end',
-    period: 'financial-indicator-card__sparkline-period',
-    empty: 'financial-indicator-card__sparkline--empty',
-  }),
+  action: 'financial-indicator-card__action',
 })
 
 export function FinancialIndicatorCard({ buttonRef, indicator, isSelected = false, onSelect }) {
   const statusTone = indicator.statusTone ?? 'default'
+  const hasCurrentValue = Boolean(indicator.currentDisplay && indicator.currentDisplay !== EM)
+  const comparableSeries = getComparableSeries(indicator.series)
+  const hasComparison = comparableSeries.length >= 2
+    && indicator.initialYear !== null
+    && indicator.initialYear !== undefined
+    && indicator.currentYear !== null
+    && indicator.currentYear !== undefined
+    && indicator.variationDisplay
+    && indicator.variationDisplay !== EM
+  const direction = getFinancialDirection({ hasComparison, hasCurrentValue, series: comparableSeries })
+  const period = hasComparison ? `${indicator.initialYear}\u2013${indicator.currentYear}` : null
+  const reading = getFinancialReading({ direction, hasComparison, hasCurrentValue, hasSeries: comparableSeries.length > 0 })
+  const description = String(indicator.cardDescription ?? indicator.description ?? '').trim()
+  const statusLabel = indicator.statusLabel ?? (hasCurrentValue ? 'Com dados' : 'Sem dados')
   const viewModel = {
-    ariaLabel: `Abrir detalhe do indicador ${indicator.label}. Valor atual: ${indicator.currentDisplay ?? EM}.`,
+    anatomy: 'financial',
+    ariaLabel: [
+      `Abrir detalhe do indicador ${indicator.label}.`,
+      `Valor ${indicator.currentDisplay ?? EM},`,
+      indicator.currentYear ? `ano ${indicator.currentYear}.` : 'ano indisponível.',
+      statusLabel ? `${statusLabel}.` : '',
+      hasComparison ? `${indicator.variationLabel}: ${indicator.variationDisplay}.` : '',
+      description ? `Descrição: ${description}.` : '',
+    ].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim(),
     contextLabel: indicator.moduleLabel ?? 'Financeiro',
-    description: indicator.cardDescription ?? indicator.description,
+    description,
     footer: {
-      primary: indicator.unitLabel ?? 'Indicador',
-      secondary: null,
+      primary: indicator.groupLabel ?? indicator.unitLabel ?? indicator.moduleLabel ?? 'Indicador',
+      actionLabel: 'Abrir detalhes',
     },
-    sparklineSeries: indicator.series,
+    insight: {
+      reading,
+      period,
+    },
+    metadata: {
+      year: indicator.currentYear ?? 'Indisponível',
+      variation: hasComparison
+        ? {
+            label: indicator.variationLabel ?? `Variação desde ${indicator.initialYear}`,
+            value: indicator.variationDisplay,
+          }
+        : null,
+    },
     status: {
-      label: indicator.statusLabel ?? 'Com dados',
+      direction,
+      label: statusLabel,
+      marker: getDirectionMarker(direction),
       tone: statusTone,
-    },
-    support: {
-      label: indicator.variationLabel ?? 'Variação no período',
-      value: indicator.variationDisplay ?? EM,
     },
     title: indicator.label,
     value: {
       display: indicator.currentDisplayCompact ?? indicator.currentDisplay ?? EM,
-      metaLabel: indicator.currentYear ? `Ano ${indicator.currentYear}` : 'Ano indisponível',
+      metaLabel: null,
     },
   }
 
@@ -61,6 +94,36 @@ export function FinancialIndicatorCard({ buttonRef, indicator, isSelected = fals
       viewModel={viewModel}
     />
   )
+}
+
+function getComparableSeries(series) {
+  if (!Array.isArray(series)) return []
+  return series.filter((point) => point?.valor !== null && point?.valor !== undefined && Number.isFinite(Number(point.valor)))
+}
+
+function getFinancialDirection({ hasComparison, hasCurrentValue, series }) {
+  if (!hasCurrentValue) return 'missing'
+  if (!hasComparison) return 'data'
+  const first = Number(series[0]?.valor)
+  const latest = Number(series[series.length - 1]?.valor)
+  if (latest > first) return 'up'
+  if (latest < first) return 'down'
+  return 'stable'
+}
+
+function getDirectionMarker(direction) {
+  if (direction === 'up') return '\u2197'
+  if (direction === 'stable') return '\u2192'
+  if (direction === 'down') return '\u2198'
+  return ''
+}
+
+function getFinancialReading({ direction, hasComparison, hasCurrentValue, hasSeries }) {
+  if (!hasCurrentValue) return 'Leitura recente indisponível'
+  if (!hasComparison) return hasSeries ? 'Série disponível' : 'Leitura recente indisponível'
+  if (direction === 'up') return 'Crescimento recente'
+  if (direction === 'down') return 'Redução recente'
+  return 'Estabilidade recente'
 }
 
 export function FinancialDetailNavigation({

@@ -151,6 +151,7 @@ function buildPnateIndicatorModel(indicator, historico) {
     label: indicator.label,
     moduleLabel: 'PNATE',
     currentDisplay: latest ? formatPnateValue(latest.valor, indicator.tipo) : '—',
+    currentDisplayCompact: latest ? formatCompactDataLabel(latest.valor, indicator.tipo) : '—',
     currentYear: latest?.ano ?? null,
     sourceLabel: latest?.ano ? `PNATE ${latest.ano}` : 'PNATE',
     statusLabel: status.label,

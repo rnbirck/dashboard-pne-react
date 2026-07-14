@@ -270,9 +270,9 @@ const LEGAL_GOAL_RELATIONS = {
   '12.a': {
     relatedIndicators: [
       indicator(
-        'medio_tecnico',
-        'parcial',
-        'Acompanha a participação de matrículas do ensino médio articuladas à educação profissional técnica sobre o total de matrículas do ensino médio; não mede qualidade nem permanência.',
+        'medio_tecnico_articulado_percentual',
+        'direta',
+        'Acompanha as matrículas em cursos técnicos integrados sobre o total de matrículas do ensino médio. Matrículas concomitantes permanecem disponíveis apenas como informação complementar.',
       ),
       indicator(
         'medio_tecnico_participacao_publica',
@@ -293,10 +293,9 @@ const LEGAL_GOAL_RELATIONS = {
   '12.c': {
     relatedIndicators: [
       indicator(
-        'eja_integrada_educacao_profissional',
-        'aproximada',
-        'Mostra o número de matrículas da EJA integrada à educação profissional, mas não calcula a proporção exigida pela meta.',
-        { hasDistance: false },
+        'eja_integrada_educacao_profissional_percentual',
+        'direta',
+        'Calcula a proporção das matrículas da EJA articuladas à educação profissional a partir dos componentes brutos da Sinopse Estatística.',
       ),
     ],
   },

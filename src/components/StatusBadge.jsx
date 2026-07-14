@@ -1,4 +1,4 @@
-export function StatusBadge({ className = '', displayStatus, status, title, tone }) {
+export function StatusBadge({ className = '', displayStatus, marker, status, title, tone }) {
   const classes = ['status-badge']
   if (className) {
     classes.push(className)
@@ -27,7 +27,12 @@ export function StatusBadge({ className = '', displayStatus, status, title, tone
   }
   return (
     <span className={classes.join(' ')} title={title ?? status}>
-      {displayStatus ?? status}
+      {marker ? (
+        <>
+          <span className="status-badge__marker" aria-hidden="true">{marker}</span>
+          <span>{displayStatus ?? status}</span>
+        </>
+      ) : displayStatus ?? status}
     </span>
   )
 }

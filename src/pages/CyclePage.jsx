@@ -9,17 +9,28 @@ import { SegmentedControl } from '../components/SegmentedControl'
 import { PNE_2026_INDICATOR_GOAL_REFS } from '../data/pne2026IndicatorGoalRefs'
 import { PNE_2014_INDICATOR_GOAL_REFS } from '../data/pne2014IndicatorGoalRefs'
 import { buildThematicGroups } from '../data/thematicGroups'
+import { loadPneStateReference } from '../data/staticData'
 import { normalizePopulationPercentResults } from '../utils/indicatorValues'
 import { getPneCycleCopy } from '../utils/pneCycleCopy'
 import { filterPneComparableCategories } from '../utils/pneDisplayRules'
 import { resolveDetailSequence, useDetailViewNavigation } from '../hooks/useDetailViewNavigation'
 import { PageHeadingText } from '../components/HeadingText'
 import { getHashContext, setHashContext } from '../utils/hashNavigation'
+import { useAsyncData } from '../utils/useAsyncData'
 
 const CYCLE_SOURCE_NOTE = 'INEP, Censo Escolar, SAEB, IBGE e bases oficiais consolidadas no painel.'
+const PNE_2026_DETAIL_REDIRECTS = {
+  medio_tecnico: 'medio_tecnico_articulado_percentual',
+}
+
+function resolveCycleDetailKey(cycle, indicatorKey) {
+  if (cycle !== 'pne_2026_2036') return indicatorKey
+  return PNE_2026_DETAIL_REDIRECTS[indicatorKey] ?? indicatorKey
+}
 
 export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio, title }) {
-  const initialDetailKey = getHashContext().params.get('detalhe') ?? ''
+  const rawInitialDetailKey = getHashContext().params.get('detalhe') ?? ''
+  const initialDetailKey = resolveCycleDetailKey(cycle, rawInitialDetailKey)
   const cycleCopy = getPneCycleCopy(cycle)
   const categories = useMemo(
     () => enrichGoalRefs(indicadores?.cycles?.[cycle]?.categories ?? [], cycle),
@@ -32,6 +43,10 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   const [searchQuery, setSearchQuery] = useState('')
   const previousCycleRef = useRef(cycle)
   const municipioResults = municipioData?.[cycle]?.indicadores ?? null
+  const { data: stateReference } = useAsyncData(
+    () => loadPneStateReference(cycle).catch(() => null),
+    [cycle],
+  )
   const allCycleItems = useMemo(
     () => categories.flatMap((category) => category.items ?? []),
     [categories],
@@ -68,6 +83,17 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     () => selectedBasicEducationFilter?.items ?? selectedGroup?.items ?? [],
     [selectedBasicEducationFilter, selectedGroup],
   )
+
+  useEffect(() => {
+    if (!selectedIndicatorKey) return
+    const targetGroup = thematicGroups.find((group) => (
+      group.items?.some((item) => item.key === selectedIndicatorKey)
+    ))
+    if (!targetGroup || targetGroup.key === selectedGroupKey) return
+    setSelectedGroupKey(targetGroup.key)
+    setSelectedBasicEducationFilterKey('todos')
+  }, [selectedGroupKey, selectedIndicatorKey, thematicGroups])
+
   const filteredGroupItems = useMemo(() => {
     const query = searchQuery.trim().toLocaleLowerCase('pt-BR')
     if (!query) return visibleGroupItems
@@ -97,14 +123,23 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   })
 
   useEffect(() => {
+    if (cycle === 'pne_2026_2036' && rawInitialDetailKey !== initialDetailKey) {
+      setHashContext('pne2026', { detalhe: initialDetailKey })
+    }
+  }, [cycle, initialDetailKey, rawInitialDetailKey])
+
+  useEffect(() => {
     function handleHashChange() {
-      const detailKey = getHashContext().params.get('detalhe') ?? ''
+      const detailKey = resolveCycleDetailKey(
+        cycle,
+        getHashContext().params.get('detalhe') ?? '',
+      )
       setSelectedIndicatorKey(detailKey)
       setIsDetailOpen(Boolean(detailKey))
     }
     window.addEventListener('hashchange', handleHashChange)
     return () => window.removeEventListener('hashchange', handleHashChange)
-  }, [])
+  }, [cycle])
 
   useEffect(() => {
     if (previousCycleRef.current === cycle) return
@@ -293,6 +328,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
                     key={item.key}
                     onSelect={() => handleCardSelect(item.key)}
                     result={normalizedMunicipioResults?.[item.key]}
+                    stateReference={stateReference}
                     stageLabel={
                       selectedGroup?.key === 'educacao_basica'
                         ? getStageTagLabel(item.key, selectedGroup.filters)
@@ -410,6 +446,17 @@ function buildCycleManagementStats(categories, municipioResults) {
 
   allCycleItems.forEach((item) => {
     const result = municipioResults?.[item.key]
+
+    if (
+      item.include_in_cycle_summary === false ||
+      item.monitoring_mode === 'approximate_reference' ||
+      item.tracks_goal === false ||
+      !result ||
+      result.available === false ||
+      result.tracks_goal === false
+    ) {
+      return
+    }
 
     stats.monitorableTotal += 1
     if (result.atingida === true) {

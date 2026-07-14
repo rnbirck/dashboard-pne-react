@@ -25,6 +25,7 @@ from src.data_loader import (
     load_escolas_integral_data,
     load_ept_nivel_medio_data,
     load_infraestrutura_escolar_data,
+    load_medio_tecnico_articulado_data,
     load_medio_tecnico_data,
     load_pne_data,
     load_pne_2026_2036_metricas_data,
@@ -34,10 +35,16 @@ from src.data_loader import (
     load_taxa_alfabetizacao_data,
     load_distorcao_idade_serie_data,
 )
+from src.pne_trend import attach_trend
+from src.medio_tecnico_articulado import (
+    MedioTecnicoArticuladoValidationError,
+    calculate_medio_tecnico_articulado_series,
+)
 from src.views.pne_shared import (
     GOAL_AT_LEAST,
     GOAL_AT_MOST,
     _build_accumulated_growth_result,
+    _build_eja_integrada_percentual_result,
     _build_ratio_result,
     _build_result,
     _build_value_result,
@@ -84,8 +91,10 @@ META_ESCOLAS_INTEGRAL_INICIAL = 50.0
 META_ESCOLAS_INTEGRAL_FINAL = 65.0
 META_AEE_5_ANO = 80.0
 META_AEE_FINAL = 100.0
-META_EJA_INTEGRADA_EPT = 25.0
+META_EJA_INTEGRADA_EPT_INTERMEDIARIA = 25.0
+META_EJA_INTEGRADA_EPT_FINAL = 50.0
 META_MEDIO_TECNICO = 50.0
+META_MEDIO_TECNICO_ARTICULADO = 50.0
 META_EPT_PARTICIPACAO_PUBLICA = 50.0
 META_SUBSEQUENTE_EXPANSAO = 60.0
 META_ALFABETIZACAO_POP_15_MAIS_5_ANO = 97.0
@@ -746,15 +755,6 @@ def _calculate_infra_results(municipio):
 
 
 def _calc_creche(municipio):
-    precomputed = _build_precomputed_result(
-        municipio,
-        "creche",
-        meta=META_CRECHE,
-        meta_label="Meta PNE 2036",
-    )
-    if precomputed is not None:
-        return precomputed
-
     return _build_ratio_result(
         load_pne_data,
         municipio,
@@ -769,15 +769,6 @@ def _calc_creche(municipio):
 
 
 def _calc_pre_escola(municipio):
-    precomputed = _build_precomputed_result(
-        municipio,
-        "pre_escola",
-        meta=META_PRE_ESCOLA,
-        meta_label="Meta PNE 2036",
-    )
-    if precomputed is not None:
-        return precomputed
-
     return _build_ratio_result(
         load_pre_escola_data,
         municipio,
@@ -792,15 +783,6 @@ def _calc_pre_escola(municipio):
 
 
 def _calc_basico_6_17(municipio):
-    precomputed = _build_precomputed_result(
-        municipio,
-        "basico_6_17",
-        meta=META_BASICO_6_17,
-        meta_label="Meta PNE 2036",
-    )
-    if precomputed is not None:
-        return precomputed
-
     return _build_ratio_result(
         load_basico_6_17_data,
         municipio,
@@ -815,15 +797,6 @@ def _calc_basico_6_17(municipio):
 
 
 def _calc_basico_15_17(municipio):
-    precomputed = _build_precomputed_result(
-        municipio,
-        "basico_15_17",
-        meta=META_BASICO_15_17,
-        meta_label="Meta PNE 2036",
-    )
-    if precomputed is not None:
-        return precomputed
-
     return _build_ratio_result(
         load_basico_15_17_data,
         municipio,
@@ -838,23 +811,16 @@ def _calc_basico_15_17(municipio):
 
 
 def _calc_basico_integral(municipio):
-    result = _build_precomputed_result(
+    result = _build_ratio_result(
+        load_basico_integral_data,
         municipio,
-        "basico_integral",
+        numerator="mat_basico_integral",
+        denominator="mat_basico",
         meta=META_BASICO_INTEGRAL_INICIAL,
         meta_label="Meta vigente do PNE",
+        target_start_year=TARGET_START_YEAR,
+        target_end_year=TARGET_END_YEAR,
     )
-    if result is None:
-        result = _build_ratio_result(
-            load_basico_integral_data,
-            municipio,
-            numerator="mat_basico_integral",
-            denominator="mat_basico",
-            meta=META_BASICO_INTEGRAL_INICIAL,
-            meta_label="Meta vigente do PNE",
-            target_start_year=TARGET_START_YEAR,
-            target_end_year=TARGET_END_YEAR,
-        )
     if not result.get("available"):
         return result
     return _apply_result_goal(
@@ -865,23 +831,16 @@ def _calc_basico_integral(municipio):
 
 
 def _calc_escolas_integral(municipio):
-    result = _build_precomputed_result(
+    result = _build_ratio_result(
+        load_escolas_integral_data,
         municipio,
-        "escolas_integral",
+        numerator="escolas_publicas_com_integral",
+        denominator="escolas_publicas_total",
         meta=META_ESCOLAS_INTEGRAL_INICIAL,
         meta_label="Meta vigente do PNE",
+        target_start_year=TARGET_START_YEAR,
+        target_end_year=TARGET_END_YEAR,
     )
-    if result is None:
-        result = _build_ratio_result(
-            load_escolas_integral_data,
-            municipio,
-            numerator="escolas_publicas_com_integral",
-            denominator="escolas_publicas_total",
-            meta=META_ESCOLAS_INTEGRAL_INICIAL,
-            meta_label="Meta vigente do PNE",
-            target_start_year=TARGET_START_YEAR,
-            target_end_year=TARGET_END_YEAR,
-        )
     if not result.get("available"):
         return result
     return _apply_result_goal(
@@ -913,21 +872,26 @@ def _calc_aee(municipio):
 
 
 def _calc_eja_integrada_educacao_profissional(municipio):
-    result = _build_value_result(
+    result = _build_eja_integrada_percentual_result(
         load_eja_integrada_educacao_profissional_data,
         municipio,
-        value_column="mat_eja_integrada_educacao_profissional_calculada",
-        meta=0,
-        meta_label=INFORMATIVE_META_LABEL,
+        meta=META_EJA_INTEGRADA_EPT_INTERMEDIARIA,
+        meta_label="Referência intermediária PNE 2031",
         target_start_year=TARGET_START_YEAR,
         target_end_year=TARGET_END_YEAR,
     )
+    result["meta_references"] = [
+        {"year": 2031, "value": META_EJA_INTEGRADA_EPT_INTERMEDIARIA, "label": "Referência intermediária"},
+        {"year": 2036, "value": META_EJA_INTEGRADA_EPT_FINAL, "label": "Meta final"},
+    ]
     if result.get("available"):
-        result["value_mode"] = "count"
-        result["display_value_mode"] = "count"
-        return _finalize_informative_result(result)
-
-    return _finalize_informative_result(result)
+        result["display"] = dict(result.get("display") or {})
+        result["display"]["status"] = (
+            "Atinge a meta no momento"
+            if result.get("atingida")
+            else "Ainda não atinge a meta"
+        )
+    return result
 
 
 def _calc_medio_tecnico(municipio):
@@ -976,6 +940,100 @@ def _calc_medio_tecnico(municipio):
         target_end_year=TARGET_END_YEAR,
     )
     return _finalize_informative_result(result)
+
+
+def _empty_medio_tecnico_articulado_result():
+    result = _empty_result(
+        META_MEDIO_TECNICO_ARTICULADO,
+        meta_label="Meta PNE 2036",
+        tracks_goal=True,
+    )
+    result.update(
+        {
+            "show_in_cycle": True,
+            "include_in_cycle_summary": True,
+            "coverage": "aproximada",
+            "value_mode": "percent",
+        }
+    )
+    return result
+
+
+def _calc_medio_tecnico_articulado_percentual(municipio):
+    df = _safe_load(load_medio_tecnico_articulado_data)
+    required_columns = {
+        "ano",
+        "municipio",
+        "id_municipio",
+        "mat_integrado_total",
+        "mat_concomitante_total",
+        "mat_medio",
+    }
+    if df.empty or not required_columns.issubset(df.columns):
+        return _empty_medio_tecnico_articulado_result()
+
+    dff = df[df["municipio"] == municipio].copy()
+    if dff.empty:
+        return _empty_medio_tecnico_articulado_result()
+
+    try:
+        calculated = calculate_medio_tecnico_articulado_series(dff)
+    except MedioTecnicoArticuladoValidationError as exc:
+        print(f"Indicador aproximado indisponível para {municipio}: {exc}")
+        return _empty_medio_tecnico_articulado_result()
+
+    calculated = calculated[
+        calculated["ano"].between(TARGET_START_YEAR, TARGET_END_YEAR)
+    ].copy()
+    valid = calculated.dropna(subset=["percentual_calculado"]).copy()
+    if valid.empty:
+        return _empty_medio_tecnico_articulado_result()
+
+    yearly = valid[["ano", "percentual_calculado"]].rename(
+        columns={"percentual_calculado": "valor"}
+    )
+    result = _build_result(
+        yearly,
+        META_MEDIO_TECNICO_ARTICULADO,
+        meta_label="Meta PNE 2036",
+        target_start_year=TARGET_START_YEAR,
+        target_end_year=TARGET_END_YEAR,
+        tracks_goal=True,
+    )
+    if not result.get("available"):
+        return _empty_medio_tecnico_articulado_result()
+
+    flag_by_year = {
+        int(row["ano"]): bool(row["acima_de_100"])
+        for _, row in valid.iterrows()
+    }
+    result["series"] = [
+        {
+            "ano": int(point["ano"]),
+            "valor": float(point["valor"]),
+            "acima_de_100": flag_by_year.get(int(point["ano"]), False),
+        }
+        for point in result["series"]
+    ]
+    above_100_years = sorted(
+        year for year, is_above in flag_by_year.items() if is_above
+    )
+    result.update(
+        {
+            "show_in_cycle": True,
+            "include_in_cycle_summary": True,
+            "coverage": "aproximada",
+            "value_mode": "percent",
+            "acima_de_100": bool(above_100_years),
+            "acima_de_100_anos": above_100_years,
+        }
+    )
+    if above_100_years:
+        result["display"]["warning"] = (
+            "Valores acima de 100% podem ocorrer porque a medida usa matrículas "
+            "e não estudantes únicos."
+        )
+    return result
 
 
 def _calc_medio_tecnico_participacao_publica(municipio):
@@ -1164,10 +1222,11 @@ def _calc_alfabetizacao(municipio):
 
 
 def _calc_alfabetizacao_pop_15_mais(municipio):
-    result = _build_value_result(
+    result = _build_ratio_result(
         load_censo_populacao_alfabetizacao_data,
         municipio,
-        value_column="taxa_alfabetizacao_15_mais",
+        numerator="alfabetizadas_15_mais",
+        denominator="total_15_mais",
         meta=META_ALFABETIZACAO_POP_15_MAIS_5_ANO,
         meta_label="Meta PNE 2031",
         target_start_year=2010,
@@ -1179,10 +1238,11 @@ def _calc_alfabetizacao_pop_15_mais(municipio):
 
 
 def _calc_fundamental_concluido_18_mais(municipio):
-    return _build_value_result(
+    return _build_ratio_result(
         load_censo_populacao_ensino_fundamental_concluido_18_mais_data,
         municipio,
-        value_column="percentual_18_mais_ensino_fundamental_concluido",
+        numerator="populacao_18_mais_ensino_fundamental_concluido",
+        denominator="populacao_18_mais_total",
         meta=META_FUNDAMENTAL_CONCLUIDO_18_MAIS,
         meta_label="Meta PNE 2036",
         target_start_year=2010,
@@ -1191,10 +1251,11 @@ def _calc_fundamental_concluido_18_mais(municipio):
 
 
 def _calc_fundamental_concluido_15_29(municipio):
-    return _build_value_result(
+    return _build_ratio_result(
         load_censo_populacao_ensino_fundamental_concluido_15_29_data,
         municipio,
-        value_column="percentual_15_29_ensino_fundamental_concluido",
+        numerator="populacao_15_29_ensino_fundamental_concluido",
+        denominator="populacao_15_29_total",
         meta=META_FUNDAMENTAL_CONCLUIDO_15_29,
         meta_label="Meta PNE 2036",
         target_start_year=2010,
@@ -1203,10 +1264,11 @@ def _calc_fundamental_concluido_15_29(municipio):
 
 
 def _calc_medio_concluido_18_mais(municipio):
-    return _build_value_result(
+    return _build_ratio_result(
         load_censo_populacao_ensino_medio_concluido_18_mais_data,
         municipio,
-        value_column="percentual_18_mais_ensino_medio_concluido",
+        numerator="populacao_18_mais_ensino_medio_concluido",
+        denominator="populacao_18_mais_total",
         meta=META_MEDIO_CONCLUIDO_18_MAIS,
         meta_label="Meta PNE 2036",
         target_start_year=2010,
@@ -1215,10 +1277,11 @@ def _calc_medio_concluido_18_mais(municipio):
 
 
 def _calc_medio_concluido_18_29(municipio):
-    return _build_value_result(
+    return _build_ratio_result(
         load_censo_populacao_ensino_medio_concluido_18_29_data,
         municipio,
-        value_column="percentual_18_29_ensino_medio_concluido",
+        numerator="populacao_18_29_ensino_medio_concluido",
+        denominator="populacao_18_29_total",
         meta=META_MEDIO_CONCLUIDO_18_29,
         meta_label="Meta PNE 2036",
         target_start_year=2010,
@@ -1286,31 +1349,25 @@ def _calc_adequacao(municipio, etapa_key):
 
 
 def _calc_pos_graduacao(municipio):
-    precomputed = _build_precomputed_result(
-        municipio,
-        "pos_graduacao",
-        meta=META_POS_GRADUACAO,
-        meta_label="Meta PNE 2036",
-    )
-    if precomputed is not None:
-        return precomputed
-
-    return _build_value_result(
+    return _build_ratio_result(
         load_docentes_pos_graduacao_data,
         municipio,
-        value_column="percentual_pos_graduacao",
+        numerator="docentes_pos_graduacao",
+        denominator="total_docentes",
         meta=META_POS_GRADUACAO,
         meta_label="Meta PNE 2036",
+        filters={"dependencia": "total"},
         target_start_year=TARGET_START_YEAR,
         target_end_year=TARGET_END_YEAR,
     )
 
 
 def _calc_temporarios(municipio):
-    return _build_value_result(
+    return _build_ratio_result(
         load_docentes_temporarios_data,
         municipio,
-        value_column="percentual_temporarios",
+        numerator="docentes_temporarios",
+        denominator="total_docentes",
         meta=META_TEMPORARIOS,
         meta_label="Meta PNE 2031",
         direction=GOAL_AT_MOST,
@@ -1472,23 +1529,28 @@ INDICADORES = {
                 "tracks_goal": False,
             },
             {
-                "key": "eja_integrada_educacao_profissional",
-                "label": "Matrículas do EJA integradas à educação profissional",
+                "key": "eja_integrada_educacao_profissional_percentual",
+                "label": "Percentual das matrículas da EJA articuladas à educação profissional",
                 "sub": "",
-                "desc": "Número de matrículas do EJA na forma integrada à educação profissional no município.",
-                "meta_label": INFORMATIVE_META_LABEL,
-                "value_mode": "count",
+                "desc": "Percentual das matrículas da EJA articuladas à educação profissional no município.",
+                "meta_label": "Referência intermediária PNE 2031",
                 "compute": _calc_eja_integrada_educacao_profissional,
-                "tracks_goal": False,
+                "tracks_goal": True,
+                "value_mode": "percent",
             },
             {
-                "key": "medio_tecnico",
-                "label": "Matrículas do ensino médio integradas à educação profissional técnica",
-                "sub": "",
-                "desc": "Percentual de matrículas do ensino médio na forma integrada à educação profissional técnica.",
-                "meta_label": INFORMATIVE_META_LABEL,
-                "compute": _calc_medio_tecnico,
-                "tracks_goal": False,
+                "key": "medio_tecnico_articulado_percentual",
+                "label": "Ensino médio articulado à educação profissional técnica",
+                "sub": "Indicador aproximado",
+                "desc": "Percentual das matrículas em cursos técnicos integrados em relação ao total de matrículas do ensino médio.",
+                "source": "INEP — Sinopse Estatística da Educação Básica.",
+                "meta_label": "Meta PNE 2036",
+                "compute": _calc_medio_tecnico_articulado_percentual,
+                "show_in_cycle": True,
+                "include_in_cycle_summary": True,
+                "tracks_goal": True,
+                "coverage": "aproximada",
+                "value_mode": "percent",
             },
             {
                 "key": "medio_tecnico_participacao_publica",
@@ -1778,6 +1840,27 @@ def _build_precomputed_result(
     )
 
 
+def _attach_trends(results):
+    item_lookup = {
+        item["key"]: item
+        for category in INDICADORES.values()
+        for item in category["items"]
+    }
+    enriched = {}
+    for indicator_key, result in results.items():
+        item = item_lookup.get(indicator_key, {})
+        if item.get("monitoring_mode") == "approximate_reference":
+            enriched[indicator_key] = result
+            continue
+        value_type = item.get("value_mode") or result.get("value_mode", "percent")
+        enriched[indicator_key] = attach_trend(
+            result,
+            value_type=value_type,
+            methodology_break_years=item.get("methodology_break_years"),
+        )
+    return enriched
+
+
 @lru_cache(maxsize=64)
 def _calculate_results_cached(municipio, cache_bucket):
     results = {
@@ -1790,7 +1873,7 @@ def _calculate_results_cached(municipio, cache_bucket):
     results.update(_calculate_idade_regular_results(municipio))
     results.update(_calculate_adequacao_results(municipio))
     results.update(_calculate_infra_results(municipio))
-    return results
+    return _attach_trends(results)
 
 
 @lru_cache(maxsize=128)
@@ -1820,7 +1903,9 @@ def _calculate_results_for_categories_cached(municipio, category_keys, cache_buc
     if selected_keys & INFRA_RESULT_KEYS:
         results.update(_calculate_infra_results(municipio))
 
-    return {key: value for key, value in results.items() if key in selected_keys}
+    return _attach_trends(
+        {key: value for key, value in results.items() if key in selected_keys}
+    )
 
 
 def _calculate_results(municipio):

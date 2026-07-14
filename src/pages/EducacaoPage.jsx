@@ -371,6 +371,13 @@ export function EducacaoPage({ indicadores, municipioData, selectedMunicipio }) 
   const isOverviewSection = selectedSectionKey === EDUCATION_SECTION_KEYS.overview
   const isDemandSection = selectedSectionKey === EDUCATION_SECTION_KEYS.demand
   const isMethodologySection = selectedSectionKey === EDUCATION_SECTION_KEYS.methodology
+  const contextScope = sectionItems.length > 0
+    ? formatIndicatorCount(sectionItems.length)
+    : isOverviewSection
+      ? 'Síntese municipal'
+      : isDemandSection
+        ? 'Demanda e projeções'
+        : 'Fontes e critérios'
 
   function handleThemeSelect(themeKey) {
     setSelectedSectionKey(resolveEducationSection({ requestedTheme: themeKey }))
@@ -655,10 +662,20 @@ export function EducacaoPage({ indicadores, municipioData, selectedMunicipio }) 
       <section className="page-card educacao-hero">
         <div className="educacao-hero__intro">
           <PageHeadingText eyebrow={pageCopy.eyebrow} title={pageCopy.title} description={pageCopy.description} />
-          <div className="educacao-hero__meta" aria-label="Contexto desta página">
-            <p className="educacao-hero__municipality">Município em foco: <strong>{selectedMunicipio}</strong></p>
-            <p className="educacao-hero__current-section">Seção atual: <strong>{section?.label ?? 'Visão geral'}</strong></p>
-          </div>
+          <aside className="educacao-hero__meta" aria-label="Contexto desta página">
+            <span className="educacao-hero__meta-label">Contexto desta página</span>
+            <strong className="educacao-hero__municipality">{selectedMunicipio}</strong>
+            <dl className="educacao-hero__meta-details">
+              <div>
+                <dt>Seção atual</dt>
+                <dd>{section?.label ?? 'Visão geral'}</dd>
+              </div>
+              <div>
+                <dt>Escopo</dt>
+                <dd>{contextScope}</dd>
+              </div>
+            </dl>
+          </aside>
         </div>
 
       </section>
@@ -2583,10 +2600,14 @@ function createIndicator(config) {
     series,
     chartColor: config.chartColor ?? '#16713a',
     currentDisplay: formatValueForType(currentValue),
+    currentValue,
     currentYear,
     formatValue: formatValueForType,
     initialDisplay: formatValueForType(initialValue),
+    initialValue,
     initialYear,
+    formatType: config.formatType ?? 'number',
+    unit: config.unit ?? catalogItem?.unit ?? null,
     notices: config.notices ?? [],
     explore: filterRenderableExplore(config.explore),
     stageFilterOptions: filterStageFilterOptions(config.stageFilterOptions),
@@ -2595,6 +2616,7 @@ function createIndicator(config) {
     statusLabel: config.statusLabel ?? status.label,
     statusTone: config.statusTone ?? status.tone,
     variationDisplay: variation.display,
+    variationRaw: variation.raw,
     variationTone: variation.tone,
   }
 }

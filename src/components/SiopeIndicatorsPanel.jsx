@@ -279,6 +279,7 @@ function buildSiopeIndicatorModel(indicator, municipality, activeGroup) {
     label: indicator.nome_dashboard,
     moduleLabel: 'SIOPE / FNDE',
     currentDisplay: latest ? formatSiopeValue(latest.valor, indicator.unidade) : EM,
+    currentDisplayCompact: latest ? formatCompactDataLabel(latest.valor, indicator.unidade) : EM,
     currentYear: latest?.ano ?? null,
     sourceLabel: latest?.ano ? `SIOPE/FNDE ${latest.ano}` : 'SIOPE/FNDE',
     statusLabel: status.label,

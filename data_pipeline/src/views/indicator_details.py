@@ -25,11 +25,16 @@ from src.data_loader import load_escolas_integral_data
 from src.data_loader import load_escolas_integral_por_dependencia_data
 from src.data_loader import load_infraestrutura_escolar_data
 from src.data_loader import load_infraestrutura_escolar_por_dependencia_data
+from src.data_loader import load_medio_tecnico_articulado_data
 from src.data_loader import load_medio_tecnico_data
 from src.data_loader import load_matriculas_privadas_conveniadas
 from src.data_loader import load_pne_data
 from src.data_loader import load_pre_escola_data
 from src.data_loader import load_pre_escola_por_dependencia_data
+from src.medio_tecnico_articulado import (
+    MedioTecnicoArticuladoValidationError,
+    calculate_medio_tecnico_articulado_series,
+)
 
 
 _DEPENDENCIA_ORDER = ["municipal", "estadual", "privada", "federal"]
@@ -148,7 +153,7 @@ def build_creche_details(municipio):
     series_total = [
         {"ano": int(row["ano"]), "valor": int(row["valor"])}
         for _, row in total_by_year.iterrows()
-        if row["valor"] > 0
+        if row["valor"] >= 0
     ]
 
     pivot = grouped.pivot(
@@ -1068,6 +1073,144 @@ def build_medio_tecnico_details(municipio):
     return payload
 
 
+def build_medio_tecnico_articulado_percentual_details(municipio):
+    df = _safe_load(load_medio_tecnico_articulado_data)
+    required_columns = {
+        "ano",
+        "id_municipio",
+        "municipio",
+        "mat_integrado_total",
+        "mat_concomitante_total",
+        "mat_medio",
+    }
+    if df.empty or not required_columns.issubset(df.columns):
+        return None
+
+    dff = df[df["municipio"] == municipio].copy()
+    if dff.empty:
+        return None
+
+    try:
+        calculated = calculate_medio_tecnico_articulado_series(dff)
+    except MedioTecnicoArticuladoValidationError as exc:
+        print(f"Dados complementares indisponíveis para {municipio}: {exc}")
+        return None
+
+    calculated = calculated[
+        calculated["ano"].between(2015, 2025)
+    ].copy()
+    if calculated.empty:
+        return None
+
+    valid_ratio = calculated.dropna(subset=["percentual_calculado"]).copy()
+    if valid_ratio.empty:
+        return None
+
+    series_total = [
+        {
+            "ano": int(row["ano"]),
+            "valor": int(row["mat_integrado_total"]),
+        }
+        for _, row in valid_ratio.iterrows()
+    ]
+    series_components = [
+        {
+            "ano": int(row["ano"]),
+            "numerador": int(row["mat_integrado_total"]),
+            "denominador": int(row["mat_medio"]),
+            "percentual": float(row["percentual_calculado"]),
+            "integrado": int(row["mat_integrado_total"]),
+            "concomitante": int(row["mat_concomitante_total"]),
+            "articulado": int(row["mat_articulado_total"]),
+            "percentual_articulado": float(row["percentual_articulado_total"]),
+            "acima_de_100": bool(row["acima_de_100"]),
+        }
+        for _, row in valid_ratio.dropna(
+            subset=[
+                "mat_concomitante_total",
+                "mat_articulado_total",
+                "percentual_articulado_total",
+            ]
+        ).iterrows()
+    ]
+
+    series_auxiliares = {}
+    for key, column in (
+        ("integrado", "mat_integrado_total"),
+        ("concomitante", "mat_concomitante_total"),
+        ("articulado", "mat_articulado_total"),
+        ("medio", "mat_medio"),
+    ):
+        series_auxiliares[key] = [
+            {"ano": int(row["ano"]), "valor": int(row[column])}
+            for _, row in calculated.dropna(subset=[column]).iterrows()
+        ]
+
+    dependency_columns = {
+        "federal": ("mat_integrado_federal", "mat_concomitante_federal"),
+        "estadual": ("mat_integrado_estadual", "mat_concomitante_estadual"),
+        "municipal": ("mat_integrado_municipal", "mat_concomitante_municipal"),
+        "privada": ("mat_integrado_privada", "mat_concomitante_privada"),
+    }
+    dependency_fields = [column for columns in dependency_columns.values() for column in columns]
+    series_dependencia = []
+    if all(column in calculated.columns for column in dependency_fields):
+        for _, row in valid_ratio.iterrows():
+            if any(pd.isna(row[column]) for column in dependency_fields):
+                continue
+            entry = {"ano": int(row["ano"])}
+            for dependency, columns in dependency_columns.items():
+                entry[dependency] = int(row[columns[0]]) + int(row[columns[1]])
+            if sum(entry[dependency] for dependency in dependency_columns) == int(
+                row["mat_articulado_total"]
+            ):
+                series_dependencia.append(entry)
+
+    above_100_years = [
+        int(row["ano"]) for _, row in valid_ratio.iterrows() if bool(row["acima_de_100"])
+    ]
+    payload = {
+        "title": "Ensino médio articulado à educação profissional técnica",
+        "subtitle": (
+            "Percentual das matrículas em cursos técnicos integrados em relação ao "
+            "total de matrículas do ensino médio."
+        ),
+        "unit": "%",
+        "calculation": {
+            "numerator_label": "Matrículas em cursos técnicos integrados",
+            "denominator_label": "Total de matrículas do ensino médio",
+        },
+        "series_total": series_total,
+        "series_components_by_cycle": {
+            "pne_2026_2036": series_components,
+        },
+        "series_auxiliares": series_auxiliares,
+        "source": "INEP — Sinopse Estatística da Educação Básica.",
+        "methodology_note": (
+            "Indicador calculado pela relação entre as matrículas em cursos técnicos "
+            "integrados ao ensino médio e o total de matrículas do ensino médio. As "
+            "matrículas concomitantes permanecem apresentadas no aprofundamento como "
+            "informação complementar."
+        ),
+        "reference": {
+            "year": 2036,
+            "value": 50,
+            "label": "Meta PNE 2036",
+        },
+        "acima_de_100_anos": above_100_years,
+    }
+    if series_dependencia:
+        payload["series_dependencia"] = series_dependencia
+        payload["dependency_unit"] = "Matrículas"
+        payload["dependency_value_type"] = "count"
+    if above_100_years:
+        payload["warning"] = (
+            "Valores acima de 100% podem ocorrer porque a medida usa matrículas e não "
+            "estudantes únicos."
+        )
+    return payload
+
+
 def build_medio_tecnico_total_details(municipio):
     df = _safe_load(load_ept_nivel_medio_data)
     required_columns = {
@@ -1295,7 +1438,7 @@ def build_eja_integrada_educacao_profissional_details(municipio):
     required_columns = {
         "ano",
         "municipio",
-        "mat_eja_total",
+        "mat_eja_denominador_calculado",
         "mat_eja_integrada_educacao_profissional_calculada",
     }
     if df.empty or not required_columns.issubset(df.columns):
@@ -1306,8 +1449,8 @@ def build_eja_integrada_educacao_profissional_details(municipio):
         return None
 
     dff["ano"] = pd.to_numeric(dff["ano"], errors="coerce")
-    dff["mat_eja_total"] = pd.to_numeric(
-        dff["mat_eja_total"], errors="coerce"
+    dff["mat_eja_denominador_calculado"] = pd.to_numeric(
+        dff["mat_eja_denominador_calculado"], errors="coerce"
     )
     dff["mat_eja_integrada_educacao_profissional_calculada"] = pd.to_numeric(
         dff["mat_eja_integrada_educacao_profissional_calculada"], errors="coerce"
@@ -1315,7 +1458,7 @@ def build_eja_integrada_educacao_profissional_details(municipio):
     dff = dff.dropna(
         subset=[
             "ano",
-            "mat_eja_total",
+            "mat_eja_denominador_calculado",
             "mat_eja_integrada_educacao_profissional_calculada",
         ]
     ).copy()
@@ -1323,7 +1466,9 @@ def build_eja_integrada_educacao_profissional_details(municipio):
         return None
 
     dff["ano"] = dff["ano"].astype(int)
-    dff["mat_eja_total"] = dff["mat_eja_total"].clip(lower=0)
+    dff["mat_eja_denominador_calculado"] = dff[
+        "mat_eja_denominador_calculado"
+    ].clip(lower=0)
     dff["mat_eja_integrada_educacao_profissional_calculada"] = dff[
         "mat_eja_integrada_educacao_profissional_calculada"
     ].clip(lower=0)
@@ -1350,20 +1495,20 @@ def build_eja_integrada_educacao_profissional_details(municipio):
         .agg(
             {
                 "mat_eja_integrada_educacao_profissional_calculada": "sum",
-                "mat_eja_total": "max",
+                "mat_eja_denominador_calculado": "max",
             }
         )
         .sort_values("ano")
     )
-    components_2014 = []
+    components = []
     for _, row in yearly.iterrows():
         numerador = row["mat_eja_integrada_educacao_profissional_calculada"]
-        denominador = row["mat_eja_total"]
+        denominador = row["mat_eja_denominador_calculado"]
         if pd.isna(numerador) or pd.isna(denominador) or denominador <= 0:
             continue
         numerador = int(numerador)
         denominador = int(denominador)
-        components_2014.append(
+        components.append(
             {
                 "ano": int(row["ano"]),
                 "numerador": numerador,
@@ -1373,8 +1518,11 @@ def build_eja_integrada_educacao_profissional_details(municipio):
         )
 
     series_components_by_cycle = {}
-    if components_2014:
-        series_components_by_cycle["pne_2014_2024"] = components_2014
+    if components:
+        series_components_by_cycle["pne_2014_2024"] = [
+            row for row in components if row["ano"] <= 2024
+        ]
+        series_components_by_cycle["pne_2026_2036"] = components
 
     dependencia_columns = {
         "federal": "mat_eja_integrada_educacao_profissional_federal",
@@ -1407,15 +1555,36 @@ def build_eja_integrada_educacao_profissional_details(municipio):
         "unit": "matrículas",
         "calculation": {
             "numerator_label": "Matrículas do EJA integradas à educação profissional",
-            "denominator_label": "Total de matrículas do EJA",
+            "denominator_label": "EJA fundamental + EJA médio",
         },
         "series_total": series_total,
         "series_components_by_cycle": series_components_by_cycle,
+        "source": "INEP — Sinopse Estatística da Educação Básica, tabelas EJA 1.35 e Educação Profissional 1.30/1.42.",
     }
     if series_by_dependencia is not None:
         result["series_dependencia"] = series_by_dependencia
 
     return result
+
+
+def build_eja_integrada_educacao_profissional_percentual_details(municipio):
+    result = build_eja_integrada_educacao_profissional_details(municipio)
+    if result is None:
+        return None
+    return {
+        **result,
+        "title": "Percentual das matrículas da EJA articuladas à educação profissional",
+        "subtitle": (
+            "Percentual recalculado pela soma do curso técnico integrado à EJA, "
+            "FIC integrado à EJA fundamental e FIC integrado à EJA médio, dividido "
+            "pelas matrículas da EJA fundamental e médio."
+        ),
+        "unit": "%",
+        "calculation": {
+            "numerator_label": "Curso técnico integrado à EJA + FIC integrado à EJA fundamental + FIC integrado à EJA médio",
+            "denominator_label": "Matrículas da EJA fundamental + matrículas da EJA médio",
+        },
+    }
 
 
 def _build_infra_details(municipio, *, count_column, denominator_column, numerator_label, denominator_label, title, unit, include_public_dependency=False):
@@ -2712,10 +2881,12 @@ DETAIL_BUILDERS = {
     "escolas_integral": build_escolas_integral_details,
     "aee": build_aee_details,
     "medio_tecnico": build_medio_tecnico_details,
+    "medio_tecnico_articulado_percentual": build_medio_tecnico_articulado_percentual_details,
     "medio_tecnico_total": build_medio_tecnico_total_details,
     "medio_tecnico_participacao_publica": build_medio_tecnico_participacao_publica_details,
     "subsequente_expansao": build_subsequente_expansao_details,
     "eja_integrada_educacao_profissional": build_eja_integrada_educacao_profissional_details,
+    "eja_integrada_educacao_profissional_percentual": build_eja_integrada_educacao_profissional_percentual_details,
     "internet": build_internet_details,
     "internet_alunos": build_internet_alunos_details,
     "internet_aprendizagem": build_internet_aprendizagem_details,

@@ -21,6 +21,8 @@ export const PNE_GOAL_TRACKING_EXCEPTION_KEYS = new Set([
   'salas_acessiveis',
 ])
 
+export const PNE_APPROXIMATE_REFERENCE_KEYS = new Set()
+
 export function isPneContextProxyIndicatorKey(indicatorKey) {
   if (PNE_GOAL_TRACKING_EXCEPTION_KEYS.has(indicatorKey)) return false
   return PNE_CONTEXT_PROXY_INDICATOR_KEYS.has(indicatorKey)
@@ -35,6 +37,24 @@ export function isPneContextProxyRelation(indicatorRelation, result) {
   if (indicatorRelation?.coverage === 'aproximada') return true
   if (result?.tracks_goal === false) return true
   return false
+}
+
+export function isPneApproximateReferenceIndicator({ indicatorKey, item, result }) {
+  return (
+    item?.monitoring_mode === 'approximate_reference' ||
+    result?.monitoring_mode === 'approximate_reference' ||
+    PNE_APPROXIMATE_REFERENCE_KEYS.has(indicatorKey)
+  )
+}
+
+export function isPneVisibleIndicator({ indicatorKey, item, result }) {
+  if (
+    item?.show_in_cycle === true &&
+    isPneApproximateReferenceIndicator({ indicatorKey, item, result })
+  ) {
+    return true
+  }
+  return isPneComparableIndicator({ indicatorKey, result })
 }
 
 export function isPneComparableIndicator({ indicatorKey, indicatorRelation, result }) {
@@ -65,8 +85,9 @@ export function filterPneComparableCategories(categories, results = {}) {
     .map((category) => ({
       ...category,
       items: (category.items ?? []).filter((item) => (
-        isPneComparableIndicator({
+        isPneVisibleIndicator({
           indicatorKey: item.key,
+          item,
           result: results?.[item.key],
         })
       )),

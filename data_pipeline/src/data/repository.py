@@ -105,6 +105,11 @@ DATASET_SPECS: dict[str, DatasetSpec] = {
         base_table="pne_matriculas_medio_tecnico",
         local_query_file="matriculas_medio_tecnico.sql",
     ),
+    "medio_tecnico_articulado_data": DatasetSpec(
+        name="medio_tecnico_articulado_data",
+        base_table="pne_matriculas_medio_tecnico_articulado",
+        local_query_file="matriculas_medio_tecnico_articulado.sql",
+    ),
     "ept_nivel_medio_data": DatasetSpec(
         name="ept_nivel_medio_data",
         base_table="ept_nivel_medio",
@@ -215,6 +220,11 @@ DATASET_SPECS: dict[str, DatasetSpec] = {
         base_table="infraestrutura_escolar",
         local_query_file="infraestrutura_escolar.sql",
     ),
+    "escolas_integral_referencia_data": DatasetSpec(
+        name="escolas_integral_referencia_data",
+        base_table="censo_escolas",
+        local_query_file="infraestrutura_escolar_referencia.sql",
+    ),
     "saeb_matematica_data": DatasetSpec(
         name="saeb_matematica_data",
         base_table="saeb_proficiencia",
@@ -255,6 +265,7 @@ LOCAL_QUERY_FILES_BY_TABLE: dict[str, str] = {
     "pne_escolas_publicas_integral": "escolas_integral.sql",
     "pne_escolas_publicas_integral_por_dependencia": "escolas_integral_por_dependencia.sql",
     "pne_matriculas_medio_tecnico": "matriculas_medio_tecnico.sql",
+    "pne_matriculas_medio_tecnico_articulado": "matriculas_medio_tecnico_articulado.sql",
     "ept_nivel_medio": "ept_nivel_medio.sql",
     "eja_integrada_educacao_profissional": "eja_integrada_educacao_profissional.sql",
     "censo_populacao_alfabetizacao": "censo_populacao_alfabetizacao.sql",
@@ -277,6 +288,7 @@ LOCAL_QUERY_FILES_BY_TABLE: dict[str, str] = {
     "rendimento_professores_razao_percentual": "rendimento_professores.sql",
     "atendimento_educacional_especializado": "atendimento_educacional_especializado.sql",
     "infraestrutura_escolar": "infraestrutura_escolar.sql",
+    "censo_escolas": "infraestrutura_escolar_referencia.sql",
     "pne_infraestrutura_escolar_por_dependencia": "infraestrutura_escolar_por_dependencia.sql",
     "pne_2014_2024_metricas": "pne_2014_2024_metricas.sql",
     "pne_2026_2036_metricas": "pne_2026_2036_metricas.sql",

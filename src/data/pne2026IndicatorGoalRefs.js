@@ -21,7 +21,7 @@ export const PNE_2026_INDICATOR_GOAL_REFS = {
   fundamental_concluido_15_29: '11.b',
   medio_concluido_18_mais: '11.c',
   medio_concluido_18_29: '11.c',
-  medio_tecnico: '12.a',
+  medio_tecnico_articulado_percentual: '12.a',
   medio_tecnico_participacao_publica: '12.a',
   subsequente_expansao: '12.b',
   adequacao_ai: '17.a',

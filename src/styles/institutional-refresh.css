@@ -362,30 +362,30 @@
   }
 
   .dashboard-shell .content-area .home-hero--institutional {
-    grid-template-columns: minmax(0, 1fr) minmax(268px, 320px);
-    gap: 0;
-    overflow: hidden;
-    border: 1px solid var(--border-card);
-    border-top: 4px solid var(--green-primary);
+    grid-template-columns: minmax(0, 1.9fr) minmax(195px, 0.76fr) minmax(220px, 0.9fr);
+    gap: var(--card-gap);
+    align-items: stretch;
+  }
+
+  .dashboard-shell .content-area :where(.home-hero__content, .home-context-card, .home-guidance-card) {
+    min-width: 0;
+    border: var(--border-default);
     border-radius: var(--radius-md);
-    background: var(--surface-card);
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-sm);
   }
 
   .dashboard-shell .content-area .home-hero__content {
-    min-height: 220px;
-    padding: var(--hero-padding-block) 46px;
-    border: 0;
-    border-radius: 0;
+    min-height: 286px;
+    padding: 22px 32px;
+    border-top: 4px solid var(--green-primary);
     background:
       linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 55%),
       var(--surface-ink);
-    box-shadow: none;
   }
 
   .dashboard-shell .content-area .home-hero__content::before {
-    margin-bottom: 18px;
-    color: #b3d0bb;
+    margin-bottom: 10px;
+    color: var(--green-accent);
     content: '01 / CONTEXTO MUNICIPAL';
     font-size: 0.66rem;
     font-weight: var(--font-weight-bold);
@@ -393,57 +393,154 @@
   }
 
   .dashboard-shell .content-area .home-hero__identity {
-    color: #b3d0bb;
-    font-size: 0.78rem;
-    letter-spacing: 0.04em;
+    margin: 0;
+    color: var(--green-accent);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.02em;
+    line-height: var(--line-height-snug);
   }
 
   .dashboard-shell .content-area .home-hero__content h1 {
-    max-width: 17ch;
-    margin-top: 12px;
-    color: #f7fbf8;
-    font-size: clamp(2.1rem, 3.4vw, 3.5rem);
+    max-width: 24ch;
+    margin-top: 8px;
+    color: var(--text-inverted);
+    font-size: clamp(1.95rem, 2.6vw, 2.55rem);
     letter-spacing: -0.035em;
-    line-height: 1.04;
+    line-height: 1.02;
   }
 
   .dashboard-shell .content-area .home-hero__description {
-    max-width: 68ch;
-    margin-top: 18px;
-    color: #d3e2d7;
-    font-size: var(--font-size-md);
-    line-height: 1.65;
+    max-width: 72ch;
+    margin-top: 12px;
+    color: var(--green-soft);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-normal);
+  }
+
+  .dashboard-shell .content-area .home-context-card,
+  .dashboard-shell .content-area .home-guidance-card {
+    min-height: 286px;
+    padding: 22px;
+    background: var(--surface-card);
+    align-content: start;
   }
 
   .dashboard-shell .content-area .home-context-card {
-    min-height: 220px;
-    padding: var(--hero-padding-block-compact) var(--panel-inset-intermediate);
-    border: 0;
-    border-left: 1px solid rgba(47, 112, 87, 0.18);
-    border-radius: 0;
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+    gap: 0;
     background: var(--surface-moss);
-    box-shadow: none;
-    align-content: start;
   }
 
   .dashboard-shell .content-area .home-context-card__label {
     color: var(--green-deep);
     font-size: 0.68rem;
     letter-spacing: 0.14em;
+    line-height: var(--line-height-snug);
     text-transform: uppercase;
   }
 
   .dashboard-shell .content-area .home-context-card strong {
-    margin-top: 16px;
+    display: block;
+    margin-top: 12px;
     color: var(--green-ink);
-    font-size: clamp(1.7rem, 2.2vw, 2.2rem);
+    font-size: clamp(1.5rem, 2vw, 1.9rem);
     letter-spacing: -0.02em;
+    line-height: var(--line-height-tight);
   }
 
-  .dashboard-shell .content-area .home-context-card p {
-    margin-top: 14px;
+  .dashboard-shell .content-area .home-context-card__list {
+    display: grid;
+    gap: 10px;
+    margin: 18px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .dashboard-shell .content-area .home-context-card__list li {
+    position: relative;
+    padding-left: 18px;
     color: var(--text-body);
-    line-height: 1.65;
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-snug);
+  }
+
+  .dashboard-shell .content-area .home-context-card__list li::before {
+    position: absolute;
+    top: 0.48em;
+    left: 0;
+    width: 7px;
+    height: 7px;
+    border: 2px solid var(--surface-moss);
+    border-radius: 50%;
+    background: var(--green-primary);
+    box-shadow: 0 0 0 1px var(--green-primary);
+    content: '';
+  }
+
+  .dashboard-shell .content-area .home-guidance-card {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    gap: 0;
+    background: var(--surface-warm);
+  }
+
+  .dashboard-shell .content-area .home-guidance-list {
+    position: relative;
+    display: grid;
+    align-content: start;
+    gap: 9px;
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .dashboard-shell .content-area .home-guidance-list::before {
+    position: absolute;
+    top: 14px;
+    bottom: 14px;
+    left: 14px;
+    width: 1px;
+    background: var(--border-line);
+    content: '';
+  }
+
+  .dashboard-shell .content-area .home-guidance-step {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 29px minmax(0, 1fr);
+    gap: 9px;
+    align-items: start;
+  }
+
+  .dashboard-shell .content-area .home-guidance-step__number {
+    width: 29px;
+    height: 29px;
+    border: 1px solid var(--border-line);
+    border-radius: 50%;
+    background: var(--surface-moss);
+    color: var(--green-deep);
+    display: grid;
+    place-items: center;
+    font-size: 0.67rem;
+    font-weight: var(--font-weight-bold);
+    line-height: 1;
+  }
+
+  .dashboard-shell .content-area .home-guidance-step strong {
+    display: block;
+    margin-top: 1px;
+    color: var(--text-strong);
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-snug);
+  }
+
+  .dashboard-shell .content-area .home-guidance-step p {
+    margin: 3px 0 0;
+    color: var(--text-body);
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-snug);
   }
 
   .dashboard-shell .content-area .home-entry-section,
@@ -941,6 +1038,17 @@
     box-shadow: var(--shadow-sm);
   }
 
+  .dashboard-shell .content-area .education-indicator-card.indicator-card-shell--education {
+    min-height: 320px;
+    border: 1px solid var(--border-card);
+    border-top: 1px solid var(--border-card);
+    border-radius: var(--radius-lg);
+    background: var(--surface-card);
+    box-shadow: var(--shadow-sm);
+    grid-template-rows: auto minmax(44px, auto) minmax(34px, auto) auto auto 1px minmax(48px, auto) auto;
+    gap: var(--space-2);
+  }
+
   .dashboard-shell .content-area .education-indicator-card__theme,
   .dashboard-shell .content-area .financial-indicator-card__module {
     color: var(--green-deep);
@@ -952,14 +1060,38 @@
     letter-spacing: -0.015em;
   }
 
+  .dashboard-shell .content-area .education-indicator-card.indicator-card-shell--education .indicator-card-shell__title {
+    min-height: 44px;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-snug);
+  }
+
   .dashboard-shell .content-area .indicator-card-shell__description {
     color: var(--text-body);
     line-height: 1.55;
   }
 
+  .dashboard-shell .content-area .education-indicator-card.indicator-card-shell--education .indicator-card-shell__description {
+    min-height: 34px;
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-normal);
+  }
+
   .dashboard-shell .content-area .indicator-card-shell__value-row strong {
     color: var(--green-ink);
     letter-spacing: -0.04em;
+  }
+
+  .dashboard-shell .content-area .education-indicator-card.indicator-card-shell--education .indicator-card-shell__value-row {
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .dashboard-shell .content-area .education-indicator-card.indicator-card-shell--education .indicator-card-shell__value-row strong {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-tight);
   }
 
   .dashboard-shell .content-area .indicator-card-shell__support {
@@ -970,6 +1102,11 @@
   .dashboard-shell .content-area .indicator-card-shell__footer {
     padding-top: 12px;
     border-top-color: var(--border-line);
+  }
+
+  .dashboard-shell .content-area .education-indicator-card.indicator-card-shell--education .indicator-card-shell__footer {
+    padding-top: var(--space-2);
+    border-top: 0;
   }
 
   .dashboard-shell .content-area :where(.indicator-chart-card, .education-chart, .education-demand-indicator, .infra-panorama-card, .educacao-explore) {
@@ -1297,7 +1434,10 @@
     padding-inline: var(--panel-inset-intermediate);
   }
 
-  .dashboard-shell .content-area .home-hero__content h1,
+  .dashboard-shell .content-area .home-hero__content h1 {
+    font-size: clamp(1.95rem, 3.2vw, 2.55rem);
+  }
+
   .dashboard-shell .content-area .pne-overview-hero__copy h1,
   .dashboard-shell .content-area .financial-overview-hero .pne-overview-hero__copy h1 {
     font-size: clamp(2rem, 4vw, 3rem);
@@ -1335,7 +1475,10 @@
     padding-inline: var(--page-padding-inline-tablet);
   }
 
-  .dashboard-shell .content-area .home-hero--institutional,
+  .dashboard-shell .content-area .home-hero--institutional {
+    grid-template-columns: minmax(0, 1.8fr) minmax(195px, 0.75fr) minmax(218px, 0.9fr);
+  }
+
   .dashboard-shell .content-area .educacao-hero,
   .dashboard-shell .content-area .financial-hero {
     grid-template-columns: minmax(0, 1fr) minmax(236px, 290px);
@@ -1354,6 +1497,7 @@
   }
 
   .dashboard-shell .content-area .home-context-card,
+  .dashboard-shell .content-area .home-guidance-card,
   .dashboard-shell .content-area .educacao-hero__meta,
   .dashboard-shell .content-area .financial-hero__aside {
     border-top: 1px solid var(--border-line);
@@ -1361,6 +1505,7 @@
   }
 
   .dashboard-shell .content-area .home-context-card,
+  .dashboard-shell .content-area .home-guidance-card,
   .dashboard-shell .content-area .educacao-hero__meta,
   .dashboard-shell .content-area .financial-hero__aside {
     min-height: 0;
@@ -1469,6 +1614,7 @@
   }
 
   .dashboard-shell .content-area .home-context-card,
+  .dashboard-shell .content-area .home-guidance-card,
   .dashboard-shell .content-area .educacao-hero__meta,
   .dashboard-shell .content-area .financial-hero__aside {
     padding: var(--panel-inset) var(--panel-inset-mobile);
@@ -1549,6 +1695,16 @@
     min-height: 0;
   }
 
+  .dashboard-shell .content-area .education-indicator-card.indicator-card-shell--education {
+    min-height: 0;
+    padding: var(--space-4);
+    grid-template-rows: auto minmax(44px, auto) auto auto auto 1px auto auto;
+  }
+
+  .dashboard-shell .content-area .education-indicator-card.indicator-card-shell--education .indicator-card-shell__insight {
+    grid-template-columns: 1fr;
+  }
+
   .dashboard-shell .content-area .indicator-card-shell__description {
     max-width: 42ch;
   }
@@ -1584,5 +1740,816 @@
   .dashboard-shell .interaction-card--explorable,
   .dashboard-shell .interaction-card--navigation {
     transition: none;
+  }
+}
+
+/* Restrained institutional treatment for Education indicator cards. */
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education {
+  --education-direction-accent: var(--education-direction-data-accent);
+  --education-direction-soft: var(--education-direction-data-soft);
+  --education-direction-border: var(--education-direction-data-border);
+  --education-direction-ink: var(--education-direction-data-ink);
+  min-height: 292px;
+  padding: var(--space-4);
+  border: var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+  grid-template-rows: auto minmax(0, auto) minmax(0, auto) auto auto minmax(48px, auto) auto;
+  gap: var(--space-2);
+  align-content: start;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education > span {
+  grid-column: 1;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education.indicator-card-shell--direction-up {
+  --education-direction-accent: var(--education-direction-up-accent);
+  --education-direction-soft: var(--education-direction-up-soft);
+  --education-direction-border: var(--education-direction-up-border);
+  --education-direction-ink: var(--education-direction-up-ink);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education.indicator-card-shell--direction-stable {
+  --education-direction-accent: var(--education-direction-stable-accent);
+  --education-direction-soft: var(--education-direction-stable-soft);
+  --education-direction-border: var(--education-direction-stable-border);
+  --education-direction-ink: var(--education-direction-stable-ink);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education.indicator-card-shell--direction-down {
+  --education-direction-accent: var(--education-direction-down-accent);
+  --education-direction-soft: var(--education-direction-down-soft);
+  --education-direction-border: var(--education-direction-down-border);
+  --education-direction-ink: var(--education-direction-down-ink);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education.indicator-card-shell--direction-data {
+  --education-direction-accent: var(--education-direction-data-accent);
+  --education-direction-soft: var(--education-direction-data-soft);
+  --education-direction-border: var(--education-direction-data-border);
+  --education-direction-ink: var(--education-direction-data-ink);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education.indicator-card-shell--direction-missing {
+  --education-direction-accent: var(--education-direction-missing-accent);
+  --education-direction-soft: var(--education-direction-missing-soft);
+  --education-direction-border: var(--education-direction-missing-border);
+  --education-direction-ink: var(--education-direction-missing-ink);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-warm);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education:focus-visible {
+  border-color: var(--control-border-selected);
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 3px;
+  box-shadow: var(--focus-ring);
+  transform: none;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education.is-selected,
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education[aria-pressed='true'] {
+  border-color: var(--control-border-selected);
+  box-shadow: inset 0 0 0 1px var(--border-focus);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__context {
+  color: var(--green-deep);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__topline {
+  grid-row: 1;
+  align-items: flex-start;
+  min-height: 24px;
+  gap: var(--space-2);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .status-badge {
+  min-height: 24px;
+  padding: var(--space-1) var(--space-2);
+  border-color: transparent;
+  border-radius: var(--radius-xs);
+  background: var(--education-direction-soft);
+  color: var(--education-direction-ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.69rem;
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .status-badge__marker {
+  color: currentColor;
+  font-size: 0.9em;
+  line-height: 1;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__value-row strong {
+  color: var(--green-ink);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: var(--line-height-tight);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__title {
+  grid-row: 2;
+  min-height: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+  height: 1.35em;
+  max-height: 1.35em;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__description {
+  grid-row: 3;
+  min-height: 2.4em;
+  max-height: 2.4em;
+  color: var(--text-body);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-tight);
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  text-overflow: ellipsis;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__metadata-value {
+  color: var(--green-ink);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-tight);
+  white-space: nowrap;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__value-row {
+  grid-row: 4;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__metadata {
+  grid-row: 5;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__metadata-value--variation {
+  color: var(--education-direction-ink);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__insight {
+  grid-row: 6;
+  min-height: 48px;
+  height: calc(var(--space-12) + 1px);
+  box-sizing: border-box;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-default);
+  border-color: var(--border-faint);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__divider {
+  grid-row: 6;
+  align-self: start;
+  z-index: 1;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__insight-item {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__insight-item:only-child {
+  grid-column: 1 / -1;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__metadata-label,
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__insight-label {
+  color: var(--text-soft);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__insight-value {
+  min-width: 0;
+  color: var(--text-strong);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__insight-value {
+  color: var(--text-strong);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__footer > span:not(.indicator-card-shell__action) {
+  min-height: 20px;
+  padding: var(--space-1) var(--space-2);
+  background: var(--surface-muted);
+  color: var(--green-deep);
+  line-height: var(--line-height-tight);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__footer {
+  grid-row: 7;
+  min-width: 0;
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-2);
+  border-top: var(--border-divider);
+  flex-wrap: nowrap;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__action {
+  width: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--green-deep);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__action .interaction-chevron {
+  border-color: transparent;
+  background: transparent;
+  color: var(--green-deep);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education:hover .indicator-card-shell__action .interaction-chevron {
+  border-color: transparent;
+  background: transparent;
+  color: var(--green-deep);
+}
+
+@media (max-width: 420px) {
+  .dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education {
+    min-height: 332px;
+    padding: var(--space-3);
+    grid-template-rows: auto minmax(0, auto) minmax(0, auto) auto auto minmax(48px, auto) minmax(0, 1fr);
+    align-content: stretch;
+  }
+
+  .dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__value-row strong {
+    font-size: var(--font-size-2xl);
+    line-height: var(--line-height-tight);
+  }
+
+  .dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__footer {
+    align-self: end;
+  }
+}
+
+@media (min-width: 821px) and (max-width: 1080px) {
+  .dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__description {
+    height: 1.5em;
+    min-height: 1.5em;
+    max-height: 1.5em;
+    -webkit-line-clamp: 1;
+  }
+}
+
+/* Shared editorial anatomy for explorable Education and Finance indicators. */
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) {
+  --indicator-direction-soft: var(--indicator-direction-data-soft);
+  --indicator-direction-ink: var(--indicator-direction-data-ink);
+  min-height: 326px;
+  padding: var(--space-4);
+  border: var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+  grid-template-columns: minmax(0, 3fr) minmax(112px, 2fr);
+  grid-template-rows: auto minmax(1.35em, auto) minmax(2.4em, auto) minmax(76px, auto) minmax(56px, auto) auto;
+  gap: var(--space-2) var(--space-3);
+  align-content: start;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell--direction-up {
+  --indicator-direction-soft: var(--indicator-direction-up-soft);
+  --indicator-direction-ink: var(--indicator-direction-up-ink);
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell--direction-stable {
+  --indicator-direction-soft: var(--indicator-direction-stable-soft);
+  --indicator-direction-ink: var(--indicator-direction-stable-ink);
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell--direction-down {
+  --indicator-direction-soft: var(--indicator-direction-down-soft);
+  --indicator-direction-ink: var(--indicator-direction-down-ink);
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell--direction-missing {
+  --indicator-direction-soft: var(--indicator-direction-missing-soft);
+  --indicator-direction-ink: var(--indicator-direction-missing-ink);
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) > :is(.indicator-card-shell__topline, .indicator-card-shell__title, .indicator-card-shell__description, .indicator-card-shell__insight, .indicator-card-shell__footer) {
+  grid-column: 1 / -1;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__topline {
+  grid-row: 1;
+  min-height: 24px;
+  align-items: flex-start;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__context {
+  color: var(--green-deep);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .status-badge {
+  min-height: 24px;
+  padding: var(--space-1) var(--space-2);
+  border-color: transparent;
+  border-radius: var(--radius-xs);
+  background: var(--indicator-direction-soft);
+  color: var(--indicator-direction-ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__title {
+  grid-row: 2;
+  min-height: 0;
+  max-height: none;
+  height: auto;
+  color: var(--text-strong);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__description {
+  grid-row: 3;
+  min-height: 2.4em;
+  max-height: 2.8em;
+  color: var(--text-body);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-tight);
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__value-row {
+  grid-column: 1;
+  grid-row: 4;
+  min-width: 0;
+  min-height: 76px;
+  padding: 0 var(--space-2) 0 0;
+  border: 0;
+  align-items: center;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__value-row strong {
+  color: var(--green-ink);
+  font-size: clamp(var(--font-size-2xl), 2.4vw, var(--font-size-3xl));
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__value-row:has(> span) {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__metadata {
+  grid-column: 2;
+  grid-row: 4;
+  min-width: 0;
+  min-height: 76px;
+  padding-left: var(--space-3);
+  border-left: 1px solid var(--border-strong-line);
+  display: grid;
+  grid-template-columns: 1fr;
+  align-content: center;
+  gap: var(--space-2);
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__metadata-item,
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__insight-item {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__metadata-item + .indicator-card-shell__metadata-item {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-strong-line);
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) :is(.indicator-card-shell__metadata-label, .indicator-card-shell__insight-label) {
+  color: var(--text-soft);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-snug);
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__metadata-value {
+  min-width: 0;
+  color: var(--green-ink);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__metadata-value--variation {
+  color: var(--indicator-direction-ink);
+  font-size: var(--font-size-sm);
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__divider {
+  display: none;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__insight {
+  grid-row: 5;
+  min-height: 56px;
+  height: auto;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--surface-moss);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__insight-item + .indicator-card-shell__insight-item {
+  padding-left: var(--space-3);
+  border-left: 1px solid var(--border-strong-line);
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__insight-value {
+  min-width: 0;
+  color: var(--text-strong);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__footer {
+  grid-row: 6;
+  min-height: 28px;
+  padding-top: var(--space-2);
+  border-top: var(--border-divider);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__footer > span:not(.indicator-card-shell__action) {
+  min-width: 0;
+  max-width: calc(100% - 32px);
+  min-height: 20px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface-muted);
+  color: var(--green-deep);
+  overflow: hidden;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-tight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__action,
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__action .interaction-chevron {
+  width: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--green-deep);
+  flex: 0 0 auto;
+}
+
+.dashboard-shell .content-area .financial-page .financial-indicator-card-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media screen and (max-width: 1180px) {
+  .dashboard-shell .content-area .financial-page .financial-indicator-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media screen and (max-width: 700px) {
+  .dashboard-shell .content-area .financial-page .financial-indicator-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) {
+    min-height: 0;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto auto auto auto;
+  }
+
+  .dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__value-row {
+    grid-column: 1;
+    grid-row: 4;
+    min-height: 64px;
+    padding-right: 0;
+  }
+
+  .dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__metadata {
+    grid-column: 1;
+    grid-row: 5;
+    min-height: 0;
+    padding: var(--space-2) 0 0;
+    border-top: 1px solid var(--border-strong-line);
+    border-left: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+
+  .dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__metadata-item + .indicator-card-shell__metadata-item {
+    padding: 0 0 0 var(--space-3);
+    border-top: 0;
+    border-left: 1px solid var(--border-strong-line);
+  }
+
+  .dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__insight {
+    grid-row: 6;
+  }
+
+  .dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__footer {
+    grid-row: 7;
+  }
+}
+
+/* Education hero context: the side panel follows the evidence-first hierarchy
+ * used by Home and PNE, with the municipality as the primary reference. */
+.dashboard-shell .content-area .educacao-hero__meta {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  align-content: center;
+  gap: var(--space-2);
+  padding: var(--space-5);
+}
+
+.dashboard-shell .content-area .educacao-hero__meta-label {
+  color: var(--green-deep);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.08em;
+  line-height: var(--line-height-snug);
+  text-transform: uppercase;
+}
+
+.dashboard-shell .content-area .educacao-hero__municipality {
+  color: var(--green-ink);
+  font-family: var(--font-serif);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+}
+
+.dashboard-shell .content-area .educacao-hero__meta-details {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-4);
+  align-self: end;
+  min-width: 0;
+  margin: var(--space-2) 0 0;
+  padding-top: var(--space-3);
+  border-top: var(--border-divider);
+}
+
+.dashboard-shell .content-area .educacao-hero__meta-details > div {
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.dashboard-shell .content-area .educacao-hero__meta-details dt {
+  color: var(--text-muted);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-snug);
+}
+
+.dashboard-shell .content-area .educacao-hero__meta-details dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--text-strong);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+  text-wrap: pretty;
+}
+
+.dashboard-shell .content-area .educacao-hero__meta-details > div:last-child {
+  text-align: right;
+}
+
+@media screen and (max-width: 520px) {
+  .dashboard-shell .content-area .educacao-hero__meta-details {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+
+  .dashboard-shell .content-area .educacao-hero__meta-details > div:last-child {
+    text-align: left;
+  }
+}
+
+/* Keep the highlighted value left-biased with a comfortable inner inset. */
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__value-row {
+  padding-inline: var(--space-4) var(--space-2);
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__value-row:has(> span) {
+  align-items: flex-start;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__value-row strong {
+  max-width: 100%;
+  text-align: left;
+}
+
+.dashboard-shell .content-area .financial-page .indicator-card-shell.indicator-card-shell--financial .indicator-card-shell__value-row strong {
+  font-size: var(--font-size-2xl);
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+
+/* VAAR result snapshots keep the shared indicator hierarchy without implying navigation. */
+.dashboard-shell .content-area .financial-page .vaar-result-metrics .metric-card {
+  min-height: 124px;
+  padding: var(--space-4);
+  border: var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+  align-content: start;
+  justify-items: start;
+  gap: var(--space-2);
+  text-align: left;
+}
+
+.dashboard-shell .content-area .financial-page .vaar-result-metrics .metric-card__label {
+  color: var(--green-deep);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  line-height: var(--line-height-snug);
+  text-transform: uppercase;
+}
+
+.dashboard-shell .content-area .financial-page .vaar-result-metrics .metric-card__value {
+  color: var(--green-ink);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  text-align: left;
+}
+
+.dashboard-shell .content-area .financial-page .vaar-result-metrics .metric-card__detail {
+  min-height: 20px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-tight);
+}
+
+/* Final cross-module calibration: PNE, Education and Finance share one card measure. */
+@media screen and (min-width: 701px) {
+  .dashboard-shell .content-area .cycle-page .meta-card--cycle,
+  .dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) {
+    min-height: var(--indicator-card-height-desktop);
+    height: var(--indicator-card-height-desktop);
+  }
+
+  .dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) {
+    grid-template-rows: 24px 40px 29px 84px 48px minmax(24px, 1fr);
+    gap: 6px var(--space-3);
+  }
+
+  .dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__title {
+    min-height: 40px;
+    max-height: 40px;
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__description {
+    min-height: 29px;
+    max-height: 29px;
+  }
+
+  .dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__value-row,
+  .dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__metadata {
+    min-height: 84px;
+  }
+
+  .dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__metadata {
+    gap: var(--space-1);
+  }
+
+  .dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__metadata-item + .indicator-card-shell__metadata-item {
+    padding-top: var(--space-1);
+  }
+
+  .dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__insight {
+    min-height: 48px;
+  }
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial).indicator-card-shell--direction-up {
+  --indicator-direction-soft: var(--indicator-direction-up-soft);
+  --indicator-direction-ink: var(--indicator-direction-up-ink);
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial).indicator-card-shell--direction-stable {
+  --indicator-direction-soft: var(--indicator-direction-stable-soft);
+  --indicator-direction-ink: var(--indicator-direction-stable-ink);
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial).indicator-card-shell--direction-down {
+  --indicator-direction-soft: var(--status-far-bg);
+  --indicator-direction-ink: var(--status-far-ink);
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial).indicator-card-shell--direction-data {
+  --indicator-direction-soft: var(--indicator-direction-data-soft);
+  --indicator-direction-ink: var(--indicator-direction-data-ink);
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial).indicator-card-shell--direction-missing {
+  --indicator-direction-soft: var(--indicator-direction-missing-soft);
+  --indicator-direction-ink: var(--indicator-direction-missing-ink);
+}
+
+@media screen and (max-width: 700px) {
+  .dashboard-shell .content-area .cycle-page .meta-card--cycle,
+  .dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) {
+    min-height: 364px;
   }
 }

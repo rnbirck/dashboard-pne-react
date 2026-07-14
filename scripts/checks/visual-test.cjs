@@ -120,10 +120,29 @@ async function run() {
       assert.ok(comparison.ratio <= MAX_DIFFERENT_PIXEL_RATIO, `${mobileName}: diferença visual acima de 0,2%`);
     }
     await mobilePage.close();
+
+    const closedMobilePage = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+    const closedMobileCase = CASES.find((testCase) => testCase.key === 'pne-2014');
+    const closedMobileRegion = await prepareCase(closedMobilePage, closedMobileCase);
+    const closedMobileName = 'pne-2014-390x844.png';
+    const closedMobileBaselinePath = path.join(BASELINE_DIR, closedMobileName);
+    const closedMobileActual = await closedMobileRegion.screenshot({ animations: 'disabled' });
+    if (UPDATE) {
+      fs.writeFileSync(closedMobileBaselinePath, closedMobileActual);
+    } else {
+      assert.ok(fs.existsSync(closedMobileBaselinePath), `baseline ausente: ${closedMobileName}; execute npm run update:visual`);
+      const comparison = comparePng(closedMobileActual, fs.readFileSync(closedMobileBaselinePath));
+      if (comparison.ratio > MAX_DIFFERENT_PIXEL_RATIO) {
+        fs.mkdirSync(DIFF_DIR, { recursive: true });
+        fs.writeFileSync(path.join(DIFF_DIR, closedMobileName), comparison.diff);
+      }
+      assert.ok(comparison.ratio <= MAX_DIFFERENT_PIXEL_RATIO, `${closedMobileName}: diferença visual acima de 0,2%`);
+    }
+    await closedMobilePage.close();
   } finally {
     await browser.close();
   }
-  console.log(`Visual baseline passed: ${CASES.length * VIEWPORTS.length + 1} regiões; tolerância de ${(MAX_DIFFERENT_PIXEL_RATIO * 100).toFixed(1)}%.`);
+  console.log(`Visual baseline passed: ${CASES.length * VIEWPORTS.length + 2} regiões; tolerância de ${(MAX_DIFFERENT_PIXEL_RATIO * 100).toFixed(1)}%.`);
 }
 
 run().catch((error) => {

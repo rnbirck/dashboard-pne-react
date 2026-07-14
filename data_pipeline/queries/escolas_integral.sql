@@ -1,11 +1,18 @@
 SELECT
     t1.ano,
     t2.municipio,
-    COUNT(DISTINCT CASE WHEN t1.mat_basico >= 1 THEN t1.cod_escola END) AS escolas_publicas_total,
     COUNT(
         DISTINCT CASE
             WHEN t1.mat_basico >= 1
-             AND 100.0 * COALESCE(t1.mat_basico_integral, 0) / NULLIF(t1.mat_basico, 0) >= 25.0
+             AND t1.mat_basico_integral IS NOT NULL
+            THEN t1.cod_escola
+        END
+    ) AS escolas_publicas_total,
+    COUNT(
+        DISTINCT CASE
+            WHEN t1.mat_basico >= 1
+             AND t1.mat_basico_integral IS NOT NULL
+             AND 100.0 * t1.mat_basico_integral / NULLIF(t1.mat_basico, 0) >= 25.0
             THEN t1.cod_escola
         END
     ) AS escolas_publicas_com_integral

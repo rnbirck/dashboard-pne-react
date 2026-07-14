@@ -38,6 +38,14 @@ def load_escolas_integral_data():
     return load_dataset("escolas_integral_data")
 
 
+def load_escolas_integral_referencia_data():
+    return load_dataset("escolas_integral_referencia_data")
+
+
+def load_infraestrutura_escolar_referencia_data():
+    return load_dataset("escolas_integral_referencia_data")
+
+
 def load_escolas_integral_por_dependencia_data():
     return load_dataset("escolas_integral_por_dependencia_data")
 
@@ -64,6 +72,10 @@ def load_basico_integral_por_dependencia_data():
 
 def load_medio_tecnico_data():
     return load_dataset("medio_tecnico_data")
+
+
+def load_medio_tecnico_articulado_data():
+    return load_dataset("medio_tecnico_articulado_data")
 
 
 def load_ept_nivel_medio_data():
@@ -195,6 +207,8 @@ __all__ = [
     "load_basico_6_17_data",
     "load_basico_integral_data",
     "load_escolas_integral_data",
+    "load_escolas_integral_referencia_data",
+    "load_infraestrutura_escolar_referencia_data",
     "load_escolas_integral_por_dependencia_data",
     "load_creche_por_dependencia_data",
     "load_pre_escola_por_dependencia_data",
@@ -214,6 +228,7 @@ __all__ = [
     "load_censo_populacao_ensino_medio_concluido_18_mais_data",
     "load_censo_populacao_ensino_medio_concluido_18_29_data",
     "load_medio_tecnico_data",
+    "load_medio_tecnico_articulado_data",
     "load_pne_data",
     "load_pre_escola_data",
     "load_adequacao_docente_data",

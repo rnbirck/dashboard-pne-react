@@ -127,11 +127,17 @@ Card é adequado quando agrupa uma unidade de informação, uma ação clara, it
 
 Um card de indicador pode conter tema, status textual, título, valor, unidade, ano, referência, variação e sparkline quando estes elementos ajudarem a decisão. Altura fixa não pode truncar título ou valor relevante.
 
+Nos grids exploráveis de Educação e Financiamento, a anatomia editorial compartilhada prioriza: contexto e status no cabeçalho; título e descrição de até duas linhas; valor institucional ao lado de Ano/Variação; faixa Leitura/Período; e rodapé com chip e chevron simples. A direção aparece apenas no badge e na variação, nunca colore o valor principal. Sem série comparável, a variação e o período comparativo são omitidos, sem converter ausência em zero. Em telas estreitas, o valor ocupa uma linha e Ano/Variação passam para duas colunas abaixo.
+
+Cards comparáveis de PNE, Educação e Financiamento usam a medida canônica de 324 px no desktop/notebook, com 16 px de padding e valor principal em escala de 32 px. Nos cards de Educação e Financiamento, o valor fica alinhado à esquerda dentro da coluna primária de 60%, com recuo interno adicional de 16 px, preservando a coluna lateral de Ano/Variação. Em até 700 px, a composição volta a ser fluida com altura mínima comum de 364 px, sem truncar valor, metadados ou ação. Alta usa verde-azulado suave, Queda usa terracota suave e Estável usa areia; a variação repete a cor semântica do badge.
+
 Cards exploráveis devem expor affordance por estrutura, foco e estado, não apenas por hover. Cards informativos não recebem cursor, chevron ou elevação que sugira ação.
 
 ### 5.3 Gráficos e tabelas
 
 Todo gráfico informa medida, unidade, período, leitura principal, referência quando existir e fonte. Deve oferecer tooltip por ponteiro e foco, marcas focáveis quando o valor individual é interativo e alternativa textual ou tabular adequada.
+
+Nos detalhes do PNE, o progresso exibe o valor municipal atual em superfície neutra com contraste AA, preservando a cor semântica na linha do marcador. A linha de referência do gráfico usa o rótulo visual compacto `Meta {valor}`; o ciclo e o ano de vigência permanecem no contexto textual do detalhe, sem competir com a série.
 
 Eixos usam `--chart-axis-text` e texto final mínimo de 12 px. Legendas não dependem somente de cor. Tooltip nunca é a única forma de obter valor.
 
@@ -196,3 +202,7 @@ usar superfícies contínuas com divisores; fonte e metodologia permanecem
 neutras e próximas da evidência. Ocre e terracota são sinais editoriais, não
 classificações de desempenho. A direção preserva todos os requisitos deste
 guia para foco, teclado, contraste, zoom, movimento reduzido e responsividade.
+
+No hero de Educação, o bloco lateral organiza contexto, município em destaque,
+seção atual e escopo disponível. Leituras rápidas usam título e texto sobre
+superfície neutra, sem ponto decorativo de status competindo com o conteúdo.

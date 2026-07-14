@@ -1,7 +1,5 @@
 import { isComparableIndicator } from './IndicatorDetail'
 import { StatusBadge } from './StatusBadge'
-import { PNE_2026_GOAL_TEXTS } from '../data/pne2026GoalTexts'
-import { PNE_2014_GOAL_TEXTS } from '../data/pne2014GoalTexts'
 import {
   formatIndicatorValue,
   formatMetaValue,
@@ -9,11 +7,16 @@ import {
   resolveIndicatorUnit,
   roundPpString,
 } from '../utils/format'
-import { getPneCycleCopy, isClosedPneCycle } from '../utils/pneCycleCopy'
+import { formatPpDifference, getStateReferenceComparison } from '../utils/stateReference'
+import { getPneCycleCopy } from '../utils/pneCycleCopy'
 import { InteractionChevron } from './InteractionChevron'
 
-const SPARKLINE_WIDTH = 320
-const SPARKLINE_HEIGHT = 48
+const STATE_REFERENCE_EPSILON = 0.05
+const TREND_PRESENTATIONS = Object.freeze({
+  up: Object.freeze({ icon: '↗', label: 'Alta', ariaDirection: 'alta' }),
+  stable: Object.freeze({ icon: '→', label: 'Estável', ariaDirection: 'estável' }),
+  down: Object.freeze({ icon: '↘', label: 'Queda', ariaDirection: 'queda' }),
+})
 
 export function MetaCard({
   buttonRef,
@@ -22,33 +25,60 @@ export function MetaCard({
   item,
   onSelect,
   result,
+  stateReference,
   stageLabel,
 }) {
   const cycleCopy = getPneCycleCopy(cycle)
   const unit = resolveIndicatorUnit(item, result)
+  const isApproximate = isApproximateIndicator(item, result)
   const comparable = isComparableIndicator(result)
-  const status = getMetaCardStatus(result, comparable, cycleCopy)
-  const currentValue = result ? formatIndicatorValue(result.end_value, unit) : '—'
-  const metaValue = comparable ? formatMetaValue(result, unit) : 'Sem meta'
+  const status = getMetaCardStatus(result, comparable, cycleCopy, isApproximate)
+  const isNextCycle = cycle === 'pne_2026_2036'
+  const currentValue = result
+    ? isApproximate
+      ? formatApproximatePercent(result.end_value)
+      : formatIndicatorValue(result.end_value, unit)
+    : '—'
+  const referenceValue = result?.reference_value ?? item?.reference_value
+  const metaValue = comparable
+    ? formatMetaValue(result, unit)
+    : isApproximate
+      ? formatIndicatorValue(referenceValue, unit)
+      : 'Sem meta'
   const progress = comparable ? getProgressPercent(result) : null
-  const sparkline = getSparkline(result?.series)
   const supportValue = comparable
     ? roundPpString(result?.display?.distance ?? '—')
-    : roundPpString(result?.display?.variation ?? '—')
-  const supportLabel = comparable ? 'Distância' : 'Variação'
-  const quickReading = getQuickReading(result, status, cycle)
+    : isApproximate
+      ? formatApproximateDifference(result?.reference_difference)
+      : roundPpString(result?.display?.variation ?? '—')
+  const supportLabel = comparable
+    ? 'Distância'
+    : isApproximate
+      ? 'Diferença'
+      : 'Variação'
   const identifier = item?.metaRef ? `Meta ${item.metaRef}` : 'Indicador'
   const title = getIndicatorTitle(item, result)
-  const goalReference = getGoalReference(cycle, item)
-  const isNextCycle = cycle === 'pne_2026_2036'
+  const stateComparison = getStateReferenceComparison(
+    stateReference,
+    item?.key,
+    result,
+    unit,
+  )
+  const stateComparisonTone = stateComparison
+    ? getStateComparisonTone(stateComparison.difference)
+    : null
+  const trendPresentation = isNextCycle ? getTrendPresentation(result?.trend) : null
+  const cardAriaLabel = trendPresentation
+    ? `Abrir detalhe do indicador ${title}. Tendência: ${trendPresentation.ariaDirection}, de ${trendPresentation.startYear} a ${trendPresentation.endYear}.`
+    : `Abrir detalhe do indicador ${title}`
 
   return (
     <button
-      className={`meta-card interaction-card--explorable meta-card--${status.state}${isNextCycle ? ' meta-card--next-cycle' : ''}${isSelected ? ' is-selected' : ''}`}
+      className={`meta-card meta-card--cycle interaction-card--explorable meta-card--${status.state}${isNextCycle ? ' meta-card--next-cycle' : ' meta-card--closed-cycle'}${trendPresentation ? ' meta-card--has-trend' : ''}${isSelected ? ' is-selected' : ''}`}
       ref={buttonRef}
       type="button"
       onClick={onSelect}
-      aria-label={`Abrir detalhe do indicador ${title}`}
+      aria-label={cardAriaLabel}
       aria-pressed={isSelected}
       title={title}
     >
@@ -63,58 +93,63 @@ export function MetaCard({
       </span>
 
       <span className="meta-card__title">{title}</span>
-      {goalReference ? (
-        <span className={`meta-card__pne-reference${isNextCycle ? ' meta-card__pne-reference--full' : ''}`}>
-          <strong>{identifier}</strong>{' '}
-          <span>— {goalReference}</span>
-        </span>
-      ) : null}
 
       <span className="meta-card__value-row">
-        <strong>{currentValue}</strong>
-        <span>{metaValue === 'Sem meta' ? 'sem meta' : `meta ${metaValue}`}</span>
-      </span>
-
-      {progress !== null ? (
-        <span className="meta-card__progress" aria-hidden="true">
-          <span style={{ width: `${progress}%` }} />
+        <span className="meta-card__metric meta-card__metric--current">
+          <span>Município</span>
+          <strong>{currentValue}</strong>
         </span>
-      ) : (
-        <span className="meta-card__no-progress">Sem meta comparável</span>
-      )}
-
-      <span className="meta-card__support">
-        <span>{supportLabel}</span>
-        <strong>{supportValue}</strong>
+        <span className="meta-card__metric meta-card__metric--target">
+          <span>{isApproximate ? 'Ref.' : 'Meta PNE'}</span>
+          <strong>{metaValue}</strong>
+        </span>
+        <span className="meta-card__metric meta-card__metric--distance">
+          <span>{supportLabel}</span>
+          <strong>{supportValue}</strong>
+        </span>
+        {trendPresentation ? (
+          <span className="meta-card__metric meta-card__metric--trend">
+            <span>Tendência</span>
+            <strong className="meta-card__trend-value">
+              <span aria-hidden="true" className="meta-card__trend-icon">
+                {trendPresentation.icon}
+              </span>
+              <span>{trendPresentation.label}</span>
+            </strong>
+          </span>
+        ) : null}
       </span>
 
-      {sparkline ? (
+      <span className="meta-card__progress-group">
+        {progress !== null ? (
+          <span
+            className="meta-card__progress"
+            aria-label={`Comparação do resultado municipal ${currentValue} com a meta ${metaValue}`}
+          >
+            <span style={{ width: `${progress}%` }} />
+          </span>
+        ) : (
+          <span className="meta-card__no-progress">
+            {isApproximate ? 'Referência legal final: 50% em 2036' : 'Sem meta comparável'}
+          </span>
+        )}
+      </span>
+
+      {stateComparison ? (
         <span
-          className="meta-card__sparkline"
-          role="img"
-          aria-label={`Série histórica de ${sparkline.firstYear} a ${sparkline.lastYear}`}
+          className={`meta-card__state-reference meta-card__state-reference--${stateComparisonTone}`}
+          aria-label={`Referência RS ${formatIndicatorValue(stateComparison.stateValue, unit)}; Município vs RS ${formatPpDifference(stateComparison.difference)}; ano ${stateComparison.year}`}
         >
-          <svg aria-hidden="true" viewBox={`0 0 ${SPARKLINE_WIDTH} ${SPARKLINE_HEIGHT}`}>
-            <path className="meta-card__sparkline-area" d={sparkline.areaPath} />
-            <path className="meta-card__sparkline-line" d={sparkline.linePath} />
-            <circle
-              className="meta-card__sparkline-end"
-              cx={sparkline.lastPoint.x}
-              cy={sparkline.lastPoint.y}
-              r="3.6"
-            />
-          </svg>
-          <span className="meta-card__sparkline-period" aria-hidden="true">
-            {sparkline.firstYear}–{sparkline.lastYear}
+          <span>
+            <span>Referência RS</span>
+            <strong>{formatIndicatorValue(stateComparison.stateValue, unit)}</strong>
+          </span>
+          <span>
+            <span>Município vs RS</span>
+            <strong>{formatPpDifference(stateComparison.difference)}</strong>
           </span>
         </span>
-      ) : (
-        <span className="meta-card__sparkline meta-card__sparkline--empty" aria-hidden="true">
-          <span className="meta-card__sparkline-empty-label">Histórico não disponível.</span>
-        </span>
-      )}
-
-      <span className="meta-card__reading">{quickReading}</span>
+      ) : null}
 
       <span className="meta-card__footer">
         {stageLabel ? <span>{stageLabel}</span> : null}
@@ -124,7 +159,27 @@ export function MetaCard({
   )
 }
 
-function getMetaCardStatus(result, comparable, cycleCopy) {
+function getTrendPresentation(trend) {
+  const presentation = TREND_PRESENTATIONS[trend?.status]
+  const startYear = Number(trend?.start_year)
+  const endYear = Number(trend?.end_year)
+
+  if (!presentation || !Number.isInteger(startYear) || !Number.isInteger(endYear)) {
+    return null
+  }
+
+  return { ...presentation, startYear, endYear }
+}
+
+function getStateComparisonTone(difference) {
+  const numeric = Number(difference)
+  if (!Number.isFinite(numeric) || Math.abs(numeric) <= STATE_REFERENCE_EPSILON) {
+    return 'neutral'
+  }
+  return numeric > 0 ? 'positive' : 'negative'
+}
+
+function getMetaCardStatus(result, comparable, cycleCopy, isApproximate) {
   const rawStatus = result?.display?.status ?? ''
   const normalized = String(rawStatus).toLocaleLowerCase('pt-BR')
 
@@ -135,6 +190,10 @@ function getMetaCardStatus(result, comparable, cycleCopy) {
     normalized.includes('sem dados')
   ) {
     return { label: cycleCopy.status.missing, rawStatus, state: 'missing', tone: 'muted' }
+  }
+
+  if (isApproximate) {
+    return { label: 'Indicador aproximado', rawStatus, state: 'no-goal', tone: 'info' }
   }
 
   if (!comparable || normalized.includes('visualiza') || normalized.includes('informativo')) {
@@ -164,17 +223,30 @@ function getMetaCardStatus(result, comparable, cycleCopy) {
   return { label: cycleCopy.status.missing, rawStatus, state: 'missing', tone: 'muted' }
 }
 
-function getGoalReference(cycle, item) {
-  const goalTexts = cycle === 'pne_2026_2036'
-    ? PNE_2026_GOAL_TEXTS
-    : cycle === 'pne_2014_2024'
-      ? PNE_2014_GOAL_TEXTS
-      : null
-  const legalGoal = goalTexts && item?.metaRef
-    ? goalTexts[item.metaRef]
-    : null
+function isApproximateIndicator(item, result) {
+  return (
+    item?.monitoring_mode === 'approximate_reference' ||
+    result?.monitoring_mode === 'approximate_reference'
+  )
+}
 
-  return legalGoal?.dashboardText || legalGoal?.displayText || legalGoal?.originalText || ''
+function formatApproximatePercent(value) {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return '—'
+  return `${numeric.toLocaleString('pt-BR', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  })}%`
+}
+
+function formatApproximateDifference(value) {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return '—'
+  const sign = numeric > 0 ? '+' : ''
+  return `${sign}${numeric.toLocaleString('pt-BR', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  })} p.p.`
 }
 
 function getProgressPercent(result) {
@@ -185,82 +257,7 @@ function getProgressPercent(result) {
   }
   if (result?.direction === 'at_most') {
     if (current <= meta) return 100
-    if (current <= 0) return 100
     return Math.max(0, Math.min(100, (meta / current) * 100))
   }
   return Math.max(0, Math.min(100, (current / meta) * 100))
-}
-
-function getSparkline(series = []) {
-  const points = series
-    .map((point) => ({
-      value: Number(point?.valor),
-      year: Number(point?.ano),
-    }))
-    .filter((point) => Number.isFinite(point.value) && Number.isFinite(point.year))
-    .sort((a, b) => a.year - b.year)
-
-  if (points.length < 3) return null
-
-  const values = points.map((point) => point.value)
-  const min = Math.min(...values)
-  const max = Math.max(...values)
-  const range = max - min
-  const insetX = 1.5
-  const insetY = 5
-  const baseline = SPARKLINE_HEIGHT - 3
-  const step = points.length > 1 ? (SPARKLINE_WIDTH - insetX * 2) / (points.length - 1) : 0
-
-  const scaledPoints = points
-    .map((point, index) => {
-      const x = insetX + index * step
-      const y = range === 0
-        ? SPARKLINE_HEIGHT / 2
-        : baseline - ((point.value - min) / range) * (SPARKLINE_HEIGHT - insetY * 2)
-      return { x, y }
-    })
-
-  const linePath = scaledPoints
-    .map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
-    .join(' ')
-  const firstPoint = scaledPoints[0]
-  const lastPoint = scaledPoints[scaledPoints.length - 1]
-  const areaPath = `${linePath} L${lastPoint.x.toFixed(1)} ${baseline.toFixed(1)} L${firstPoint.x.toFixed(1)} ${baseline.toFixed(1)} Z`
-
-  return {
-    areaPath,
-    firstYear: points[0].year,
-    lastPoint,
-    lastYear: points[points.length - 1].year,
-    linePath,
-  }
-}
-
-function getQuickReading(result, status, cycle) {
-  const cycleCopy = getPneCycleCopy(cycle)
-  const isClosedCycle = isClosedPneCycle(cycle)
-
-  if (status.state === 'missing') return `${cycleCopy.status.missing}.`
-  if (status.state === 'no-goal') return 'Indicador acompanhado como contexto, sem meta definida.'
-
-  if (result?.atingida === true) {
-    if (result?.direction === 'at_most') {
-      return isClosedCycle
-        ? 'Resultado consolidado dentro do limite definido para a meta.'
-        : 'O valor mais recente está dentro do limite definido para a meta no momento.'
-    }
-    return isClosedCycle
-      ? 'Resultado consolidado na referência definida para o ciclo.'
-      : 'O valor mais recente atinge a referência no momento.'
-  }
-
-  if (result?.direction === 'at_most') {
-    return isClosedCycle
-      ? 'Resultado consolidado acima do limite definido para a meta.'
-      : 'O valor mais recente ainda está acima do limite definido para a meta.'
-  }
-
-  return isClosedCycle
-    ? 'Resultado consolidado abaixo da meta definida para o ciclo.'
-    : 'O valor mais recente ainda não atinge a referência.'
 }

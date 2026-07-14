@@ -14,7 +14,7 @@ export const PNE_2014_INDICATOR_GOAL_REFS = {
   escolaridade_media_18_29: '8',
   razao_escolaridade_racial_18_29: '8',
   alfabetizacao_pop_15_mais: '9',
-  eja_integrada_educacao_profissional: '10',
+  eja_integrada_educacao_profissional_percentual: '10',
   medio_tecnico_total: '11',
   medio_tecnico_participacao_publica: '11',
   medio_tecnico: '11',

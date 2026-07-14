@@ -3,6 +3,10 @@ from urllib.parse import quote
 import pandas as pd
 from dash import html
 
+from src.eja_integrada_indicator import (
+    EjaIndicatorValidationError,
+    calculate_eja_integrada_series,
+)
 from .indicator_details import build_indicator_details as _build_indicator_details
 
 GOAL_AT_LEAST = "at_least"
@@ -159,21 +163,14 @@ def _select_reference_rows(df, target_start_year, target_end_year):
     end_row = df[df["ano"] == target_end_year]
     if end_row.empty:
         end_row = df[df["ano"] <= target_end_year]
-    if end_row.empty:
-        end_row = df.tail(1)
-    else:
+    if not end_row.empty:
         end_row = end_row.tail(1)
 
     if start_row.empty or end_row.empty:
         return None, None
 
     if int(start_row.iloc[0]["ano"]) > int(end_row.iloc[0]["ano"]):
-        start_row = df.head(1)
-        end_row = df.tail(1)
-
-    if len(df) > 1 and int(start_row.iloc[0]["ano"]) == int(end_row.iloc[0]["ano"]):
-        start_row = df.head(1)
-        end_row = df.tail(1)
+        return None, None
 
     return start_row.iloc[0], end_row.iloc[0]
 
@@ -208,7 +205,12 @@ def _build_result(
     end_value = float(end_row["valor"])
     raw_delta = end_value - start_value
     progress_delta = raw_delta if direction == GOAL_AT_LEAST else -raw_delta
-    distance = end_value - meta if direction == GOAL_AT_LEAST else meta - end_value
+    if meta is None:
+        distance = None
+        atingida = None
+    else:
+        distance = end_value - meta if direction == GOAL_AT_LEAST else meta - end_value
+        atingida = _goal_achieved(distance)
     series_window = (
         series[
             (series["ano"] >= int(start_row["ano"]))
@@ -234,7 +236,7 @@ def _build_result(
         "raw_delta": raw_delta,
         "progress_delta": progress_delta,
         "distance": distance,
-        "atingida": _goal_achieved(distance),
+        "atingida": atingida,
         "series": series_points,
         "tracks_goal": tracks_goal,
     }
@@ -269,19 +271,25 @@ def _build_ratio_result(
     if dff.empty or numerator not in dff.columns or denominator not in dff.columns:
         return _empty_result(meta, direction=direction, meta_label=meta_label)
 
+    dff[numerator] = pd.to_numeric(dff[numerator], errors="coerce")
+    dff[denominator] = pd.to_numeric(dff[denominator], errors="coerce")
+    dff = dff.dropna(subset=[numerator, denominator]).copy()
+    if dff.empty:
+        return _empty_result(meta, direction=direction, meta_label=meta_label)
+
     yearly = (
         dff.groupby("ano", as_index=False)
         .agg({numerator: num_agg, denominator: den_agg})
         .copy()
     )
-    yearly[numerator] = pd.to_numeric(yearly[numerator], errors="coerce")
-    yearly[denominator] = pd.to_numeric(yearly[denominator], errors="coerce")
     yearly["valor"] = (
         yearly[numerator]
         .div(yearly[denominator].where(yearly[denominator] != 0, pd.NA))
-        .fillna(0)
         .mul(100)
     )
+    yearly = yearly.dropna(subset=["valor"]).copy()
+    if yearly.empty:
+        return _empty_result(meta, direction=direction, meta_label=meta_label)
     return _build_result(
         yearly[["ano", "valor"]],
         meta,
@@ -289,6 +297,49 @@ def _build_ratio_result(
         meta_label=meta_label,
         target_start_year=target_start_year,
         target_end_year=target_end_year,
+    )
+
+
+def _build_eja_integrada_percentual_result(
+    loader,
+    municipio,
+    *,
+    meta,
+    meta_label,
+    target_start_year,
+    target_end_year,
+):
+    """Calcula o indicador legal a partir dos cinco componentes brutos."""
+
+    df = _safe_load(loader)
+    if df.empty or "municipio" not in df.columns:
+        return _empty_result(meta, meta_label=meta_label)
+    dff = df[df["municipio"] == municipio].copy()
+    if dff.empty:
+        return _empty_result(meta, meta_label=meta_label)
+    try:
+        validated = calculate_eja_integrada_series(dff)
+    except EjaIndicatorValidationError as exc:
+        print(f"Erro de validação do indicador de EJA em {municipio}: {exc}")
+        return _empty_result(meta, meta_label=meta_label)
+
+    yearly = validated.dropna(subset=["percentual_calculado"])[
+        ["ano", "percentual_calculado"]
+    ].rename(columns={"percentual_calculado": "valor"})
+    yearly = yearly[
+        (yearly["ano"] >= target_start_year)
+        & (yearly["ano"] <= target_end_year)
+    ].copy()
+    if yearly.empty:
+        return _empty_result(meta, meta_label=meta_label)
+    return _build_result(
+        yearly,
+        meta,
+        direction=GOAL_AT_LEAST,
+        meta_label=meta_label,
+        target_start_year=target_start_year,
+        target_end_year=target_end_year,
+        tracks_goal=True,
     )
 
 
@@ -408,6 +459,13 @@ def _status_theme(result):
             "text": "Sem dados suficientes",
             "fg": "#64748b",
             "bg": "#e2e8f0",
+        }
+
+    if result.get("monitoring_mode") == "approximate_reference":
+        return {
+            "text": "Indicador aproximado",
+            "fg": "#2563eb",
+            "bg": "#93c5fd",
         }
 
     if not result.get("tracks_goal", True):

@@ -17,7 +17,7 @@ from src.views.pne_shared_components import (
 )
 
 EPT_DETAIL_KEYS = {
-    "eja_integrada_educacao_profissional",
+    "eja_integrada_educacao_profissional_percentual",
     "medio_tecnico_total",
     "medio_tecnico_participacao_publica",
     "medio_tecnico",
@@ -118,7 +118,7 @@ def build_pne2014_ept_detail_panel(
         status,
     )
 
-    if item["key"] == "eja_integrada_educacao_profissional":
+    if item["key"] == "eja_integrada_educacao_profissional_percentual":
         interpretation = (
             f"Entre {result['start_year']} e {result['end_year']}, o percentual de matrículas do EJA "
             f"na forma integrada à educação profissional passou de {_fmt_percent(result['start_value'])} "

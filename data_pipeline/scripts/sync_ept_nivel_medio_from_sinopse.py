@@ -19,6 +19,7 @@ import hashlib
 import json
 import sys
 import tempfile
+import unicodedata
 import zipfile
 from contextlib import contextmanager
 from pathlib import Path
@@ -81,18 +82,79 @@ def _normalise(value: object) -> str:
     return " ".join(str(value or "").strip().split())
 
 
+def _normalise_header(value: object) -> str:
+    text_value = unicodedata.normalize("NFKD", _normalise(value))
+    text_value = "".join(char for char in text_value if not unicodedata.combining(char))
+    return " ".join(
+        "".join(char if char.isalnum() else " " for char in text_value.lower()).split()
+    )
+
+
 def _integer(value: object, *, field: str, row_number: int) -> int:
     if value is None or str(value).strip() == "":
         raise ValueError(f"Valor ausente em {field}, linha {row_number}.")
+    if isinstance(value, bool):
+        raise ValueError(f"Valor inesperado em {field}, linha {row_number}: {value!r}.")
     try:
-        numeric = int(float(value))
+        numeric_float = float(value)
     except (TypeError, ValueError) as exc:
         raise ValueError(
             f"Valor invalido em {field}, linha {row_number}: {value!r}."
         ) from exc
+    if not numeric_float.is_integer():
+        raise ValueError(
+            f"Valor fracionario inesperado em {field}, linha {row_number}: {value!r}."
+        )
+    numeric = int(numeric_float)
     if numeric < 0:
         raise ValueError(f"Valor negativo em {field}, linha {row_number}.")
     return numeric
+
+
+def _ibge_code(value: object, *, field: str, row_number: int) -> str:
+    numeric = _integer(value, field=field, row_number=row_number)
+    if numeric < 1_000_000 or numeric > 9_999_999:
+        raise ValueError(
+            f"Codigo IBGE invalido em {field}, linha {row_number}: {value!r}."
+        )
+    return str(numeric)
+
+
+def _validate_layout_headers(header_rows: list[tuple], layout_key: str) -> None:
+    """Check semantic header names in addition to the fixed column positions."""
+
+    if not header_rows:
+        raise ValueError(f"Cabecalhos ausentes para o layout {layout_key}.")
+
+    width = max(len(row) for row in header_rows)
+    by_column = [
+        " ".join(
+            _normalise_header(row[index])
+            for row in header_rows
+            if index < len(row) and _normalise_header(row[index])
+        )
+        for index in range(width)
+    ]
+    header_blob = " ".join(by_column)
+    if "codigo" not in header_blob or "ibge" not in header_blob:
+        raise ValueError("Cabecalho sem identificacao semantica do codigo IBGE.")
+
+    layout = LAYOUTS[layout_key]
+    expected_modes = ("integrado", "concomitante")
+    for mode_name in expected_modes:
+        start = layout["mode_starts"][mode_name] - 1
+        width_for_mode = 5 if layout_key == "1.30" else 6
+        window = " ".join(by_column[start : start + width_for_mode])
+        if mode_name not in window or "total" not in window:
+            raise ValueError(
+                f"Cabecalho inconsistente para {mode_name} no layout {layout_key}."
+            )
+        for dependency in ("federal", "estadual", "municipal", "privada"):
+            if dependency not in window:
+                raise ValueError(
+                    f"Cabecalho sem a dependencia {dependency} para {mode_name} "
+                    f"no layout {layout_key}."
+                )
 
 
 def _file_sha256(path: Path) -> str:
@@ -190,8 +252,8 @@ def _record_from_row(
     }
     record: dict[str, int | str] = {"ano": year}
     if include_municipality_id:
-        record["id_municipio"] = str(
-            _integer(row[3], field="codigo_ibge", row_number=row_number)
+        record["id_municipio"] = _ibge_code(
+            row[3], field="codigo_ibge", row_number=row_number
         )
 
     for mode_name, prefix in MODE_PREFIXES.items():
@@ -224,6 +286,14 @@ def parse_workbook(source_path: Path, year: int, uf: str) -> tuple[pd.DataFrame,
                 name for name in workbook.sheetnames if name.endswith(layout["sheet_suffix"])
             )
             sheet = workbook[sheet_name]
+            header_rows = list(
+                sheet.iter_rows(
+                    min_row=1,
+                    max_row=layout["first_data_row"] - 1,
+                    values_only=True,
+                )
+            )
+            _validate_layout_headers(header_rows, layout_key)
             records: list[dict[str, int | str]] = []
             state_record: dict[str, int | str] | None = None
             for row_number, row in enumerate(

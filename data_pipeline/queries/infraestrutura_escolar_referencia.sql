@@ -1,0 +1,31 @@
+SELECT
+    ce.ano,
+    m.municipio,
+    ce.cod_escola,
+    LOWER(TRIM(ce.dependencia)) AS dependencia,
+    ce.mat_basico,
+    ce.mat_basico_integral,
+    ce.mat_basico_0_3,
+    ce.docentes_basico,
+    ce.escolas_com_internet,
+    ce.escolas_com_internet_alunos,
+    ce.escolas_com_internet_aprendizagem,
+    ce.escolas_com_internet_comunidade,
+    ce.escolas_com_acesso_internet_computador,
+    ce.escolas_com_acesso_internet_disp_pessoais,
+    ce.escolas_com_banda_larga,
+    ce.escolas_com_rede_local,
+    ce.escolas_com_rede_local_wireless,
+    ce.escolas_com_rede_local_cabo_wireless,
+    ce.escolas_com_educacao_ambiental,
+    ce.escolas_com_orgao_conselho_escolar,
+    ce.tp_proposta_pedagogica,
+    ce.escolas_com_desktop_aluno,
+    ce.escolas_com_comp_portatil_aluno,
+    ce.escolas_com_tablet_aluno,
+    ce.qt_salas_utilizadas,
+    ce.qt_salas_utiliza_climatizadas,
+    ce.qt_salas_utilizadas_acessiveis
+FROM censo_escolas ce
+JOIN municipios m
+    ON ce.id_municipio::text = m.id_municipio::text;

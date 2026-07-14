@@ -73,11 +73,13 @@ export const THEMATIC_GROUPS = [
     icon: 'EP',
     accent: '#0891b2',
     indicatorKeys: [
-      'eja_integrada_educacao_profissional',
       'medio_tecnico_total',
+      'medio_tecnico_articulado_percentual',
       'medio_tecnico',
       'medio_tecnico_participacao_publica',
       'subsequente_expansao',
+      'eja_integrada_educacao_profissional_percentual',
+      'eja_integrada_educacao_profissional',
     ],
   },
   {

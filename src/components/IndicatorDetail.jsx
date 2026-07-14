@@ -98,13 +98,14 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
   const normalizedStatus = String(status).toLocaleLowerCase('pt-BR')
   const isInformative =
     normalizedStatus.includes('visualiza') || normalizedStatus.includes('informativo')
+  const isApproximate = isApproximateIndicator(item, result)
   const isDangerStatus =
     normalizedStatus.includes('distante') ||
     normalizedStatus.includes('crítico') ||
     normalizedStatus.includes('critico') ||
     normalizedStatus.includes('não atingida') ||
     normalizedStatus.includes('nao atingida')
-  const tone = isInformative
+  const tone = isApproximate || isInformative
     ? 'muted'
     : result.atingida
       ? 'success'
@@ -146,8 +147,12 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
         },
       }
     : flooredResult
-  const formattedStart = formatIndicatorValue(goalResult.start_value, unit)
-  const formattedEnd = formatIndicatorValue(goalResult.end_value, unit)
+  const formattedStart = isApproximate
+    ? formatApproximatePercent(goalResult.start_value)
+    : formatIndicatorValue(goalResult.start_value, unit)
+  const formattedEnd = isApproximate
+    ? formatApproximatePercent(goalResult.end_value)
+    : formatIndicatorValue(goalResult.end_value, unit)
   const variation = roundPpString(getDisplayValue(result.display, 'variation'), ppOptions)
   const compactVariation = formatCompactVariation(variation)
   const hasStartYear = typeof startYear === 'number' && startYear > 0
@@ -155,11 +160,17 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
   const isSingleYear = isSingleYearIndicator(result)
   const seriesValues = displaySeries.map((p) => Number(p?.valor)).filter(Number.isFinite)
   const hasRealSeriesValues = seriesValues.some((v) => v !== 0)
-  const hasSeries = seriesValues.length >= 2 && hasRealSeriesValues
+  const hasSeries = seriesValues.length >= 2 && (isApproximate || hasRealSeriesValues)
 
-  const metaValue = formatMetaValue(goalResult, unit)
+  const metaValue = isApproximate
+    ? formatApproximatePercent(result.reference_value)
+    : formatMetaValue(goalResult, unit)
   const distanceValue = roundPpString(getDisplayValue(goalResult.display, 'distance'), ppOptions)
+  const referenceDifferenceValue = formatApproximateDifference(result.reference_difference)
   const showGoalProgress = isComparable && Number.isFinite(Number(goalResult?.meta)) && Number.isFinite(Number(goalResult?.end_value))
+  const historyReferenceValue = isApproximate ? result.reference_value : goalResult.meta
+  const showHistoryReference =
+    (isComparable || isApproximate) && Number.isFinite(Number(historyReferenceValue))
   const goalTexts = cycle === 'pne_2026_2036'
     ? PNE_2026_GOAL_TEXTS
     : cycle === 'pne_2014_2024'
@@ -175,10 +186,14 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
     direction: goalResult.direction,
     endYear,
     formattedEnd,
+    hasAbove100: Boolean(result.acima_de_100),
     isComparable,
+    isApproximate,
     metaValue,
     startYear,
-    variation,
+    variation: item?.key === 'medio_tecnico_articulado_percentual'
+      ? compactVariation
+      : variation,
   })
   const historySummary = buildHistoryChartSummary({
     atingida: goalResult.atingida,
@@ -187,6 +202,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
     endYear,
     formattedEnd,
     isComparable,
+    isApproximate,
     metaValue,
   })
 
@@ -207,6 +223,17 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
               </p>
             </div>
           )}
+          {!isApproximate && Array.isArray(result.meta_references) && result.meta_references.length > 0 && (
+            <div className="indicator-goal-reference">
+              <span>Referências quantitativas</span>
+              {result.meta_references.map((reference) => (
+                <p key={`${reference.year}-${reference.value}`}>
+                  <strong>{reference.label} ({reference.year}) —</strong>{' '}
+                  {Number(reference.value).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%
+                </p>
+              ))}
+            </div>
+          )}
         </div>
         <StatusBadge
           displayStatus={getDetailStatusLabel({ cycle, isComparable, result, status })}
@@ -217,7 +244,15 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
       </div>
 
       {isSingleYear ? (
-        isComparable ? (
+        isApproximate ? (
+          <div className="metric-grid metric-grid--three">
+            {hasStartYear && (
+              <MetricCard label={`Valor inicial (${startYear})`} value={formattedStart} />
+            )}
+            <MetricCard label="Referência legal final (2036)" value={metaValue} />
+            <MetricCard label="Tipo" value="Indicador aproximado" tone="muted" />
+          </div>
+        ) : isComparable ? (
           <div className="metric-grid metric-grid--four">
             {hasStartYear && (
               <MetricCard label={`Valor inicial (${startYear})`} value={formattedStart} />
@@ -243,7 +278,28 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
           </div>
         )
       ) : (
-        isComparable ? (
+        isApproximate ? (
+          <div className="metric-grid">
+            {hasStartYear && (
+              <MetricCard label={`Valor inicial (${startYear})`} value={formattedStart} />
+            )}
+            {hasEndYear && (
+              <MetricCard label={cycleCopy.valueLabel(endYear)} value={formattedEnd} size="large" />
+            )}
+            <MetricCard
+              detail={getVariationDetail(variation, startYear)}
+              label="Variação"
+              value={compactVariation}
+            />
+            <MetricCard label="Referência legal final (2036)" value={metaValue} />
+            {Number.isFinite(Number(result.reference_difference)) ? (
+              <MetricCard
+                label="Diferença para a referência de 2036"
+                value={referenceDifferenceValue}
+              />
+            ) : null}
+          </div>
+        ) : isComparable ? (
           <div className="metric-grid">
             {hasStartYear && (
               <MetricCard label={`Valor inicial (${startYear})`} value={formattedStart} />
@@ -309,15 +365,21 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
             endYear={endYear}
             essentialLabels
             item={item}
-            meta={isComparable ? goalResult.meta : null}
-            referenceLabel={isClosedPneCycle(cycle) ? 'Referência final' : 'Referência 2036'}
+            meta={showHistoryReference ? historyReferenceValue : null}
+            referenceLabel={isApproximate
+              ? 'Referência 2036'
+              : isClosedPneCycle(cycle)
+                ? 'Referência final'
+                : 'Meta'}
             result={isAccExpansion ? flooredResult : result}
             series={displaySeries}
-            showMetaLine={isComparable}
+            showMetaLine={showHistoryReference}
             startYear={startYear}
-            subtitle={isClosedPneCycle(cycle)
-              ? 'Série histórica consolidada do ciclo encerrado, com meta de referência quando aplicável.'
-              : 'Série histórica do ciclo vigente, com meta de referência quando aplicável.'}
+            subtitle={isApproximate
+              ? 'Série histórica do ciclo vigente, com referência legal final para 2036.'
+              : isClosedPneCycle(cycle)
+                ? 'Série histórica consolidada do ciclo encerrado, com meta de referência quando aplicável.'
+                : 'Série histórica do ciclo vigente, com meta de referência quando aplicável.'}
             title={historySummary}
             unit={unit}
             floorNegativeValues={isAccExpansion}
@@ -495,6 +557,9 @@ function getDetailStatusLabel({ cycle, isComparable, result, status }) {
   ) {
     return cycleCopy.status.missing
   }
+  if (result?.monitoring_mode === 'approximate_reference') {
+    return 'Indicador aproximado'
+  }
   if (!isComparable) {
     return 'Informativo'
   }
@@ -527,11 +592,12 @@ export function isAvailableIndicator(result) {
     return false
   }
   // Esconder indicadores informativos cuja série inteira é zero
+  const isApproximate = result?.monitoring_mode === 'approximate_reference'
   const isInformative =
     status.includes('visualiza') ||
     status.includes('informativo') ||
-    result.tracks_goal === false ||
-    result.meta == null
+    (!isApproximate && result.tracks_goal === false) ||
+    (!isApproximate && result.meta == null)
   if (isInformative && series.length > 0 && series.every((v) => v === 0)) {
     return false
   }
@@ -542,11 +608,23 @@ export function isAvailableIndicator(result) {
 }
 
 export function isComparableIndicator(result) {
+  if (
+    !result ||
+    result.available === false ||
+    result.tracks_goal === false ||
+    result.monitoring_mode === 'approximate_reference' ||
+    result.meta == null ||
+    result.distance == null ||
+    typeof result.atingida !== 'boolean'
+  ) {
+    return false
+  }
+
   const meta = Number(result?.meta)
+  const distance = Number(result?.distance)
   const status = String(result?.display?.status ?? '').toLocaleLowerCase('pt-BR')
   return (
-    Boolean(result) &&
-    result.available !== false &&
+    Number.isFinite(distance) &&
     Number.isFinite(meta) &&
     !status.includes('visualiza') &&
     !status.includes('informativo') &&
@@ -624,11 +702,16 @@ function buildHistoryChartSummary({
   direction,
   endYear,
   formattedEnd,
+  isApproximate,
   isComparable,
   metaValue,
 }) {
   if (!hasReadableValue(formattedEnd) || !hasReadableYear(endYear)) {
     return 'Histórico do indicador'
+  }
+
+  if (isApproximate) {
+    return `${formattedEnd} em ${endYear} — indicador aproximado; referência legal final: ${metaValue} em 2036.`
   }
 
   if (!isComparable || !hasReadableValue(metaValue)) {
@@ -675,6 +758,8 @@ function buildQuickReading({
   direction,
   endYear,
   formattedEnd,
+  hasAbove100,
+  isApproximate,
   isComparable,
   metaValue,
   startYear,
@@ -691,6 +776,13 @@ function buildQuickReading({
   const hasMeta = hasReadableValue(metaValue)
   const variationNumber = parseDisplayNumber(variation)
   const isStable = Number.isFinite(variationNumber) && Math.abs(variationNumber) < 0.5
+
+  if (isApproximate) {
+    const warning = hasAbove100
+      ? ' Valores acima de 100% são preservados porque a medida usa matrículas e não estudantes únicos.'
+      : ''
+    return `Em ${endYear}, o município registra ${formattedEnd}. A referência legal final é ${metaValue} em 2036; este proxy não representa cumprimento da meta.${warning}`
+  }
 
   if (!isComparable || !hasMeta) {
     const periodText = isClosedCycle
@@ -767,6 +859,32 @@ function formatAbsPp(value) {
     maximumFractionDigits: 1,
   })
   return `${formatted} p.p.`
+}
+
+function isApproximateIndicator(item, result) {
+  return (
+    item?.monitoring_mode === 'approximate_reference' ||
+    result?.monitoring_mode === 'approximate_reference'
+  )
+}
+
+function formatApproximatePercent(value) {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return '—'
+  return `${numeric.toLocaleString('pt-BR', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  })}%`
+}
+
+function formatApproximateDifference(value) {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return '—'
+  const sign = numeric > 0 ? '+' : ''
+  return `${sign}${numeric.toLocaleString('pt-BR', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  })} p.p.`
 }
 
 function parseDisplayNumber(value) {
