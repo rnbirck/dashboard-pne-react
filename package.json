@@ -12,13 +12,14 @@
     "check:state-json:closed": "node scripts/checks/verify-state-reference.cjs public/data/pne_2014_2024/referencia_estadual.json",
     "lint": "eslint .",
     "list:indicators": "node scripts/checks/list-indicators.cjs",
-    "preview": "vite preview",
+    "preview": "npm run build && wrangler dev",
     "test:e2e": "node scripts/checks/e2e-test.cjs",
     "test:visual": "node scripts/checks/visual-test.cjs",
     "update:visual": "node -e \"process.env.UPDATE_VISUAL_BASELINES='1';require('./scripts/checks/visual-test.cjs')\"",
     "update:data": "python data_pipeline/scripts/update_static_data.py",
     "update:data:skip-build": "python data_pipeline/scripts/update_static_data.py --skip-build",
-    "validate:details": "python data_pipeline/scripts/validate_static_details.py"
+    "validate:details": "python data_pipeline/scripts/validate_static_details.py",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@fontsource/public-sans": "^5.2.7",
@@ -27,6 +28,7 @@
     "react-dom": "^19.2.6"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.44.0",
     "@eslint/js": "^10.0.1",
     "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^10.3.0",
@@ -34,6 +36,7 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
     "playwright": "^1.60.0",
-    "vite": "^8.0.12"
+    "vite": "^8.0.12",
+    "wrangler": "^4.110.0"
   }
 }
