@@ -5,8 +5,10 @@ import json
 import math
 import os
 import sys
+import time
 import traceback
 from collections.abc import Mapping, Sequence
+from contextlib import contextmanager
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -76,13 +78,84 @@ def _json_safe(value: Any) -> Any:
     return str(value)
 
 
-def _write_json(path: Path, payload: Any) -> None:
+class TimingProfile:
+    """Collects in-process timings without changing the export behavior."""
+
+    def __init__(self, enabled: bool) -> None:
+        self.enabled = enabled
+        self.durations: dict[str, float] = {}
+
+    @contextmanager
+    def measure(self, name: str):
+        if not self.enabled:
+            yield
+            return
+        start = time.perf_counter()
+        try:
+            yield
+        finally:
+            self.durations[name] = self.durations.get(name, 0.0) + (
+                time.perf_counter() - start
+            )
+
+    def print_summary(self) -> None:
+        if not self.enabled:
+            return
+        print("\nPerfil de desempenho")
+        for name, duration in sorted(
+            self.durations.items(), key=lambda item: item[1], reverse=True
+        ):
+            print(f"  - {name}: {duration:.3f}s")
+
+
+class ResultsCache:
+    """Execution-local cache shared by result and ranking exporters.
+
+    The view modules also cache database-backed work, but that cache can be disabled
+    in development. Keeping this small cache here guarantees that rankings reuse the
+    exact result map already calculated for the same cycle and municipality.
+    """
+
+    def __init__(self) -> None:
+        self._results: dict[tuple[str, str, tuple[str, ...] | None], Mapping[str, Any]] = {}
+
+    def get(
+        self,
+        *,
+        cycle_key: str,
+        cycle_module: Any,
+        municipio: str,
+        indicator_keys: tuple[str, ...] | None,
+    ) -> Mapping[str, Any]:
+        cache_key = (cycle_key, municipio, indicator_keys)
+        if cache_key not in self._results:
+            if indicator_keys is None:
+                self._results[cache_key] = cycle_module._calculate_results(municipio)
+            else:
+                self._results[cache_key] = cycle_module._calculate_results_for_indicators(
+                    municipio, indicator_keys
+                )
+        return self._results[cache_key]
+
+
+def _write_json(path: Path, payload: Any, profile: TimingProfile | None = None) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(_json_safe(payload), ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
-    print(f"  arquivo gerado: {path.relative_to(BASE_DIR)}")
+    if profile is None:
+        path.write_text(
+            json.dumps(_json_safe(payload), ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    else:
+        with profile.measure("serialização"):
+            path.write_text(
+                json.dumps(_json_safe(payload), ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+    try:
+        display_path = path.relative_to(BASE_DIR)
+    except ValueError:
+        display_path = path
+    print(f"  arquivo gerado: {display_path}")
 
 
 def _build_item_lookup(cycle_module: Any) -> dict[str, dict[str, Any]]:
@@ -101,7 +174,9 @@ def _serialize_item(item: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
-def _serialize_categories(cycle_module: Any) -> list[dict[str, Any]]:
+def _serialize_categories(
+    cycle_module: Any, indicator_keys: set[str] | None = None
+) -> list[dict[str, Any]]:
     categories = []
     for category_key in cycle_module.CATEGORY_ORDER:
         category = cycle_module.INDICADORES[category_key]
@@ -112,8 +187,12 @@ def _serialize_categories(cycle_module: Any) -> list[dict[str, Any]]:
         }
         category_payload["key"] = category_key
         category_payload["items"] = [
-            _serialize_item(item) for item in category.get("items", [])
+            _serialize_item(item)
+            for item in category.get("items", [])
+            if indicator_keys is None or item["key"] in indicator_keys
         ]
+        if indicator_keys is not None and not category_payload["items"]:
+            continue
         categories.append(category_payload)
     return categories
 
@@ -234,6 +313,8 @@ def _export_cycle_results(
     municipios: list[str],
     shared: Any,
     errors: list[dict[str, Any]],
+    results_cache: ResultsCache,
+    indicator_keys: tuple[str, ...] | None = None,
 ) -> dict[str, Any]:
     item_lookup = _build_item_lookup(cycle_module)
     exported = 0
@@ -243,7 +324,12 @@ def _export_cycle_results(
     for index, municipio in enumerate(municipios, start=1):
         print(f"  [{index}/{len(municipios)}] {municipio}")
         try:
-            results = cycle_module._calculate_results(municipio)
+            results = results_cache.get(
+                cycle_key=cycle_key,
+                cycle_module=cycle_module,
+                municipio=municipio,
+                indicator_keys=indicator_keys,
+            )
         except Exception as exc:  # noqa: BLE001 - export should continue per city.
             errors.append(
                 {
@@ -492,6 +578,7 @@ def _export_cycle_rankings(
     municipios: list[str],
     shared: Any,
     errors: list[dict[str, Any]],
+    results_cache: ResultsCache,
 ) -> dict[str, Any]:
     exported = 0
     municipio_payloads: dict[str, Any] = {}
@@ -500,7 +587,12 @@ def _export_cycle_rankings(
     for index, municipio in enumerate(municipios, start=1):
         print(f"  [{index}/{len(municipios)}] {municipio}")
         try:
-            results = cycle_module._calculate_results(municipio)
+            results = results_cache.get(
+                cycle_key=cycle_key,
+                cycle_module=cycle_module,
+                municipio=municipio,
+                indicator_keys=None,
+            )
             municipio_payloads[municipio] = _build_rankings_payload_for_municipio(
                 cycle_key=cycle_key,
                 cycle_module=cycle_module,
@@ -878,7 +970,106 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Exporta também rankings por município e diagnóstico.",
     )
+    parser.add_argument(
+        "--cycle",
+        action="append",
+        default=None,
+        help="Restringe a exportação ao ciclo informado. Pode ser usado mais de uma vez.",
+    )
+    parser.add_argument(
+        "--indicator",
+        action="append",
+        default=None,
+        help="Restringe a exportação aos indicadores informados; requer --cycle.",
+    )
+    parser.add_argument(
+        "--profile",
+        action="store_true",
+        help="Mostra os tempos das etapas executadas.",
+    )
     return parser.parse_args()
+
+
+def _select_cycles_and_indicators(
+    *,
+    requested_cycles: list[str] | None,
+    requested_indicators: list[str] | None,
+    cycle_modules: Mapping[str, Any],
+) -> tuple[dict[str, Any], dict[str, tuple[str, ...] | None]]:
+    """Validates target flags before any JSON is written."""
+
+    if requested_indicators and not requested_cycles:
+        raise ValueError("--indicator requer ao menos um --cycle.")
+
+    cycle_keys = requested_cycles or list(cycle_modules)
+    unknown_cycles = sorted(set(cycle_keys) - set(cycle_modules))
+    if unknown_cycles:
+        raise ValueError(f"Ciclo inexistente: {', '.join(unknown_cycles)}.")
+
+    selected_modules = {cycle_key: cycle_modules[cycle_key] for cycle_key in cycle_keys}
+    selected_indicators: dict[str, tuple[str, ...] | None] = {}
+    for cycle_key, cycle_module in selected_modules.items():
+        if not requested_indicators:
+            selected_indicators[cycle_key] = None
+            continue
+        available = set(_build_item_lookup(cycle_module))
+        missing = sorted(set(requested_indicators) - available)
+        if missing:
+            raise ValueError(
+                f"Indicador inexistente no ciclo {cycle_key}: {', '.join(missing)}."
+            )
+        selected_indicators[cycle_key] = tuple(dict.fromkeys(requested_indicators))
+
+    return selected_modules, selected_indicators
+
+
+def _validate_targeted_export(
+    *,
+    export_dir: Path,
+    cycle_indicators: Mapping[str, tuple[str, ...] | None],
+    municipios: list[str],
+) -> list[str]:
+    """Performs the lightweight contract check needed by the targeted workflow."""
+
+    problems: list[str] = []
+    for cycle_key, indicator_keys in cycle_indicators.items():
+        path = export_dir / cycle_key / "indicadores_por_municipio.json"
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            problems.append(f"Não foi possível ler {path.name}: {exc}")
+            continue
+        exported = payload.get("municipios", {})
+        for municipio in municipios:
+            results = exported.get(municipio, {}).get("results", {})
+            for indicator_key in indicator_keys or ():
+                if indicator_key not in results:
+                    problems.append(
+                        f"Indicador {indicator_key} ausente para {municipio} no ciclo {cycle_key}."
+                    )
+    return problems
+
+
+def _select_municipios(
+    *,
+    available: list[str],
+    requested: list[str] | None,
+    limit: int | None,
+    strict: bool,
+) -> tuple[list[str], list[str]]:
+    """Applies municipality filters and keeps legacy partial exports permissive."""
+
+    municipios = available
+    missing: list[str] = []
+    if requested:
+        requested_set = set(requested)
+        municipios = [municipio for municipio in municipios if municipio in requested_set]
+        missing = sorted(requested_set - set(municipios))
+        if missing and strict:
+            raise ValueError(f"Município inexistente: {', '.join(missing)}.")
+    if limit is not None:
+        municipios = municipios[: max(limit, 0)]
+    return municipios, missing
 
 
 def _check_connection(load_municipios: Any) -> int:
@@ -923,7 +1114,9 @@ def main() -> int:
     global EXPORT_DIR
 
     args = _parse_args()
-    is_partial_export = args.limit is not None or bool(args.municipio)
+    profile = TimingProfile(args.profile)
+    is_targeted_export = bool(args.cycle or args.indicator)
+    is_partial_export = args.limit is not None or bool(args.municipio) or is_targeted_export
     if is_partial_export:
         EXPORT_DIR = BASE_DIR / "export" / "debug" / f"static_data_partial_{_safe_timestamp()}"
     print("Iniciando exportação estática do Dashboard PNE...")
@@ -941,8 +1134,22 @@ def main() -> int:
     # Dash pages call dash.register_page() at import time, so the Dash app must
     # exist before importing view modules used by the static exporter.
     import app as _dash_app  # noqa: F401
-    from src.data_loader import load_fundeb_data, load_municipios
+    from src.data_loader import load_municipios
     from src.views import diagnostico, fundeb_export, pne_2014_2024, pne_2026_2036, pne_shared
+
+    cycle_modules = {
+        "pne_2014_2024": pne_2014_2024,
+        "pne_2026_2036": pne_2026_2036,
+    }
+    try:
+        selected_cycle_modules, selected_indicators = _select_cycles_and_indicators(
+            requested_cycles=args.cycle,
+            requested_indicators=args.indicator,
+            cycle_modules=cycle_modules,
+        )
+    except ValueError as exc:
+        print(f"Erro de seleção: {exc}")
+        return 2
 
     if args.check_connection:
         return _check_connection(load_municipios)
@@ -950,7 +1157,8 @@ def main() -> int:
     errors: list[dict[str, Any]] = []
     generated_at = _generated_at()
     try:
-        municipios = load_municipios()
+        with profile.measure("carregamento das fontes"):
+            municipios = load_municipios()
     except Exception as exc:  # noqa: BLE001 - report a clean export failure.
         EXPORT_DIR.mkdir(parents=True, exist_ok=True)
         errors.append(
@@ -967,6 +1175,7 @@ def main() -> int:
                 "total_errors": len(errors),
                 "errors": errors,
             },
+            profile,
         )
         print("\nResumo da exportação")
         print("  municípios exportados: 0")
@@ -974,10 +1183,18 @@ def main() -> int:
         print(f"  falha ao carregar municípios; veja {EXPORT_DIR / 'export_errors.json'}")
         return 1
 
+    try:
+        municipios, missing = _select_municipios(
+            available=municipios,
+            requested=args.municipio,
+            limit=args.limit,
+            strict=is_targeted_export,
+        )
+    except ValueError as exc:
+        print(exc)
+        return 2
+
     if args.municipio:
-        requested = set(args.municipio)
-        municipios = [municipio for municipio in municipios if municipio in requested]
-        missing = sorted(requested - set(municipios))
         for municipio in missing:
             errors.append(
                 {
@@ -987,8 +1204,9 @@ def main() -> int:
                 }
             )
 
-    if args.limit is not None:
-        municipios = municipios[: max(args.limit, 0)]
+    if is_targeted_export and not municipios:
+        print("Nenhum município selecionado para a exportação rápida.")
+        return 2
 
     print(f"Municípios carregados para exportação: {len(municipios)}")
     EXPORT_DIR.mkdir(parents=True, exist_ok=True)
@@ -998,114 +1216,147 @@ def main() -> int:
         "total_municipios": len(municipios),
         "municipios": municipios,
     }
-    _write_json(EXPORT_DIR / "municipios.json", municipios_payload)
+    _write_json(EXPORT_DIR / "municipios.json", municipios_payload, profile)
 
     indicadores_payload = {
         "generated_at": generated_at,
         "cycles": {
-            "pne_2014_2024": {
-                "label": "PNE 2014-2024",
-                "categories": _serialize_categories(pne_2014_2024),
-            },
-            "pne_2026_2036": {
-                "label": "PNE 2026-2036",
-                "categories": _serialize_categories(pne_2026_2036),
-            },
+            cycle_key: {
+                "label": (
+                    "PNE 2014-2024"
+                    if cycle_key == "pne_2014_2024"
+                    else "PNE 2026-2036"
+                ),
+                "categories": _serialize_categories(
+                    cycle_module,
+                    set(selected_indicators[cycle_key])
+                    if is_targeted_export and selected_indicators[cycle_key] is not None
+                    else None,
+                ),
+            }
+            for cycle_key, cycle_module in selected_cycle_modules.items()
         },
     }
-    _write_json(EXPORT_DIR / "indicadores.json", indicadores_payload)
+    _write_json(EXPORT_DIR / "indicadores.json", indicadores_payload, profile)
 
-    cycle_modules = {
-        "pne_2014_2024": pne_2014_2024,
-        "pne_2026_2036": pne_2026_2036,
-    }
+    results_cache = ResultsCache()
     generated_files = [
         EXPORT_DIR / "municipios.json",
         EXPORT_DIR / "indicadores.json",
     ]
 
-    for cycle_key, cycle_module in cycle_modules.items():
-        cycle_payload = _export_cycle_results(
-            cycle_key=cycle_key,
-            cycle_module=cycle_module,
-            municipios=municipios,
-            shared=pne_shared,
-            errors=errors,
-        )
-        output_path = EXPORT_DIR / cycle_key / "indicadores_por_municipio.json"
-        _write_json(output_path, cycle_payload)
-        generated_files.append(output_path)
-
-    indicator_details_payload = _export_indicator_details(
-        municipios=municipios,
-        shared=pne_shared,
-        errors=errors,
-    )
-    indicator_details_path = EXPORT_DIR / "indicator_details_por_municipio.json"
-    _write_json(indicator_details_path, indicator_details_payload)
-    generated_files.append(indicator_details_path)
-
-    for state_reference_cycle in ("pne_2014_2024", "pne_2026_2036"):
-        state_reference_payload = _export_state_reference(
-            state_reference_cycle,
-            errors,
-        )
-        state_reference_path = (
-            EXPORT_DIR / state_reference_cycle / "referencia_estadual.json"
-        )
-        _write_json(state_reference_path, state_reference_payload)
-        generated_files.append(state_reference_path)
-
-    from src.views.pne_2026_projections import build_all_projections
-
-    projections_payload = _export_projections(
-        municipios=municipios,
-        municipio_ids=None,
-        errors=errors,
-    )
-    projections_path = EXPORT_DIR / "pne_2026_2036" / "projecoes_por_municipio.json"
-    _write_json(projections_path, projections_payload)
-    generated_files.append(projections_path)
-
-    fundeb_payload = _export_fundeb_data(
-        municipios=municipios,
-        errors=errors,
-    )
-    fundeb_path = EXPORT_DIR / "fundeb_por_municipio.json"
-    _write_json(fundeb_path, fundeb_payload)
-    generated_files.append(fundeb_path)
-
-    pnate_payload = _export_pnate_data(
-        municipios=municipios,
-        errors=errors,
-    )
-    pnate_path = EXPORT_DIR / "pnate_por_municipio.json"
-    _write_json(pnate_path, pnate_payload)
-    generated_files.append(pnate_path)
-
-    if args.include_derived:
-        for cycle_key, cycle_module in cycle_modules.items():
-            rankings_payload = _export_cycle_rankings(
+    for cycle_key, cycle_module in selected_cycle_modules.items():
+        with profile.measure(f"cálculo do ciclo {cycle_key}"):
+            cycle_payload = _export_cycle_results(
                 cycle_key=cycle_key,
                 cycle_module=cycle_module,
                 municipios=municipios,
                 shared=pne_shared,
                 errors=errors,
+                results_cache=results_cache,
+                indicator_keys=selected_indicators[cycle_key]
+                if is_targeted_export
+                else None,
             )
-            rankings_path = EXPORT_DIR / cycle_key / "rankings_por_municipio.json"
-            _write_json(rankings_path, rankings_payload)
-            generated_files.append(rankings_path)
+        output_path = EXPORT_DIR / cycle_key / "indicadores_por_municipio.json"
+        _write_json(output_path, cycle_payload, profile)
+        generated_files.append(output_path)
 
-        diagnostic_payload = _export_diagnostics(
+    if is_targeted_export:
+        with profile.measure("validação"):
+            validation_errors = _validate_targeted_export(
+                export_dir=EXPORT_DIR,
+                cycle_indicators=selected_indicators,
+                municipios=municipios,
+            )
+        if validation_errors:
+            print("Falha na validação da exportação rápida:")
+            for error in validation_errors:
+                print(f"  - {error}")
+            profile.print_summary()
+            return 1
+        print("\nValidação rápida concluída sem alterar public/data.")
+        profile.print_summary()
+        return 0
+
+    with profile.measure("detalhes complementares"):
+        indicator_details_payload = _export_indicator_details(
             municipios=municipios,
-            diagnostico=diagnostico,
             shared=pne_shared,
             errors=errors,
         )
+    indicator_details_path = EXPORT_DIR / "indicator_details_por_municipio.json"
+    _write_json(indicator_details_path, indicator_details_payload, profile)
+    generated_files.append(indicator_details_path)
+
+    for state_reference_cycle in ("pne_2014_2024", "pne_2026_2036"):
+        with profile.measure(f"referência estadual {state_reference_cycle}"):
+            state_reference_payload = _export_state_reference(
+                state_reference_cycle,
+                errors,
+            )
+        state_reference_path = (
+            EXPORT_DIR / state_reference_cycle / "referencia_estadual.json"
+        )
+        _write_json(state_reference_path, state_reference_payload, profile)
+        generated_files.append(state_reference_path)
+
+    from src.views.pne_2026_projections import build_all_projections
+
+    with profile.measure("projeções"):
+        projections_payload = _export_projections(
+            municipios=municipios,
+            municipio_ids=None,
+            errors=errors,
+        )
+    projections_path = EXPORT_DIR / "pne_2026_2036" / "projecoes_por_municipio.json"
+    _write_json(projections_path, projections_payload, profile)
+    generated_files.append(projections_path)
+
+    with profile.measure("FUNDEB"):
+        fundeb_payload = _export_fundeb_data(
+            municipios=municipios,
+            errors=errors,
+        )
+    fundeb_path = EXPORT_DIR / "fundeb_por_municipio.json"
+    _write_json(fundeb_path, fundeb_payload, profile)
+    generated_files.append(fundeb_path)
+
+    with profile.measure("PNATE"):
+        pnate_payload = _export_pnate_data(
+            municipios=municipios,
+            errors=errors,
+        )
+    pnate_path = EXPORT_DIR / "pnate_por_municipio.json"
+    _write_json(pnate_path, pnate_payload, profile)
+    generated_files.append(pnate_path)
+
+    if args.include_derived:
+        for cycle_key, cycle_module in cycle_modules.items():
+            with profile.measure(f"rankings {cycle_key}"):
+                rankings_payload = _export_cycle_rankings(
+                    cycle_key=cycle_key,
+                    cycle_module=cycle_module,
+                    municipios=municipios,
+                    shared=pne_shared,
+                    errors=errors,
+                    results_cache=results_cache,
+                )
+            rankings_path = EXPORT_DIR / cycle_key / "rankings_por_municipio.json"
+            _write_json(rankings_path, rankings_payload, profile)
+            generated_files.append(rankings_path)
+
+        with profile.measure("diagnóstico"):
+            diagnostic_payload = _export_diagnostics(
+                municipios=municipios,
+                diagnostico=diagnostico,
+                shared=pne_shared,
+                errors=errors,
+            )
         diagnostic_path = (
             EXPORT_DIR / "pne_2026_2036" / "diagnostico_por_municipio.json"
         )
-        _write_json(diagnostic_path, diagnostic_payload)
+        _write_json(diagnostic_path, diagnostic_payload, profile)
         generated_files.append(diagnostic_path)
 
     if errors:
@@ -1116,6 +1367,7 @@ def main() -> int:
                 "total_errors": len(errors),
                 "errors": errors,
             },
+            profile,
         )
         generated_files.append(EXPORT_DIR / "export_errors.json")
 
@@ -1126,6 +1378,7 @@ def main() -> int:
     for path in generated_files:
         print(f"    - {path}")
 
+    profile.print_summary()
     return 0
 
 

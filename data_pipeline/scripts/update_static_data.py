@@ -179,7 +179,13 @@ def print_dry_run(commands: list[tuple[str, list[str]]], run_sync: bool, run_bui
         print(f"[update-data] Rodaria build: {format_command([NPM, 'run', 'build'])}")
 
 
-def print_summary(results: list[StepResult], skipped: list[str], validate_ok: bool, build_ok: bool | None) -> None:
+def print_summary(
+    results: list[StepResult],
+    skipped: list[str],
+    validate_ok: bool,
+    build_ok: bool | None,
+    profile: bool = False,
+) -> None:
     print("[update-data] Resumo:")
     for result in results:
         duration = "" if result.duration is None else f" ({result.duration:.1f}s)"
@@ -191,6 +197,14 @@ def print_summary(results: list[StepResult], skipped: list[str], validate_ok: bo
         print("[update-data] build: nao executado")
     else:
         print(f"[update-data] build: {'passou' if build_ok else 'falhou'}")
+    if profile:
+        print("[update-data] Perfil por duração:")
+        for result in sorted(
+            results,
+            key=lambda item: item.duration or 0,
+            reverse=True,
+        ):
+            print(f"  - {result.name}: {(result.duration or 0):.3f}s")
     print("[update-data] Git status final:")
     print(run_git_status() or "  limpo")
 
@@ -209,6 +223,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Executa o export sem --include-derived.",
     )
+    parser.add_argument(
+        "--profile",
+        action="store_true",
+        help="Mostra o perfil das etapas do export, partition, sync, validação e build.",
+    )
     return parser.parse_args()
 
 
@@ -220,6 +239,8 @@ def main() -> int:
     export_command = [PYTHON, "data_pipeline/scripts/export_static_data.py"]
     if not args.no_include_derived:
         export_command.append("--include-derived")
+    if args.profile:
+        export_command.append("--profile")
     partition_command = [PYTHON, "data_pipeline/scripts/partition_static_data.py"]
     validate_command = [NPM, "run", "validate:details"]
     build_command = [NPM, "run", "build"]
@@ -229,7 +250,13 @@ def main() -> int:
             print_dry_run([("validate", validate_command)], run_sync=False, run_build=False)
             return 0
         run_command("validate", validate_command, results)
-        print_summary(results, ["export", "partition", "sync", "build"], validate_ok=True, build_ok=None)
+        print_summary(
+            results,
+            ["export", "partition", "sync", "build"],
+            validate_ok=True,
+            build_ok=None,
+            profile=args.profile,
+        )
         return 0
 
     run_export = not args.skip_export
@@ -272,7 +299,13 @@ def main() -> int:
     else:
         skipped.append("build")
 
-    print_summary(results, skipped, validate_ok=validate_ok, build_ok=build_ok)
+    print_summary(
+        results,
+        skipped,
+        validate_ok=validate_ok,
+        build_ok=build_ok,
+        profile=args.profile,
+    )
     return 0
 
 

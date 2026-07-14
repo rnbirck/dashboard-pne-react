@@ -23,6 +23,7 @@ npm run check:units
 npm run list:indicators
 npm run update:data
 npm run update:data:skip-build
+npm run verify:indicator -- --cycle pne_2026_2036 --indicator <chave> --municipio "São Leopoldo"
 npm run validate:details
 npm run test:e2e
 ```
@@ -34,6 +35,7 @@ npm run test:e2e
 - `npm run list:indicators`: lista indicadores e modos de valor para revisao manual.
 - `npm run update:data`: roda export, partition, sync para `public/data`, validacao e build.
 - `npm run update:data:skip-build`: roda a atualizacao dos dados sem executar o build final.
+- `npm run verify:indicator -- --cycle <ciclo> --indicator <chave> --municipio <nome>`: exporta e valida somente o indicador solicitado em `data_pipeline/export/debug`; não altera `public/data`, não particiona, não sincroniza e não executa build. Repita `--indicator` para validar mais de uma chave.
 - `npm run validate:details`: valida o contrato basico dos JSONs em `public/data/municipios/*/details/*.json`.
 - `npm run test:e2e`: roda o teste Playwright contra uma instancia local ja ativa.
 
@@ -70,6 +72,43 @@ sem gerar o build estatico no final. Use
 `python data_pipeline/scripts/update_static_data.py --validate-only` quando
 quiser rodar apenas a validacao dos detalhes, sem export, partition, sync ou
 build.
+
+## Desenvolvimento rápido de indicadores
+
+Antes do fluxo completo, valide uma alteração de cálculo com um município e a
+chave do indicador. O resultado parcial preserva o contrato do resultado do
+indicador e fica somente em `data_pipeline/export/debug`, que é ignorado pelo
+Git.
+
+```powershell
+cd C:\Users\rnbirck\PROJETOS\DASHBOARD-PNE-REACT
+npm run verify:indicator -- --cycle pne_2026_2036 --indicator creche --municipio "São Leopoldo" --profile
+```
+
+Para uma amostra limitada, use `--limit` (em conjunto com ou sem `--municipio`):
+
+```powershell
+npm run verify:indicator -- --cycle pne_2026_2036 --indicator creche --indicator pre_escola --limit 2
+```
+
+O comando falha com código diferente de zero para ciclo, indicador ou município
+inexistente. O carregamento da lista de municípios continua global para validar
+o nome informado. Indicadores que compartilham uma consulta por grupo podem
+carregar esse grupo, mas o cálculo e a saída são filtrados para as chaves pedidas.
+
+Quando a alteração estiver pronta, mantenha estes fluxos separados:
+
+```powershell
+# Intermediário: exporta, particiona, sincroniza e valida; sem build.
+npm run update:data:skip-build -- --profile
+
+# Completo: execute uma vez ao final.
+npm run update:data -- --profile
+```
+
+`--profile` mostra os tempos de carregamento, cálculos por ciclo, saídas
+complementares, serialização e, no fluxo completo, export, particionamento,
+sincronização, validação e build em ordem de duração.
 
 O orquestrador para no primeiro erro, mostra `git status --short` no final e nao
 faz commit nem push. Antes de etapas que podem alterar dados, ele bloqueia a

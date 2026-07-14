@@ -1915,6 +1915,47 @@ def _calculate_results(municipio):
     return _calculate_results_cached(municipio, cache_bucket)
 
 
+@lru_cache(maxsize=128)
+def _calculate_results_for_indicators_cached(municipio, indicator_keys, cache_bucket):
+    """Calcula somente os itens selecionados para a exportação rápida.
+
+    SAEB, idade regular, adequação e infraestrutura continuam sendo calculados por
+    grupo porque as respectivas consultas retornam vários resultados de uma vez.
+    Apenas as chaves pedidas são mantidas no payload final.
+    """
+
+    selected_keys = set(indicator_keys)
+    results = {
+        item["key"]: item["compute"](municipio)
+        for category in INDICADORES.values()
+        for item in category["items"]
+        if item["key"] in selected_keys and item["key"] not in BATCHED_RESULT_KEYS
+    }
+    if selected_keys & set(SAEB_DISPLAY_GROUPS):
+        results.update(_calculate_saeb_results(municipio))
+    if selected_keys & set(IDADE_REGULAR_RESULT_GROUPS):
+        results.update(_calculate_idade_regular_results(municipio))
+    if selected_keys & set(ADEQUACAO_RESULT_GROUPS):
+        results.update(_calculate_adequacao_results(municipio))
+    if selected_keys & INFRA_RESULT_KEYS:
+        results.update(_calculate_infra_results(municipio))
+    return _attach_trends(
+        {key: value for key, value in results.items() if key in selected_keys}
+    )
+
+
+def _calculate_results_for_indicators(municipio, indicator_keys):
+    normalized_keys = tuple(dict.fromkeys(indicator_keys))
+    cache_bucket = _results_cache_bucket()
+    if cache_bucket is None:
+        return _calculate_results_for_indicators_cached.__wrapped__(
+            municipio, normalized_keys, None
+        )
+    return _calculate_results_for_indicators_cached(
+        municipio, normalized_keys, cache_bucket
+    )
+
+
 def _calculate_results_for_categories(municipio, category_keys):
     normalized_keys = tuple(
         category_key for category_key in category_keys if category_key in INDICADORES

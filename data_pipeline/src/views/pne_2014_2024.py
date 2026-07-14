@@ -1463,6 +1463,64 @@ def _calculate_results(municipio):
     return {key: value.copy() for key, value in cached.items()}
 
 
+@lru_cache(maxsize=128)
+def _calculate_results_for_indicators_cached(municipio, indicator_keys, cache_bucket):
+    """Calcula somente os indicadores solicitados na exportação rápida.
+
+    IDEB e adequação continuam agrupados porque cada consulta compartilha a fonte
+    entre várias chaves; o resultado é filtrado antes de ser devolvido.
+    """
+
+    selected_keys = set(indicator_keys)
+    results = {}
+    for category in INDICADORES.values():
+        for item in category["items"]:
+            if item["key"] not in selected_keys or item["key"] in BATCHED_RESULT_KEYS:
+                continue
+            try:
+                results[item["key"]] = item["compute"](municipio)
+            except Exception as exc:
+                print(f"Erro ao calcular indicador {item['key']}: {exc}")
+                results[item["key"]] = _empty_result(
+                    meta=0,
+                    meta_label=item.get("meta_label", "Meta de referência"),
+                    tracks_goal=item.get("tracks_goal", True),
+                )
+
+    for label, calculator, groups in (
+        ("ideb", _calculate_ideb_results, IDEB_RESULT_GROUPS),
+        ("adequacao", _calculate_adequacao_results, ADEQUACAO_RESULT_GROUPS),
+    ):
+        group_keys = set(groups)
+        if not selected_keys & group_keys:
+            continue
+        try:
+            results.update(calculator(municipio))
+        except Exception as exc:
+            print(f"Erro ao calcular grupo {label}: {exc}")
+            for result_key, (_, meta) in groups.items():
+                if result_key in selected_keys:
+                    results[result_key] = _empty_result(
+                        meta=meta,
+                        meta_label="Meta PNE 2024",
+                    )
+
+    return {key: value for key, value in results.items() if key in selected_keys}
+
+
+def _calculate_results_for_indicators(municipio, indicator_keys):
+    normalized_keys = tuple(dict.fromkeys(indicator_keys))
+    cache_bucket = _results_cache_bucket()
+    if cache_bucket is None:
+        return _calculate_results_for_indicators_cached.__wrapped__(
+            municipio, normalized_keys, None
+        )
+    cached = _calculate_results_for_indicators_cached(
+        municipio, normalized_keys, cache_bucket
+    )
+    return {key: value.copy() for key, value in cached.items()}
+
+
 layout = html.Div(
     [
         dcc.Store(id="pne2014-active-cat", data=DEFAULT_CATEGORY),

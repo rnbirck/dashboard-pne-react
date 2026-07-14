@@ -18,6 +18,7 @@
     "update:visual": "node -e \"process.env.UPDATE_VISUAL_BASELINES='1';require('./scripts/checks/visual-test.cjs')\"",
     "update:data": "python data_pipeline/scripts/update_static_data.py",
     "update:data:skip-build": "python data_pipeline/scripts/update_static_data.py --skip-build",
+    "verify:indicator": "python data_pipeline/scripts/export_static_data.py",
     "validate:details": "python data_pipeline/scripts/validate_static_details.py"
   },
   "dependencies": {
