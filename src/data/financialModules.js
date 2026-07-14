@@ -1,17 +1,12 @@
 import { FUNDEB_INDICATORS } from './fundebIndicators'
 import { PNATE_INDICATORS } from './pnateIndicators'
 import { SIOPE_SELECTED_INDICATORS_COUNT } from './siopeIndicators'
+import { FINANCIAL_PAGE_KEYS } from './financialPageKeys'
+
+export { FINANCIAL_PAGE_KEYS } from './financialPageKeys'
 
 const FINANCIAL_PARENT_LABEL = 'Indicadores Financeiros da Educação'
 const FINANCIAL_OVERVIEW_LABEL = 'Visão geral'
-
-export const FINANCIAL_PAGE_KEYS = Object.freeze({
-  overview: 'financeiros',
-  application: 'financeiros-aplicacao-recursos',
-  fundeb: 'financeiros-fundeb',
-  vaar: 'financeiros-vaar',
-  pnate: 'financeiros-pnate',
-})
 
 export const FINANCIAL_MODULES = Object.freeze([
   {
