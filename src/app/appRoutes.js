@@ -1,4 +1,5 @@
 import { FINANCIAL_PAGE_KEYS } from '../data/financialPageKeys.js'
+import { normalizeRouteValue, parseAppHash, parseAppLocation } from './appHash.js'
 
 const HASH_PAGE_MAP = Object.freeze({
   home: 'home',
@@ -25,25 +26,9 @@ const HASH_PAGE_MAP = Object.freeze({
 
 export const FINANCIAL_PAGES = new Set(Object.values(FINANCIAL_PAGE_KEYS))
 
-export function normalizeRouteValue(value) {
-  return String(value ?? '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLocaleLowerCase('pt-BR')
-    .replace(/[^a-z0-9]/g, '')
-}
+export { normalizeRouteValue, parseAppHash } from './appHash.js'
 
-export function parseAppHash(hash) {
-  const rawHash = String(hash ?? '').replace(/^#\/?/, '')
-  const [rawRoute, rawQuery = ''] = rawHash.split('?')
-  return {
-    params: new URLSearchParams(rawQuery),
-    route: normalizeRouteValue(rawRoute),
-  }
-}
-
-export function resolveActivePageFromHash(hash) {
-  const { params, route } = parseAppHash(hash)
+export function resolveActivePage({ params, route }) {
 
   if (route === 'financeiros') {
     const requestedModule = params.get('modulo') ?? params.get('module')
@@ -58,6 +43,14 @@ export function resolveActivePageFromHash(hash) {
   return HASH_PAGE_MAP[route] ?? 'home'
 }
 
+export function resolveActivePageFromHash(hash) {
+  return resolveActivePage(parseAppHash(hash))
+}
+
+export function getNavigationContextFromLocation(location = typeof window === 'undefined' ? null : window.location) {
+  return parseAppLocation(location ?? {})
+}
+
 export function getActivePageFromLocation(location = typeof window === 'undefined' ? null : window.location) {
-  return location ? resolveActivePageFromHash(location.hash) : 'home'
+  return location ? resolveActivePage(getNavigationContextFromLocation(location)) : 'home'
 }

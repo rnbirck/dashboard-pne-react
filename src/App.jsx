@@ -14,6 +14,7 @@ function App() {
   const {
     activeEducationSection,
     activePage,
+    navigationContext,
     navigate,
   } = useAppHashNavigation()
   const initialData = useInitialAppData()
@@ -29,6 +30,7 @@ function App() {
         <AppContent
           activePage={activePage}
           initialData={initialData}
+          navigationContext={navigationContext}
           onNavigate={navigate}
         />
       </Layout>

@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { CategoryTabs } from '../components/CategoryTabs'
 import { SistemaSPanel } from '../components/SistemaSPanel'
 import { EducationBarChart } from '../components/EducationBarChart'
@@ -26,7 +26,8 @@ import { PNE_CONTEXT_PROXY_INDICATOR_KEYS } from '../utils/pneDisplayRules'
 import { useAsyncData } from '../utils/useAsyncData'
 import { resolveDetailSequence, useDetailViewNavigation } from '../hooks/useDetailViewNavigation'
 import { chartSeriesColor, closeChartTooltipOnEscape } from '../utils/chartVisuals'
-import { getHashContext, setHashContext } from '../utils/hashNavigation'
+import { normalizeRouteValue } from '../app/appHash'
+import { setHashContext } from '../utils/hashNavigation'
 import '../styles/education-pages.css'
 import {
   EDUCATION_COMPLEMENTARY_INDICATOR_CATALOG,
@@ -40,6 +41,7 @@ import {
   getEducationIndicatorCatalogItem,
   getEducationThemeForIndicator,
   getEducationThemeForSection,
+  resolveEducationNavigation,
   resolveEducationSection,
 } from '../data/educationIndicatorCatalog'
 import {
@@ -156,7 +158,7 @@ const EDUCATION_PAGE_COPY = {
   title: 'Indicadores de Educação',
 }
 
-export function getInitialEducationNavigation() {
+export function getInitialEducationNavigation(navigationContext) {
   const fallback = {
     panoramaTheme: PANORAMA_THEME_KEYS.matriculas,
     section: EDUCATION_SECTION_KEYS.overview,
@@ -164,30 +166,21 @@ export function getInitialEducationNavigation() {
     shouldApplyTheme: false,
   }
 
-  if (typeof window === 'undefined') return fallback
+  const resolvedNavigation = resolveEducationNavigation(navigationContext)
+  if (!resolvedNavigation) return fallback
 
-  const searchParams = new URLSearchParams(window.location.search)
-  const rawHash = window.location.hash.replace(/^#\/?/, '')
-  const hashQuery = rawHash.includes('?') ? rawHash.slice(rawHash.indexOf('?') + 1) : ''
-  const hashParams = new URLSearchParams(hashQuery)
-  const detailKey = hashParams.get('detalhe') ?? searchParams.get('detalhe') ?? ''
-  const requestedSection = hashParams.get('secao') ?? searchParams.get('secao')
-  const requestedTheme = hashParams.get('tema')
-    ?? hashParams.get('theme')
-    ?? searchParams.get('tema')
-    ?? searchParams.get('theme')
-  const routeValue = normalizeNavigationValue(rawHash && !rawHash.includes('?') ? rawHash : '')
-  const themeValue = normalizeNavigationValue(requestedTheme)
-  const detailTheme = getEducationThemeForIndicator(detailKey)
-  const resolvedSection = resolveEducationSection({
+  const {
     detailKey,
+    hasSystemTheme,
     requestedSection,
     requestedTheme,
-  })
-  const hasSystemTheme = ['sistemas', 'escolassistemas'].includes(routeValue)
+    section: resolvedSection,
+  } = resolvedNavigation
+  const themeValue = normalizeRouteValue(requestedTheme)
+  const detailTheme = getEducationThemeForIndicator(detailKey)
   const navigationSection = hasSystemTheme ? EDUCATION_SECTION_KEYS.modalities : resolvedSection
   const legacyTheme = [...Object.values(PANORAMA_THEME_KEYS), ...LEGACY_EDUCATION_THEME_KEYS]
-    .find((key) => normalizeNavigationValue(key) === themeValue)
+    .find((key) => normalizeRouteValue(key) === themeValue)
 
   let panoramaTheme = fallback.panoramaTheme
   if (hasSystemTheme) {
@@ -209,15 +202,7 @@ export function getInitialEducationNavigation() {
   }
 }
 
-function normalizeNavigationValue(value) {
-  return String(value ?? '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLocaleLowerCase('pt-BR')
-    .replace(/[^a-z0-9]/g, '')
-}
-
-export function EducacaoPage({ indicadores, municipioData, selectedMunicipio }) {
+export function EducacaoPage({ indicadores, municipioData, navigationContext, selectedMunicipio }) {
   const pageCopy = EDUCATION_PAGE_COPY
   const eduIndexState = useAsyncData(() => loadEducationMunicipiosIndex(), [])
   const eduMunMap = useMemo(() => {
@@ -231,35 +216,32 @@ export function EducacaoPage({ indicadores, municipioData, selectedMunicipio }) 
     return loadEducationMunicipio(selectedId)
   }, [selectedId])
 
-  const initialNavigation = useMemo(() => getInitialEducationNavigation(), [])
-  const [selectedSectionKey, setSelectedSectionKey] = useState(initialNavigation.section)
-  const [selectedThemeKey, setSelectedThemeKey] = useState(initialNavigation.panoramaTheme)
-  const [selectedIndicatorKey, setSelectedIndicatorKey] = useState(initialNavigation.detailKey ?? '')
-  const [isDetailOpen, setIsDetailOpen] = useState(Boolean(initialNavigation.detailKey))
+  const currentNavigation = useMemo(
+    () => getInitialEducationNavigation(navigationContext),
+    [navigationContext],
+  )
+  const [selectedSectionKey, setSelectedSectionKey] = useState(currentNavigation.section)
+  const [selectedThemeKey, setSelectedThemeKey] = useState(currentNavigation.panoramaTheme)
+  const [selectedIndicatorKey, setSelectedIndicatorKey] = useState(currentNavigation.detailKey ?? '')
+  const [isDetailOpen, setIsDetailOpen] = useState(Boolean(currentNavigation.detailKey))
   const [searchQuery, setSearchQuery] = useState('')
   const detailNavigation = useDetailViewNavigation({
     activeKey: selectedIndicatorKey,
     isOpen: isDetailOpen,
   })
-  useEffect(() => {
-    function handleHashChange() {
-      const navigation = getInitialEducationNavigation()
-      const sectionChanged = navigation.section !== selectedSectionKey
-      const themeChanged = navigation.shouldApplyTheme && navigation.panoramaTheme !== selectedThemeKey
-      setSelectedSectionKey(navigation.section)
-      if (navigation.shouldApplyTheme) {
-        setSelectedThemeKey(navigation.panoramaTheme)
-      }
-      if (sectionChanged || themeChanged) {
-        setSearchQuery('')
-      }
-      setSelectedIndicatorKey(navigation.detailKey ?? '')
-      setIsDetailOpen(Boolean(navigation.detailKey))
+  useLayoutEffect(() => {
+    const sectionChanged = currentNavigation.section !== selectedSectionKey
+    const themeChanged = currentNavigation.shouldApplyTheme && currentNavigation.panoramaTheme !== selectedThemeKey
+    setSelectedSectionKey(currentNavigation.section)
+    if (currentNavigation.shouldApplyTheme) {
+      setSelectedThemeKey(currentNavigation.panoramaTheme)
     }
-
-    window.addEventListener('hashchange', handleHashChange)
-    return () => window.removeEventListener('hashchange', handleHashChange)
-  }, [selectedSectionKey, selectedThemeKey])
+    if (sectionChanged || themeChanged) {
+      setSearchQuery('')
+    }
+    setSelectedIndicatorKey(currentNavigation.detailKey ?? '')
+    setIsDetailOpen(Boolean(currentNavigation.detailKey))
+  }, [currentNavigation, selectedSectionKey, selectedThemeKey])
 
   const dados = munDataState.data
   const sistemaS = dados?.blocos?.sistema_s ?? {}
@@ -392,8 +374,8 @@ export function EducacaoPage({ indicadores, municipioData, selectedMunicipio }) 
     detailNavigation.prepareDetail(indicatorKey, { captureGridPosition: true })
     setSelectedIndicatorKey(indicatorKey)
     setIsDetailOpen(true)
-    const { params, route } = getHashContext()
-    setHashContext(route || 'educacao', {
+    const params = navigationContext?.params ?? new URLSearchParams()
+    setHashContext(navigationContext?.rawRoute || 'educacao', {
       tema: params.get('tema'),
       secao: params.get('secao') ?? resolveEducationSection({ detailKey: indicatorKey }),
       modulo: params.get('modulo'),
@@ -405,8 +387,8 @@ export function EducacaoPage({ indicadores, municipioData, selectedMunicipio }) 
     const returnKey = selectedIndicatorKey
     setIsDetailOpen(false)
     setSelectedIndicatorKey('')
-    const { params, route } = getHashContext()
-    setHashContext(route || 'educacao', {
+    const params = navigationContext?.params ?? new URLSearchParams()
+    setHashContext(navigationContext?.rawRoute || 'educacao', {
       tema: params.get('tema'),
       secao: params.get('secao') ?? selectedSectionKey,
       modulo: params.get('modulo'),
@@ -418,8 +400,8 @@ export function EducacaoPage({ indicadores, municipioData, selectedMunicipio }) 
     detailNavigation.prepareDetail(indicatorKey)
     setSelectedIndicatorKey(indicatorKey)
     setIsDetailOpen(true)
-    const { params, route } = getHashContext()
-    setHashContext(route || 'educacao', {
+    const params = navigationContext?.params ?? new URLSearchParams()
+    setHashContext(navigationContext?.rawRoute || 'educacao', {
       tema: params.get('tema'),
       secao: params.get('secao') ?? resolveEducationSection({ detailKey: indicatorKey }),
       modulo: params.get('modulo'),

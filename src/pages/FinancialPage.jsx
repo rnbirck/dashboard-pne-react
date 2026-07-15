@@ -187,7 +187,7 @@ function FinancialCompactModuleSelector({ activePageKey }) {
         id="financial-module-selector"
         value={activePageKey}
         onChange={(event) => {
-          window.location.hash = event.target.value
+          setHashContext(event.target.value)
         }}
       >
         <option disabled value="">{FINANCIAL_PAGE_COPY.module.compactSelectorPrompt}</option>

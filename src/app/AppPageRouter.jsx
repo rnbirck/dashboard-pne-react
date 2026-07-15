@@ -17,6 +17,7 @@ export function AppPageRouter({
   indicadores,
   municipios,
   municipiosIndex,
+  navigationContext,
   onNavigate,
 }) {
   const { selectedMunicipio, setSelectedMunicipio } = useMunicipality()
@@ -133,6 +134,7 @@ export function AppPageRouter({
       <EducacaoPage
         indicadores={indicadores}
         municipioData={municipioData}
+        navigationContext={navigationContext}
         selectedMunicipio={selectedMunicipio}
       />
     )

@@ -2,7 +2,7 @@ import { ErrorState } from '../components/ErrorState'
 import { LoadingState } from '../components/LoadingState'
 import { AppPageRouter } from './AppPageRouter'
 
-export function AppContent({ activePage, initialData, onNavigate }) {
+export function AppContent({ activePage, initialData, navigationContext, onNavigate }) {
   if (initialData.loading) {
     return <LoadingState message="Carregando base do dashboard..." />
   }
@@ -21,6 +21,7 @@ export function AppContent({ activePage, initialData, onNavigate }) {
       indicadores={initialData.indicadores}
       municipios={initialData.municipios}
       municipiosIndex={initialData.municipiosIndex}
+      navigationContext={navigationContext}
       onNavigate={onNavigate}
     />
   )

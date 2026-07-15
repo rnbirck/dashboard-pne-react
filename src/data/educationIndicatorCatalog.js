@@ -837,13 +837,7 @@ const THEME_SECTION_ALIASES = new Map([
   ['pnecomplementares', infrastructure],
 ])
 
-function normalizeCatalogValue(value) {
-  return String(value ?? '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLocaleLowerCase('pt-BR')
-    .replace(/[^a-z0-9]/g, '')
-}
+const normalizeCatalogValue = normalizeRouteValue
 
 export function getEducationIndicatorCatalogItem(indicatorKey) {
   return EDUCATION_INDICATOR_CATALOG_BY_KEY.get(indicatorKey) ?? null
@@ -876,23 +870,33 @@ export function resolveEducationSection({ detailKey, requestedSection, requested
     ?? EDUCATION_SECTION_KEYS.overview
 }
 
-export function getEducationSectionFromLocation(location = typeof window === 'undefined' ? null : window.location) {
-  if (!location) return EDUCATION_SECTION_KEYS.overview
+export function resolveEducationNavigation({ route, hashParams, searchParams } = {}) {
+  const normalizedRoute = normalizeCatalogValue(route)
+  const hash = new URLSearchParams(hashParams ?? '')
+  const search = new URLSearchParams(searchParams ?? '')
+  const getParameter = (key) => hash.get(key) ?? search.get(key)
 
-  const rawHash = String(location.hash ?? '').replace(/^#\/?/, '')
-  const [rawRoute, hashQuery = ''] = rawHash.split('?')
-  const route = normalizeCatalogValue(rawRoute)
-  if (!['educacao', 'sistemas', 'escolassistemas'].includes(route)) return null
-  if (route === 'sistemas' || route === 'escolassistemas') return EDUCATION_SECTION_KEYS.modalities
+  if (!['educacao', 'sistemas', 'escolassistemas'].includes(normalizedRoute)) return null
+  if (normalizedRoute === 'sistemas' || normalizedRoute === 'escolassistemas') {
+    return {
+      detailKey: getParameter('detalhe') ?? '',
+      hasSystemTheme: true,
+      requestedSection: getParameter('secao'),
+      requestedTheme: getParameter('tema') ?? getParameter('theme'),
+      section: EDUCATION_SECTION_KEYS.modalities,
+    }
+  }
 
-  const searchParams = new URLSearchParams(location.search ?? '')
-  const hashParams = new URLSearchParams(hashQuery)
-  return resolveEducationSection({
-    detailKey: hashParams.get('detalhe') ?? searchParams.get('detalhe'),
-    requestedSection: hashParams.get('secao') ?? searchParams.get('secao'),
-    requestedTheme: hashParams.get('tema')
-      ?? hashParams.get('theme')
-      ?? searchParams.get('tema')
-      ?? searchParams.get('theme'),
-  })
+  const detailKey = getParameter('detalhe') ?? ''
+  const requestedSection = getParameter('secao')
+  const requestedTheme = getParameter('tema') ?? getParameter('theme')
+
+  return {
+    detailKey,
+    hasSystemTheme: false,
+    requestedSection,
+    requestedTheme,
+    section: resolveEducationSection({ detailKey, requestedSection, requestedTheme }),
+  }
 }
+import { normalizeRouteValue } from '../app/appHash.js'
