@@ -53,6 +53,18 @@ resolution also consume it. `data/educationData.js` remains shared with
 Financial. Educational cards, charts, table, and summary remain in
 `components/` because other modules consume them. CSS remains in `styles/`.
 
+## Lazy page loading
+
+`AppPageRouter` is the code-splitting boundary. Home remains eager because it
+is the small default route; PNE overview, legal goals, the shared PNE cycle,
+Education, Diagnosis, and Financial load on demand under a local `Suspense`
+boundary. The fallback uses the existing loading state, and a local error
+boundary presents a manual retry for a failed page chunk.
+
+PNE 2014 and 2026 share the `CyclePage` chunk. Financial remains one lazy
+boundary containing its internal FUNDEB, PNATE, SIOPE, and VAAR panels; that
+internal division is intentionally deferred.
+
 ## TypeScript incremental
 
 `src/types/` declara os contratos de rota, navegação, carregamento inicial,
@@ -66,5 +78,4 @@ permanecem em JavaScript nesta etapa.
 - React Router;
 - migração completa para `features`;
 - CSS Modules;
-- lazy loading;
 - remoção ampla de `App.css`.

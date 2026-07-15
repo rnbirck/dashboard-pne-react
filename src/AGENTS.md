@@ -6,6 +6,12 @@ New domain work should prefer `features/<domain>/`. Shared components stay in
 `components/`, and shared loaders stay in `data/`; do not move a file into a
 feature while it has consumers outside that domain.
 
+## Lazy pages
+
+Large pages should be imported lazily from `app/AppPageRouter.tsx`. Do not add
+static page imports to the shell, and do not duplicate shared components just
+to influence chunk boundaries.
+
 | Mudança | Local principal |
 | --- | --- |
 | Rota, alias ou hash | `app/appRoutes.ts` e `app/appHash.ts` |

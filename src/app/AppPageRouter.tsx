@@ -1,20 +1,22 @@
 import { ErrorState } from '../components/ErrorState'
 import { LoadingState } from '../components/LoadingState'
-import type { ComponentType } from 'react'
+import { lazy, Suspense, type ComponentType, type ReactNode } from 'react'
 import { useMunicipality } from '../context/MunicipalityContext'
 import { useMunicipioData } from '../hooks/useMunicipioData'
-import { CyclePage } from '../pages/CyclePage'
-import { Diagnostico } from '../pages/Diagnostico'
-import { EducationPage } from '../features/education/EducationPage'
-import { FinancialPage } from '../pages/FinancialPage'
 import { Home } from '../pages/Home'
-import { PneLegalGoalsPage } from '../pages/PneLegalGoalsPage'
-import { PneOverviewPage } from '../pages/PneOverviewPage'
 import type { AppPageKey } from '../types/app'
 import type { IndicadoresPayload, MunicipioIndexEntry, MunicipioName } from '../types/data'
 import type { Navigate, ParsedAppLocation } from '../types/navigation'
 import { isFinancialPage } from './appRoutes'
 import { EmptyMunicipioState } from './EmptyMunicipioState'
+import { PageLoadBoundary } from './PageLoadBoundary'
+
+const LazyCyclePage = lazy(() => import('../pages/CyclePage').then((module) => ({ default: module.CyclePage })))
+const LazyDiagnostico = lazy(() => import('../pages/Diagnostico').then((module) => ({ default: module.Diagnostico })))
+const LazyEducationPage = lazy(() => import('../features/education/EducationPage').then((module) => ({ default: module.EducationPage })))
+const LazyFinancialPage = lazy(() => import('../pages/FinancialPage').then((module) => ({ default: module.FinancialPage })))
+const LazyPneLegalGoalsPage = lazy(() => import('../pages/PneLegalGoalsPage').then((module) => ({ default: module.PneLegalGoalsPage })))
+const LazyPneOverviewPage = lazy(() => import('../pages/PneOverviewPage').then((module) => ({ default: module.PneOverviewPage })))
 
 interface AppPageRouterProps {
   activePage: AppPageKey
@@ -34,7 +36,17 @@ type PneLegalGoalsPageProps = {
   selectedMunicipio: MunicipioName | null
 }
 
-const TypedPneLegalGoalsPage = PneLegalGoalsPage as ComponentType<PneLegalGoalsPageProps>
+const TypedPneLegalGoalsPage = LazyPneLegalGoalsPage as ComponentType<PneLegalGoalsPageProps>
+
+function LazyPageBoundary({ children, page }: { children: ReactNode; page: AppPageKey }) {
+  return (
+    <PageLoadBoundary key={page}>
+      <Suspense fallback={<LoadingState message="Carregando página..." />}>
+        {children}
+      </Suspense>
+    </PageLoadBoundary>
+  )
+}
 
 export function AppPageRouter({
   activePage,
@@ -56,30 +68,38 @@ export function AppPageRouter({
   }
 
   if (activePage === 'pne-overview') {
-    return <PneOverviewPage onNavigate={onNavigate} />
+    return (
+      <LazyPageBoundary page={activePage}>
+        <LazyPneOverviewPage onNavigate={onNavigate} />
+      </LazyPageBoundary>
+    )
   }
 
   if (activePage === 'pne-legal-goals' && !selectedMunicipio) {
     return (
-      <TypedPneLegalGoalsPage
-        indicadores={indicadores}
-        municipios={municipios}
-        onMunicipioChange={setSelectedMunicipio}
-        onNavigate={onNavigate}
-        selectedMunicipio={selectedMunicipio}
-      />
+      <LazyPageBoundary page={activePage}>
+        <TypedPneLegalGoalsPage
+          indicadores={indicadores}
+          municipios={municipios}
+          onMunicipioChange={setSelectedMunicipio}
+          onNavigate={onNavigate}
+          selectedMunicipio={selectedMunicipio}
+        />
+      </LazyPageBoundary>
     )
   }
 
   if (isFinancialPage(activePage)) {
     return (
-      <FinancialPage
-        municipioData={municipioData}
-        municipioError={municipioError}
-        municipioLoading={municipioLoading}
-        pageKey={activePage}
-        selectedMunicipio={selectedMunicipio}
-      />
+      <LazyPageBoundary page={activePage}>
+        <LazyFinancialPage
+          municipioData={municipioData}
+          municipioError={municipioError}
+          municipioLoading={municipioLoading}
+          pageKey={activePage}
+          selectedMunicipio={selectedMunicipio}
+        />
+      </LazyPageBoundary>
     )
   }
 
@@ -108,59 +128,69 @@ export function AppPageRouter({
 
   if (activePage === 'pne2014') {
     return (
-      <CyclePage
+      <LazyPageBoundary page={activePage}>
+        <LazyCyclePage
         cycle="pne_2014_2024"
         indicadores={indicadores}
         municipioData={municipioData}
         selectedMunicipio={selectedMunicipio}
         title="PNE 2014–2024"
-      />
+        />
+      </LazyPageBoundary>
     )
   }
 
   if (activePage === 'pne2026') {
     return (
-      <CyclePage
+      <LazyPageBoundary page={activePage}>
+        <LazyCyclePage
         cycle="pne_2026_2036"
         indicadores={indicadores}
         municipioData={municipioData}
         selectedMunicipio={selectedMunicipio}
         title="PNE 2026–2036"
-      />
+        />
+      </LazyPageBoundary>
     )
   }
 
   if (activePage === 'pne-legal-goals') {
     return (
-      <TypedPneLegalGoalsPage
-        indicadores={indicadores}
-        municipioData={municipioData}
-        municipios={municipios}
-        onMunicipioChange={setSelectedMunicipio}
-        onNavigate={onNavigate}
-        selectedMunicipio={selectedMunicipio}
-      />
+      <LazyPageBoundary page={activePage}>
+        <TypedPneLegalGoalsPage
+          indicadores={indicadores}
+          municipioData={municipioData}
+          municipios={municipios}
+          onMunicipioChange={setSelectedMunicipio}
+          onNavigate={onNavigate}
+          selectedMunicipio={selectedMunicipio}
+        />
+      </LazyPageBoundary>
     )
   }
 
   if (activePage === 'diagnostico') {
     return (
-      <Diagnostico
-        indicadores={indicadores}
-        municipioData={municipioData}
-        selectedMunicipio={selectedMunicipio}
-      />
+      <LazyPageBoundary page={activePage}>
+        <LazyDiagnostico
+          indicadores={indicadores}
+          municipioData={municipioData}
+          selectedMunicipio={selectedMunicipio}
+        />
+      </LazyPageBoundary>
     )
   }
 
   if (activePage === 'educacao') {
     return (
-      <EducationPage
-        indicadores={indicadores}
-        municipioData={municipioData}
-        navigationContext={navigationContext}
-        selectedMunicipio={selectedMunicipio}
-      />
+      <LazyPageBoundary page={activePage}>
+        <LazyEducationPage
+          indicadores={indicadores}
+          municipioData={municipioData}
+          navigationContext={navigationContext}
+          selectedMunicipio={selectedMunicipio}
+        />
+      </LazyPageBoundary>
     )
   }
 
