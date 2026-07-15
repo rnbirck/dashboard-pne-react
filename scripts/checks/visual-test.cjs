@@ -160,7 +160,7 @@ function attachPageDiagnostics(page) {
 }
 
 async function waitForStableRender(page, region, testCase) {
-  await region.getByRole('heading', { level: 1 }).waitFor({ state: 'visible' });
+  await page.getByRole('heading', { level: 1 }).first().waitFor({ state: 'visible' });
   const measurements = await page.evaluate(async ({ regionSelector }) => {
     await document.fonts?.ready;
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
@@ -170,7 +170,12 @@ async function waitForStableRender(page, region, testCase) {
       return { height: rect.height, left: rect.left, top: rect.top, width: rect.width };
     };
     const regionElement = document.querySelector(regionSelector);
-    const title = regionElement?.querySelector('h1');
+    const title = regionElement?.querySelector('h1') ?? document.querySelector('main h1, h1');
+    const loadingVisible = [...document.querySelectorAll('.state-box--loading, [aria-busy="true"]')]
+      .some((element) => {
+        const style = getComputedStyle(element);
+        return style.display !== 'none' && style.visibility !== 'hidden' && element.getClientRects().length > 0;
+      });
     const subtitle = title?.nextElementSibling?.tagName === 'P' ? title.nextElementSibling : null;
     const hero = regionElement?.querySelector('.cycle-hero') ?? regionElement?.querySelector(':scope > section');
     const metaCards = [...(regionElement?.querySelectorAll('.meta-card') ?? [])].map(box);
@@ -201,6 +206,7 @@ async function waitForStableRender(page, region, testCase) {
         rowGap: fourthCard ? fourthCard.top - firstCard.top - firstCard.height : null,
         secondRowTop: fourthCard?.top ?? null,
       } : null,
+      loadingVisible,
       subtitle: box(subtitle),
       title: title ? {
         availableWidth: box(title.parentElement)?.width ?? null,
@@ -215,9 +221,10 @@ async function waitForStableRender(page, region, testCase) {
   }, { regionSelector: testCase.region });
 
   assert.equal(measurements.fonts.status, 'loaded', `${testCase.key}: fontes não terminaram de carregar`);
+  assert.equal(measurements.fonts.titleLoaded, true, `${testCase.key}: fonte do título não foi carregada`);
+  assert.equal(measurements.loadingVisible, false, `${testCase.key}: loading ainda está visível`);
   if (testCase.key === 'pne-2014') {
     assert.match(measurements.title.fontFamily, /Source Serif 4/i, 'PNE 2014: título não usa Source Serif 4');
-    assert.equal(measurements.fonts.titleLoaded, true, 'PNE 2014: fonte do título não foi carregada');
   }
   return measurements;
 }
@@ -268,6 +275,17 @@ async function createPage(browser, width, height) {
   return { diagnostics: attachPageDiagnostics(page), page };
 }
 
+async function executeSnapshot(page, testCase, name, diagnostics, failures) {
+  try {
+    await runSnapshot(page, testCase, name, diagnostics);
+    console.log(`[visual] result=${name} status=passed`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    failures.push({ message, name });
+    console.error(`[visual] result=${name} status=failed message=${message}`);
+  }
+}
+
 async function run() {
   await ensureServerAvailable();
   fs.mkdirSync(BASELINE_DIR, { recursive: true });
@@ -275,16 +293,20 @@ async function run() {
   console.log(`[visual] server=${BASE_URL} commit=${getGitRevision()} filter=${VISUAL_CASE || 'all'} update=${UPDATE}`);
   const browser = await chromium.launch({ headless: true });
   let executed = 0;
+  const failures = [];
   try {
     for (const [width, height] of VIEWPORTS) {
       const { diagnostics, page } = await createPage(browser, width, height);
-      for (const testCase of CASES) {
-        const name = `${testCase.key}-${width}x${height}.png`;
-        if (!shouldRun(name)) continue;
-        executed += 1;
-        await runSnapshot(page, testCase, name, diagnostics);
+      try {
+        for (const testCase of CASES) {
+          const name = `${testCase.key}-${width}x${height}.png`;
+          if (!shouldRun(name)) continue;
+          executed += 1;
+          await executeSnapshot(page, testCase, name, diagnostics, failures);
+        }
+      } finally {
+        await page.close();
       }
-      await page.close();
     }
 
     for (const mobile of [
@@ -294,13 +316,20 @@ async function run() {
       if (!shouldRun(mobile.name)) continue;
       const { diagnostics, page } = await createPage(browser, 390, 844);
       executed += 1;
-      await runSnapshot(page, mobile.testCase, mobile.name, diagnostics);
-      await page.close();
+      try {
+        await executeSnapshot(page, mobile.testCase, mobile.name, diagnostics, failures);
+      } finally {
+        await page.close();
+      }
     }
   } finally {
     await browser.close();
   }
   assert.ok(executed > 0, `VISUAL_CASE não corresponde a nenhum cenário: ${VISUAL_CASE}`);
+  console.log(`[visual] summary total=${executed} passed=${executed - failures.length} failed=${failures.length}`);
+  if (failures.length) {
+    throw new Error(`Visual baseline failures:\n${failures.map(({ message, name }) => `- ${name}: ${message}`).join('\n')}`);
+  }
   console.log(`Visual baseline passed: ${executed} regiões; tolerância de ${(MAX_DIFFERENT_PIXEL_RATIO * 100).toFixed(1)}%.`);
 }
 
