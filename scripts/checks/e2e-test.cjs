@@ -68,6 +68,20 @@ const EDUCATION_SIDEBAR_ROUTES = Object.freeze([
   { key: 'demanda', href: '#educacao?secao=demanda' },
   { key: 'metodologia', href: '#educacao?secao=metodologia' },
 ]);
+const MOBILE_PRIMARY_PAGE_ROUTES = Object.freeze([
+  { href: '#home', label: 'Home' },
+  { href: '#pne-overview', label: 'VisÃ£o geral do PNE' },
+  { href: '#pne2014', label: PNE_2014 },
+  { href: '#pne2026', label: PNE_2026 },
+  { href: '#pne-legal-goals', label: LEGAL_GOALS },
+  { href: '#diagnostico', label: DIAGNOSIS },
+  { href: '#financeiros', label: FINANCE },
+  { href: '#financeiros-aplicacao-recursos', label: 'SIOPE' },
+  { href: '#financeiros-fundeb', label: 'FUNDEB' },
+  { href: '#financeiros-vaar', label: 'VAAR' },
+  { href: '#financeiros-pnate', label: 'PNATE' },
+  ...EDUCATION_SIDEBAR_ROUTES.map(({ href, key }) => ({ href, label: `EducaÃ§Ã£o/${key}` })),
+]);
 const EDUCATION_CARD_CLASSES = Object.freeze({
   root: 'education-indicator-card',
   statusPrefix: 'education-indicator-card--',
@@ -115,6 +129,16 @@ async function assertNoHorizontalOverflow(page, context) {
     metrics.scrollWidth <= metrics.viewportWidth,
     `${context}: overflow horizontal (${metrics.scrollWidth}px > ${metrics.viewportWidth}px)`,
   );
+}
+
+async function auditPrimaryPagesAtMobile(page, viewport) {
+  if (viewport.width !== 390) return;
+
+  for (const route of MOBILE_PRIMARY_PAGE_ROUTES) {
+    await page.goto(`${BASE_URL}/${route.href}`, { waitUntil: 'domcontentloaded' });
+    await page.getByRole('heading', { level: 1 }).first().waitFor({ state: 'visible' });
+    await assertNoHorizontalOverflow(page, `${route.label} em ${viewport.width}x${viewport.height}`);
+  }
 }
 
 async function assertEffectiveViewport(page, viewport) {
@@ -2322,6 +2346,7 @@ async function runResponsiveViewport(browser, viewport, errors) {
     assert.equal(await closedCard.locator('.meta-card__sparkline').count(), 0, `${PNE_2014}: sem sparkline no mobile`);
     assert.equal(await closedCard.locator('.meta-card__reading').count(), 0, `${PNE_2014}: sem leitura textual no mobile`);
     await assertNoHorizontalOverflow(page, `${PNE_2014} em ${viewportLabel}`);
+    await auditPrimaryPagesAtMobile(page, viewport);
   } finally {
     await context.close();
   }
@@ -2345,6 +2370,7 @@ async function runMobileDataSourceViewport(browser, errors) {
     await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
     await page.getByRole('heading', { level: 1 }).waitFor({ state: 'visible' });
     await verifySistemaSFlow(page, MOBILE_DATA_SOURCE_VIEWPORT);
+    await assertNoHorizontalOverflow(page, `Sistema S em ${viewportLabel}`);
   } finally {
     await context.close();
   }

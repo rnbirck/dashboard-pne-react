@@ -115,6 +115,9 @@ Wrappers locais são adequados para estado interativo, providers mínimos ou ada
 
 ## Componentes e cenários cobertos
 
+O catálogo estabilizado possui 17 cenários em nove categorias e 31 combinações
+visuais versionadas entre Desktop, Notebook e Mobile.
+
 - Fundamentos: tokens semânticos, tipografia, prosa longa, números e unidades.
 - Cards: `MetricCard`, `EducationSummaryCard`, `StatCard`, `EducationIndicatorCard` e `FinancialIndicatorCard`.
 - Educação: busca, agrupamento, detalhe, série completa, parcial e ausente, metodologia, demanda e projeções.
@@ -124,6 +127,18 @@ Wrappers locais são adequados para estado interativo, providers mínimos ou ada
 - Tabelas: `EducationTable`, overflow, valores extremos, vazio e loading.
 - Gráficos: `EducationLineChart`, `EducationBarChart`, `EducationStackedBarChart`, legenda, escala, ausência, loading e erro.
 - Estados: `ContentState`, `LoadingState`, `ErrorState`, `StatusBadge` e expansão progressiva.
+
+Estados de risco cobertos transversalmente: zero, ausência, série vazia,
+valores grandes, texto longo, seleção, desabilitação, loading, erro, vazio,
+cobertura parcial, overflow local, série completa, série parcial, lacunas,
+legenda longa, tooltip multissérie e fechamento por Escape.
+
+Não ganharam cenário isolado por já dependerem do shell ou de integração real:
+`MunicipalitySelector`, drawer global, restauração de foco entre rotas,
+`PageLoadBoundary` e carregamento municipal. Esses contratos são cobertos pelo
+E2E, inclusive duas instâncias do seletor com IDs ARIA exclusivos, foco contido
+no drawer e ausência de overflow nas páginas reais. Essa separação evita
+fixtures que duplicariam o comportamento público sem acrescentar diagnóstico.
 
 ## Larguras de preview
 
@@ -139,6 +154,15 @@ Use o catálogo para alterações em tokens, tipografia, cards, badges, valores 
 
 Continue usando E2E e regressão visual para shell completo, seleção de município, rotas e hashes, restauração de foco entre páginas, carregamento real, integração entre domínios, viewport real, overflow do documento, impressão, fontes, diferenças pixel a pixel e contratos de dados.
 
+Decisão rápida:
+
+```text
+Componente isolado → catálogo + regressão isolada.
+Navegação/interação → catálogo + roteamento + E2E.
+Página/composição → catálogo + E2E + regressão pública.
+Cálculo/indicador → verify:indicator + testes de domínio.
+```
+
 ## Orientação para futuros agentes do Codex
 
-Leia primeiro `AGENTS.md`, `docs/GUIA_DE_DESIGN.md`, `docs/PLANO_MIGRACAO_UI.md`, `src/dev-ui/AGENTS.md` e `docs/REGRESSAO_VISUAL_DEV_UI.md`. Procure um componente ou cenário equivalente antes de criar outro. Preserve a direção de dependência e confirme o isolamento com `npm run test:dev-ui`, `npm run test:dev-ui:visual` e `npm run build` antes de concluir qualquer mudança visual.
+Leia primeiro `AGENTS.md`, `docs/GUIA_DE_DESIGN.md`, `docs/DESIGN_SYSTEM.md`, `docs/PLANO_MIGRACAO_UI.md`, `src/dev-ui/AGENTS.md` e `docs/REGRESSAO_VISUAL_DEV_UI.md`. Procure um componente ou cenário equivalente antes de criar outro. Preserve a direção de dependência e confirme o isolamento com `npm run test:dev-ui`, `npm run test:dev-ui:visual`, `npm run test:ui-architecture` e `npm run build` antes de concluir qualquer mudança visual.

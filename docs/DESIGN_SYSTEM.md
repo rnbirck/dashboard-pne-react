@@ -204,3 +204,108 @@ Para uma nova página, reutilize primeiro os componentes compartilhados e os
 tokens. Crie uma exceção de módulo somente quando o conteúdo exigir outra
 composição semântica. Não altere dados, JSONs, cálculos, filtros, aliases,
 fontes ou conteúdo metodológico para resolver uma necessidade visual.
+
+## 12. Arquivos canônicos e ordem da cascata
+
+| Arquivo | Responsabilidade | Não deve receber |
+| --- | --- | --- |
+| `src/styles/design-tokens.css` | Variáveis, escalas, cores, tipografia, espaços, raios, medidas, estados e camadas. | Regras de componente ou página. |
+| `src/styles/platform-ui.css` | Superfícies, cards, controles, toolbars, tabelas, estados e padrões editoriais compartilhados. | Geometria de gráfico ou regra exclusiva de um domínio. |
+| `src/styles/chart-system.css` | Superfície, canvas, eixos, grades, séries, marcas, legendas, tooltips e estados de visualização. | Escala, cálculo, série, formatação ou regra analítica. |
+| `src/styles/navigation-shell.css` | Sidebar, drawer, barra móvel, contexto global e assinatura institucional. | Layout interno de páginas. |
+| `src/styles/institutional-refresh.css` | Composição editorial institucional comum e ajustes deliberados de integração. | Anatomia duplicada já definida em `platform-ui.css` ou `chart-system.css`. |
+| CSS de domínio | Layout próprio, composição e exceção funcional justificada. | Gramática base de controles, cards, tabelas, estados ou gráficos. |
+| `src/App.css` | Legado ativo ainda necessário, impressão e exceções históricas não migráveis com segurança. | Qualquer novo padrão compartilhado. |
+
+A ordem atual é um contrato de cascata. `index.css` carrega os tokens; `App.tsx`
+carrega `App.css`, gráficos, PNE, plataforma, Financeiro e navegação, nessa
+ordem; `main.jsx` carrega `institutional-refresh.css` por último. O CSS de
+Educação é carregado com o chunk da página. Alterar essa ordem exige revisão de
+diff visual, catálogo, E2E e regressão pública.
+
+## 13. Inventário operacional
+
+| Grupo | Implementação canônica e tokens | Consumidores e variantes | Diferenças preservadas / legado |
+| --- | --- | --- | --- |
+| Superfícies e cabeçalhos | `platform-ui.css`; `--surface-*`, `--border-*`, `--radius-*`, `--panel-inset*` | `page-card`, `FinancialSection`, `PageHeadingText`, `DetailHeadingText`, heroes e cabeçalhos de seção | Heroes, contexto lateral e composição de cada domínio permanecem locais. |
+| Cards | `ExplorableIndicatorCardFrame`, `platform-ui.css`; `--card-*`, `--status-*` | Educação, Financeiro, `MetaCard`, `MetricCard`, `StatCard`; informativo, explorável, selecionado e indisponível | `MetaCard` mantém meta, ciclo e projeção do PNE. Cards de resumo sem ação não recebem affordance. |
+| Valores, unidades e badges | `MetricCard`, `EducationSummaryCard`, `StatusBadge`; tokens tipográficos e de estado | Zero, ausência, moeda, percentual, índice, ano, alta, queda, estabilidade e cobertura | Formatadores e critérios analíticos continuam no domínio; ausência nunca vira zero. |
+| Busca, filtros, segmentos e abas | `SearchField`, `CategoryTabs`, `SegmentedControl`, `MunicipalitySelector`, `platform-ui.css`; `--control-*`, `--focus-*` | Busca vazia/preenchida/desabilitada, filtros combináveis, seleção exclusiva e grupos roláveis | Semântica ARIA e lógica do filtro permanecem no consumidor. |
+| Toolbars e resumo de resultados | `platform-exploration-toolbar`, `platform-results-summary`, `platform-ui.css` | Educação, PNE legal e módulos financeiros | Quantidade e ordem dos controles seguem a tarefa de cada página. |
+| Tabelas | `EducationTable`, `platform-data-table*`, `platform-ui.css`; `--table-*` | Educação, PNE, FUNDEB, PNATE, SIOPE e Sistema S; numérico, ausência, overflow e estado | Colunas, unidades, mínimos legais e altura máxima de cálculos continuam específicos. |
+| Loading, vazio, erro e indisponibilidade | `ContentState`, `LoadingState`, `ErrorState`, `platform-ui.css`; `--state-*` | Painel, tabela e gráfico; `status`, `alert`, skeleton e recuperação | Vazios compactos e mensagens de negócio permanecem no domínio. |
+| Avisos de cobertura | `platform-coverage-note`, `ContentState`; tokens de atenção e cobertura | SIOPE e projeções educacionais | O aviso informa limitação; não altera regra de cobertura nem substitui dado ausente. |
+| Gráficos, eixos e grades | `ChartPrimitives`, renderers SVG reais, `chart-system.css`; `--chart-*` | Linha, barra, empilhado, projeção e histórico; série completa, parcial e nula | Domínios, ticks, escalas, geometria, metas e formatadores continuam nos renderers. |
+| Legendas e tooltips | `ChartLegend`, `ChartTooltip`, `chart-system.css`; `--chart-tooltip-*`, `--z-tooltip` | Série única, multissérie, linha sólida/tracejada, ponteiro e teclado | Tooltip é complementar; fonte, rótulo e valor permanecem acessíveis fora dele. |
+| Fontes e notas | `DataSourceNote`, `SourceLine`, `MethodNote`; `--source-label`, `--text-*` | Fonte, metodologia, período e limitação | Texto analítico e atribuição oficial não são reescritos por uma tarefa visual. |
+| Navegação | `Header`, `SidebarAccordionGroup`, `DetailNavigation`, `navigation-shell.css` | Sidebar, drawer, submenu, retorno, anterior/próximo e restauração de foco | Rotas, hashes, aliases e vizinhança permanecem na camada de navegação. |
+
+A duplicação literal da regra responsiva de `.education-indicator-card-grid`
+entre `App.css` e `education-pages.css` é mantida como compatibilidade do
+catálogo isolado: cenários de cards podem carregar o componente sem importar a
+página de Educação. As demais repetições exatas dentro do mesmo contexto foram
+removidas na estabilização final.
+
+## 14. Compartilhado, domínio e variantes
+
+Use estilo compartilhado quando a anatomia, o estado e a interação forem
+equivalentes em dois ou mais domínios. Use estilo de domínio quando a diferença
+expressar composição, densidade, escala, regra legal ou significado próprio.
+
+Para adicionar uma variante:
+
+1. confirme que a primitiva existente não cobre o estado;
+2. nomeie a diferença por função, não por aparência;
+3. reutilize tokens semânticos;
+4. mantenha DOM e ARIA da primitiva;
+5. cubra default, foco, desabilitado, loading, erro, vazio e responsividade quando aplicável;
+6. registre a variante no catálogo somente se houver risco novo e reutilização real.
+
+Não copie um bloco compartilhado para o CSS de domínio. Se a exceção exigir
+mais propriedades que a anatomia base, documente por que ela não é uma variante
+reutilizável antes de implementá-la.
+
+## 15. Decisão rápida de validação
+
+```text
+Alteração em componente isolado:
+→ catálogo + regressão isolada.
+
+Alteração em navegação ou interação:
+→ catálogo, testes de roteamento e E2E.
+
+Alteração em página ou composição:
+→ catálogo, E2E e regressão pública.
+
+Alteração em cálculo ou indicador:
+→ verify:indicator e testes de domínio.
+```
+
+Execute também `npm run typecheck`, `npm run lint`, `npm run build` e
+`npm run test:ui-architecture` para qualquer alteração estrutural de UI.
+Baseline só pode mudar quando a diferença visual for intencional, necessária,
+documentada e revisada. Instabilidade, fonte ausente, foco acidental, loading,
+dimensão diferente ou erro de console devem ser corrigidos, não aceitos.
+
+## 16. Práticas proibidas e checklist de QA
+
+É proibido:
+
+- criar padrão novo em `App.css`;
+- repetir tokens por hex, pixel ou sombra quando existir valor semântico;
+- criar tooltip ou legenda canônica de gráfico fora de `chart-system.css`;
+- usar `!important` para vencer uma cascata não compreendida;
+- esconder coluna, texto, valor ou estado para eliminar overflow;
+- alterar dado, cálculo, escala, filtro, rota ou conteúdo para resolver layout;
+- atualizar baseline por conveniência.
+
+Antes da entrega, confirme:
+
+- componente ou variante equivalente reutilizado;
+- desktop, notebook e celular sem overflow global;
+- foco visível, ordem de Tab, Escape e restauração de foco preservados;
+- `aria-current`, `aria-selected`, `aria-expanded` e `aria-busy` corretos;
+- zero distinto de ausência e estado não dependente apenas de cor;
+- textos longos, valores grandes, loading, vazio e erro legíveis;
+- catálogo isolado sem dados municipais e ausente do build público;
+- suíte proporcional ao risco e `git diff --check` aprovados.

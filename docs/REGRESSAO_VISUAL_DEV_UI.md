@@ -133,9 +133,15 @@ O último comando não deve encontrar conteúdo. Nenhum artefato da suíte pode 
 
 Para evitar fragilidade: localize por ID e `data-testid`; mantenha fixtures determinísticas; aguarde marcadores reais; use poucos viewports de alto valor; preserve diferenças de dimensão; não paralelize capturas sem evidência; atualize somente a seleção revisada.
 
-## Matriz inicial
+## Matriz estabilizada
 
-A matriz inicial contém 17 cenários e 26 baselines. Ela cobre fundamentos e tipografia; zero, ausência, texto longo e valores grandes; cards de Educação, PNE e Financiamento; busca, grupos, detalhe, demanda e projeção; filtros, abas e submenu; tabelas, ausência e overflow; gráficos completos, parciais, nulos e sem dados; loading, erro e vazio.
+A matriz estabilizada contém 17 cenários e 31 combinações visuais: Fundamentos
+(3), Cards (4), Educação (3), PNE (2), Financiamento (2), Filtros e navegação
+(4), Tabelas (3), Gráficos (8) e Estados (2). Ela cobre fundamentos e
+tipografia; zero, ausência, texto longo e valores grandes; cards de Educação,
+PNE e Financiamento; busca, grupos, toolbar, detalhe, demanda e projeção;
+filtros, abas e submenu; tabelas, ausência e overflow; gráficos completos,
+parciais, nulos e sem dados; loading, erro, vazio, tooltip multissérie e Escape.
 
 Viewports: Desktop 1366 px, Notebook 1024 px e Mobile 390 px. `finance-summary-states` e `states-interaction` continuam no catálogo manual, sem baseline por sobreporem estados já cobertos.
 
@@ -149,4 +155,4 @@ Viewports: Desktop 1366 px, Notebook 1024 px e Mobile 390 px. `finance-summary-s
 6. Execute o E2E relevante.
 7. Execute a regressão visual completa antes do commit.
 
-Futuros agentes do Codex devem ler `AGENTS.md`, `docs/GUIA_DE_DESIGN.md`, `docs/PLANO_MIGRACAO_UI.md`, `src/dev-ui/AGENTS.md` e este documento antes de mudar catálogo, metadados ou baselines.
+Futuros agentes do Codex devem ler `AGENTS.md`, `docs/GUIA_DE_DESIGN.md`, `docs/DESIGN_SYSTEM.md`, `docs/PLANO_MIGRACAO_UI.md`, `src/dev-ui/AGENTS.md` e este documento antes de mudar catálogo, metadados ou baselines. Execute também `npm run test:ui-architecture` quando a mudança tocar cascata, imports, CSS canônico ou limites do legado.

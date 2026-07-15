@@ -207,25 +207,3 @@ export function isSingleYearIndicator(result) {
   if (Number.isFinite(startYear) && Number.isFinite(endYear) && startYear === endYear) return true
   return false
 }
-
-export function formatRankingValue(display, unit, mode = 'variation') {
-  const raw =
-    mode === 'distance'
-      ? (display?.distance ?? display?.variation ?? '-')
-      : (display?.variation ?? display?.distance ?? '-')
-  if (typeof raw !== 'string') return String(raw)
-
-  if (unit === 'index') {
-    let cleaned = raw.replace(/\bp\.p\.?\b/gi, '').trim()
-    cleaned = cleaned.replace(/\s{2,}/g, ' ')
-    return cleaned.trim()
-  }
-
-  if (unit === 'years') {
-    let cleaned = raw.replace(/\bp\.p\.?\b/gi, '').trim()
-    cleaned = cleaned.replace(/\s{2,}/g, ' ')
-    return cleaned.trim()
-  }
-
-  return raw
-}

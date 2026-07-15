@@ -611,3 +611,120 @@ gráficos, Educação e Financiamento, `npm run lint`, `npm run build`,
 `npm run test:e2e`, `npm run test:visual` 23/23 e `git diff --check`.
 `public/data/` e `data_pipeline/` permaneceram sem diferenças. Nenhum baseline
 público foi alterado nesta fase.
+
+## Fase final de estabilização e encerramento (2026-07-15)
+
+O ponto de partida foi a árvore limpa no commit
+`88a3b75807e5fb5b1fc320234367126fd37086e3` (`Refine dashboard layout and
+shared UI styles`). A suíte commitada passou integralmente após iniciar o Vite
+exigido pelos harnesses públicos. A primeira tentativa de E2E sem servidor
+falhou com `ERR_CONNECTION_REFUSED`; o código da aplicação não foi alterado
+para mascarar essa pré-condição.
+
+O inventário permanente foi consolidado em `docs/DESIGN_SYSTEM.md`, cobrindo
+superfícies, cabeçalhos, cards, valores, unidades, badges, busca, filtros,
+segmentos, abas, toolbars, tabelas, estados, cobertura, gráficos, eixos, grades,
+legendas, tooltips, fontes, notas e navegação. Para cada família estão
+registrados implementação canônica, tokens, consumidores, variantes e
+diferenças funcionais preservadas. A responsabilidade final ficou assim:
+
+- `design-tokens.css`: somente valores, escalas e medidas canônicas;
+- `platform-ui.css`: gramática compartilhada de superfície, controles, cards,
+  tabelas, estados e composição editorial comum;
+- `chart-system.css`: anatomia canônica das visualizações;
+- CSS de domínio: layout, composição e exceção funcional justificada;
+- `App.css`: legado ativo, impressão e exceções históricas não migradas sem
+  evidência; continua proibido para padrões novos.
+
+A auditoria estática e de consumidores removeu quatro componentes sem qualquer
+importador estático, lazy ou dinâmico: `IndicatorList`,
+`InstitutionalBrandStrip`, `RankingBlock` e `RioGrandeDoSulMap`. Também removeu
+`formatRankingValue`, usado somente pelo componente órfão; estilos dedicados ao
+mapa, à faixa institucional e ao ranking; 27 blocos CSS exatamente duplicados
+no mesmo contexto; e chaves duplicadas de desenvolvimento em `package.json`.
+O grafo final não registra componente sem importador conhecido.
+
+Foram removidas 374 linhas de CSS: 294 de `App.css`, 76 de
+`navigation-shell.css`, três de `financial-pages.css` e uma de
+`institutional-refresh.css`. `App.css` passou de 423.829 para 417.695 bytes.
+Os quatro componentes removidos somavam 235 linhas e o helper, 22 linhas.
+
+Itens legados preservados deliberadamente:
+
+- a regra responsiva de `.education-indicator-card-grid` permanece em
+  `App.css` e `education-pages.css`, pois o catálogo de cards pode carregar o
+  componente sem importar o chunk da página de Educação;
+- seletores de gráfico fora de `chart-system.css` permanecem somente quando
+  escopados a PNE, Educação ou Financeiro e expressam altura, composição,
+  escala visual ou exceção do domínio; tooltip e legenda canônicos não vazam;
+- os `!important` restantes pertencem a reduced motion, impressão, reset de
+  conteúdo técnico financeiro, neutralização de pseudo-elementos legados da
+  navegação ou estabilização exclusiva do catálogo;
+- media queries, valores locais e especificidade histórica ainda presentes em
+  `App.css` não foram movidos em massa: a remoção sem prova poderia alterar
+  páginas, impressão ou estados que não compartilham anatomia.
+
+`scripts/checks/ui-architecture-test.mjs` passou a proteger, com baixo custo, a
+ordem canônica dos imports, o teto flexível de 440.000 bytes para `App.css`, a
+existência de importador para todo CSS de `src/styles`, a ausência de tooltip e
+legenda canônicos fora de `chart-system.css`, a ausência de `any` explícito na
+camada TypeScript central e a não inclusão de resultados/diffs visuais
+temporários no Git. O teste existente continua responsável por IDs duplicados
+de cenário, isolamento do catálogo e ausência do catálogo em `dist`.
+
+O catálogo final possui 17 cenários, nove categorias e 31 combinações visuais:
+Fundamentos 3, Cards 4, Educação 3, PNE 2, Financiamento 2, Navegação 4,
+Tabelas 3, Gráficos 8 e Estados 2. Nenhum cenário ou baseline foi adicionado por
+simetria. `MunicipalitySelector`, drawer, restauração de foco entre rotas e
+carregamento municipal permanecem no E2E porque dependem do shell real.
+
+As páginas reais foram verificadas em 1366×768, 1280×720, 1024×768 e, na
+auditoria final ampliada, 390×844. A cobertura mobile percorre Home, visão geral
+do PNE, PNE 2014–2024, PNE 2026–2036, Metas legais, as oito seções de Educação,
+Diagnóstico, visão geral financeira, SIOPE, FUNDEB, VAAR, PNATE e Sistema S.
+Não houve overflow global nem erro de console. Foco visível, contenção e Escape
+do drawer, restauração de foco, `aria-current`, `aria-selected`,
+`aria-expanded`, `aria-busy`, ausência acessível, tabelas semânticas, tooltips
+por teclado e reduced motion permaneceram cobertos. A fonte de dados manteve
+12 px e contraste medido de 5,15:1.
+
+Bundle antes/depois:
+
+| Métrica | Antes | Depois | Variação |
+| --- | ---: | ---: | ---: |
+| JavaScript total | 759.481 B | 759.481 B | 0 |
+| Chunk inicial | 261.211 B | 261.211 B | 0 |
+| CSS total | 562.024 B | 558.096 B | -3.928 B (-0,70%) |
+| CSS principal | 522.992 B | 519.064 B | -3.928 B |
+| Chunks JavaScript | 20 | 20 | 0 |
+| Arquivos em `dist` | 2.543 | 2.543 | 0 |
+| Maior chunk | 261.211 B | 261.211 B | 0 |
+| Build aproximado | 4,59 s | 4,22 s | -0,37 s |
+
+Não existe chunk acima de 500 kB. Os tempos são indicativos do ambiente local,
+não metas rígidas:
+
+| Suíte | Antes | Depois |
+| --- | ---: | ---: |
+| Regressão isolada completa | 14,18 s | 17,23 s |
+| E2E público | 93,29 s | 64,44 s |
+| Regressão pública | 37,12 s | 38,58 s |
+
+A variação não indica regressão funcional ou de bundle: os mesmos 31 e 23
+casos passaram, e o E2E final ainda acrescentou a varredura mobile das páginas
+principais. Cache de Vite, fontes e sistema operacional afetam essas medições.
+
+Evidência final: `npm run typecheck`, `npm run test:education` 9/9,
+`npm run test:app-routing` 7/7, `npm run test:dev-ui`,
+`npm run test:dev-ui:visual` 31/31, categorias `cards`, `navigation`, `tables`,
+`charts` e `states`, `npm run test:ui-architecture`, `npm run lint`,
+`npm run build`, `npm run test:e2e`, `npm run test:visual` 23/23 e
+`git diff --check`. Nenhum baseline isolado ou público foi alterado.
+`public/data/`, `data_pipeline/`, cálculos, filtros, séries, escalas,
+formatadores, rotas, hashes, aliases, loaders e comportamento público
+permaneceram sem diferenças.
+
+Pendência real remanescente: `App.css` continua como dívida técnica ativa, mas
+sem seletor órfão relevante comprovado nesta auditoria. Qualquer nova redução
+deve ser uma migração própria, baseada em consumidor, catálogo, página real e
+regressão; não faz parte da convergência visual encerrada.

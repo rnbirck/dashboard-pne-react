@@ -32,3 +32,22 @@ to influence chunk boundaries.
 - Reutilize componentes e tokens existentes. `App.css` é legado e não cria padrões novos.
 - Alterações estruturais não podem mudar DOM, classes, textos ou aparência. Migração de CSS exige tarefa própria.
 - Durante o trabalho, execute o menor conjunto de testes relevante; antes de concluir, valide a alteração afetada.
+
+## Sistema visual estabilizado
+
+- Consulte `docs/GUIA_DE_DESIGN.md` e `docs/DESIGN_SYSTEM.md` antes de alterar interface.
+- Valores pertencem a `styles/design-tokens.css`; gramática compartilhada a `styles/platform-ui.css`; anatomia de gráficos a `styles/chart-system.css`.
+- CSS de domínio contém apenas layout, composição ou diferença funcional justificada. Não copie para ele controles, cards, tabelas, estados ou gráficos compartilhados.
+- Preserve a ordem de imports registrada em `docs/DESIGN_SYSTEM.md`; ela é protegida por `npm run test:ui-architecture`.
+- Não adicione tooltip ou legenda canônica de gráfico fora de `chart-system.css` e não faça `App.css` ultrapassar o teto de proteção sem uma migração documentada.
+
+Validação proporcional:
+
+- componente isolado: catálogo e regressão isolada;
+- navegação/interação: catálogo, roteamento e E2E;
+- página/composição: catálogo, E2E e regressão pública;
+- cálculo/indicador: `verify:indicator` e testes de domínio.
+
+Antes de concluir mudança estrutural de UI, execute também `npm run typecheck`,
+`npm run lint`, `npm run build`, `npm run test:ui-architecture` e
+`git diff --check`.
