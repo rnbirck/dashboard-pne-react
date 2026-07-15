@@ -328,3 +328,54 @@ município em destaque, seção atual e quantidade de indicadores da seção,
 seguindo a hierarquia editorial de Home e PNE. A leitura rápida deixou de usar
 o ponto de status herdado; título, texto, tom semântico e dados foram
 preservados, com resposta fluida em desktop, notebook, tablet e celular.
+
+## Primeira fase de convergência real dos cards (2026-07-15)
+
+Educação e Financeiro passaram a compartilhar, em `platform-ui.css`, a mesma
+anatomia editorial dos cards exploráveis já aprovada no guia: contexto e
+status no topo, título e descrição, valor principal com Ano/Variação, bloco de
+Leitura/Período e rodapé de ação. A divergência encontrada era de implementação:
+o JSX compartilhado já expunha essas regiões, mas a maior parte da gramática
+visual permanecia restrita a `.educacao-page`; por isso o catálogo isolado e os
+cards financeiros ainda recaíam na composição antiga.
+
+- `design-tokens.css` passou a explicitar o padding comum e a altura mínima
+  móvel; `platform-ui.css` tornou-se o proprietário da grade, hierarquia,
+  truncamento, direção semântica, container query e reflow móvel dos dois
+  domínios. A duplicação equivalente foi removida de `education-pages.css`.
+- Cards informativos de resumo e resultado de Educação foram preservados como
+  exceção funcional: não são exploráveis e não reproduzem a anatomia comum.
+- Nenhum componente, dado, JSON, cálculo, filtro, regra de negócio ou conteúdo
+  analítico foi alterado. `public/data/` e `data_pipeline/` permaneceram sem
+  diferenças. O guia não mudou porque a decisão reutilizável já estava
+  registrada; esta rodada apenas convergiu a implementação ao contrato vigente.
+- Medições nas rotas reais confirmaram altura de 324 px e ausência de overflow
+  em 1366 e 1024 px. Em 390 px, os cards fizeram reflow para 367 px, sem corte
+  de título, descrição ou valor. Educação mediu 320/475/348 px de largura e
+  Financeiro 311/459/316 px, respectivamente.
+- O JavaScript gerado permaneceu em 754.592 bytes. O CSS total passou de
+  560.398 para 564.131 bytes (+3.733 bytes; +0,67%), sem novo chunk inicial
+  acima de 500 kB.
+
+Evidência final: `npm run test:dev-ui:visual` 26/26, `npm run test:dev-ui`,
+`npm run typecheck`, `npm run test:education` 9/9,
+`npm run test:app-routing` 7/7, `npm run test:e2e`, `npm run lint`,
+`npm run build` e `npm run test:visual` 23/23. A inspeção nas rotas reais cobriu
+1366, 1024 e 390 px, com console limpo e navegação/foco preservados.
+
+Baselines isolados atualizados deliberadamente:
+
+- `tests/dev-ui-visual/baselines/cards-explorable-states.mobile.png`
+- `tests/dev-ui-visual/baselines/cards-explorable-states.notebook.png`
+- `tests/dev-ui-visual/baselines/education-search.desktop.png`
+- `tests/dev-ui-visual/baselines/finance-module-cards.desktop.png`
+- `tests/dev-ui-visual/baselines/finance-module-cards.mobile.png`
+
+Baselines públicos atualizados deliberadamente, após revisão dos diffs:
+
+- `scripts/checks/visual-baselines/fundeb-1024x768.png`
+- `scripts/checks/visual-baselines/fundeb-1280x720.png`
+- `scripts/checks/visual-baselines/fundeb-1366x768.png`
+- `scripts/checks/visual-baselines/siope-1024x768.png`
+- `scripts/checks/visual-baselines/siope-1280x720.png`
+- `scripts/checks/visual-baselines/siope-1366x768.png`
