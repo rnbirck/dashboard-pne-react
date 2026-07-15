@@ -12,6 +12,7 @@ export function CategoryTabs({ categories, selectedCategory, onSelectCategory, a
                 ? 'category-tab platform-filter-option is-active'
                 : 'category-tab platform-filter-option'
             }
+            disabled={category.disabled}
             key={category.key}
             type="button"
             title={category.label}

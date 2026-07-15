@@ -15,6 +15,7 @@ export function SegmentedControl({
           <button
             aria-pressed={isActive}
             className={`${optionClassName}${isActive ? ' is-active' : ''}`}
+            disabled={option.disabled}
             key={option.key}
             onClick={() => onSelect(option.key)}
             type="button"

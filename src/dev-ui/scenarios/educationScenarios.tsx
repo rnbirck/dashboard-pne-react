@@ -22,7 +22,7 @@ function EducationSearchFixture({ initialValue = '' }: { initialValue?: string }
   }, [query])
 
   return (
-    <div className="dev-ui-control-stack">
+    <div className="dev-ui-control-stack content-area">
       <SearchField
         ariaLabel="Buscar indicador educacional"
         className="cycle-search platform-search-field"
@@ -47,6 +47,34 @@ function EducationSearchFixture({ initialValue = '' }: { initialValue?: string }
 function detailFixture(overrides: Partial<EducationIndicatorFixture> = {}) {
   return { ...educationIndicators[0].value, ...overrides }
 }
+
+const tabbedExploreFixture = [
+  {
+    key: 'fixture-rede',
+    type: 'bar',
+    tabLabel: 'Por rede',
+    tabPriority: 1,
+    title: 'Atendimento por rede',
+    data: [
+      { label: 'Municipal', value: 96.2 },
+      { label: 'Estadual', value: 93.5 },
+      { label: 'Privada', value: 91.8 },
+    ],
+    formatLabel: (value: number) => `${value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`,
+  },
+  {
+    key: 'fixture-localizacao',
+    type: 'bar',
+    tabLabel: 'Por localização',
+    tabPriority: 2,
+    title: 'Atendimento por localização da escola',
+    data: [
+      { label: 'Urbana', value: 95.1 },
+      { label: 'Rural', value: 88.7 },
+    ],
+    formatLabel: (value: number) => `${value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`,
+  },
+]
 
 const methodologyCatalog = [
   { key: 'mat-total', label: 'Total de matrículas', source: 'INEP Censo Escolar' },
@@ -76,19 +104,21 @@ export const educationScenarios: readonly CatalogScenario[] = [
     title: 'Detalhe e séries históricas',
     description: 'Detalhe real do indicador com série completa, parcial e ausente.',
     objective: 'Inspecionar métricas, leitura rápida, gráfico, fonte e ausência de histórico no componente final.',
-    states: ['detalhe', 'série completa', 'série parcial', 'sem histórico', 'título longo'],
+    states: ['detalhe', 'série completa', 'série parcial', 'sem histórico', 'título longo', 'abas'],
     visual: { enabled: true, viewports: ['notebook'] },
     render: () => (
       <ScenarioGrid columns="single">
-        <ScenarioItem label="Série completa"><EducationIndicatorDetailView blocos={{}} indicator={detailFixture()} /></ScenarioItem>
+        <ScenarioItem label="Série completa e abas"><div className="content-area"><EducationIndicatorDetailView blocos={{}} indicator={detailFixture({ explore: tabbedExploreFixture })} /></div></ScenarioItem>
         <ScenarioItem label="Série parcial">
-          <EducationIndicatorDetailView blocos={{}} indicator={detailFixture({
-            key: 'serie-parcial',
-            label: 'Indicador educacional com série histórica parcial e interrupções entre os anos observados',
-            series: [{ ano: 2020, valor: 78 }, { ano: 2021, valor: null }, { ano: 2022, valor: 81.4 }, { ano: 2023, valor: null }, { ano: 2024, valor: 84.2 }],
-          })} />
+          <div className="content-area">
+            <EducationIndicatorDetailView blocos={{}} indicator={detailFixture({
+              key: 'serie-parcial',
+              label: 'Indicador educacional com série histórica parcial e interrupções entre os anos observados',
+              series: [{ ano: 2020, valor: 78 }, { ano: 2021, valor: null }, { ano: 2022, valor: 81.4 }, { ano: 2023, valor: null }, { ano: 2024, valor: 84.2 }],
+            })} />
+          </div>
         </ScenarioItem>
-        <ScenarioItem label="Sem histórico"><EducationIndicatorDetailView blocos={{}} indicator={detailFixture({ key: 'sem-historico', series: [] })} /></ScenarioItem>
+        <ScenarioItem label="Sem histórico"><div className="content-area"><EducationIndicatorDetailView blocos={{}} indicator={detailFixture({ key: 'sem-historico', series: [] })} /></div></ScenarioItem>
       </ScenarioGrid>
     ),
   },

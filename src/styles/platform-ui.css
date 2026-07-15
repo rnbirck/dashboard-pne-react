@@ -148,15 +148,17 @@
   }
 
   .content-area :where(.platform-search-field, .indicator-search) {
-    padding-inline: var(--space-3);
+    padding-inline: var(--control-padding-inline);
     color: var(--text-subtle);
     display: flex;
     align-items: center;
-    gap: var(--space-2);
+    gap: var(--control-gap);
   }
 
   .content-area .platform-search-field {
     position: relative;
+    width: 100%;
+    max-width: var(--search-field-max);
   }
 
   .content-area :where(.platform-search-field, .indicator-search):focus-within,
@@ -193,7 +195,11 @@
   .content-area .platform-search-field input {
     width: 100%;
     min-width: 0;
+    padding: 0;
     padding-inline-end: var(--touch-target-min);
+    border: 0;
+    outline: 0;
+    background: transparent;
   }
 
   .content-area .platform-search-field input[type="search"]::-webkit-search-cancel-button {
@@ -237,6 +243,24 @@
     opacity: 1;
   }
 
+  .content-area .platform-search-field.is-filled {
+    border-color: var(--border-strong-line);
+  }
+
+  .content-area .platform-search-field:has(input:disabled),
+  .content-area .platform-search-field.is-disabled {
+    border-color: var(--border-faint);
+    background: var(--surface-soft);
+    color: var(--text-muted);
+    cursor: not-allowed;
+    opacity: 0.72;
+  }
+
+  .content-area .platform-search-field input:disabled {
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+
   .platform-selector .municipio-selector__label,
   .content-area :where(.filter-control, .educacao-age-detail__control) > span {
     color: var(--text-soft);
@@ -269,8 +293,10 @@
 
   .content-area .platform-filter-option {
     width: auto;
+    max-width: 100%;
     min-height: var(--control-height);
-    padding: 9px var(--space-3);
+    min-width: 0;
+    padding: 9px var(--control-padding-inline);
     border: var(--border-width) solid var(--control-border);
     border-radius: var(--control-radius);
     background: var(--control-surface-muted);
@@ -285,6 +311,7 @@
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
     line-height: var(--line-height-snug);
+    overflow-wrap: anywhere;
     text-align: left;
     transform: none;
     transition:
@@ -306,6 +333,15 @@
     background: var(--control-surface-selected);
     color: var(--control-text-selected);
     box-shadow: inset 0 0 0 1px rgba(62, 122, 94, 0.1);
+  }
+
+  .content-area .platform-filter-option:disabled,
+  .content-area .platform-filter-option[aria-disabled="true"] {
+    border-color: var(--border-faint);
+    background: var(--surface-soft);
+    color: var(--text-muted);
+    cursor: not-allowed;
+    opacity: 0.64;
   }
 
   .content-area .platform-category-tabs {
@@ -343,6 +379,7 @@
     place-items: center;
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-semibold);
+    flex: 0 0 auto;
   }
 
   .content-area .platform-filter-group {
@@ -373,7 +410,8 @@
 
   .content-area .platform-segmented-option {
     min-height: 36px;
-    padding: 7px var(--space-3);
+    min-width: 0;
+    padding: 7px var(--control-padding-inline);
     border: var(--border-width) solid transparent;
     border-radius: calc(var(--control-radius) - 2px);
     background: transparent;
@@ -383,6 +421,8 @@
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
     line-height: var(--line-height-snug);
+    overflow-wrap: anywhere;
+    text-align: center;
     transform: none;
   }
 
@@ -397,6 +437,13 @@
     color: var(--control-text-selected);
     box-shadow: var(--shadow-sm);
     font-weight: var(--font-weight-semibold);
+  }
+
+  .content-area .platform-segmented-option:disabled,
+  .content-area .platform-segmented-option[aria-disabled="true"] {
+    color: var(--text-muted);
+    cursor: not-allowed;
+    opacity: 0.58;
   }
 
   .content-area .platform-segmented-control--scrollable {
@@ -416,13 +463,14 @@
 
   /* Tabs */
   .content-area .platform-tab-list {
-    width: fit-content;
+    width: 100%;
     max-width: 100%;
     margin: 0;
-    padding: var(--space-1);
-    border: var(--border-default);
-    border-radius: var(--control-radius);
-    background: var(--surface-muted);
+    padding: 0;
+    border: 0;
+    border-bottom: var(--border-divider);
+    border-radius: 0;
+    background: transparent;
     display: flex;
     align-items: stretch;
     gap: var(--space-1);
@@ -431,9 +479,11 @@
 
   .content-area .platform-tab {
     min-height: var(--control-height);
-    padding: 8px var(--space-4);
-    border: var(--border-width) solid transparent;
-    border-radius: calc(var(--control-radius) - 2px);
+    min-width: 0;
+    padding: 8px var(--space-3);
+    border: 0;
+    border-bottom: var(--border-width-strong) solid transparent;
+    border-radius: 0;
     background: transparent;
     box-shadow: none;
     color: var(--text-body);
@@ -441,20 +491,28 @@
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
     line-height: var(--line-height-snug);
+    overflow-wrap: anywhere;
     white-space: nowrap;
   }
 
   .content-area .platform-tab:hover {
-    background: rgba(255, 255, 255, 0.58);
+    background: transparent;
     color: var(--text-strong);
   }
 
   .content-area .platform-tab:is(.is-active, [aria-selected="true"]) {
-    border-color: var(--control-border);
-    background: var(--control-surface);
+    border-bottom-color: var(--control-border-selected);
+    background: transparent;
     color: var(--control-text-selected);
-    box-shadow: var(--shadow-sm);
+    box-shadow: none;
     font-weight: var(--font-weight-semibold);
+  }
+
+  .content-area .platform-tab:disabled,
+  .content-area .platform-tab[aria-disabled="true"] {
+    color: var(--text-muted);
+    cursor: not-allowed;
+    opacity: 0.58;
   }
 
   /* High-level scope and module selectors */
@@ -577,6 +635,51 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--space-4);
+  }
+
+  .content-area .platform-exploration-toolbar {
+    width: 100%;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--exploration-toolbar-gap);
+  }
+
+  .content-area .platform-exploration-toolbar > :not(.platform-search-field, .platform-segmented-control) {
+    min-width: 0;
+    flex: 1 1 320px;
+  }
+
+  .content-area .platform-exploration-toolbar > .platform-search-field {
+    flex: 1 1 300px;
+  }
+
+  .content-area .platform-exploration-toolbar > .platform-segmented-control {
+    min-width: 0;
+    flex: 1 1 420px;
+    justify-content: flex-end;
+    margin-inline-start: auto;
+  }
+
+  .content-area .platform-exploration-toolbar--single > .platform-search-field {
+    flex-grow: 0;
+  }
+
+  .content-area .platform-results-summary {
+    min-width: 0;
+    padding-block: var(--space-2);
+    border-bottom: var(--border-divider);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  .content-area .platform-results-summary > * {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   /* Cards and common interactive states */
@@ -1279,6 +1382,11 @@
     justify-content: space-between;
     width: 100%;
   }
+
+  .content-area .platform-exploration-toolbar > .platform-segmented-control {
+    justify-content: flex-start;
+    margin-inline-start: 0;
+  }
 }
 
 @media screen and (max-width: 620px) {
@@ -1304,6 +1412,25 @@
   .content-area .platform-category-tabs .category-tab,
   .content-area .platform-segmented-control--scrollable .platform-segmented-option {
     flex: 0 0 auto;
+  }
+
+  .content-area .platform-exploration-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .content-area .platform-exploration-toolbar > .platform-search-field,
+  .content-area .platform-exploration-toolbar > .platform-segmented-control,
+  .content-area .platform-exploration-toolbar > :not(.platform-search-field, .platform-segmented-control) {
+    width: 100%;
+    max-width: none;
+    flex: 0 0 auto;
+  }
+
+  .content-area .platform-results-summary {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-1);
   }
 
   .indicator-card-shell.indicator-card-shell:is(

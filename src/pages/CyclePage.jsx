@@ -278,7 +278,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
         ) : (
           <>
             <div className="cycle-filter-panel platform-filter-panel">
-              <div className="cycle-filter-panel__heading">
+              <div className="cycle-filter-panel__heading platform-exploration-toolbar">
                 <div>
                   <span className="eyebrow">Temas das metas</span>
                   <h2>{selectedGroup?.label ?? 'Metas do ciclo'}</h2>
@@ -287,6 +287,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
                   ariaLabel="Buscar meta"
                   className="cycle-search platform-search-field"
                   onChange={(event) => setSearchQuery(event.target.value)}
+                  onClear={() => setSearchQuery('')}
                   placeholder="Buscar meta..."
                   value={searchQuery}
                 />

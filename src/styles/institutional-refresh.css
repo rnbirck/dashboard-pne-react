@@ -308,23 +308,39 @@
     box-shadow: inset 0 0 0 1px rgba(47, 112, 87, 0.11);
   }
 
-  .dashboard-shell .content-area :where(.platform-segmented-control, .platform-tab-list) {
+  .dashboard-shell .content-area .platform-segmented-control {
     border-color: var(--border-card);
     border-radius: var(--radius-sm);
     background: var(--surface-muted);
   }
 
-  .dashboard-shell .content-area :where(.platform-segmented-option, .platform-tab) {
+  .dashboard-shell .content-area .platform-segmented-option {
     border-radius: 5px;
   }
 
-  .dashboard-shell .content-area :where(.platform-segmented-option, .platform-tab).is-active,
-  .dashboard-shell .content-area :where(.platform-segmented-option, .platform-tab)[aria-pressed='true'],
-  .dashboard-shell .content-area :where(.platform-segmented-option, .platform-tab)[aria-selected='true'] {
+  .dashboard-shell .content-area .platform-segmented-option.is-active,
+  .dashboard-shell .content-area .platform-segmented-option[aria-pressed='true'] {
     border-color: var(--border-card);
     background: var(--surface-card);
     color: var(--green-deep);
     box-shadow: 0 1px 1px rgba(22, 54, 39, 0.08);
+  }
+
+  .dashboard-shell .content-area .platform-tab-list {
+    border-color: var(--border-line);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .dashboard-shell .content-area .platform-tab {
+    border-radius: 0;
+  }
+
+  .dashboard-shell .content-area .platform-tab:is(.is-active, [aria-selected='true']) {
+    border-bottom-color: var(--green-primary);
+    background: transparent;
+    color: var(--green-deep);
+    box-shadow: none;
   }
 
   .dashboard-shell .content-area .status-badge {

@@ -250,7 +250,7 @@ export function PneLegalGoalsPage({
       ) : (
         <>
           <section className="legal-goals-filter-panel platform-filter-panel">
-            <div className="legal-goals-filter-panel__heading">
+            <div className="legal-goals-filter-panel__heading platform-exploration-toolbar">
               <div>
                 <span className="eyebrow">Ciclo vigente · acompanhamento atual</span>
                 <h2>Metas do ciclo vigente e acompanhamento municipal</h2>
@@ -265,6 +265,7 @@ export function PneLegalGoalsPage({
                 ariaLabel="Buscar metas legais"
                 className="legal-goals-search platform-search-field"
                 onChange={(event) => setSearchQuery(event.target.value)}
+                onClear={() => setSearchQuery('')}
                 placeholder="Buscar por código, texto legal ou indicador..."
                 value={searchQuery}
               />
@@ -288,7 +289,7 @@ export function PneLegalGoalsPage({
             </div>
           </section>
 
-          <div className="legal-goals-results-meta">
+          <div className="legal-goals-results-meta platform-results-summary">
             <span>{trackedGoals.length} metas acompanhadas exibidas</span>
             <p>
               {getSelectedThemeLabel(themeOptions, themeFilter)} · {selectedMunicipio} ·

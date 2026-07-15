@@ -456,7 +456,7 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
         title="Indicadores do PNATE"
         titleId="pnate-indicators-title"
       >
-            <div className="financial-indicator-filters financial-indicator-filters--single">
+            <div className="financial-indicator-filters financial-indicator-filters--single platform-exploration-toolbar platform-exploration-toolbar--single">
               <SearchField
                 ariaLabel="Buscar indicador"
                 className="platform-search-field"

@@ -10,14 +10,16 @@ const categories = [
   { key: 'geral', label: 'Visão geral', count: 12 },
   { key: 'trajetoria', label: 'Trajetória escolar e aprendizagem ao longo do período', shortLabel: 'Trajetória e aprendizagem', count: 8 },
   { key: 'infraestrutura', label: 'Infraestrutura', count: 16 },
+  { key: 'indisponivel', label: 'Recorte temporariamente indisponível', count: 0, disabled: true },
 ]
 
 function SearchControls() {
   const [value, setValue] = useState('atendimento escolar')
   return (
-    <div className="dev-ui-control-stack">
+    <div className="dev-ui-control-stack content-area">
       <SearchField ariaLabel="Busca vazia" className="cycle-search platform-search-field" onChange={() => undefined} onClear={undefined} placeholder="Buscar indicador..." value="" />
       <SearchField ariaLabel="Busca preenchida" className="cycle-search platform-search-field" onChange={(event: React.ChangeEvent<HTMLInputElement>) => setValue(event.target.value)} onClear={() => setValue('')} placeholder="Buscar indicador..." value={value} />
+      <SearchField ariaLabel="Busca desabilitada" className="cycle-search platform-search-field" disabled onChange={() => undefined} onClear={undefined} placeholder="Busca indisponível" value="" />
     </div>
   )
 }
@@ -26,7 +28,7 @@ function TabsAndFilters() {
   const [category, setCategory] = useState('geral')
   const [period, setPeriod] = useState('atual')
   return (
-    <div className="dev-ui-control-stack">
+    <div className="dev-ui-control-stack content-area">
       <CategoryTabs categories={categories} onSelectCategory={setCategory} selectedCategory={category} />
       <SegmentedControl
         ariaLabel="Período analisado"
@@ -46,6 +48,42 @@ function TabsAndFilters() {
           selectedKey="indisponivel"
         />
       </DisabledFixture>
+    </div>
+  )
+}
+
+function ExplorationToolbar() {
+  const [query, setQuery] = useState('abandono escolar')
+  const [scope, setScope] = useState('todos')
+
+  return (
+    <div className="dev-ui-control-stack content-area">
+      <div className="platform-exploration-toolbar dev-ui-exploration-toolbar">
+        <SearchField
+          ariaLabel="Buscar na toolbar"
+          className="platform-search-field"
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)}
+          onClear={() => setQuery('')}
+          placeholder="Buscar indicador..."
+          value={query}
+        />
+        <SegmentedControl
+          ariaLabel="Recorte dos resultados"
+          className="platform-segmented-control platform-segmented-control--scrollable"
+          optionClassName="platform-segmented-option"
+          onSelect={setScope}
+          options={[
+            { key: 'todos', label: 'Todos os indicadores' },
+            { key: 'prioritarios', label: 'Indicadores prioritários' },
+            { key: 'serie', label: 'Com série histórica completa' },
+          ]}
+          selectedKey={scope}
+        />
+      </div>
+      <div className="platform-results-summary" aria-live="polite">
+        <strong>18 resultados</strong>
+        <span>Atendimento e trajetória · busca e recorte ativos</span>
+      </div>
     </div>
   )
 }
@@ -81,15 +119,18 @@ export const navigationScenarios: readonly CatalogScenario[] = [
   {
     id: 'navigation-search-filters',
     category: 'Filtros e navegação',
-    title: 'Busca, filtros e abas',
-    description: 'Controles reais em estados vazios, preenchidos, selecionados e desabilitados.',
-    objective: 'Validar foco, limpeza, labels longos, seleção exclusiva e alvos mínimos de interação.',
-    states: ['busca vazia', 'busca preenchida', 'selecionado', 'desabilitado', 'rótulo longo'],
-    visual: { enabled: true, viewports: ['desktop', 'mobile'] },
+    title: 'Busca, filtros e toolbar',
+    description: 'Controles reais em estados vazios, preenchidos, selecionados e desabilitados, além da composição completa de exploração.',
+    objective: 'Validar foco, limpeza, rótulos longos, seleção exclusiva, distribuição da toolbar e alvos mínimos de interação.',
+    states: ['busca vazia', 'busca preenchida', 'selecionado', 'desabilitado', 'rótulo longo', 'toolbar completa', 'contador'],
+    visual: { enabled: true, viewports: ['desktop', 'notebook', 'mobile'] },
     render: () => (
-      <ScenarioGrid>
-        <ScenarioItem label="Campos de busca"><SearchControls /></ScenarioItem>
-        <ScenarioItem label="Abas e filtros"><TabsAndFilters /></ScenarioItem>
+      <ScenarioGrid columns="single">
+        <ScenarioGrid>
+          <ScenarioItem label="Campos de busca"><SearchControls /></ScenarioItem>
+          <ScenarioItem label="Filtros e segmentos"><TabsAndFilters /></ScenarioItem>
+        </ScenarioGrid>
+        <ScenarioItem label="Toolbar com muitos controles" description="Busca preenchida, recorte exclusivo, contador e contexto do resultado."><ExplorationToolbar /></ScenarioItem>
       </ScenarioGrid>
     ),
   },

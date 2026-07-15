@@ -528,7 +528,7 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
             onSelectCategory={handleGroupSelect}
           />
         </div>
-        <div className="financial-axis-context">
+        <div className="financial-axis-context platform-results-summary">
           <span>{activeGroup?.label ?? 'Eixo de análise'}</span>
           <span>{model.municipality.municipio}</span>
         </div>

@@ -1,7 +1,12 @@
 import { useRef } from 'react'
 
-export function SearchField({ ariaLabel, className, clearLabel = 'Limpar busca', onChange, onClear, placeholder, value }) {
+export function SearchField({ ariaLabel, className, clearLabel = 'Limpar busca', disabled = false, onChange, onClear, placeholder, value }) {
   const inputRef = useRef(null)
+  const resolvedClassName = [
+    className,
+    value ? 'is-filled' : '',
+    disabled ? 'is-disabled' : '',
+  ].filter(Boolean).join(' ')
 
   function handleClear() {
     onClear?.()
@@ -9,7 +14,7 @@ export function SearchField({ ariaLabel, className, clearLabel = 'Limpar busca',
   }
 
   return (
-    <div className={className}>
+    <div className={resolvedClassName} data-filled={value ? 'true' : 'false'}>
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <circle cx="11" cy="11" r="6.5" />
         <path d="m16 16 4 4" />
@@ -21,10 +26,13 @@ export function SearchField({ ariaLabel, className, clearLabel = 'Limpar busca',
         onChange={onChange}
         placeholder={placeholder}
         aria-label={ariaLabel}
+        disabled={disabled}
       />
-      {value && onClear ? (
+      {value && onClear && !disabled ? (
         <button className="platform-search-field__clear" type="button" aria-label={clearLabel} onClick={handleClear}>
-          <span aria-hidden="true">×</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m7 7 10 10M17 7 7 17" />
+          </svg>
         </button>
       ) : null}
     </div>

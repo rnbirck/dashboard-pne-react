@@ -578,7 +578,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
         title="Indicadores do FUNDEB"
         titleId="fundeb-indicators-title"
       >
-              <div className="financial-indicator-filters">
+              <div className="financial-indicator-filters platform-exploration-toolbar">
                 <SearchField
                   ariaLabel="Buscar indicador"
                   className="platform-search-field"

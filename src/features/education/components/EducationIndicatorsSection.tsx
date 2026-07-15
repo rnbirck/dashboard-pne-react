@@ -152,7 +152,7 @@ export function EducationIndicatorsSection({ actions, viewModel }: EducationIndi
           <h2 id="education-thematic-title">{section?.label}</h2>
           <p>{section?.description}</p>
         </div>
-        <div className="cycle-filter-panel__heading">
+        <div className="cycle-filter-panel__heading platform-exploration-toolbar">
           <div>
             <span className="eyebrow">{'Indicadores da seção'}</span>
             <strong className="education-section-filter-count">{formatIndicatorCount(filteredItems.length)}</strong>

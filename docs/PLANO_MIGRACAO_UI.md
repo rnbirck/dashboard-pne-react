@@ -379,3 +379,80 @@ Baselines públicos atualizados deliberadamente, após revisão dos diffs:
 - `scripts/checks/visual-baselines/siope-1024x768.png`
 - `scripts/checks/visual-baselines/siope-1280x720.png`
 - `scripts/checks/visual-baselines/siope-1366x768.png`
+
+## Segunda fase de convergência real dos controles de exploração (2026-07-15)
+
+Busca, filtros de categoria, controles segmentados, abas de conteúdo, toolbars
+e resumos de resultado passaram a usar uma gramática compartilhada em
+`platform-ui.css`. A rodada priorizou Educação, FUNDEB, PNATE e SIOPE e
+reaproveitou PNE somente onde a função era equivalente. Diagnóstico permaneceu
+como consumidor da mesma base de filtros, sem mudança funcional ou de conteúdo.
+
+- `SearchField`, `CategoryTabs` e `SegmentedControl` continuam sendo os
+  componentes canônicos. Busca ganhou estados vazio, preenchido, desabilitado e
+  limpeza com ícone, preservando o foco após limpar; filtros e segmentos passaram
+  a aceitar opções desabilitadas e rótulos longos sem corte.
+- `platform-exploration-toolbar` tornou-se a composição comum para busca,
+  recorte e contexto do resultado. Ela distribui os controles em desktop e
+  notebook e faz reflow vertical em celular; PNATE usa a variante de controle
+  único. `platform-results-summary` consolida a leitura compacta de contexto em
+  PNE, metas legais e SIOPE.
+- As diferenças funcionais continuam explícitas: filtros de categoria são grupos
+  de botões com `aria-pressed` e contagens; segmentos representam uma escolha
+  exclusiva; abas de detalhe usam `tablist`, `tab`, `tabpanel`, `aria-selected`
+  e navegação pelas setas. A aparência não aproxima controles com semânticas
+  diferentes.
+- Os tokens comuns agora registram padding, espaçamento e largura máxima da
+  busca/toolbars. Regras duplicadas de composição foram removidas de
+  `education-pages.css` e `financial-pages.css`; `App.css` não foi alterado e
+  continua sendo legado ativo, não referência para novos padrões.
+- O catálogo isolado passou a cobrir busca vazia, preenchida e desabilitada,
+  limpeza, rótulos longos, contagens, opção desabilitada, toolbar completa,
+  reflow e abas educacionais reais. Nenhum dado, JSON, cálculo, regra de negócio,
+  fonte ou conteúdo analítico mudou; `public/data/` e `data_pipeline/`
+  permaneceram sem diferenças. O guia não mudou porque a distinção entre
+  busca, filtro, segmento e aba já estava registrada; esta rodada converge a
+  implementação ao contrato vigente.
+
+A inspeção nas rotas reais de Educação, FUNDEB, PNATE, SIOPE e PNE 2014
+confirmou zero overflow horizontal global em 1366, 1024 e 390 px. Buscas
+mantiveram 44 px de altura, segmentos 46 px quando em linha, toolbars fizeram
+reflow sem corte e abas extensas conservaram rolagem interna no celular. A
+navegação por teclado, o foco visível, a troca de abas por setas e a limpeza de
+busca com retenção de foco foram verificadas na aplicação e no catálogo.
+
+O bundle JavaScript passou de 754.592 para 755.087 bytes (+495 bytes; +0,07%).
+O CSS total passou de 564.131 para 565.945 bytes (+1.814 bytes; +0,32%): o CSS
+principal passou de 524.396 para 526.800 bytes, enquanto o chunk de Educação
+recuou de 39.735 para 39.145 bytes. Não houve nova dependência, novo componente
+de biblioteca ou novo chunk inicial relevante.
+
+Evidência final: `npm run typecheck`, `npm run test:education` 9/9,
+`npm run test:app-routing` 7/7, `npm run test:dev-ui`,
+`npm run test:dev-ui:visual` 27/27, `npm run lint`, `npm run build`,
+`npm run test:e2e`, `npm run test:visual` 23/23 e `git diff --check`.
+
+Baselines isolados atualizados deliberadamente:
+
+- `tests/dev-ui-visual/baselines/navigation-search-filters.desktop.png`
+- `tests/dev-ui-visual/baselines/navigation-search-filters.notebook.png`
+- `tests/dev-ui-visual/baselines/navigation-search-filters.mobile.png`
+- `tests/dev-ui-visual/baselines/education-search.desktop.png`
+- `tests/dev-ui-visual/baselines/education-detail.notebook.png`
+
+Baselines públicos atualizados deliberadamente, após revisão dos diffs:
+
+- `scripts/checks/visual-baselines/pne-2014-1366x768.png`
+- `scripts/checks/visual-baselines/pne-2014-1280x720.png`
+- `scripts/checks/visual-baselines/pne-2014-1024x768.png`
+- `scripts/checks/visual-baselines/pne-2014-390x844.png`
+- `scripts/checks/visual-baselines/pne-2026-1366x768.png`
+- `scripts/checks/visual-baselines/pne-2026-1280x720.png`
+- `scripts/checks/visual-baselines/pne-2026-1024x768.png`
+- `scripts/checks/visual-baselines/pne-2026-390x844.png`
+- `scripts/checks/visual-baselines/fundeb-1366x768.png`
+- `scripts/checks/visual-baselines/fundeb-1280x720.png`
+- `scripts/checks/visual-baselines/fundeb-1024x768.png`
+- `scripts/checks/visual-baselines/siope-1366x768.png`
+- `scripts/checks/visual-baselines/siope-1280x720.png`
+- `scripts/checks/visual-baselines/siope-1024x768.png`
