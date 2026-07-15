@@ -151,6 +151,32 @@ async function stabilizePage(page, testCase) {
     }
     if (!measurements.tableOverflow.documentFitsViewport) throw new Error(`${testCase.id}: tabela expandiu o documento no mobile.`)
   }
+  if (testCase.id === 'charts-line-series') {
+    const segmentCounts = await page.locator('[data-series-segments]').evaluateAll((elements) => (
+      elements.map((element) => Number(element.getAttribute('data-series-segments')))
+    ))
+    if (!segmentCounts.some((count) => count > 1)) {
+      throw new Error(`${testCase.id}: a série parcial foi conectada através de um valor nulo.`)
+    }
+    const globalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)
+    if (globalOverflow) throw new Error(`${testCase.id}: gráficos expandiram o documento.`)
+  }
+  if (testCase.id === 'charts-types-scale') {
+    const stackedMark = page.locator('.education-chart--stacked .chart-mark').first()
+    await stackedMark.focus()
+    const tooltip = page.locator('.education-chart--stacked .chart-tooltip')
+    await tooltip.waitFor({ state: 'visible' })
+    const tooltipReadings = await tooltip.locator('.chart-tooltip__reading').count()
+    if (tooltipReadings < 2) throw new Error(`${testCase.id}: tooltip empilhado não expôs as múltiplas séries.`)
+    const tooltipFits = await tooltip.evaluate((element) => {
+      const tooltipRect = element.getBoundingClientRect()
+      const previewRect = document.querySelector('[data-testid="catalog-preview"]')?.getBoundingClientRect()
+      return Boolean(previewRect) && tooltipRect.left >= previewRect.left && tooltipRect.right <= previewRect.right
+    })
+    if (!tooltipFits) throw new Error(`${testCase.id}: tooltip ultrapassou a largura do preview.`)
+    await stackedMark.press('Escape')
+    await tooltip.waitFor({ state: 'hidden' })
+  }
   return measurements
 }
 

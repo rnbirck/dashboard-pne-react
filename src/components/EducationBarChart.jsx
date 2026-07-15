@@ -93,6 +93,9 @@ export function EducationBarChart({
               style={{
                 left: `${Math.min(86, Math.max(14, (activeBar.centerX / chart.width) * 100))}%`,
                 top: `${Math.min(80, Math.max(12, (activeBar.y / chart.height) * 100))}%`,
+                transform: activeBar.y < chart.padding.top + 46
+                  ? 'translate(-50%, 12px)'
+                  : 'translate(-50%, calc(-100% - 12px))',
               }}
             />
           )}
@@ -151,6 +154,9 @@ export function EducationBarChart({
             style={{
               left: `${Math.min(88, Math.max(18, ((PADDING.left + activeBar.width) / CHART_WIDTH) * 100))}%`,
               top: `${Math.min(82, Math.max(14, ((activeBar.y + 8) / chartHeight) * 100))}%`,
+              transform: activeBar.y < PADDING.top + 46
+                ? 'translate(-50%, 12px)'
+                : 'translate(-50%, calc(-100% - 12px))',
             }}
           />
         )}

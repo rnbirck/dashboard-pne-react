@@ -531,3 +531,83 @@ Baselines isolados atualizados deliberadamente, após revisão dos diffs:
 - `tests/dev-ui-visual/baselines/education-demand-methodology.mobile.png`
 
 Nenhum baseline público foi alterado nesta fase.
+
+## Quarta fase de convergência real dos gráficos e visualizações (2026-07-15)
+
+A auditoria confirmou que a aplicação não usa biblioteca externa de gráficos:
+as visualizações são SVGs React próprios. `IndicatorHistoryChart` atende PNE,
+FUNDEB, PNATE e SIOPE; `EducationLineChart`, `EducationBarChart` e
+`EducationStackedBarChart` atendem Educação e Sistema S; os componentes
+complementares cobrem matrículas, dependência administrativa e projeções. A
+comparação por faixa etária permanece construída no detalhe educacional, mas
+passou a consumir as mesmas primitivas e a mesma gramática visual. Sparklines
+continuam como microvisualizações dos cards, sem receber a anatomia de gráfico
+analítico; o mapa do RS não foi tratado como gráfico. Diagnóstico e VAAR não
+possuem visualização equivalente nesta rodada.
+
+- `chart-system.css` tornou-se o proprietário da superfície, cabeçalho, canvas,
+  eixos, grades, rótulos, linhas, áreas, pontos, barras, foco, legenda, tooltip,
+  estados e comportamento responsivo. `design-tokens.css` passou a explicitar
+  padding, distância, largura de tooltip, halo de rótulo e linha de hover.
+- `ChartTooltip` preserva a API de série única e ganhou leituras multissérie com
+  marcadores e valores alinhados. O gráfico empilhado usa a mesma anatomia para
+  expor todas as séries do ano, mantendo os formatadores existentes e
+  distinguindo zero de `Dado não disponível`. `ChartLegend` e
+  `ChartEmptyState` permanecem as primitivas reais; loading e erro usam variantes
+  dos estados compartilhados, com altura próxima ao gráfico e `aria-busy`.
+- Linhas educacionais e projeções passaram a criar segmentos independentes
+  quando há `null`. Pontos e anos disponíveis continuam visíveis, mas a área não
+  atravessa a lacuna, anos ausentes não recebem zero e séries parciais não são
+  interpoladas. Domínios, escalas, mínimos, máximos, metas, algoritmos de ticks,
+  arredondamentos e formatadores permaneceram nos componentes originais.
+- Eixos e grades usam os tokens canônicos e texto final mínimo de 12 px; rótulos
+  usam halo da superfície para permanecer legíveis. Histórico e projeção
+  mantêm linha sólida/tracejada e legenda textual; a meta conserva o sinal ocre
+  e o rótulo compacto `Meta {valor}`. Barras mantêm ordem, orientação, raio e
+  espaçamento definidos por cada gráfico.
+- Em desktop e notebook, títulos, controles, gráfico, legenda e fonte mantêm a
+  hierarquia editorial. Em 390 px, SVGs extensos usam rolagem horizontal local
+  para não reduzir eixos e rótulos, legendas quebram sem overflow e tooltips
+  invertem a direção junto às bordas. A inspeção real confirmou zero overflow
+  global em Educação, PNE e FUNDEB; quatro projeções educacionais mantiveram
+  legendas e 92 marcas focáveis, e o detalhe do PNE manteve `Meta 60%`, fonte e
+  11 pontos focáveis.
+- Permaneceram específicos: domínios adaptativos do PNE, domínio percentual e
+  de índice, escalas financeiras e seus formatadores, geometria horizontal e
+  vertical das barras, janela 2016–2036 da projeção, quantidade atual de ticks e
+  rótulos, comparação etária, alturas financeiras e as fontes/notas de cada
+  domínio. Essas diferenças carregam significado ou composição próprios e não
+  foram abstraídas.
+- Foram removidas 650 linhas de anatomia de gráfico duplicada de `App.css`.
+  `chart-system.css` recebeu a implementação canônica e o saldo do bundle CSS
+  caiu de 565.308 para 562.024 bytes (-3.284 bytes; -0,58%). O JavaScript passou
+  de 757.538 para 759.481 bytes (+1.943 bytes; +0,26%) pelas lacunas semânticas,
+  tooltip multissérie e asserções estruturais. Permaneceram 20 chunks JavaScript,
+  sem dependência ou novo chunk inicial relevante.
+
+O catálogo passou a cobrir linha curta, longa, parcial, constante, valores
+próximos, barras com grande escala, legenda longa, tooltip multissérie, loading,
+vazio e erro em desktop, notebook e mobile. As asserções verificam segmentos
+separados para valores nulos, ausência de overflow global, anatomia multissérie,
+contenção do tooltip e fechamento por Escape. A regressão pública permaneceu
+23/23 sem mudança de baseline.
+
+Baselines isolados atualizados deliberadamente, após revisão dos diffs:
+
+- `tests/dev-ui-visual/baselines/charts-line-series.desktop.png`
+- `tests/dev-ui-visual/baselines/charts-line-series.notebook.png`
+- `tests/dev-ui-visual/baselines/charts-line-series.mobile.png`
+- `tests/dev-ui-visual/baselines/charts-types-scale.desktop.png`
+- `tests/dev-ui-visual/baselines/charts-types-scale.notebook.png`
+- `tests/dev-ui-visual/baselines/charts-types-scale.mobile.png`
+- `tests/dev-ui-visual/baselines/charts-system-states.desktop.png`
+- `tests/dev-ui-visual/baselines/charts-system-states.mobile.png`
+- `tests/dev-ui-visual/baselines/education-detail.notebook.png`
+- `tests/dev-ui-visual/baselines/education-demand-methodology.mobile.png`
+
+Evidência final: `npm run typecheck`, `npm run test:education` 9/9,
+`npm run test:app-routing` 7/7, `npm run test:dev-ui`, categorias visuais de
+gráficos, Educação e Financiamento, `npm run lint`, `npm run build`,
+`npm run test:e2e`, `npm run test:visual` 23/23 e `git diff --check`.
+`public/data/` e `data_pipeline/` permaneceram sem diferenças. Nenhum baseline
+público foi alterado nesta fase.

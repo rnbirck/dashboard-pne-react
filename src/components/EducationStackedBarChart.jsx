@@ -74,11 +74,16 @@ export function EducationStackedBarChart({
           <ChartTooltip
             className="education-chart__tooltip education-chart__tooltip--bar"
             label={activeSegment.year}
-            series={activeSegment.label}
-            value={formatLabel(activeSegment.value)}
+            items={activeSegment.tooltipValues.map((item) => ({
+              ...item,
+              value: item.missing ? 'Dado não disponível' : formatLabel(item.value),
+            }))}
             style={{
               left: `${Math.min(88, Math.max(12, ((activeSegment.x + activeSegment.width / 2) / CHART_WIDTH) * 100))}%`,
               top: `${Math.min(82, Math.max(12, (activeSegment.y / CHART_HEIGHT) * 100))}%`,
+              transform: activeSegment.y < PADDING.top + 46
+                ? 'translate(-50%, 12px)'
+                : 'translate(-50%, calc(-100% - 12px))',
             }}
           />
         )}
@@ -122,6 +127,16 @@ function buildStackedChart(data, categories) {
   const rows = normalizedRows.map((row, rowIndex) => {
     const x = PADDING.left + rowIndex * slotWidth + (slotWidth - barWidth) / 2
     let accumulated = 0
+    const tooltipValues = visibleCategories.map((category) => {
+      const rawValue = row.values[category.key]
+      return {
+        color: category.color,
+        key: category.key,
+        label: category.label,
+        missing: isMissing(rawValue),
+        value: Number(rawValue),
+      }
+    })
     const segments = visibleCategories.flatMap((category) => {
       const value = Number(row.values[category.key])
       if (!Number.isFinite(value) || value <= 0) return []
@@ -138,6 +153,7 @@ function buildStackedChart(data, categories) {
         y: yTop,
         width: barWidth,
         height: Math.max(1, yBottom - yTop),
+        tooltipValues,
       }]
     })
     return { year: row.year, x, width: barWidth, segments }

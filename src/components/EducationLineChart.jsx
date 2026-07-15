@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { isMissing, normalizeYearSeries } from '../utils/educationFormatters'
+import { isMissing } from '../utils/educationFormatters'
 import { closeChartTooltipOnEscape, resolveChartColor } from '../utils/chartVisuals'
 import { ChartEmptyState, ChartTooltip } from './ChartPrimitives'
 
@@ -29,7 +29,12 @@ export function EducationLineChart({
     <div className="education-chart">
       {title && <h4 className="education-chart__title">{title}</h4>}
       <div className="education-chart__canvas">
-        <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} role="img" aria-label={title || 'Gráfico de linha'}>
+        <svg
+          viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
+          role="img"
+          aria-label={title || 'Gráfico de linha'}
+          data-series-segments={chart.linePaths.length}
+        >
           <g className="chart-grid">
             {chart.yTicks.map((tick, i) => (
               <g key={`y-${i}`}>
@@ -40,8 +45,12 @@ export function EducationLineChart({
           </g>
           <line x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={CHART_HEIGHT - PADDING.bottom} y2={CHART_HEIGHT - PADDING.bottom} stroke="var(--chart-axis)" strokeWidth="1" />
           <line x1={PADDING.left} x2={PADDING.left} y1={PADDING.top} y2={CHART_HEIGHT - PADDING.bottom} stroke="var(--chart-axis)" strokeWidth="1" />
-          <path d={chart.linePath} fill="none" stroke={resolvedColor} strokeWidth="2.25" strokeLinejoin="round" />
-          <path d={chart.areaPath} fill={resolvedColor} fillOpacity="0.08" />
+          {chart.areaPaths.map((path, index) => (
+            <path className="education-chart__series-area" d={path} fill={resolvedColor} fillOpacity="0.08" key={`area-${index}`} />
+          ))}
+          {chart.linePaths.map((path, index) => (
+            <path className="education-chart__series-line" d={path} fill="none" stroke={resolvedColor} strokeWidth="2.25" strokeLinejoin="round" key={`line-${index}`} />
+          ))}
           {chart.points.map((point, i) => (
             <g key={`pt-${i}`}>
               <circle
@@ -69,9 +78,13 @@ export function EducationLineChart({
                   {formatLabel(point.value)}
                 </text>
               ) : null}
-              <text x={point.x} y={CHART_HEIGHT - 14} textAnchor="middle" className="chart-x-label">{point.year}</text>
             </g>
           ))}
+          <g className="chart-x-labels">
+            {chart.xTicks.map((tick) => (
+              <text x={tick.x} y={CHART_HEIGHT - 14} textAnchor="middle" className="chart-x-label" key={tick.year}>{tick.year}</text>
+            ))}
+          </g>
         </svg>
         {activePoint && (
           <ChartTooltip
@@ -79,7 +92,13 @@ export function EducationLineChart({
             label={activePoint.year}
             series={title || 'Município'}
             value={formatLabel(activePoint.value)}
-            style={{ left: `${Math.min(90, Math.max(10, (activePoint.x / CHART_WIDTH) * 100))}%`, top: `${(activePoint.y / CHART_HEIGHT) * 100}%` }}
+            style={{
+              left: `${Math.min(90, Math.max(10, (activePoint.x / CHART_WIDTH) * 100))}%`,
+              top: `${(activePoint.y / CHART_HEIGHT) * 100}%`,
+              transform: activePoint.y < PADDING.top + 46
+                ? 'translate(-50%, 12px)'
+                : 'translate(-50%, calc(-100% - 12px))',
+            }}
           />
         )}
       </div>
@@ -89,15 +108,20 @@ export function EducationLineChart({
 
 function buildChart(series, scaleType) {
   if (!Array.isArray(series) || series.length < 2) return null
-  const points = normalizeYearSeries(series)
-    .filter((p) => !isMissing(p.valor) && p.ano)
-    .map((p) => ({ year: Number(p.ano), value: Number(p.valor) }))
+  const rawPoints = normalizeChartYearSeries(series)
+    .filter((p) => p.ano)
+    .map((p) => ({
+      year: Number(p.ano),
+      value: isMissing(p.valor) ? null : Number(p.valor),
+      valid: !isMissing(p.valor) && Number.isFinite(Number(p.valor)),
+    }))
     .sort((a, b) => a.year - b.year)
+  const points = rawPoints.filter((point) => point.valid)
   if (points.length < 2) return null
   const values = points.map((p) => p.value)
   const domain = getYAxisDomain(values, scaleType)
   const range = domain.max - domain.min || 1
-  const years = points.map((p) => p.year)
+  const years = rawPoints.map((p) => p.year)
   const minYear = Math.min(...years); const maxYear = Math.max(...years)
   const yearRange = maxYear - minYear || 1
   const plotW = CHART_WIDTH - PADDING.left - PADDING.right
@@ -108,19 +132,51 @@ function buildChart(series, scaleType) {
   const maxValue = Math.max(...values)
   const firstYear = points[0].year
   const lastYear = points[points.length - 1].year
-  const scaled = points.map((p) => ({
+  const scaledRaw = rawPoints.map((p) => ({
     ...p,
     x: xScale(p.year),
-    y: yScale(p.value),
+    y: p.valid ? yScale(p.value) : null,
     isLast: p.year === lastYear,
-    showLabel: shouldShowPointLabel(p, points.length, { firstYear, lastYear, minValue, maxValue }),
+    showLabel: p.valid && shouldShowPointLabel(p, points.length, { firstYear, lastYear, minValue, maxValue }),
   }))
-  const linePath = scaled.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
+  const scaled = scaledRaw.filter((point) => point.valid)
+  const segments = buildLineSegments(scaledRaw)
   const baselineY = yScale(domain.min)
-  const areaPath = `${linePath} L${scaled[scaled.length - 1].x.toFixed(1)} ${baselineY.toFixed(1)} L${scaled[0].x.toFixed(1)} ${baselineY.toFixed(1)} Z`
+  const linePaths = segments.map((segment) => segment.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' '))
+  const areaPaths = segments.flatMap((segment, index) => segment.length > 1
+    ? [`${linePaths[index]} L${segment[segment.length - 1].x.toFixed(1)} ${baselineY.toFixed(1)} L${segment[0].x.toFixed(1)} ${baselineY.toFixed(1)} Z`]
+    : [])
   const yTicksRaw = [domain.min, domain.min + range * 0.25, domain.min + range * 0.5, domain.min + range * 0.75, domain.max]
   const yTicks = yTicksRaw.map((val) => ({ label: formatAxisTick(val, scaleType), y: yScale(val) }))
-  return { points: scaled, linePath, areaPath, yTicks }
+  return { areaPaths, linePaths, points: scaled, xTicks: scaledRaw, yTicks }
+}
+
+function normalizeChartYearSeries(series) {
+  const byYear = new Map()
+  series.forEach((point) => {
+    if (!point || isMissing(point.ano)) return
+    const year = Number(point.ano)
+    if (!Number.isFinite(year)) return
+    byYear.set(year, { ...point, ano: year })
+  })
+  return Array.from(byYear.values()).sort((a, b) => Number(a.ano) - Number(b.ano))
+}
+
+function buildLineSegments(points) {
+  const segments = []
+  let current = []
+
+  points.forEach((point) => {
+    if (!point.valid) {
+      if (current.length) segments.push(current)
+      current = []
+      return
+    }
+    current.push(point)
+  })
+
+  if (current.length) segments.push(current)
+  return segments
 }
 
 function shouldShowPointLabel(point, pointCount, { firstYear, lastYear, minValue, maxValue }) {

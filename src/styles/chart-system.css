@@ -13,10 +13,11 @@
 .financial-chart-card,
 .fundeb-chart-card,
 .siope-chart-card {
-  border-color: var(--border-card);
+  border: var(--border-default);
   border-radius: var(--radius-md);
   background: var(--surface-card);
   box-shadow: none;
+  min-width: 0;
 }
 
 .indicator-chart-card .history-chart,
@@ -42,9 +43,11 @@
 .history-chart,
 .education-chart,
 .complementary-chart__canvas {
-  border-color: var(--border-card);
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
   background: var(--surface-card);
   box-shadow: none;
+  min-width: 0;
 }
 
 .indicator-chart-card,
@@ -52,7 +55,127 @@
 .fundeb-chart-card,
 .siope-chart-card,
 .education-chart {
-  padding: var(--space-5);
+  padding: var(--chart-surface-padding);
+}
+
+.history-chart,
+.education-chart,
+.complementary-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--chart-surface-gap);
+  min-width: 0;
+}
+
+.history-chart {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: var(--chart-surface-padding);
+  overflow: visible;
+}
+
+.history-chart__heading,
+.complementary-chart__heading,
+.indicator-chart-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.history-chart__heading {
+  margin: 0;
+}
+
+.history-chart__heading > div,
+.indicator-chart-title-group {
+  min-width: 0;
+}
+
+.history-chart__heading .eyebrow,
+.indicator-chart-eyebrow,
+.complementary-chart__heading .eyebrow {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.history-chart__heading h4,
+.education-chart__title,
+.indicator-chart-title-group h3,
+.complementary-chart__heading .eyebrow {
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.history-chart__canvas,
+.education-chart__canvas,
+.complementary-chart__canvas,
+.complementary-projection__chart {
+  position: relative;
+  min-width: 0;
+}
+
+.complementary-chart__canvas {
+  padding: var(--chart-canvas-padding);
+}
+
+.history-chart__canvas {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-top: var(--space-1);
+  overflow: visible;
+}
+
+.education-chart {
+  overflow: hidden;
+}
+
+.education-chart__canvas {
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+}
+
+.history-chart svg,
+.education-chart svg,
+.complementary-chart__canvas svg,
+.complementary-projection__chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.education-chart--bar svg {
+  min-width: 720px;
+  max-height: 330px;
+}
+
+.education-chart--column svg {
+  min-width: 820px;
+  max-height: 420px;
+}
+
+.education-chart--stacked svg {
+  min-width: 760px;
+  max-height: 340px;
+}
+
+.education-chart:not(.education-chart--bar, .education-chart--stacked, .education-age-comparison-chart) svg {
+  min-width: 680px;
+  max-height: var(--chart-height-md);
+}
+
+.educacao-explore .education-chart.education-age-comparison-chart svg {
+  width: 100%;
+  min-width: 860px;
+  height: 430px;
+  max-height: none;
 }
 
 .educacao-main-chart-card .education-chart {
@@ -120,6 +243,27 @@
   font-weight: var(--font-weight-medium);
 }
 
+.chart-grid text {
+  text-anchor: end;
+}
+
+.chart-zero-line line {
+  stroke: var(--chart-axis);
+  stroke-width: 1.25;
+}
+
+.chart-year-markers line {
+  stroke: var(--chart-grid);
+  stroke-dasharray: 3 5;
+}
+
+.complementary-chart__hover-line {
+  stroke: var(--chart-hover-line);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 5;
+  pointer-events: none;
+}
+
 .education-chart .chart-axis-label,
 .education-chart .chart-x-label,
 .education-chart .chart-bar-cat,
@@ -172,13 +316,30 @@
 .complementary-chart__value-label {
   font-size: 12px;
   font-weight: var(--font-weight-semibold);
+  fill: var(--text-strong);
+  paint-order: stroke;
+  stroke: var(--chart-label-halo);
+  stroke-width: 3.5px;
+  stroke-linejoin: round;
+}
+
+.chart-data-labels text {
+  pointer-events: none;
 }
 
 .chart-line,
 .projection-line,
 .complementary-chart__line {
+  fill: none;
   stroke: var(--chart-primary);
   stroke-width: 2.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.education-chart__series-line {
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .chart-area,
@@ -207,8 +368,37 @@
 
 .chart-points circle,
 .complementary-chart__point {
+  fill: var(--surface-card);
   stroke: var(--chart-primary);
   stroke-width: 2;
+}
+
+.chart-points circle,
+.complementary-chart__point,
+.complementary-chart__dependency-point,
+.complementary-chart__bar-segment,
+.education-chart .chart-mark {
+  cursor: pointer;
+  transition:
+    filter var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out),
+    r var(--duration-fast) var(--ease-out);
+}
+
+.complementary-chart__dependency-point {
+  stroke: var(--surface-card);
+  stroke-width: 1.5;
+}
+
+.complementary-chart__bar-segment {
+  stroke: color-mix(in srgb, var(--surface-card) 74%, transparent);
+  stroke-width: 0.6;
+}
+
+.complementary-chart__point.is-active,
+.complementary-chart__dependency-point.is-active,
+.complementary-chart__bar-segment.is-active {
+  filter: drop-shadow(0 2px 4px rgba(16, 56, 47, 0.2));
 }
 
 .chart-mark {
@@ -230,7 +420,7 @@
   position: absolute;
   z-index: var(--z-tooltip);
   min-width: 144px;
-  max-width: min(280px, calc(100% - 24px));
+  max-width: min(var(--chart-tooltip-max-width), calc(100% - 24px));
   padding: var(--space-2) var(--space-3);
   border: var(--border-default);
   border-radius: var(--radius-sm);
@@ -248,6 +438,11 @@
   white-space: normal;
 }
 
+.chart-tooltip__readings {
+  display: grid;
+  gap: var(--space-1);
+}
+
 .chart-tooltip .chart-tooltip__label {
   color: var(--text-secondary);
   font-size: var(--font-size-xs);
@@ -255,15 +450,31 @@
 }
 
 .chart-tooltip .chart-tooltip__reading {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-2);
+}
+
+.chart-tooltip__marker {
+  width: 10px;
+  height: 8px;
+  align-self: center;
+  border-radius: 2px;
+  background: var(--chart-tooltip-marker-color);
+}
+
+.chart-tooltip__marker--dashed {
+  height: 0;
+  border-top: 2px dashed var(--chart-tooltip-marker-color);
+  border-radius: 0;
+  background: transparent;
 }
 
 .chart-tooltip .chart-tooltip__series {
   color: var(--text-secondary);
   font-weight: var(--font-weight-regular);
+  overflow-wrap: anywhere;
 }
 
 .chart-tooltip .chart-tooltip__reading b {
@@ -283,12 +494,16 @@
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-snug);
+  min-width: 0;
 }
 
 .chart-legend .chart-legend__item {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .chart-legend .chart-legend__marker {
@@ -328,6 +543,108 @@
 .chart-empty-state p,
 .education-chart-empty p {
   margin: 0;
+}
+
+.state-box.state-box--loading-chart,
+.state-box.state-box--error-chart {
+  width: 100%;
+  min-height: var(--chart-height-sm);
+  margin: 0;
+}
+
+.state-box--loading-chart .state-skeleton {
+  grid-template-columns: 56px minmax(0, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  min-height: 132px;
+  padding: var(--space-3);
+  border-left: var(--border-divider);
+  border-bottom: var(--border-divider);
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 31px, var(--chart-grid) 32px 33px),
+    var(--surface-card);
+}
+
+.state-box--loading-chart .state-skeleton > span {
+  grid-column: 2;
+  align-self: center;
+  height: 10px;
+}
+
+.state-box--loading-chart .state-skeleton > span:nth-child(2),
+.state-box--loading-chart .state-skeleton > span:nth-child(3) {
+  width: 100%;
+}
+
+.chart-missing-label {
+  fill: var(--chart-axis-text);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  opacity: 0.78;
+}
+
+.education-age-comparison-chart {
+  min-height: 440px;
+}
+
+.education-age-comparison-chart .education-chart__canvas {
+  min-height: 350px;
+}
+
+.educacao-main-chart-card .education-chart,
+.educacao-explore .education-chart {
+  min-height: var(--chart-height-md);
+  margin: 0;
+}
+
+.educacao-main-chart-card .education-chart svg,
+.educacao-explore .education-chart svg {
+  max-height: 320px;
+}
+
+.education-chart--stacked {
+  min-height: 330px;
+}
+
+.education-chart--stacked .education-chart__canvas {
+  min-height: 260px;
+}
+
+.education-stacked-legend {
+  margin: 0;
+  padding-bottom: var(--space-3);
+  border-bottom: var(--border-divider);
+}
+
+.chart-x-label--angled {
+  fill: var(--chart-axis-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+@media (max-width: 700px) {
+  .indicator-chart-card,
+  .financial-chart-card,
+  .fundeb-chart-card,
+  .siope-chart-card,
+  .education-chart,
+  .history-chart {
+    padding: var(--chart-surface-padding-mobile);
+  }
+
+  .history-chart,
+  .education-chart,
+  .complementary-chart {
+    gap: var(--space-3);
+  }
+
+  .chart-legend,
+  .education-stacked-legend,
+  .complementary-chart__legend {
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .chart-tooltip {
+    max-width: min(240px, calc(100% - 16px));
+  }
 }
 
 .meta-card__sparkline,

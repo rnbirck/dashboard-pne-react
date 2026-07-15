@@ -999,6 +999,9 @@ function AgeRangeComparisonChart({ categories, data, years, title, formatLabel }
             style={{
               left: `${Math.min(90, Math.max(10, ((activeBar.x + activeBar.width / 2) / chart.width) * 100))}%`,
               top: `${Math.min(82, Math.max(12, (activeBar.y / chart.height) * 100))}%`,
+              transform: activeBar.y < chart.padding.top + 46
+                ? 'translate(-50%, 12px)'
+                : 'translate(-50%, calc(-100% - 12px))',
             }}
           />
         ) : null}
@@ -1175,4 +1178,3 @@ function ColorRaceDetail({ item }) {
     </div>
   )
 }
-

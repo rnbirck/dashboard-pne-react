@@ -18,7 +18,7 @@ export const chartScenarios: readonly CatalogScenario[] = [
     description: 'Gráfico real com séries curta, longa, parcial, constante e de valores próximos.',
     objective: 'Validar escala, rótulos, foco dos pontos, lacunas e diferenças pequenas sem imagem estática.',
     states: ['série curta', 'série longa', 'valores nulos', 'constante', 'valores próximos'],
-    visual: { enabled: true, viewports: ['desktop', 'mobile'] },
+    visual: { enabled: true, viewports: ['desktop', 'notebook', 'mobile'] },
     render: () => (
       <ScenarioGrid columns="single">
         <ScenarioItem label="Série curta"><EducationLineChart formatLabel={formatPercent} scaleType="percent" series={chartSeries.short} showPointLabels title="Taxa de atendimento — série curta" /></ScenarioItem>
@@ -36,7 +36,7 @@ export const chartScenarios: readonly CatalogScenario[] = [
     description: 'Gráficos reais de barras simples e empilhadas com rótulos extensos e grande diferença de escala.',
     objective: 'Inspecionar overflow, tooltip, legenda longa, ordem e legibilidade dos eixos.',
     states: ['barras', 'empilhado', 'legenda longa', 'grande escala'],
-    visual: { enabled: true, viewports: ['desktop'] },
+    visual: { enabled: true, viewports: ['desktop', 'notebook', 'mobile'] },
     render: () => (
       <ScenarioGrid columns="single">
         <ScenarioItem label="Grande diferença de escala">
@@ -68,12 +68,12 @@ export const chartScenarios: readonly CatalogScenario[] = [
     description: 'Ausência de dados, loading e erro usando componentes de estado reais.',
     objective: 'Garantir distinção semântica e textual entre indisponibilidade, processamento e falha.',
     states: ['sem dados', 'loading', 'erro'],
-    visual: { enabled: true, viewports: ['desktop'] },
+    visual: { enabled: true, viewports: ['desktop', 'mobile'] },
     render: () => (
       <ScenarioGrid>
         <ScenarioItem label="Sem dados"><ChartEmptyState message="Série histórica indisponível para este recorte." /></ScenarioItem>
-        <ScenarioItem label="Loading"><LoadingState message="Carregando série do gráfico..." /></ScenarioItem>
-        <ScenarioItem label="Erro"><ErrorState title="Não foi possível exibir o gráfico." message="Tente novamente após revisar a fixture." /></ScenarioItem>
+        <ScenarioItem label="Loading"><LoadingState message="Carregando série do gráfico..." variant="chart" /></ScenarioItem>
+        <ScenarioItem label="Erro"><ErrorState title="Não foi possível exibir o gráfico." message="Tente novamente após revisar a fixture." variant="chart" /></ScenarioItem>
       </ScenarioGrid>
     ),
   },

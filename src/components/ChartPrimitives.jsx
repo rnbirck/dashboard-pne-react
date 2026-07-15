@@ -1,15 +1,33 @@
-export function ChartTooltip({ className = '', label, series, style, value }) {
+export function ChartTooltip({ className = '', items, label, series, style, value }) {
+  const readings = items?.length
+    ? items
+    : [{ key: series ?? 'value', label: series, value }]
+  const accessibleReadings = readings
+    .map((item) => [item.label, item.value].filter((part) => part !== null && part !== undefined && part !== '').join(': '))
+    .filter(Boolean)
+
   return (
     <div
-      aria-label={[label, series, value].filter(Boolean).join(', ')}
+      aria-label={[label, ...accessibleReadings].filter(Boolean).join(', ')}
       className={`chart-tooltip${className ? ` ${className}` : ''}`}
       role="tooltip"
       style={style}
     >
       {label ? <strong className="chart-tooltip__label">{label}</strong> : null}
-      <span className="chart-tooltip__reading">
-        {series ? <span className="chart-tooltip__series">{series}</span> : null}
-        <b>{value}</b>
+      <span className="chart-tooltip__readings">
+        {readings.map((item) => (
+          <span className="chart-tooltip__reading" key={item.key ?? item.label ?? item.value}>
+            {item.color ? (
+              <span
+                aria-hidden="true"
+                className={`chart-tooltip__marker${item.dashed ? ' chart-tooltip__marker--dashed' : ''}`}
+                style={{ '--chart-tooltip-marker-color': item.color }}
+              />
+            ) : null}
+            {item.label ? <span className="chart-tooltip__series">{item.label}</span> : null}
+            <b>{item.value}</b>
+          </span>
+        ))}
       </span>
     </div>
   )

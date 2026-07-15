@@ -189,8 +189,12 @@ export function IndicatorProjectionPanel({ chartLabel, projection, showTitle = t
 
             <g clipPath={`url(#proj-clip-${chartId})`} aria-hidden="true">
               {chart.areaPath && <path className="chart-area projection-area" d={chart.areaPath} />}
-              <path className="chart-line projection-line" d={chart.historicalPath} />
-              <path className="chart-line projection-line--dashed" d={chart.projectionPath} />
+              {chart.historicalPaths.map((path, index) => (
+                <path className="chart-line projection-line" d={path} key={`historical-${index}`} />
+              ))}
+              {chart.projectionPaths.map((path, index) => (
+                <path className="chart-line projection-line--dashed" d={path} key={`projection-${index}`} />
+              ))}
             </g>
 
             <g className="chart-points">
@@ -288,7 +292,7 @@ function formatProjectionQuality(quality) {
 
 function buildProjectionChart(projection, { chartMinYear, showGoalContext = true } = {}) {
   if (!projection?.available) {
-    return { points: [], yTicks: [], metaLine: null, areaPath: null, historicalPath: '', projectionPath: '', xTicks: [] }
+    return { points: [], yTicks: [], metaLine: null, areaPath: null, historicalPaths: [], projectionPaths: [], xTicks: [] }
   }
 
   const CHART_MIN_YEAR = chartMinYear ?? 2016
@@ -303,7 +307,7 @@ function buildProjectionChart(projection, { chartMinYear, showGoalContext = true
       valid: historicalPct[i] != null && isFinite(historicalPct[i]) && y >= CHART_MIN_YEAR,
       isProjected: false,
     }))
-    .filter(p => p.valid)
+    .filter((point) => point.year >= CHART_MIN_YEAR)
 
   const projPct = projection.projected_percent || []
   const projYears = projection.years || []
@@ -314,16 +318,16 @@ function buildProjectionChart(projection, { chartMinYear, showGoalContext = true
       valid: projPct[i] != null && isFinite(projPct[i]),
       isProjected: true,
     }))
-    .filter(p => p.valid)
 
-  if (histPoints.length < 1 && projPoints.length < 1) {
-    return { points: [], yTicks: [], metaLine: null, areaPath: null, historicalPath: '', projectionPath: '', xTicks: [] }
+  const validPoints = [...histPoints, ...projPoints].filter((point) => point.valid)
+  if (validPoints.length < 1) {
+    return { points: [], yTicks: [], metaLine: null, areaPath: null, historicalPaths: [], projectionPaths: [], xTicks: [] }
   }
 
   const allPoints = [...histPoints, ...projPoints]
 
   const target = showGoalContext ? projection.target_percent : null
-  const values = allPoints.map(p => p.value)
+  const values = validPoints.map(p => p.value)
   if (target != null) values.push(target)
   const minVal = Math.min(...values)
   const maxVal = Math.max(...values)
@@ -345,24 +349,16 @@ function buildProjectionChart(projection, { chartMinYear, showGoalContext = true
     y: p.valid ? yScale(p.value) : PADDING.top + plotHeight / 2,
   }))
 
-  const histScaled = scaledPoints.filter(p => !p.isProjected && p.valid)
-
-  const historicalPath = histScaled.length > 1
-    ? histScaled.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
-    : histScaled.length === 1
-      ? `M${histScaled[0].x.toFixed(1)} ${histScaled[0].y.toFixed(1)}`
-      : ''
-
-  const lastHist = histScaled[histScaled.length - 1]
-  const projScaled = scaledPoints.filter(p => p.isProjected && p.valid)
-
-  let projectionPath = ''
-  if (projScaled.length > 0 && lastHist) {
-    const connected = [lastHist, ...projScaled]
-    projectionPath = connected.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
-  } else if (projScaled.length > 0 && !lastHist) {
-    projectionPath = projScaled.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
+  const histScaled = scaledPoints.filter((point) => !point.isProjected)
+  const projScaled = scaledPoints.filter((point) => point.isProjected)
+  const historicalSegments = buildProjectionSegments(histScaled)
+  const projectionSegments = buildProjectionSegments(projScaled)
+  const lastHist = histScaled.filter((point) => point.valid).slice(-1)[0]
+  if (lastHist && projectionSegments[0]?.[0]?.year === projScaled[0]?.year) {
+    projectionSegments[0] = [lastHist, ...projectionSegments[0]]
   }
+  const historicalPaths = historicalSegments.map(buildProjectionPath)
+  const projectionPaths = projectionSegments.map(buildProjectionPath)
 
   const allScaledValid = scaledPoints.filter(p => p.valid)
   const firstPt = allScaledValid[0]
@@ -370,7 +366,7 @@ function buildProjectionChart(projection, { chartMinYear, showGoalContext = true
   const zeroY = CHART_HEIGHT - PADDING.bottom
 
   const fullLinePath = allScaledValid.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
-  const areaPath = allScaledValid.length > 1
+  const areaPath = allScaledValid.length > 1 && allPoints.every((point) => point.valid)
     ? `${fullLinePath} L${lastPt.x.toFixed(1)} ${zeroY.toFixed(1)} L${firstPt.x.toFixed(1)} ${zeroY.toFixed(1)} Z`
     : ''
 
@@ -405,10 +401,33 @@ function buildProjectionChart(projection, { chartMinYear, showGoalContext = true
     yTicks,
     metaLine,
     areaPath,
-    historicalPath,
-    projectionPath,
+    historicalPaths,
+    projectionPaths,
     xTicks,
   }
+}
+
+function buildProjectionSegments(points) {
+  const segments = []
+  let current = []
+
+  points.forEach((point) => {
+    if (!point.valid) {
+      if (current.length) segments.push(current)
+      current = []
+      return
+    }
+    current.push(point)
+  })
+
+  if (current.length) segments.push(current)
+  return segments
+}
+
+function buildProjectionPath(points) {
+  return points
+    .map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
+    .join(' ')
 }
 
 function pickProjectionTickStep(span) {
