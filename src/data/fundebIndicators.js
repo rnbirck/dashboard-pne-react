@@ -131,12 +131,3 @@ export function formatFundebCompactValue(value, tipo) {
 export function getLimiteReferencia(ano) {
   return ano <= 2020 ? 60 : 70
 }
-
-export function getEstruturaVersaoLabel(versao) {
-  if (!versao) return '—'
-  if (versao === 'fundeb_antigo_60pct') return 'FUNDEB antigo (até 2020, mínimo de 60%)'
-  if (versao === 'fundeb_transicao_2021_2022') return 'FUNDEB em transição (2021–2022, mínimo de 70%)'
-  if (versao === 'fundeb_atual_2023_2025') return 'FUNDEB atual (a partir de 2023, mínimo de 70%)'
-  if (versao === 'fundeb_novo_70pct') return 'FUNDEB novo (mínimo de 70%)'
-  return versao.replace(/^fundeb_/, '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-}

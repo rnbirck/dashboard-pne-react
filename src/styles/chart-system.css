@@ -2,7 +2,6 @@
 .indicator-chart-card,
 .financial-chart-card,
 .fundeb-chart-card,
-.siope-chart-card,
 .education-chart,
 .complementary-chart__canvas {
   font-family: var(--font-sans);
@@ -11,8 +10,7 @@
 
 .indicator-chart-card,
 .financial-chart-card,
-.fundeb-chart-card,
-.siope-chart-card {
+.fundeb-chart-card {
   border: var(--border-default);
   border-radius: var(--radius-md);
   background: var(--surface-card);
@@ -22,8 +20,7 @@
 
 .indicator-chart-card .history-chart,
 .financial-chart-card .history-chart,
-.fundeb-chart-card .history-chart,
-.siope-chart-card .history-chart {
+.fundeb-chart-card .history-chart {
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -53,7 +50,6 @@
 .indicator-chart-card,
 .financial-chart-card,
 .fundeb-chart-card,
-.siope-chart-card,
 .education-chart {
   padding: var(--chart-surface-padding);
 }
@@ -522,9 +518,7 @@
 }
 
 .chart-empty-state,
-.education-chart-empty,
-.history-chart__empty,
-.fundeb-empty--chart {
+.education-chart-empty {
   min-height: var(--chart-height-sm);
   padding: var(--space-6);
   border: var(--border-divider);
@@ -622,11 +616,10 @@
 
 @media (max-width: 700px) {
   .indicator-chart-card,
-  .financial-chart-card,
-  .fundeb-chart-card,
-  .siope-chart-card,
-  .education-chart,
-  .history-chart {
+.financial-chart-card,
+.fundeb-chart-card,
+.education-chart,
+.history-chart {
     padding: var(--chart-surface-padding-mobile);
   }
 
@@ -647,9 +640,7 @@
   }
 }
 
-.meta-card__sparkline,
-.education-indicator-card__sparkline,
-.financial-indicator-card__sparkline {
+.meta-card__sparkline {
   min-width: 0;
   height: 52px;
   display: grid;
@@ -658,71 +649,9 @@
   opacity: 1;
 }
 
-.meta-card__sparkline svg,
-.education-indicator-card__sparkline svg,
-.financial-indicator-card__sparkline svg {
+.meta-card__sparkline svg {
   width: 100%;
   height: 36px;
-}
-
-.meta-card__sparkline-line,
-.education-indicator-card__sparkline-line,
-.financial-indicator-card__sparkline-line {
-  stroke-width: 2.25;
-}
-
-.meta-card__sparkline-area,
-.education-indicator-card__sparkline-area,
-.financial-indicator-card__sparkline-area {
-  opacity: 0.06;
-}
-
-.meta-card__sparkline-end,
-.education-indicator-card__sparkline-end,
-.financial-indicator-card__sparkline-end {
-  fill: var(--surface-card);
-  stroke: currentColor;
-  stroke-width: 2.2;
-}
-
-.education-indicator-card__sparkline-period,
-.financial-indicator-card__sparkline-period {
-  justify-self: end;
-  color: var(--text-secondary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  line-height: 1;
-}
-
-.education-indicator-card__sparkline--empty,
-.financial-indicator-card__sparkline--empty {
-  min-height: 52px;
-  grid-template-rows: 1fr;
-  border-color: var(--border-card);
-  background: var(--surface-soft);
-  color: var(--text-secondary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-}
-
-.meta-card__sparkline--empty {
-  min-height: 52px;
-  display: grid;
-  place-items: center;
-  border: var(--border-divider);
-  border-radius: var(--radius-sm);
-  background: var(--surface-soft);
-  opacity: 1;
-}
-
-.meta-card__sparkline--empty::before {
-  display: none;
-}
-
-.meta-card__sparkline-empty-label {
-  color: var(--text-secondary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
 }
 
 @media (prefers-reduced-motion: reduce) {

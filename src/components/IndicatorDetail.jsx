@@ -572,41 +572,6 @@ function getDetailStatusLabel({ cycle, isComparable, result, status }) {
   return cycleCopy.status.missing
 }
 
-export function isAvailableIndicator(result) {
-  if (!result || result.available === false) return false
-  const status = String(result?.display?.status ?? '').toLocaleLowerCase('pt-BR')
-  if (
-    status.includes('indispon') ||
-    status.includes('sem dados') ||
-    status.includes('sem variação') ||
-    status.includes('sem variacao')
-  ) {
-    return false
-  }
-  const start = Number(result?.start_value)
-  const end = Number(result?.end_value)
-  const series = (result?.series ?? [])
-    .map((point) => Number(point?.valor))
-    .filter(Number.isFinite)
-  if (!Number.isFinite(start) && !Number.isFinite(end) && series.length === 0) {
-    return false
-  }
-  // Esconder indicadores informativos cuja série inteira é zero
-  const isApproximate = result?.monitoring_mode === 'approximate_reference'
-  const isInformative =
-    status.includes('visualiza') ||
-    status.includes('informativo') ||
-    (!isApproximate && result.tracks_goal === false) ||
-    (!isApproximate && result.meta == null)
-  if (isInformative && series.length > 0 && series.every((v) => v === 0)) {
-    return false
-  }
-  if (isInformative && Number.isFinite(start) && start === 0 && Number.isFinite(end) && end === 0 && series.length === 0) {
-    return false
-  }
-  return true
-}
-
 export function isComparableIndicator(result) {
   if (
     !result ||

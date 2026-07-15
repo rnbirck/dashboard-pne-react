@@ -728,3 +728,87 @@ Pendência real remanescente: `App.css` continua como dívida técnica ativa, ma
 sem seletor órfão relevante comprovado nesta auditoria. Qualquer nova redução
 deve ser uma migração própria, baseada em consumidor, catálogo, página real e
 regressão; não faz parte da convergência visual encerrada.
+
+## Auditoria incremental de código morto (2026-07-15)
+
+O ponto de partida desta rodada foi a árvore limpa no commit
+`653e717ed71d30c600bb3a8b4829ab61aa2274d8` (`Document stabilized UI catalog
+and validation rules`). A auditoria cobriu os 3.086 arquivos rastreados, 153
+arquivos de código, 131 módulos de `src`, 359 símbolos exportados, 11 folhas de
+estilo, 1.222 classes CSS únicas, as 16 dependências declaradas e as entradas
+de `scripts`, `public`, testes e documentação.
+
+O grafo estático foi resolvido com as mesmas extensões do bundler, incluindo os
+imports `.js` que apontam para implementações TypeScript. Foram encontradas 417
+arestas e 16 imports dinâmicos. `src/main.jsx` é o único módulo de `src` sem
+importador, por ser a entrada explícita do Vite. Não restou componente, página,
+hook, helper ou módulo órfão de alta confiança.
+
+Foram removidas 20 definições sem consumidor comprovado:
+
+- `FinancialReferenceBox`, `isAvailableIndicator`,
+  `getEducationSourceCatalogItem`, `getFinancialModuleByKey` e
+  `getEstruturaVersaoLabel`;
+- `getPne2026LegalGoalById`, `getPne2026LegalGoalsByIndicatorId` e
+  `getPne2026LegalGoalCoverageSummary`;
+- os tipos `PreviewWidthOption` e `ParseAppHash`;
+- `formatYear`, `getLatestFromSeries`, `getLatestValue`, `getLatestYear`,
+  `buildEvolutionText`, `filterOptionsFromMap` e o helper local
+  `hasSeriesData`;
+- `cleanInterpretationText`, `improveZeroValueInterpretation` e
+  `buildAccumulativeExpansionInterpretation`.
+
+Seis logs temporários de desenvolvimento, quatro deles vazios e dois contendo
+somente a inicialização do Vite, foram removidos da raiz. `.gitignore` passou a
+bloquear exatamente `.codex-vite*.log` e `tmp-vite-*.log`, sem criar uma regra
+ampla para evidências legítimas.
+
+A análise CSS combinou parser PostCSS, consumidores estáticos, nomes compostos
+em runtime e confirmação no catálogo e nas páginas reais. Foram removidas 583
+regras integralmente órfãs, 212 ramificações mortas de seletores mistos e 13
+declarações de três propriedades locais sem leitura:
+`--education-panel-gap`, `--education-direction-accent` e
+`--education-direction-border`. A fonte encolheu 99.541 bytes, dos quais 93.161
+bytes pertenciam a `App.css`. Regras vivas não foram reordenadas e nenhum token
+do sistema visual foi excluído.
+
+Itens de confiança média ou baixa preservados deliberadamente:
+
+- `scripts/checks/e2e-debug.cjs`,
+  `scripts/checks/verify-data-source-notes.cjs` e
+  `scripts/export_education_indicators.py`, pois são ferramentas manuais
+  plausíveis mesmo sem chamador em `package.json`;
+- artefatos, saídas históricas, comparações `round4`, baselines visuais e
+  símbolos consumidos pela geração dessas evidências;
+- tokens sem uso local atual, por constituírem API visual estável;
+- logos institucionais, favicon, `public/data/`, `data_pipeline/`, cálculos,
+  filtros, séries, escalas, formatadores vivos, rotas, hashes, aliases, loaders
+  e configurações públicas.
+
+Nenhuma dependência, script de pacote, asset institucional, baseline ou arquivo
+de dados foi removido. As 20 rotas-chave foram abertas em 1366×768, 1024×768 e
+390×844: todas concluíram o carregamento lazy com um único `h1`, sem overflow
+global, alerta ou erro de console. Home e PNATE também foram inspecionadas
+visualmente nos extremos desktop e mobile.
+
+Bundle antes/depois desta auditoria:
+
+| Métrica | Antes | Depois | Variação |
+| --- | ---: | ---: | ---: |
+| JavaScript total | 759.481 B | 759.481 B | 0 |
+| Chunk inicial | 261.211 B | 261.211 B | 0 |
+| CSS total | 558.096 B | 492.350 B | -65.746 B (-11,78%) |
+| CSS principal | 519.064 B | 455.407 B | -63.657 B |
+| CSS de Educação | 39.032 B | 36.943 B | -2.089 B |
+| Chunks JavaScript | 20 | 20 | 0 |
+| Arquivos em `dist` | 2.543 | 2.543 | 0 |
+| Maior chunk | 261.211 B | 261.211 B | 0 |
+
+Evidência exigida para o estado final: `npm run typecheck`,
+`npm run test:education` 9/9, `npm run test:app-routing` 7/7,
+`npm run test:dev-ui`, `npm run test:dev-ui:visual` 31/31,
+`npm run test:ui-architecture`, `npm run lint`, `npm run build`,
+`npm run test:e2e`, `npm run test:visual` 23/23 e `git diff --check`.
+As diferenças permanecem vazias em `public/data/`, `data_pipeline/` e nos
+diretórios de baseline. Nenhum baseline foi atualizado para fazer a regressão
+passar.

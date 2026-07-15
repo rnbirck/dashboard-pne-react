@@ -72,11 +72,3 @@ export interface VisualScenarioConfig {
   maxDiffRatio?: number
   viewports: readonly CatalogViewport[]
 }
-
-export interface PreviewWidthOption {
-  detail: string
-  height: number | null
-  key: PreviewWidth
-  label: string
-  width: number | null
-}

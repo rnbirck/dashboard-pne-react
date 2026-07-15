@@ -22,5 +22,4 @@ export interface ParsedAppLocation extends ParsedHash {
 }
 
 export type BuildAppHash = (route: string, values?: HashParameterMap) => string
-export type ParseAppHash = (hash?: unknown) => ParsedHash
 export type Navigate = (page: AppPageKey) => void

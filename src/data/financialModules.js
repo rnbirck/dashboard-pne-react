@@ -146,10 +146,6 @@ export function getFinancialModuleByPageKey(pageKey) {
   return FINANCIAL_MODULES.find((module) => module.pageKey === pageKey) ?? null
 }
 
-export function getFinancialModuleByKey(key) {
-  return FINANCIAL_MODULES.find((module) => module.key === key) ?? null
-}
-
 export function getFinancialPageByKey(pageKey) {
   if (pageKey === FINANCIAL_PAGE_KEYS.overview) return { pageKey, key: 'overview', title: FINANCIAL_OVERVIEW_LABEL }
   const module = getFinancialModuleByPageKey(pageKey)

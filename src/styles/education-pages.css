@@ -18,7 +18,6 @@
   --education-section-accent-border: var(--education-attendance-border);
   --education-section-accent-ink: var(--education-attendance-ink);
   --education-panel-padding: var(--panel-inset);
-  --education-panel-gap: var(--space-6);
   width: 100%;
   max-width: var(--shell-max);
   margin-inline: auto;
@@ -561,7 +560,6 @@
 
 .educacao-page .education-indicator-card__topline,
 .educacao-page .education-indicator-card__value-row,
-.educacao-page .education-indicator-card__support,
 .educacao-page .education-indicator-card__footer {
   min-width: 0;
   display: flex;
@@ -648,80 +646,6 @@
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-normal);
   white-space: nowrap;
-}
-
-.educacao-page .education-indicator-card__support {
-  justify-content: space-between;
-  gap: var(--space-3);
-  color: var(--text-secondary);
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-normal);
-}
-
-.educacao-page .education-indicator-card__support strong {
-  color: var(--text-strong);
-  font-weight: var(--font-weight-semibold);
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
-.educacao-page .education-indicator-card__sparkline {
-  position: relative;
-  min-width: 0;
-  height: 52px;
-  padding-top: var(--space-2);
-  border-top: var(--border-divider);
-  color: var(--indicator-status-color);
-  display: block;
-}
-
-.educacao-page .education-indicator-card__sparkline svg {
-  width: 100%;
-  height: 34px;
-  display: block;
-}
-
-.educacao-page .education-indicator-card__sparkline-line {
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.25;
-}
-
-.educacao-page .education-indicator-card__sparkline-area {
-  fill: currentColor;
-  opacity: 0.08;
-}
-
-.educacao-page .education-indicator-card__sparkline-end {
-  fill: var(--surface-card);
-  stroke: currentColor;
-  stroke-width: 2;
-}
-
-.educacao-page .education-indicator-card__sparkline-period {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  color: var(--text-secondary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  line-height: 1;
-}
-
-.educacao-page .education-indicator-card__sparkline--empty {
-  min-height: 52px;
-  padding: var(--space-2);
-  border: var(--border-width) dashed var(--border-card);
-  border-radius: var(--radius-sm);
-  background: var(--surface-soft);
-  color: var(--text-subtle);
-  display: grid;
-  place-items: center;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  text-align: center;
 }
 
 .educacao-page .education-indicator-card__footer {
@@ -1504,29 +1428,6 @@
 }
 
 /* Existing provisional and state layouts */
-
-.education-provisional-state {
-  display: grid;
-  gap: var(--space-3);
-}
-
-.education-provisional-state h2,
-.education-provisional-state p {
-  max-width: var(--content-reading-max);
-  margin: 0;
-}
-
-.education-provisional-state h2 {
-  color: var(--text-strong);
-  font-size: var(--font-size-xl);
-  line-height: var(--line-height-tight);
-}
-
-.education-provisional-state p {
-  color: var(--text-secondary);
-  font-size: var(--font-size-md);
-  line-height: var(--line-height-relaxed);
-}
 
 @media (max-width: 1180px) {
   .education-summary-grid {

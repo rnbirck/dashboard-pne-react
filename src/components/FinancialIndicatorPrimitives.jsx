@@ -215,17 +215,6 @@ export function FinancialDetailHeader({ indicator }) {
   )
 }
 
-export function FinancialReferenceBox({ children, title = 'O que este indicador mede' }) {
-  if (!children) return null
-
-  return (
-    <div className="educacao-indicator-reference financial-indicator-reference">
-      <span>{title}</span>
-      <p>{children}</p>
-    </div>
-  )
-}
-
 export function FinancialMetricGrid({ indicator }) {
   return (
     <div className="metric-grid metric-grid--three financial-metric-grid">

@@ -382,47 +382,6 @@ export const PNE_2026_LEGAL_GOAL_INDICATOR_MAP = Object.entries(PNE_2026_GOAL_TE
   },
 )
 
-export function getPne2026LegalGoalById(legalGoalId) {
-  return (
-    PNE_2026_LEGAL_GOAL_INDICATOR_MAP.find((goal) => goal.legalGoalId === legalGoalId) ??
-    null
-  )
-}
-
-export function getPne2026LegalGoalsByIndicatorId(indicatorId) {
-  return PNE_2026_LEGAL_GOAL_INDICATOR_MAP.filter((goal) =>
-    goal.relatedIndicators.some((indicatorItem) => indicatorItem.indicatorId === indicatorId),
-  )
-}
-
-export function getPne2026LegalGoalCoverageSummary(goals = PNE_2026_LEGAL_GOAL_INDICATOR_MAP) {
-  return goals.reduce(
-    (summary, goal) => {
-      const coverageTypes = new Set(
-        goal.relatedIndicators.map((indicatorItem) => indicatorItem.coverage),
-      )
-
-      summary.total += 1
-
-      if (coverageTypes.has('direta')) {
-        summary.withDirectIndicator += 1
-      } else if (coverageTypes.has('parcial') || coverageTypes.has('aproximada')) {
-        summary.withPartialOrApproximateIndicator += 1
-      } else {
-        summary.withoutMunicipalIndicator += 1
-      }
-
-      return summary
-    },
-    {
-      total: 0,
-      withDirectIndicator: 0,
-      withPartialOrApproximateIndicator: 0,
-      withoutMunicipalIndicator: 0,
-    },
-  )
-}
-
 function extractObjectiveId(objective) {
   const match = String(objective ?? '').match(/\d+/)
   return match ? match[0] : ''

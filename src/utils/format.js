@@ -6,47 +6,6 @@ export function getIndicatorTitle(item, result) {
   return item?.label || result?.label || 'Indicador'
 }
 
-export function cleanInterpretationText(text, { keepOneDecimal = false } = {}) {
-  if (typeof text !== 'string' || !text.length) return text
-  let cleaned = text.replace(/\bp\.p\.\..+/g, 'p.p.')
-  cleaned = cleaned.replace(/\.+\s*$/, '.')
-  cleaned = cleaned.replace(/(\b\w)\.([a-zÀ-ÿ])/g, '$1. $2')
-  cleaned = cleaned.replace(/(-?\d+),(\d+)/g, (_match, intPart, decPart) => {
-    const num = Number(`${intPart}.${decPart}`)
-    if (!Number.isFinite(num)) return _match
-    if (keepOneDecimal) {
-      return num.toLocaleString('pt-BR', {
-        maximumFractionDigits: 1,
-        minimumFractionDigits: 1,
-      })
-    }
-    return String(Math.round(num))
-  })
-  return cleaned.trimEnd()
-}
-
-export function improveZeroValueInterpretation(text, { isAccumulativeExpansion = false } = {}) {
-  if (typeof text !== 'string' || !text.length) return text
-  let improved = text
-  const verbPattern = /(chegou|alcançou|atingiu|chegando|alcançando|atingindo)/
-  const valuePattern = /(\s+a\s+)?[+-]?\d+(?:[,.]\d+)?%?/
-  const fullPattern = new RegExp(`${verbPattern.source}\\s+${valuePattern.source}`, 'gi')
-  const replacement = isAccumulativeExpansion
-    ? 'não registrou expansão acumulada no indicador; para acompanhamento da meta, o valor considerado é 0%'
-    : 'não registrou resultado no indicador e permaneceu em 0%'
-  improved = improved.replace(fullPattern, replacement)
-  return improved
-}
-
-export function buildAccumulativeExpansionInterpretation({ endYear, metaValue, metaLabel, distance }) {
-  const yearText = Number.isFinite(endYear) ? `Em ${endYear}, o município` : 'O município'
-  const metaText = Number.isFinite(metaValue) ? `${metaValue}%` : `${metaLabel ?? 'a meta'}`
-  const distanceText = Number.isFinite(distance)
-    ? `${distance > 0 ? '+' : ''}${Math.round(distance).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} p.p.`
-    : 'não calculada'
-  return `${yearText} não registrou expansão acumulada neste indicador. Para acompanhamento da meta, o valor considerado é 0%, com distância de ${distanceText} em relação à meta de ${metaText}.`
-}
-
 const ABSOLUTE_HINTS = [
   'número absoluto',
   'numero absoluto',

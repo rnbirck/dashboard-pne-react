@@ -726,10 +726,6 @@ export const EDUCATION_SOURCE_CATALOG = Object.freeze([
   },
 ])
 
-export function getEducationSourceCatalogItem(sourceKey) {
-  return EDUCATION_SOURCE_CATALOG.find((source) => source.key === sourceKey) ?? null
-}
-
 export const EDUCATION_INDICATOR_CATALOG_BY_KEY = new Map(
   EDUCATION_INDICATOR_CATALOG.map((indicator) => [indicator.key, indicator]),
 )
