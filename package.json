@@ -20,7 +20,8 @@
     "update:data": "python data_pipeline/scripts/update_static_data.py",
     "update:data:skip-build": "python data_pipeline/scripts/update_static_data.py --skip-build",
     "verify:indicator": "python data_pipeline/scripts/export_static_data.py",
-    "validate:details": "python data_pipeline/scripts/validate_static_details.py"
+    "validate:details": "python data_pipeline/scripts/validate_static_details.py",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@fontsource/public-sans": "^5.2.7",
@@ -30,12 +31,20 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
     "playwright": "^1.60.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.64.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.64.0",
     "vite": "^8.0.12"
   }
 }

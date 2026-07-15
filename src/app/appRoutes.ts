@@ -1,7 +1,9 @@
 import { FINANCIAL_PAGE_KEYS } from '../data/financialPageKeys.js'
+import type { AppPageKey, FinancialPageKey } from '../types/app'
+import type { LocationLike, ParsedAppLocation, ParsedHash } from '../types/navigation'
 import { normalizeRouteValue, parseAppHash, parseAppLocation } from './appHash.js'
 
-const HASH_PAGE_MAP = Object.freeze({
+const HASH_PAGE_MAP: Readonly<Record<string, AppPageKey>> = Object.freeze({
   home: 'home',
   pneoverview: 'pne-overview',
   pnelegalgoals: 'pne-legal-goals',
@@ -22,14 +24,17 @@ const HASH_PAGE_MAP = Object.freeze({
   vaar: FINANCIAL_PAGE_KEYS.vaar,
   sistemas: 'educacao',
   escolassistemas: 'educacao',
-})
+} satisfies Record<string, AppPageKey>)
 
-export const FINANCIAL_PAGES = new Set(Object.values(FINANCIAL_PAGE_KEYS))
+export const FINANCIAL_PAGES: ReadonlySet<FinancialPageKey> = new Set(Object.values(FINANCIAL_PAGE_KEYS))
 
 export { normalizeRouteValue, parseAppHash } from './appHash.js'
 
-export function resolveActivePage({ params, route }) {
+export function isFinancialPage(page: AppPageKey): page is FinancialPageKey {
+  return FINANCIAL_PAGES.has(page as FinancialPageKey)
+}
 
+export function resolveActivePage({ params, route }: Pick<ParsedHash, 'params' | 'route'>): AppPageKey {
   if (route === 'financeiros') {
     const requestedModule = params.get('modulo') ?? params.get('module')
     const normalizedModule = normalizeRouteValue(requestedModule)
@@ -43,14 +48,18 @@ export function resolveActivePage({ params, route }) {
   return HASH_PAGE_MAP[route] ?? 'home'
 }
 
-export function resolveActivePageFromHash(hash) {
+export function resolveActivePageFromHash(hash?: unknown): AppPageKey {
   return resolveActivePage(parseAppHash(hash))
 }
 
-export function getNavigationContextFromLocation(location = typeof window === 'undefined' ? null : window.location) {
+export function getNavigationContextFromLocation(
+  location: LocationLike | null = typeof window === 'undefined' ? null : window.location,
+): ParsedAppLocation {
   return parseAppLocation(location ?? {})
 }
 
-export function getActivePageFromLocation(location = typeof window === 'undefined' ? null : window.location) {
+export function getActivePageFromLocation(
+  location: LocationLike | null = typeof window === 'undefined' ? null : window.location,
+): AppPageKey {
   return location ? resolveActivePage(getNavigationContextFromLocation(location)) : 'home'
 }

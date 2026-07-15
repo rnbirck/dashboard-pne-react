@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { loadIndicadores, loadMunicipios, loadMunicipiosIndex } from '../data/staticData'
+import type { InitialAppData } from '../types/data'
 
-const INITIAL_APP_DATA = {
+const INITIAL_APP_DATA: InitialAppData = {
+  status: 'loading',
   error: null,
   indicadores: null,
   loading: true,
@@ -9,13 +11,13 @@ const INITIAL_APP_DATA = {
   municipiosIndex: [],
 }
 
-export function useInitialAppData() {
-  const [initialData, setInitialData] = useState(INITIAL_APP_DATA)
+export function useInitialAppData(): InitialAppData {
+  const [initialData, setInitialData] = useState<InitialAppData>(INITIAL_APP_DATA)
 
   useEffect(() => {
     let cancelled = false
 
-    async function loadInitialData() {
+    async function loadInitialData(): Promise<void> {
       try {
         const [municipiosPayload, indicadoresPayload, municipiosIndexPayload] =
           await Promise.all([loadMunicipios(), loadIndicadores(), loadMunicipiosIndex()])
@@ -24,6 +26,7 @@ export function useInitialAppData() {
 
         if (!cancelled) {
           setInitialData({
+            status: 'success',
             error: null,
             indicadores: indicadoresPayload,
             loading: false,
@@ -31,9 +34,10 @@ export function useInitialAppData() {
             municipiosIndex,
           })
         }
-      } catch (error) {
+      } catch (error: unknown) {
         if (!cancelled) {
           setInitialData({
+            status: 'error',
             error: error instanceof Error ? error.message : 'Erro inesperado.',
             indicadores: null,
             loading: false,
@@ -44,7 +48,7 @@ export function useInitialAppData() {
       }
     }
 
-    loadInitialData()
+    void loadInitialData()
 
     return () => {
       cancelled = true

@@ -1,4 +1,12 @@
-export function normalizeRouteValue(value) {
+import type {
+  BuildAppHash,
+  HashParameterMap,
+  LocationLike,
+  ParsedAppLocation,
+  ParsedHash,
+} from '../types/navigation'
+
+export function normalizeRouteValue(value: unknown): string {
   return String(value ?? '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -6,7 +14,7 @@ export function normalizeRouteValue(value) {
     .replace(/[^a-z0-9]/g, '')
 }
 
-export function parseAppHash(hash) {
+export function parseAppHash(hash?: unknown): ParsedHash {
   const rawHash = String(hash ?? '').replace(/^#\/?/, '')
   const [rawRoute = '', rawQuery = ''] = rawHash.split('?')
 
@@ -18,7 +26,10 @@ export function parseAppHash(hash) {
   }
 }
 
-export function mergeHashAndSearchParams(hashParams, searchParams) {
+export function mergeHashAndSearchParams(
+  hashParams?: URLSearchParams | string,
+  searchParams?: URLSearchParams | string,
+): URLSearchParams {
   const merged = new URLSearchParams(searchParams ?? '')
   new URLSearchParams(hashParams ?? '').forEach((value, key) => {
     merged.set(key, value)
@@ -26,9 +37,9 @@ export function mergeHashAndSearchParams(hashParams, searchParams) {
   return merged
 }
 
-export function parseAppLocation({ hash = '', search = '' } = {}) {
-  const parsedHash = parseAppHash(hash)
-  const searchParams = new URLSearchParams(search)
+export function parseAppLocation(location: LocationLike = {}): ParsedAppLocation {
+  const parsedHash = parseAppHash(location.hash)
+  const searchParams = new URLSearchParams(location.search)
 
   return {
     ...parsedHash,
@@ -37,7 +48,7 @@ export function parseAppLocation({ hash = '', search = '' } = {}) {
   }
 }
 
-export function buildAppHash(route, values = {}) {
+export const buildAppHash: BuildAppHash = (route, values: HashParameterMap = {}) => {
   const normalizedRoute = String(route ?? '').replace(/^#\/?/, '')
   const params = new URLSearchParams()
 

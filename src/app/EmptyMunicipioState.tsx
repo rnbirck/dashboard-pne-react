@@ -1,6 +1,24 @@
 import { MunicipalitySelector } from '../components/MunicipalitySelector'
+import type { ComponentType } from 'react'
+import type { MunicipioName } from '../types/data'
+import type { Navigate } from '../types/navigation'
 
-export function EmptyMunicipioState({ onNavigate, onMunicipioChange, municipios }) {
+interface EmptyMunicipioStateProps {
+  municipios: MunicipioName[]
+  onMunicipioChange: (value: MunicipioName | null) => void
+  onNavigate?: Navigate
+}
+
+interface MunicipalitySelectorProps {
+  municipios: MunicipioName[]
+  onChange: (value: MunicipioName | null) => void
+  selectedMunicipio: string
+  variant: 'hero'
+}
+
+const TypedMunicipalitySelector = MunicipalitySelector as ComponentType<MunicipalitySelectorProps>
+
+export function EmptyMunicipioState({ onNavigate, onMunicipioChange, municipios }: EmptyMunicipioStateProps) {
   return (
     <section className="empty-state">
       <div className="empty-state__icon" aria-hidden="true">
@@ -15,7 +33,7 @@ export function EmptyMunicipioState({ onNavigate, onMunicipioChange, municipios 
         seleção. Escolha o município que deseja analisar.
       </p>
       <div className="empty-municipality-selector">
-        <MunicipalitySelector
+        <TypedMunicipalitySelector
           variant="hero"
           municipios={municipios}
           selectedMunicipio=""

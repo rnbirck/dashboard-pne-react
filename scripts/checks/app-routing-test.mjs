@@ -1,21 +1,44 @@
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import test from 'node:test'
-import { FINANCIAL_PAGE_KEYS } from '../../src/data/financialPageKeys.js'
-import {
+import { pathToFileURL } from 'node:url'
+
+const temporaryOutput = mkdtempSync(path.join(tmpdir(), 'dashboard-pne-routing-'))
+execFileSync(
+  process.execPath,
+  [
+    path.resolve('node_modules/typescript/bin/tsc'),
+    '--project',
+    'scripts/checks/tsconfig.app-routing.json',
+    '--outDir',
+    temporaryOutput,
+  ],
+  { stdio: 'inherit' },
+)
+
+process.on('exit', () => rmSync(temporaryOutput, { force: true, recursive: true }))
+
+const compiledModule = (relativePath) => pathToFileURL(path.join(temporaryOutput, relativePath)).href
+
+const { FINANCIAL_PAGE_KEYS } = await import(compiledModule('src/data/financialPageKeys.js'))
+const {
   buildAppHash,
   mergeHashAndSearchParams,
   normalizeRouteValue,
   parseAppHash,
   parseAppLocation,
-} from '../../src/app/appHash.js'
-import {
+} = await import(compiledModule('src/app/appHash.js'))
+const {
   getActivePageFromLocation,
   getNavigationContextFromLocation,
   resolveActivePage,
   resolveActivePageFromHash,
-} from '../../src/app/appRoutes.js'
-import { resolveEducationNavigation } from '../../src/data/educationIndicatorCatalog.js'
-import { getHashContext, setHashContext } from '../../src/utils/hashNavigation.js'
+} = await import(compiledModule('src/app/appRoutes.js'))
+const { resolveEducationNavigation } = await import(compiledModule('src/data/educationIndicatorCatalog.js'))
+const { getHashContext, setHashContext } = await import(compiledModule('src/utils/hashNavigation.js'))
 
 const ROUTE_CASES = [
   ['', 'home'],

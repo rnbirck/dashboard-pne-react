@@ -1,27 +1,36 @@
 import { useEffect, useRef, useState } from 'react'
+import type { DependencyList } from 'react'
+import type { AsyncDataState } from '../types/async'
 
-export function useAsyncData(factory, dependencies) {
-  const [state, setState] = useState({
+type AsyncDataFactory<T> = () => T | Promise<T>
+
+export function useAsyncData<T>(
+  factory: AsyncDataFactory<T>,
+  dependencies: DependencyList,
+): AsyncDataState<T | null> {
+  const [state, setState] = useState<AsyncDataState<T | null>>({
+    status: 'loading',
     data: null,
     error: null,
     loading: true,
   })
-  const factoryRef = useRef(factory)
+  const factoryRef = useRef<AsyncDataFactory<T>>(factory)
   factoryRef.current = factory
 
   useEffect(() => {
     let cancelled = false
-    setState({ data: null, error: null, loading: true })
+    setState({ status: 'loading', data: null, error: null, loading: true })
 
     Promise.resolve()
       .then(() => factoryRef.current())
       .then((data) => {
         if (cancelled) return
-        setState({ data: data ?? null, error: null, loading: false })
+        setState({ status: 'success', data: data ?? null, error: null, loading: false })
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         if (cancelled) return
         setState({
+          status: 'error',
           data: null,
           error: error instanceof Error ? error.message : 'Erro inesperado.',
           loading: false,

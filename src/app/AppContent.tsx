@@ -1,8 +1,18 @@
 import { ErrorState } from '../components/ErrorState'
 import { LoadingState } from '../components/LoadingState'
+import type { AppPageKey } from '../types/app'
+import type { InitialAppData } from '../types/data'
+import type { Navigate, ParsedAppLocation } from '../types/navigation'
 import { AppPageRouter } from './AppPageRouter'
 
-export function AppContent({ activePage, initialData, navigationContext, onNavigate }) {
+interface AppContentProps {
+  activePage: AppPageKey
+  initialData: InitialAppData
+  navigationContext: ParsedAppLocation
+  onNavigate: Navigate
+}
+
+export function AppContent({ activePage, initialData, navigationContext, onNavigate }: AppContentProps) {
   if (initialData.loading) {
     return <LoadingState message="Carregando base do dashboard..." />
   }

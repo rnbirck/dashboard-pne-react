@@ -4,4 +4,4 @@ export const FINANCIAL_PAGE_KEYS = Object.freeze({
   fundeb: 'financeiros-fundeb',
   vaar: 'financeiros-vaar',
   pnate: 'financeiros-pnate',
-})
+} as const)

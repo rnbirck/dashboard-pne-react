@@ -1,6 +1,8 @@
-import { useMunicipality } from '../context/MunicipalityContext'
 import { ErrorState } from '../components/ErrorState'
 import { LoadingState } from '../components/LoadingState'
+import type { ComponentType } from 'react'
+import { useMunicipality } from '../context/MunicipalityContext'
+import { useMunicipioData } from '../hooks/useMunicipioData'
 import { CyclePage } from '../pages/CyclePage'
 import { Diagnostico } from '../pages/Diagnostico'
 import { EducacaoPage } from '../pages/EducacaoPage'
@@ -8,9 +10,31 @@ import { FinancialPage } from '../pages/FinancialPage'
 import { Home } from '../pages/Home'
 import { PneLegalGoalsPage } from '../pages/PneLegalGoalsPage'
 import { PneOverviewPage } from '../pages/PneOverviewPage'
-import { useMunicipioData } from '../hooks/useMunicipioData'
-import { FINANCIAL_PAGES } from './appRoutes'
+import type { AppPageKey } from '../types/app'
+import type { IndicadoresPayload, MunicipioIndexEntry, MunicipioName } from '../types/data'
+import type { Navigate, ParsedAppLocation } from '../types/navigation'
+import { isFinancialPage } from './appRoutes'
 import { EmptyMunicipioState } from './EmptyMunicipioState'
+
+interface AppPageRouterProps {
+  activePage: AppPageKey
+  indicadores: IndicadoresPayload
+  municipios: MunicipioName[]
+  municipiosIndex: MunicipioIndexEntry[]
+  navigationContext: ParsedAppLocation
+  onNavigate: Navigate
+}
+
+type PneLegalGoalsPageProps = {
+  indicadores: IndicadoresPayload
+  municipioData?: unknown
+  municipios?: MunicipioName[]
+  onMunicipioChange: (value: MunicipioName | null) => void
+  onNavigate: Navigate
+  selectedMunicipio: MunicipioName | null
+}
+
+const TypedPneLegalGoalsPage = PneLegalGoalsPage as ComponentType<PneLegalGoalsPageProps>
 
 export function AppPageRouter({
   activePage,
@@ -19,7 +43,7 @@ export function AppPageRouter({
   municipiosIndex,
   navigationContext,
   onNavigate,
-}) {
+}: AppPageRouterProps) {
   const { selectedMunicipio, setSelectedMunicipio } = useMunicipality()
   const {
     data: municipioData,
@@ -37,7 +61,7 @@ export function AppPageRouter({
 
   if (activePage === 'pne-legal-goals' && !selectedMunicipio) {
     return (
-      <PneLegalGoalsPage
+      <TypedPneLegalGoalsPage
         indicadores={indicadores}
         municipios={municipios}
         onMunicipioChange={setSelectedMunicipio}
@@ -47,7 +71,7 @@ export function AppPageRouter({
     )
   }
 
-  if (FINANCIAL_PAGES.has(activePage)) {
+  if (isFinancialPage(activePage)) {
     return (
       <FinancialPage
         municipioData={municipioData}
@@ -108,7 +132,7 @@ export function AppPageRouter({
 
   if (activePage === 'pne-legal-goals') {
     return (
-      <PneLegalGoalsPage
+      <TypedPneLegalGoalsPage
         indicadores={indicadores}
         municipioData={municipioData}
         municipios={municipios}
