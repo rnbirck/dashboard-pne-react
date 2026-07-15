@@ -7,8 +7,15 @@ const ANNOUNCEMENT_ROLE = Object.freeze({
 })
 
 export function ContentState({ as: Element = 'div', children, kind, className = '' }) {
+  const classes = ['content-state', `content-state--${kind}`, className].filter(Boolean).join(' ')
+
   return (
-    <Element className={className} role={ANNOUNCEMENT_ROLE[kind]} aria-live={kind === 'error' ? 'assertive' : 'polite'}>
+    <Element
+      className={classes}
+      role={ANNOUNCEMENT_ROLE[kind]}
+      aria-busy={kind === 'loading' || undefined}
+      aria-live={kind === 'error' ? 'assertive' : 'polite'}
+    >
       {children}
     </Element>
   )

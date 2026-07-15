@@ -1,19 +1,26 @@
 import { isMissing } from '../utils/educationFormatters'
+import { ContentState } from './ContentState'
 
 export function EducationTable({ columns, rows, emptyMessage = 'Sem dados disponíveis.', caption = 'Dados educacionais' }) {
   if (!rows || rows.length === 0) {
-    return <p className="education-table-empty">{emptyMessage}</p>
+    return (
+      <ContentState as="p" kind="empty" className="education-table-empty platform-data-state">
+        {emptyMessage}
+      </ContentState>
+    )
   }
 
   return (
-    <div className="education-table-wrap" role="region" aria-label={caption} tabIndex={0}>
-      <table className="education-table">
+    <div className="education-table-wrap platform-data-table-region" role="region" aria-label={`${caption}. Role horizontalmente para consultar todas as colunas quando necessário.`} tabIndex={0}>
+      <table className="education-table platform-data-table">
         <caption className="u-sr-only">{caption}</caption>
         <thead>
           <tr>
-            {columns.map((col) => (
-              <th key={col.key} scope="col" className={col.className || ''}>{col.label}</th>
-            ))}
+            {columns.map((col) => {
+              const isNumeric = col.numeric ?? rows.some((row) => typeof row[col.key] === 'number')
+              const className = [col.className, isNumeric ? 'platform-data-cell--numeric' : ''].filter(Boolean).join(' ')
+              return <th key={col.key} scope="col" className={className}>{col.label}</th>
+            })}
           </tr>
         </thead>
         <tbody>
@@ -21,8 +28,17 @@ export function EducationTable({ columns, rows, emptyMessage = 'Sem dados dispon
             <tr key={i}>
               {columns.map((col) => {
                 const raw = row[col.key]
-                const display = isMissing(raw) ? '\u2014' : col.format ? col.format(raw) : String(raw)
-                return <td key={col.key} className={col.className || ''}>{display}</td>
+                const missing = isMissing(raw)
+                const isNumeric = col.numeric ?? rows.some((candidate) => typeof candidate[col.key] === 'number')
+                const className = [
+                  col.className,
+                  isNumeric ? 'platform-data-cell--numeric' : '',
+                  missing ? 'platform-data-cell--missing' : '',
+                ].filter(Boolean).join(' ')
+                const display = missing
+                  ? <span className="platform-data-missing" aria-label="Dado não disponível" title="Dado não disponível">—</span>
+                  : col.format ? col.format(raw) : String(raw)
+                return <td key={col.key} className={className}>{display}</td>
               })}
             </tr>
           ))}

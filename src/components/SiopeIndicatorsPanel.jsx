@@ -573,7 +573,7 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
             <FinancialIndicatorMetadata metadata={getFinancialIndicatorMetadata('siope', selectedIndicatorModel.key)} />
 
             {selectedIndicatorHasMissingValues ? (
-              <p className="fundeb-indicator-note siope-register-alert">
+              <p className="fundeb-indicator-note siope-register-alert platform-coverage-note">
                 <strong>Registro:</strong> {MISSING_VALUE_NOTE}
               </p>
             ) : null}
@@ -613,14 +613,14 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
                     <h4>Valores por ano</h4>
                   </div>
                 </div>
-                <div className="fundeb-table-wrap" role="region" aria-label="Série histórica do indicador do SIOPE" tabIndex={0}>
+                <div className="fundeb-table-wrap" role="region" aria-label="Série histórica do indicador do SIOPE. Role horizontalmente para consultar todas as colunas quando necessário." tabIndex={0}>
                   <table className="fundeb-table">
                     <caption className="u-sr-only">Série histórica do indicador do SIOPE</caption>
                     <thead>
                       <tr>
                         <th scope="col">Ano</th>
                         <th scope="col">Valor</th>
-                        <th scope="col">Registro</th>
+                        <th scope="col" className="platform-data-cell--text">Registro</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -628,7 +628,7 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
                         <tr key={point.ano}>
                           <td>{point.ano}</td>
                           <td>{formatSiopeValue(point.valor, selectedIndicator.unidade)}</td>
-                          <td>{point.hasValue ? 'Com dados' : EM}</td>
+                          <td className="platform-data-cell--text">{point.hasValue ? 'Com dados' : <span className="platform-data-missing" aria-label="Dado não disponível" title="Dado não disponível">{EM}</span>}</td>
                         </tr>
                       ))}
                     </tbody>

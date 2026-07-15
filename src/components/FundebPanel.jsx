@@ -503,7 +503,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
                       <h4>Histórico do indicador</h4>
                     </div>
                   </div>
-                  <div className="fundeb-table-wrap" role="region" aria-label="Série histórica do indicador do FUNDEB" tabIndex={0}>
+                  <div className="fundeb-table-wrap" role="region" aria-label="Série histórica do indicador do FUNDEB. Role horizontalmente para consultar todas as colunas quando necessário." tabIndex={0}>
                     <table className="fundeb-table">
                       <caption className="u-sr-only">Série histórica do indicador do FUNDEB</caption>
                       <thead>
@@ -528,13 +528,13 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
                                 <td>{formatFundebValue(currentVal, selectedIndicator.tipo)}</td>
                                 <td><span className={
                                   index === 0 || vari == null
-                                    ? 'fundeb-variation-neutral'
+                                    ? 'fundeb-variation-missing'
                                     : vari > 0
                                       ? 'fundeb-variation-positive'
                                       : vari < 0
                                         ? 'fundeb-variation-negative'
                                         : 'fundeb-variation-neutral'
-                                }>{index === 0 ? '—' : formatVariation(vari, selectedIndicator.tipo)}</span></td>
+                                } aria-label={index === 0 || vari == null ? 'Variação indisponível' : undefined}>{index === 0 ? '—' : formatVariation(vari, selectedIndicator.tipo)}</span></td>
                                 {isPercentual && <td>{getLimiteReferencia(entry.ano)}%</td>}
                               </tr>
                             )
@@ -671,7 +671,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
                     <h4>Histórico do indicador</h4>
                   </div>
                 </div>
-                <div className="fundeb-table-wrap" role="region" aria-label="Série histórica do indicador do FUNDEB" tabIndex={0}>
+                <div className="fundeb-table-wrap" role="region" aria-label="Série histórica do indicador do FUNDEB. Role horizontalmente para consultar todas as colunas quando necessário." tabIndex={0}>
                   <table className="fundeb-table">
                     <caption className="u-sr-only">Série histórica do indicador do FUNDEB</caption>
                     <thead>
@@ -696,13 +696,13 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
                               <td>{formatFundebValue(currentVal, selectedIndicator.tipo)}</td>
                               <td><span className={
                                 index === 0 || vari == null
-                                  ? 'fundeb-variation-neutral'
+                                  ? 'fundeb-variation-missing'
                                   : vari > 0
                                     ? 'fundeb-variation-positive'
                                     : vari < 0
                                       ? 'fundeb-variation-negative'
                                       : 'fundeb-variation-neutral'
-                              }>{index === 0 ? '—' : formatVariation(vari, selectedIndicator.tipo)}</span></td>
+                              } aria-label={index === 0 || vari == null ? 'Variação indisponível' : undefined}>{index === 0 ? '—' : formatVariation(vari, selectedIndicator.tipo)}</span></td>
                               {isPercentual && <td>{getLimiteReferencia(entry.ano)}%</td>}
                             </tr>
                           )

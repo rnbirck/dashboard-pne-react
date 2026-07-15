@@ -1513,53 +1513,429 @@
   }
 }
 
-/* Shared state, source and scroll-region primitives migrated from App.css. */
-.state-box {
-  width: min(720px, calc(100% - 32px));
-  margin: 48px auto;
-  padding: 18px 20px;
-  color: var(--text-strong);
-  font-weight: 700;
-  border-radius: var(--radius-md);
-  background: var(--grad-card);
-  box-shadow: var(--shadow-lg);
+/* Shared data surfaces, tables, source notes and system states. */
+:is(
+  .education-table-wrap,
+  .fundeb-table-wrap,
+  .sistema-s-table-wrap,
+  .complementary-components__table-wrap,
+  .platform-data-table-region
+) {
+  --table-region-min-width: var(--table-min-width);
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  box-shadow: inset -18px 0 16px -18px var(--table-scroll-shadow);
+  overflow: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-color: var(--border-strong) var(--surface-muted);
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
 }
 
-.state-box > span {
-  display: block;
-  margin-top: 4px;
-  color: var(--text-muted);
-  font-size: 0.92rem;
-  font-weight: 500;
+.sistema-s-table-wrap {
+  --table-region-min-width: 760px;
+}
+
+.complementary-components__table-wrap {
+  --table-region-min-width: 720px;
+}
+
+.cycle-page .complementary-components__table-wrap {
+  max-height: 360px;
+}
+
+.fundeb-table-card {
+  min-width: 0;
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.fundeb-table-card__header {
+  padding: var(--space-4);
+  border-bottom: var(--border-divider);
+  background: var(--surface-soft);
+}
+
+.fundeb-table-card__header h4 {
+  color: var(--text-strong);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0;
+  line-height: var(--line-height-snug);
+  text-transform: none;
+  text-wrap: balance;
+}
+
+.fundeb-table-card__header p {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  text-align: left;
+  text-wrap: pretty;
+}
+
+.fundeb-table-card:not(.financial-support-table) .fundeb-table-wrap {
+  border-inline: 0;
+  border-bottom: 0;
+  border-radius: 0;
+}
+
+:is(
+  .education-table,
+  .fundeb-table,
+  .sistema-s-table,
+  .complementary-components__table,
+  .platform-data-table
+) {
+  width: 100%;
+  min-width: max(100%, var(--table-region-min-width, var(--table-min-width)));
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--surface-card);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--line-height-snug);
+}
+
+:is(
+  .education-table,
+  .fundeb-table,
+  .sistema-s-table,
+  .complementary-components__table,
+  .platform-data-table
+) :where(th, td) {
+  min-width: var(--table-column-min-width);
+  height: var(--table-row-height);
+  padding: var(--table-cell-padding-block) var(--table-cell-padding-inline);
+  border: 0;
+  border-bottom: var(--border-divider);
+  vertical-align: middle;
+}
+
+:is(
+  .education-table,
+  .fundeb-table,
+  .sistema-s-table,
+  .complementary-components__table,
+  .platform-data-table
+) thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: var(--table-header-min-height);
+  background: var(--surface-moss);
+  color: var(--green-deep);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0;
+  line-height: var(--line-height-snug);
+  text-align: left;
+  text-transform: none;
+  text-wrap: balance;
+  white-space: normal;
+}
+
+:is(
+  .education-table,
+  .fundeb-table,
+  .sistema-s-table,
+  .complementary-components__table,
+  .platform-data-table
+) tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+:is(
+  .education-table,
+  .fundeb-table,
+  .sistema-s-table,
+  .complementary-components__table,
+  .platform-data-table
+) tbody tr {
+  background: var(--surface-card);
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+:is(
+  .education-table,
+  .fundeb-table,
+  .sistema-s-table,
+  .complementary-components__table,
+  .platform-data-table
+) tbody tr:hover {
+  background: var(--surface-moss);
+}
+
+.education-table :where(th, td):first-child {
+  min-width: var(--table-edge-column-min-width);
+}
+
+.education-table :where(th, td):last-child {
+  min-width: var(--table-edge-column-min-width);
+}
+
+.fundeb-table :where(th, td):first-child {
+  min-width: 88px;
+  text-align: left;
+}
+
+.fundeb-table :where(th, td):not(:first-child),
+.complementary-components__table :where(th, td):not(:first-child),
+.platform-data-cell--numeric,
+.numeric,
+.sistema-s-table__num {
+  text-align: right;
+}
+
+.fundeb-table .platform-data-cell--text {
+  text-align: left;
+}
+
+.fundeb-table :where(th, td):not(:first-child) {
+  min-width: 132px;
+}
+
+.complementary-components__table :where(th, td):first-child {
+  min-width: 96px;
+  text-align: left;
+}
+
+.sistema-s-table :where(th, td):first-child {
+  width: 44%;
+  min-width: 280px;
+}
+
+.sistema-s-table :where(th, td):last-child {
+  min-width: 200px;
+}
+
+.platform-data-cell--missing {
+  color: var(--status-muted-ink);
+}
+
+.platform-data-missing {
+  min-width: 1ch;
+  color: var(--status-muted-ink);
+  display: inline-block;
+  font-weight: var(--font-weight-medium);
+  text-align: inherit;
+}
+
+.fundeb-table :where(
+  .fundeb-variation-positive,
+  .fundeb-variation-negative,
+  .fundeb-variation-neutral,
+  .fundeb-variation-missing
+) {
+  min-width: 64px;
+  min-height: 24px;
+  margin-inline: auto 0;
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+.fundeb-table .fundeb-variation-positive {
+  border-color: var(--education-direction-up-border);
+  background: var(--indicator-direction-up-soft);
+  color: var(--indicator-direction-up-ink);
+}
+
+.fundeb-table .fundeb-variation-negative {
+  border-color: var(--education-direction-down-border);
+  background: var(--indicator-direction-down-soft);
+  color: var(--indicator-direction-down-ink);
+}
+
+.fundeb-table .fundeb-variation-neutral {
+  border-color: var(--education-direction-stable-border);
+  background: var(--indicator-direction-stable-soft);
+  color: var(--indicator-direction-stable-ink);
+}
+
+.fundeb-table .fundeb-variation-missing {
+  border-color: var(--education-direction-missing-border);
+  background: var(--indicator-direction-missing-soft);
+  color: var(--indicator-direction-missing-ink);
+}
+
+:is(
+  .education-table-wrap,
+  .fundeb-table-wrap,
+  .sistema-s-table-wrap,
+  .complementary-components__table-wrap,
+  .platform-data-table-region
+):focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
+  box-shadow: var(--focus-ring), inset -18px 0 16px -18px var(--table-scroll-shadow);
+}
+
+:is(
+  .education-table-wrap,
+  .fundeb-table-wrap,
+  .sistema-s-table-wrap,
+  .complementary-components__table-wrap,
+  .platform-data-table-region
+) + .data-source-note,
+.fundeb-table-card > .data-source-note {
+  margin-top: var(--table-source-gap);
+}
+
+.platform-data-state,
+.education-indicator-grid-empty,
+.meta-grid-empty,
+.fundeb-empty:not(.fundeb-empty--chart),
+.siope-empty,
+.vaar-empty,
+.empty-panel {
+  min-height: var(--content-state-min-height);
+  margin: 0;
+  padding: var(--space-5);
+  border: var(--border-width) dashed var(--border-card);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  display: grid;
+  place-items: center;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-normal);
+  text-align: center;
+}
+
+.state-box {
+  width: min(720px, calc(100% - 32px));
+  min-height: var(--content-state-min-height);
+  margin: var(--space-8) auto;
+  padding: var(--space-5);
+  border: var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: var(--text-strong);
+  display: grid;
+  align-content: center;
+  gap: var(--space-3);
+  box-shadow: none;
+}
+
+.state-box > span:not(.state-box__loading-heading, .state-skeleton) {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
 }
 
 .state-box--loading {
+  min-height: var(--content-state-loading-min-height);
+  background: var(--surface-moss);
+}
+
+.state-box--loading-table {
+  width: 100%;
+  min-height: 220px;
+  margin: 0;
+}
+
+.state-box__loading-heading {
+  color: var(--text-strong);
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .state-spinner {
   width: 18px;
   height: 18px;
-  border: 2px solid rgba(47, 113, 60, 0.16);
-  border-top-color: var(--accent);
+  border: 2px solid rgba(47, 112, 87, 0.2);
+  border-top-color: var(--green-primary);
   border-radius: 50%;
+  flex: 0 0 auto;
   animation: spin 0.8s linear infinite;
 }
 
+.state-skeleton {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.state-skeleton > span {
+  width: 100%;
+  height: 12px;
+  border-radius: var(--radius-xs);
+  background: linear-gradient(90deg, var(--surface-muted) 20%, var(--surface-card) 50%, var(--surface-muted) 80%);
+  background-size: 220% 100%;
+  animation: state-skeleton-shift 1.6s ease-in-out infinite;
+}
+
+.state-skeleton > span:nth-child(2) {
+  width: 86%;
+}
+
+.state-skeleton > span:nth-child(3) {
+  width: 68%;
+}
+
 .state-box--error {
-  border-color: rgba(216, 75, 33, 0.28);
+  border-color: var(--status-far-line);
+  background: color-mix(in srgb, var(--status-far-bg) 56%, var(--surface-card));
+}
+
+.platform-coverage-note {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-width) solid var(--status-warn-line);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--status-warn-bg) 64%, var(--surface-card));
+  color: var(--status-warn-ink);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-.education-table-wrap:focus-visible,
-.fundeb-table-wrap:focus-visible,
-.sistema-s-table-wrap:focus-visible,
-.complementary-components__table-wrap:focus-visible {
-  outline: 3px solid var(--focus-ring-color);
-  outline-offset: 2px;
+@keyframes state-skeleton-shift {
+  to { background-position: -220% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .state-spinner,
+  .state-skeleton > span {
+    animation: none;
+  }
+}
+
+@media screen and (max-width: 620px) {
+  :is(
+    .education-table-wrap,
+    .fundeb-table-wrap,
+    .sistema-s-table-wrap,
+    .complementary-components__table-wrap,
+    .platform-data-table-region
+  ) {
+    scrollbar-gutter: auto;
+  }
+
+  .state-box {
+    width: 100%;
+    margin-block: var(--space-5);
+    padding: var(--space-4);
+  }
 }

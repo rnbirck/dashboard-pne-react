@@ -23,15 +23,17 @@ export const stateScenarios: readonly CatalogScenario[] = [
     title: 'Feedback do sistema',
     description: 'Estados compartilhados de loading, erro, vazio e indisponibilidade.',
     objective: 'Validar anúncio semântico, contraste, linguagem simples e distinção entre cada condição.',
-    states: ['normal', 'loading', 'erro', 'vazio', 'indisponível'],
+    states: ['normal', 'loading', 'erro', 'vazio', 'sem resultados', 'indisponível', 'cobertura parcial'],
     visual: { enabled: true, viewports: ['desktop', 'mobile'] },
     render: () => (
       <ScenarioGrid>
-        <ScenarioItem label="Normal"><div className="page-card" style={{ padding: 'var(--space-4)' }}><StatusBadge displayStatus={undefined} marker={undefined} status="Com dados" title="Com dados" tone="success" /><p>Conteúdo disponível para leitura.</p></div></ScenarioItem>
+        <ScenarioItem label="Normal"><div className="page-card dev-ui-state-card"><StatusBadge displayStatus={undefined} marker={undefined} status="Com dados" title="Com dados" tone="success" /><p>Conteúdo disponível para leitura.</p></div></ScenarioItem>
         <ScenarioItem label="Loading"><LoadingState message="Carregando dados controlados..." /></ScenarioItem>
         <ScenarioItem label="Erro"><ErrorState message="A fixture de erro foi ativada deliberadamente." /></ScenarioItem>
         <ScenarioItem label="Vazio"><ContentState className="state-box" kind="empty"><strong>Nenhum item disponível.</strong><span>Altere o filtro para ampliar o resultado.</span></ContentState></ScenarioItem>
+        <ScenarioItem label="Sem resultados"><ContentState className="platform-data-state" kind="noResults"><strong>Nenhuma correspondência.</strong><span>A busca “indicador inexistente” não encontrou itens.</span></ContentState></ScenarioItem>
         <ScenarioItem label="Indisponível"><ContentState className="state-box" kind="unavailable"><strong>Comparação indisponível.</strong><span>O denominador necessário não foi informado.</span></ContentState></ScenarioItem>
+        <ScenarioItem label="Cobertura parcial"><p className="platform-coverage-note" role="note"><strong>Período parcial:</strong> a fonte publicou somente parte da série municipal.</p></ScenarioItem>
       </ScenarioGrid>
     ),
   },

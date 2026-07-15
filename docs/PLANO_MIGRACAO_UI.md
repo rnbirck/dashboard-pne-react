@@ -456,3 +456,78 @@ Baselines públicos atualizados deliberadamente, após revisão dos diffs:
 - `scripts/checks/visual-baselines/siope-1366x768.png`
 - `scripts/checks/visual-baselines/siope-1280x720.png`
 - `scripts/checks/visual-baselines/siope-1024x768.png`
+
+## Terceira fase de convergência real das tabelas e estados de dados (2026-07-15)
+
+As superfícies tabulares de Educação, FUNDEB, PNATE, SIOPE, PNE e Sistema S
+passaram a compartilhar a gramática de `platform-ui.css`: superfície, borda,
+raio, cabeçalho, célula, separador, números tabulares, alinhamento, foco e
+overflow local. Diagnóstico e VAAR não possuem tabela HTML própria nesta
+rodada; seus estados vazios e de indisponibilidade foram incluídos na mesma
+linguagem visual sem alterar a composição ou a lógica dos módulos.
+
+- `design-tokens.css` passou a registrar altura do cabeçalho, padding das
+  células, larguras mínimas, colunas de borda, distância da fonte, sombra de
+  overflow e alturas dos estados. Cabeçalhos longos podem quebrar em mais de
+  uma linha sem reduzir a fonte; valores numéricos e seus cabeçalhos ficam
+  alinhados à direita, com numerais tabulares.
+- `EducationTable` identifica colunas numéricas pelos valores ou pelo contrato
+  explícito da coluna. Zero continua sendo renderizado como valor; `null` e
+  demais ausências mantêm o travessão dominante, agora com nome acessível
+  `Dado não disponível`. FUNDEB e PNATE distinguem a ausência da primeira
+  comparação da variação estável: alta, queda, estabilidade e indisponibilidade
+  preservam sinais e textos, usando cor apenas como apoio.
+- Regiões largas usam `overflow: auto`, largura mínima por família, sombra
+  interna discreta, scrollbar local, contenção de overscroll e foco visível.
+  O teste visual do catálogo mede em 390 px que `scrollWidth > clientWidth`,
+  que `scrollLeft` se move e que a tabela não aumenta a largura do documento.
+  As colunas permanecem disponíveis; nenhuma foi ocultada ou convertida em
+  card.
+- `ContentState` expõe a família e o tipo do estado, conserva `role="status"`
+  ou `role="alert"` e anuncia `aria-busy` no carregamento. `LoadingState`
+  ganhou skeleton suave com altura previsível e fallback sem animação em
+  `prefers-reduced-motion`. Vazio, sem resultados, indisponibilidade, erro e
+  cobertura parcial mantêm textos e regras de aplicação próprios, mas usam
+  superfícies visualmente distinguíveis e proporcionais.
+- Avisos existentes de registro incompleto do SIOPE e qualidade/cobertura das
+  projeções educacionais usam a variante compartilhada de cobertura. A regra
+  de negócio não mudou: ausência municipal não foi convertida em ausência
+  estadual e dado não localizado não foi convertido em inexistência.
+- Permaneceram específicos: a altura máxima de 360 px dos componentes de
+  cálculo do PNE; o destaque da coluna mais recente na matriz de infraestrutura;
+  o registro textual do SIOPE; as unidades, mínimos legais e formatadores de
+  FUNDEB/PNATE; e as superfícies sem tabela de VAAR e Diagnóstico.
+- Foram removidas 443 linhas de anatomia tabular duplicada de `App.css`,
+  `education-pages.css`, `financial-pages.css` e `institutional-refresh.css`.
+  `App.css` foi alterado somente para retirar regras comprovadamente
+  substituídas pela primitiva compartilhada; as exceções ainda consumidas
+  permaneceram. O saldo do bundle CSS foi de 565.945 para 565.308 bytes
+  (-637 bytes; -0,11%). O JavaScript passou de 755.087 para 757.538 bytes
+  (+2.451 bytes; +0,32%) pelos marcadores acessíveis e skeletons, sem nova
+  dependência ou chunk inicial acima de 500 kB.
+
+O catálogo cobre tabela larga, cabeçalhos e extremos longos, moeda/percentual
+por meio dos consumidores reais, valor grande, zero, ausência, variações,
+loading, vazio, erro, indisponibilidade e série parcial. A inspeção final cobriu
+1366×900, 1024×900 e 390×844; no aplicativo, o E2E cobriu 1366×768,
+1280×720 e 1024×768 e confirmou foco, teclado e ausência de overflow global.
+`npm run test:visual` permaneceu 23/23 sem atualização de referência pública.
+
+Evidência final: `npm run typecheck`, `npm run test:education` 9/9,
+`npm run test:app-routing` 7/7, `npm run test:dev-ui`,
+`npm run test:dev-ui:visual` 27/27, `npm run lint`, `npm run build`,
+`npm run test:e2e`, `npm run test:visual` 23/23 e `git diff --check`.
+`public/data/` e `data_pipeline/` permaneceram sem diferenças.
+
+Baselines isolados atualizados deliberadamente, após revisão dos diffs:
+
+- `tests/dev-ui-visual/baselines/tables-content-overflow.notebook.png`
+- `tests/dev-ui-visual/baselines/tables-content-overflow.mobile.png`
+- `tests/dev-ui-visual/baselines/tables-states.desktop.png`
+- `tests/dev-ui-visual/baselines/states-system-feedback.desktop.png`
+- `tests/dev-ui-visual/baselines/states-system-feedback.mobile.png`
+- `tests/dev-ui-visual/baselines/charts-system-states.desktop.png`
+- `tests/dev-ui-visual/baselines/education-search.desktop.png`
+- `tests/dev-ui-visual/baselines/education-demand-methodology.mobile.png`
+
+Nenhum baseline público foi alterado nesta fase.

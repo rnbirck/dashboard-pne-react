@@ -262,7 +262,7 @@ export function SistemaSPanel({ blocos }) {
                   <span className="sistema-s-detail-title">Escolas do Sistema S</span>
                   <p>Lista de escolas do Sistema S no último ano disponível.</p>
                 </div>
-                <div className="sistema-s-table-wrap" role="region" aria-label="Lista de escolas do Sistema S" tabIndex={0}>
+                <div className="sistema-s-table-wrap" role="region" aria-label="Lista de escolas do Sistema S. Role horizontalmente para consultar todas as colunas quando necessário." tabIndex={0}>
                   <table className="sistema-s-table">
                     <caption className="u-sr-only">Lista de escolas do Sistema S no último ano disponível</caption>
                     <thead>
@@ -283,10 +283,10 @@ export function SistemaSPanel({ blocos }) {
                               {formatSchoolName(escola.nome_escola)}
                               {chip && <span className="sistema-s-chip">{chip}</span>}
                             </td>
-                            <td className="sistema-s-table__num">{!isMissing(escola.matriculas) ? formatNumber(escola.matriculas) : EM}</td>
-                            <td className="sistema-s-table__num">{!isMissing(escola.turmas) ? formatNumber(escola.turmas) : EM}</td>
-                            <td className="sistema-s-table__num">{!isMissing(escola.docentes) ? formatNumber(escola.docentes) : EM}</td>
-                            <td>{escola.etapas?.join(', ') || EM}</td>
+                            <td className="sistema-s-table__num">{!isMissing(escola.matriculas) ? formatNumber(escola.matriculas) : <span className="platform-data-missing" aria-label="Dado não disponível" title="Dado não disponível">{EM}</span>}</td>
+                            <td className="sistema-s-table__num">{!isMissing(escola.turmas) ? formatNumber(escola.turmas) : <span className="platform-data-missing" aria-label="Dado não disponível" title="Dado não disponível">{EM}</span>}</td>
+                            <td className="sistema-s-table__num">{!isMissing(escola.docentes) ? formatNumber(escola.docentes) : <span className="platform-data-missing" aria-label="Dado não disponível" title="Dado não disponível">{EM}</span>}</td>
+                            <td>{escola.etapas?.join(', ') || <span className="platform-data-missing" aria-label="Dado não disponível" title="Dado não disponível">{EM}</span>}</td>
                           </tr>
                         )
                       })}

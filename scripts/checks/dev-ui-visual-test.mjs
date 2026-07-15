@@ -109,6 +109,20 @@ async function stabilizePage(page, testCase) {
     const target = document.querySelector('[data-testid="catalog-preview"]')
     const rect = target?.getBoundingClientRect()
     const incompleteImages = [...document.images].filter((image) => !image.complete).length
+    const tableRegion = document.querySelector('.platform-data-table-region, .education-table-wrap, .fundeb-table-wrap')
+    let tableOverflow = null
+    if (tableRegion instanceof HTMLElement) {
+      const initialScrollLeft = tableRegion.scrollLeft
+      tableRegion.scrollLeft = 24
+      tableOverflow = {
+        clientWidth: tableRegion.clientWidth,
+        documentFitsViewport: document.documentElement.scrollWidth <= window.innerWidth,
+        moved: tableRegion.scrollLeft > initialScrollLeft,
+        overflowX: getComputedStyle(tableRegion).overflowX,
+        scrollWidth: tableRegion.scrollWidth,
+      }
+      tableRegion.scrollLeft = initialScrollLeft
+    }
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
     return {
       fontStatus: document.fonts?.status ?? 'unsupported',
@@ -120,6 +134,7 @@ async function stabilizePage(page, testCase) {
       width: rect?.width ?? 0,
       matchesScenario: target?.getAttribute('data-scenario-id') === expectedScenario,
       matchesViewport: target?.getAttribute('data-viewport') === expectedViewport,
+      tableOverflow,
     }
   }, { expectedScenario: testCase.id, expectedViewport: testCase.viewport })
   if (measurements.fontStatus !== 'loaded') throw new Error(`${testCase.id}: fontes não terminaram de carregar.`)
@@ -127,6 +142,14 @@ async function stabilizePage(page, testCase) {
   if (measurements.ready !== 'true') throw new Error(`${testCase.id}: React não sinalizou renderização final.`)
   if (!measurements.matchesScenario || !measurements.matchesViewport) {
     throw new Error(`${testCase.id}: o catálogo abriu scenario=${measurements.scenario} viewport=${measurements.viewport}.`)
+  }
+  if (testCase.id === 'tables-content-overflow' && testCase.viewport === 'mobile') {
+    if (!measurements.tableOverflow) throw new Error(`${testCase.id}: região tabular não encontrada.`)
+    if (measurements.tableOverflow.overflowX !== 'auto') throw new Error(`${testCase.id}: overflow horizontal local não está automático.`)
+    if (measurements.tableOverflow.scrollWidth <= measurements.tableOverflow.clientWidth || !measurements.tableOverflow.moved) {
+      throw new Error(`${testCase.id}: todas as colunas não permanecem alcançáveis por rolagem local.`)
+    }
+    if (!measurements.tableOverflow.documentFitsViewport) throw new Error(`${testCase.id}: tabela expandiu o documento no mobile.`)
   }
   return measurements
 }

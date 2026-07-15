@@ -256,7 +256,7 @@ export function IndicatorProjectionPanel({ chartLabel, projection, showTitle = t
 
       {contextOnly ? (
         projection.quality || projection.warnings?.length ? (
-          <div className="education-projection-alerts" role="note">
+          <div className="education-projection-alerts platform-coverage-note" role="note">
             {projection.quality ? <p><strong>Qualidade do cenário:</strong> {formatProjectionQuality(projection.quality)}.</p> : null}
             {projection.warnings?.length ? (
               <details className="education-projection-alerts__details">

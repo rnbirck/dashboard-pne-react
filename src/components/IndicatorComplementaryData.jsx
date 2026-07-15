@@ -552,7 +552,7 @@ function CalculationComponentsTable({
   return (
     <div className="complementary-components">
       {showHeading ? <h5>Dados usados no cálculo</h5> : null}
-      <div className="complementary-components__table-wrap" role="region" aria-label="Dados usados no cálculo do indicador" tabIndex={0}>
+      <div className="complementary-components__table-wrap" role="region" aria-label="Dados usados no cálculo do indicador. Role horizontalmente para consultar todas as colunas quando necessário." tabIndex={0}>
         <table className={tableClassName}>
           <caption className="u-sr-only">Dados usados no cálculo do indicador</caption>
           <thead>

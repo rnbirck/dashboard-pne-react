@@ -332,8 +332,8 @@ export const educationMunicipioFixture = {
 export const tableColumns = [
   { key: 'territorio', label: 'Território e dependência administrativa' },
   { key: 'matriculas', label: 'Matrículas no período de referência', className: 'numeric', format: formatNumber },
-  { key: 'variacao', label: 'Variação em relação ao período anterior' },
-  { key: 'percentual', label: 'Percentual de atendimento', format: formatPercent },
+  { key: 'variacao', label: 'Variação em relação ao período anterior', className: 'platform-data-cell--numeric' },
+  { key: 'percentual', label: 'Percentual de atendimento', className: 'platform-data-cell--numeric', format: formatPercent },
   { key: 'fonte', label: 'Fonte e observação metodológica' },
 ] as const
 

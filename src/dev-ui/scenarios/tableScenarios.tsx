@@ -1,4 +1,5 @@
 import { EducationTable } from '../../components/EducationTable.jsx'
+import { ErrorState } from '../../components/ErrorState.jsx'
 import { LoadingState } from '../../components/LoadingState.jsx'
 import { ScenarioGrid, ScenarioItem } from '../components/ScenarioPrimitives'
 import { tableColumns, tableRows } from '../fixtures/catalogFixtures'
@@ -27,12 +28,14 @@ export const tableScenarios: readonly CatalogScenario[] = [
     title: 'Estados da tabela',
     description: 'Mesma região em estado vazio e loading previsível.',
     objective: 'Distinguir claramente ausência de linhas de carregamento em andamento.',
-    states: ['vazio', 'loading'],
+    states: ['vazio', 'loading', 'erro recuperável', 'série parcial'],
     visual: { enabled: true, viewports: ['desktop'] },
     render: () => (
       <ScenarioGrid>
         <ScenarioItem label="Estado vazio"><EducationTable caption="Tabela vazia" columns={tableColumns} rows={[]} /></ScenarioItem>
-        <ScenarioItem label="Estado de loading"><div className="dev-ui-table-loading"><LoadingState message="Carregando linhas da tabela..." /></div></ScenarioItem>
+        <ScenarioItem label="Estado de loading"><div className="dev-ui-table-loading"><LoadingState message="Carregando linhas da tabela..." variant="table" /></div></ScenarioItem>
+        <ScenarioItem label="Erro recuperável"><ErrorState title="Não foi possível carregar a tabela." message="Tente novamente pela ação disponível na página." /></ScenarioItem>
+        <ScenarioItem label="Cobertura parcial"><p className="platform-coverage-note" role="note"><strong>Série parcial:</strong> alguns períodos não possuem registro municipal; os anos disponíveis permanecem válidos.</p></ScenarioItem>
       </ScenarioGrid>
     ),
   },
