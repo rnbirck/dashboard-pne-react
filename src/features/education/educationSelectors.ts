@@ -5,6 +5,7 @@ import {
   getEducationThemeForSection,
   resolveEducationNavigation,
 } from '../../data/educationIndicatorCatalog.js'
+import { resolveDetailSequence } from '../../hooks/detailNavigation.js'
 import type {
   EducationIndicatorResult,
   EducationNavigationState,
@@ -103,6 +104,14 @@ export function selectEducationVisibleGroups<T extends EducationIndicatorResult>
 
 export function selectActiveEducationIndicator<T extends EducationIndicatorResult>(items: T[], key: string): T | null {
   return items.find((item) => item.key === key) ?? null
+}
+
+export function selectEducationDetailSequence<T extends EducationIndicatorResult>(items: T[], activeKey?: string) {
+  return resolveDetailSequence(items, activeKey) as {
+    activeIndex: number
+    previousItem: T | null
+    nextItem: T | null
+  }
 }
 
 export function isEducationIndicatorAvailable(value: unknown): boolean {

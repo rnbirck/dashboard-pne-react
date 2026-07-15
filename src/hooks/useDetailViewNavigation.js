@@ -1,13 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
-
-export function resolveDetailSequence(items, activeKey) {
-  const activeIndex = items.findIndex((item) => item.key === activeKey)
-  return {
-    activeIndex,
-    previousItem: activeIndex > 0 ? items[activeIndex - 1] : null,
-    nextItem: activeIndex >= 0 && activeIndex < items.length - 1 ? items[activeIndex + 1] : null,
-  }
-}
+export { resolveDetailSequence } from './detailNavigation.js'
 
 export function useDetailViewNavigation({ activeKey, isOpen }) {
   const cardRefsRef = useRef(new Map())

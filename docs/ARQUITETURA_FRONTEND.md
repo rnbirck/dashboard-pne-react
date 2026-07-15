@@ -41,12 +41,26 @@ dados; `public/data` não é fonte de edição manual.
 
 ## Education domain
 
-`src/features/education/` is the main location for Education changes.
-`EducationPage.tsx` orchestrates data, state, and existing visual blocks;
-`hooks/useEducationPageState.ts` owns section, theme, search, detail, and route
-synchronization. `educationSelectors.ts` owns selection, search, grouping, and
-availability; `educationViewModels.ts` prepares presentation summaries; and
-`educationTypes.ts` declares local contracts.
+`src/features/education/` é o ponto principal para mudanças em Educação.
+`EducationPage.tsx` é o orquestrador: carrega o payload municipal, consome
+`hooks/useEducationPageState.ts`, resolve a seção/detalhe ativo e entrega view
+models nomeados aos componentes. O hook concentra seção, tema, busca, detalhe e
+sincronização com a rota; filtros e regras de seleção ficam em
+`educationSelectors.ts`.
+
+As composições ficam em `components/`: `EducationOverviewSection` mantém a
+síntese e os acessos; `EducationIndicatorsSection` mantém busca, grupos, cards e
+navegação; `EducationDemandSection` apresenta os cenários; e
+`EducationMethodologySection` apresenta fontes e limitações.
+`EducationIndicatorDetailView` concentra a composição específica dos detalhes
+sem duplicar `useDetailViewNavigation` ou os componentes globais de gráfico,
+tabela e navegação.
+
+Cards, resumos, projeções e adaptações do JSON para apresentação são alterados
+em `educationViewModels.ts`; rótulos e metadados exclusivamente educacionais
+ficam em `educationFormatters.ts`; contratos locais ficam em
+`educationTypes.ts`. Cálculos de indicadores e geração dos JSONs continuam no
+pipeline Python em `data_pipeline/`, nunca nesses módulos de apresentação.
 
 `data/educationIndicatorCatalog.js` remains in `data/` because Header and hash
 resolution also consume it. `data/educationData.js` remains shared with

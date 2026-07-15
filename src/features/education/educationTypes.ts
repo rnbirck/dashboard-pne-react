@@ -33,6 +33,8 @@ export interface EducationSection {
 
 export interface EducationSectionGroup {
   key?: string
+  label?: string
+  description?: string
   indicatorKeys: EducationIndicatorKey[]
   [property: string]: unknown
 }
@@ -44,9 +46,18 @@ export interface EducationNavigationState {
   shouldApplyTheme: boolean
 }
 
+export interface EducationPneContext {
+  indicadores?: Record<string, unknown>
+  projecoes?: Record<string, unknown>
+}
+
+export interface EducationMunicipioData extends MunicipioData {
+  pne_2026_2036?: EducationPneContext
+}
+
 export interface EducationPageProps {
   indicadores: IndicadoresPayload
-  municipioData?: MunicipioData
+  municipioData?: EducationMunicipioData | null
   navigationContext: ParsedAppLocation
   selectedMunicipio: MunicipioName | null
 }
