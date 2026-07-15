@@ -1,5 +1,11 @@
 # Guia operacional de `src`
 
+## Domain features
+
+New domain work should prefer `features/<domain>/`. Shared components stay in
+`components/`, and shared loaders stay in `data/`; do not move a file into a
+feature while it has consumers outside that domain.
+
 | Mudança | Local principal |
 | --- | --- |
 | Rota, alias ou hash | `app/appRoutes.ts` e `app/appHash.ts` |

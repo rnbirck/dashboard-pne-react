@@ -39,6 +39,20 @@ pipeline Python em `data_pipeline/`.
 React somente consome os JSONs publicados. O pipeline Python calcula e gera os
 dados; `public/data` não é fonte de edição manual.
 
+## Education domain
+
+`src/features/education/` is the main location for Education changes.
+`EducationPage.tsx` orchestrates data, state, and existing visual blocks;
+`hooks/useEducationPageState.ts` owns section, theme, search, detail, and route
+synchronization. `educationSelectors.ts` owns selection, search, grouping, and
+availability; `educationViewModels.ts` prepares presentation summaries; and
+`educationTypes.ts` declares local contracts.
+
+`data/educationIndicatorCatalog.js` remains in `data/` because Header and hash
+resolution also consume it. `data/educationData.js` remains shared with
+Financial. Educational cards, charts, table, and summary remain in
+`components/` because other modules consume them. CSS remains in `styles/`.
+
 ## TypeScript incremental
 
 `src/types/` declara os contratos de rota, navegação, carregamento inicial,

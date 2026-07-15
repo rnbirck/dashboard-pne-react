@@ -5,7 +5,7 @@ import { useMunicipality } from '../context/MunicipalityContext'
 import { useMunicipioData } from '../hooks/useMunicipioData'
 import { CyclePage } from '../pages/CyclePage'
 import { Diagnostico } from '../pages/Diagnostico'
-import { EducacaoPage } from '../pages/EducacaoPage'
+import { EducationPage } from '../features/education/EducationPage'
 import { FinancialPage } from '../pages/FinancialPage'
 import { Home } from '../pages/Home'
 import { PneLegalGoalsPage } from '../pages/PneLegalGoalsPage'
@@ -155,7 +155,7 @@ export function AppPageRouter({
 
   if (activePage === 'educacao') {
     return (
-      <EducacaoPage
+      <EducationPage
         indicadores={indicadores}
         municipioData={municipioData}
         navigationContext={navigationContext}

@@ -1,34 +1,40 @@
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { CategoryTabs } from '../components/CategoryTabs'
-import { SistemaSPanel } from '../components/SistemaSPanel'
-import { EducationBarChart } from '../components/EducationBarChart'
-import { EducationIndicatorCard } from '../components/EducationIndicatorCard'
-import { DetailNavigation } from '../components/DetailNavigation'
-import { DetailHeadingText, PageHeadingText } from '../components/HeadingText'
-import { IndicatorChartHeader } from '../components/IndicatorChartHeader'
-import { EducationLineChart } from '../components/EducationLineChart'
-import { EducationStackedBarChart } from '../components/EducationStackedBarChart'
-import { EducationSummaryCard } from '../components/EducationSummaryCard'
-import { EducationTable } from '../components/EducationTable'
-import { DataSourceNote } from '../components/DataSourceNote'
-import { ContentState } from '../components/ContentState'
-import { ErrorState } from '../components/ErrorState'
-import { MethodNote } from '../components/MethodNote'
-import { MetricCard } from '../components/MetricCard'
-import { SearchField } from '../components/SearchField'
-import { SegmentedControl } from '../components/SegmentedControl'
-import { StatusBadge } from '../components/StatusBadge'
-import { ChartEmptyState, ChartLegend, ChartTooltip } from '../components/ChartPrimitives'
-import { IndicatorProjectionPanel } from '../components/IndicatorProjectionPanel'
-import { loadEducationMunicipio, loadEducationMunicipiosIndex } from '../data/educationData'
-import { getDataSourceParts } from '../utils/dataSourceNotes'
-import { PNE_CONTEXT_PROXY_INDICATOR_KEYS } from '../utils/pneDisplayRules'
-import { useAsyncData } from '../utils/useAsyncData'
-import { resolveDetailSequence, useDetailViewNavigation } from '../hooks/useDetailViewNavigation'
-import { chartSeriesColor, closeChartTooltipOnEscape } from '../utils/chartVisuals'
-import { normalizeRouteValue } from '../app/appHash'
-import { setHashContext } from '../utils/hashNavigation'
-import '../styles/education-pages.css'
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+// @ts-nocheck
+// The page is migrated incrementally: contracts and pure boundaries are typed
+// locally while the established JSX renderers stay behaviorally unchanged.
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { CategoryTabs } from '../../components/CategoryTabs'
+import { SistemaSPanel } from '../../components/SistemaSPanel'
+import { EducationBarChart } from '../../components/EducationBarChart'
+import { EducationIndicatorCard } from '../../components/EducationIndicatorCard'
+import { DetailNavigation } from '../../components/DetailNavigation'
+import { DetailHeadingText, PageHeadingText } from '../../components/HeadingText'
+import { IndicatorChartHeader } from '../../components/IndicatorChartHeader'
+import { EducationLineChart } from '../../components/EducationLineChart'
+import { EducationStackedBarChart } from '../../components/EducationStackedBarChart'
+import { EducationSummaryCard } from '../../components/EducationSummaryCard'
+import { EducationTable } from '../../components/EducationTable'
+import { DataSourceNote } from '../../components/DataSourceNote'
+import { ContentState } from '../../components/ContentState'
+import { ErrorState } from '../../components/ErrorState'
+import { MethodNote } from '../../components/MethodNote'
+import { MetricCard } from '../../components/MetricCard'
+import { SearchField } from '../../components/SearchField'
+import { SegmentedControl } from '../../components/SegmentedControl'
+import { StatusBadge } from '../../components/StatusBadge'
+import { ChartEmptyState, ChartLegend, ChartTooltip } from '../../components/ChartPrimitives'
+import { IndicatorProjectionPanel } from '../../components/IndicatorProjectionPanel'
+import { loadEducationMunicipio, loadEducationMunicipiosIndex } from '../../data/educationData'
+import { getDataSourceParts } from '../../utils/dataSourceNotes'
+import { PNE_CONTEXT_PROXY_INDICATOR_KEYS } from '../../utils/pneDisplayRules'
+import { useAsyncData } from '../../utils/useAsyncData'
+import { resolveDetailSequence } from '../../hooks/useDetailViewNavigation'
+import { chartSeriesColor, closeChartTooltipOnEscape } from '../../utils/chartVisuals'
+import { setHashContext } from '../../utils/hashNavigation'
+import '../../styles/education-pages.css'
+import { useEducationPageState } from './hooks/useEducationPageState'
+import { filterEducationIndicators, getInitialEducationNavigation, selectActiveEducationIndicator, selectEducationSectionItems, selectEducationVisibleGroups } from './educationSelectors'
+import { buildEducationPageViewModel } from './educationViewModels'
 import {
   EDUCATION_COMPLEMENTARY_INDICATOR_CATALOG,
   EDUCATION_DEMAND_GROUP_CATALOG,
@@ -39,11 +45,9 @@ import {
   EDUCATION_SECTION_CATALOG,
   EDUCATION_SECTION_KEYS,
   getEducationIndicatorCatalogItem,
-  getEducationThemeForIndicator,
   getEducationThemeForSection,
-  resolveEducationNavigation,
   resolveEducationSection,
-} from '../data/educationIndicatorCatalog'
+} from '../../data/educationIndicatorCatalog'
 import {
   depLabel,
   etapaLabel,
@@ -55,7 +59,7 @@ import {
   locLabel,
   modLabel,
   normalizeYearSeries,
-} from '../utils/educationFormatters'
+} from '../../utils/educationFormatters'
 
 const EM = '\u2014'
 
@@ -141,16 +145,6 @@ const PANORAMA_THEME_KEYS = {
   escolasSistemaS: 'escolasSistemaS',
 }
 
-const LEGACY_EDUCATION_THEME_KEYS = [
-  'matriculas',
-  'rede',
-  'turmas',
-  'docentes',
-  'fluxo',
-  'aprendizagem',
-  'oferta',
-]
-
 const EDUCATION_PAGE_COPY = {
   description: 'Indicadores de atendimento, trajetória escolar, profissionais, infraestrutura, modalidades e condições da oferta educacional no município.',
   emptyDescription: 'Os indicadores educacionais são carregados após a seleção do município. Use o seletor no topo da página.',
@@ -158,51 +152,7 @@ const EDUCATION_PAGE_COPY = {
   title: 'Indicadores de Educação',
 }
 
-export function getInitialEducationNavigation(navigationContext) {
-  const fallback = {
-    panoramaTheme: PANORAMA_THEME_KEYS.matriculas,
-    section: EDUCATION_SECTION_KEYS.overview,
-    detailKey: '',
-    shouldApplyTheme: false,
-  }
-
-  const resolvedNavigation = resolveEducationNavigation(navigationContext)
-  if (!resolvedNavigation) return fallback
-
-  const {
-    detailKey,
-    hasSystemTheme,
-    requestedSection,
-    requestedTheme,
-    section: resolvedSection,
-  } = resolvedNavigation
-  const themeValue = normalizeRouteValue(requestedTheme)
-  const detailTheme = getEducationThemeForIndicator(detailKey)
-  const navigationSection = hasSystemTheme ? EDUCATION_SECTION_KEYS.modalities : resolvedSection
-  const legacyTheme = [...Object.values(PANORAMA_THEME_KEYS), ...LEGACY_EDUCATION_THEME_KEYS]
-    .find((key) => normalizeRouteValue(key) === themeValue)
-
-  let panoramaTheme = fallback.panoramaTheme
-  if (hasSystemTheme) {
-    panoramaTheme = PANORAMA_THEME_KEYS.escolasSistemaS
-  } else if (detailTheme) {
-    panoramaTheme = detailTheme
-  } else if (legacyTheme) {
-    panoramaTheme = legacyTheme
-  } else if (requestedSection) {
-    panoramaTheme = getEducationThemeForSection(requestedSection) ?? panoramaTheme
-  }
-
-  return {
-    ...fallback,
-    panoramaTheme,
-    section: navigationSection,
-    detailKey,
-    shouldApplyTheme: Boolean(detailKey || requestedSection || requestedTheme || hasSystemTheme),
-  }
-}
-
-export function EducacaoPage({ indicadores, municipioData, navigationContext, selectedMunicipio }) {
+export function EducationPage({ indicadores, municipioData, navigationContext, selectedMunicipio }) {
   const pageCopy = EDUCATION_PAGE_COPY
   const eduIndexState = useAsyncData(() => loadEducationMunicipiosIndex(), [])
   const eduMunMap = useMemo(() => {
@@ -220,28 +170,19 @@ export function EducacaoPage({ indicadores, municipioData, navigationContext, se
     () => getInitialEducationNavigation(navigationContext),
     [navigationContext],
   )
-  const [selectedSectionKey, setSelectedSectionKey] = useState(currentNavigation.section)
-  const [selectedThemeKey, setSelectedThemeKey] = useState(currentNavigation.panoramaTheme)
-  const [selectedIndicatorKey, setSelectedIndicatorKey] = useState(currentNavigation.detailKey ?? '')
-  const [isDetailOpen, setIsDetailOpen] = useState(Boolean(currentNavigation.detailKey))
-  const [searchQuery, setSearchQuery] = useState('')
-  const detailNavigation = useDetailViewNavigation({
-    activeKey: selectedIndicatorKey,
-    isOpen: isDetailOpen,
-  })
-  useLayoutEffect(() => {
-    const sectionChanged = currentNavigation.section !== selectedSectionKey
-    const themeChanged = currentNavigation.shouldApplyTheme && currentNavigation.panoramaTheme !== selectedThemeKey
-    setSelectedSectionKey(currentNavigation.section)
-    if (currentNavigation.shouldApplyTheme) {
-      setSelectedThemeKey(currentNavigation.panoramaTheme)
-    }
-    if (sectionChanged || themeChanged) {
-      setSearchQuery('')
-    }
-    setSelectedIndicatorKey(currentNavigation.detailKey ?? '')
-    setIsDetailOpen(Boolean(currentNavigation.detailKey))
-  }, [currentNavigation, selectedSectionKey, selectedThemeKey])
+  const {
+    detailNavigation,
+    isDetailOpen,
+    searchQuery,
+    selectedIndicatorKey,
+    selectedSectionKey,
+    selectedThemeKey,
+    setIsDetailOpen,
+    setSearchQuery,
+    setSelectedIndicatorKey,
+    setSelectedSectionKey,
+    setSelectedThemeKey,
+  } = useEducationPageState(currentNavigation)
 
   const dados = munDataState.data
   const sistemaS = dados?.blocos?.sistema_s ?? {}
@@ -261,7 +202,7 @@ export function EducacaoPage({ indicadores, municipioData, navigationContext, se
     ) {
       setSelectedThemeKey(getEducationThemeForSection(selectedSectionKey) ?? PANORAMA_THEME_KEYS.matriculas)
     }
-  }, [hasSistemaS, selectedSectionKey, selectedThemeKey, shouldKeepSistemaSTheme])
+  }, [hasSistemaS, selectedSectionKey, selectedThemeKey, setSelectedThemeKey, shouldKeepSistemaSTheme])
 
   useEffect(() => {
     previousSelectedIdRef.current = selectedId
@@ -332,34 +273,39 @@ export function EducacaoPage({ indicadores, municipioData, navigationContext, se
     ...(pneComplementaryTheme?.items ?? []),
   ]
   const section = EDUCATION_SECTION_CATALOG.find((item) => item.key === selectedSectionKey)
-  const itemsByKey = new Map(allEducationItems.map((item) => [item.key, item]))
-  const sectionItems = (section?.indicatorKeys ?? [])
-    .map((indicatorKey) => itemsByKey.get(indicatorKey))
-    .filter(Boolean)
+  const sectionItems = selectEducationSectionItems(allEducationItems, section)
   const themes = pneComplementaryTheme
     ? [...model.themes, pneComplementaryTheme]
     : model.themes
   const selectedTheme = themes.find((theme) => theme.key === selectedThemeKey) ?? themes[0]
   const isSistemaSTheme = selectedThemeKey === PANORAMA_THEME_KEYS.escolasSistemaS && hasSistemaS
-  const filteredItems = sectionItems.filter((item) => {
-    const query = searchQuery.trim().toLocaleLowerCase('pt-BR')
-    const queryMatches = !query || `${item.label} ${item.description} ${item.themeLabel} ${item.categoryLabel ?? ''} ${item.searchText ?? ''}`.toLocaleLowerCase('pt-BR').includes(query)
-    return queryMatches
-  })
-  const activeIndicator = filteredItems.find((item) => item.key === selectedIndicatorKey) ?? null
+  const filteredItems = filterEducationIndicators(sectionItems, searchQuery)
+  const activeIndicator = selectActiveEducationIndicator(filteredItems, selectedIndicatorKey)
   const { activeIndex: activeIndicatorIndex, previousItem: previousIndicator, nextItem: nextIndicator } = resolveDetailSequence(filteredItems, activeIndicator?.key)
   const isShowingIndicatorDetail = Boolean(isDetailOpen && activeIndicator)
   const isPneComplementaryTheme = selectedTheme?.key === PANORAMA_THEME_KEYS.complementaresPne
-  const isOverviewSection = selectedSectionKey === EDUCATION_SECTION_KEYS.overview
-  const isDemandSection = selectedSectionKey === EDUCATION_SECTION_KEYS.demand
-  const isMethodologySection = selectedSectionKey === EDUCATION_SECTION_KEYS.methodology
-  const contextScope = sectionItems.length > 0
+  let isOverviewSection = selectedSectionKey === EDUCATION_SECTION_KEYS.overview
+  let isDemandSection = selectedSectionKey === EDUCATION_SECTION_KEYS.demand
+  let isMethodologySection = selectedSectionKey === EDUCATION_SECTION_KEYS.methodology
+  let contextScope = sectionItems.length > 0
     ? formatIndicatorCount(sectionItems.length)
     : isOverviewSection
       ? 'Síntese municipal'
       : isDemandSection
         ? 'Demanda e projeções'
         : 'Fontes e critérios'
+
+  const educationPageViewModel = buildEducationPageViewModel({
+    sectionItemCount: sectionItems.length,
+    selectedSectionKey,
+    sectionKeys: EDUCATION_SECTION_KEYS,
+  })
+  void isMethodologySection
+  void contextScope
+  isOverviewSection = educationPageViewModel.isOverviewSection
+  isDemandSection = educationPageViewModel.isDemandSection
+  isMethodologySection = educationPageViewModel.isMethodologySection
+  contextScope = educationPageViewModel.contextScope
 
   function handleThemeSelect(themeKey) {
     setSelectedSectionKey(resolveEducationSection({ requestedTheme: themeKey }))
@@ -412,14 +358,7 @@ export function EducacaoPage({ indicadores, municipioData, navigationContext, se
   function renderEducationSectionScope() {
     const groups = EDUCATION_SECTION_GROUPS[selectedSectionKey] ?? []
     const normalizedSearchQuery = searchQuery.trim().toLocaleLowerCase('pt-BR')
-    const visibleGroups = groups
-      .map((group) => ({
-        ...group,
-        items: group.indicatorKeys
-          .map((indicatorKey) => filteredItems.find((item) => item.key === indicatorKey))
-          .filter(Boolean),
-      }))
-      .filter((group) => group.items.length > 0)
+    const visibleGroups = selectEducationVisibleGroups(groups, filteredItems)
     const showSistemaSGroup =
       selectedSectionKey === EDUCATION_SECTION_KEYS.modalities &&
       hasSistemaS &&
@@ -548,7 +487,7 @@ export function EducacaoPage({ indicadores, municipioData, navigationContext, se
   }
 
   // Legacy renderer retained for the compatibility helpers above; thematic sections use renderEducationSectionScope.
-  // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function renderLegacyPanoramaScope() {
     return (
       <>
