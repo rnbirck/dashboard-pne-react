@@ -95,6 +95,8 @@ async function validateRenderedCatalog() {
       await page.goto(DEV_UI_URL, { waitUntil: 'networkidle' })
       await page.getByRole('heading', { level: 1, name: 'Catálogo visual de desenvolvimento' }).waitFor({ state: 'visible' })
       assert.equal(await page.locator('[data-category]').count(), EXPECTED_CATEGORIES.length, 'Quantidade inesperada de categorias.')
+      const categoryIds = await page.locator('[data-category-id]').evaluateAll((elements) => elements.map((element) => element.getAttribute('data-category-id')))
+      assert.equal(new Set(categoryIds).size, EXPECTED_CATEGORIES.length, 'IDs de categoria ausentes ou duplicados.')
 
       for (const category of EXPECTED_CATEGORIES) {
         const categoryButton = page.locator(`[data-category="${category}"]`)
@@ -107,6 +109,16 @@ async function validateRenderedCatalog() {
       await page.waitForFunction(() => document.querySelector('.dev-ui-preview-viewport')?.getAttribute('data-preview-width') === 'mobile')
       const previewWidth = await page.locator('.dev-ui-preview-canvas').evaluate((element) => element.clientWidth)
       assert.equal(previewWidth, 390, 'O preview Mobile não aplicou 390 px.')
+
+      await page.goto(`${DEV_UI_URL}?scenario=education-detail&viewport=notebook`, { waitUntil: 'domcontentloaded' })
+      const directPreview = page.locator('[data-testid="catalog-preview"][data-scenario-id="education-detail"][data-viewport="notebook"]')
+      await directPreview.waitFor({ state: 'visible' })
+      await page.locator('[data-testid="catalog-preview"][data-catalog-ready="true"]').waitFor({ state: 'attached' })
+
+      await page.goto(`${DEV_UI_URL}?scenario=cenario-inexistente&viewport=desktop`, { waitUntil: 'domcontentloaded' })
+      const explicitError = page.locator('[data-catalog-error="true"]')
+      await explicitError.waitFor({ state: 'visible' })
+      assert.match(await explicitError.innerText(), /Cenário inválido: cenario-inexistente.*Cenários válidos:/s)
       assert.deepEqual(municipalRequests, [], `O catálogo tentou carregar dados municipais: ${municipalRequests.join(', ')}`)
       assert.deepEqual(pageErrors, [], `Erros de página no catálogo: ${pageErrors.join('; ')}`)
     } finally {

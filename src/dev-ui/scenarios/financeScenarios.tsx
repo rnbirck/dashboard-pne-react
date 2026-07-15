@@ -12,6 +12,7 @@ export const financeScenarios: readonly CatalogScenario[] = [
     description: 'A família real de cards financeiros com fixtures específicas por módulo.',
     objective: 'Validar moeda, percentual, zero, ausência, variação positiva ou negativa e unidade extensa.',
     states: ['FUNDEB', 'VAAR', 'SIOPE', 'PNATE', 'zero', 'ausente', 'positivo', 'negativo'],
+    visual: { enabled: true, viewports: ['desktop', 'mobile'] },
     render: () => (
       <ScenarioGrid>
         {financialIndicators.map((fixture) => (

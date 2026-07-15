@@ -12,6 +12,7 @@ export const tableScenarios: readonly CatalogScenario[] = [
     description: 'Tabela real com cabeçalhos longos, extremos extensos, ausências e valores grandes.',
     objective: 'Verificar caption, alinhamento, rolagem horizontal explícita e preservação de todas as colunas.',
     states: ['poucas linhas', 'muitas colunas', 'valor ausente', 'valor grande', 'positivo', 'negativo', 'overflow'],
+    visual: { enabled: true, viewports: ['notebook', 'mobile'] },
     render: () => (
       <ScenarioGrid columns="single">
         <ScenarioItem label="Tabela educacional">
@@ -27,6 +28,7 @@ export const tableScenarios: readonly CatalogScenario[] = [
     description: 'Mesma região em estado vazio e loading previsível.',
     objective: 'Distinguir claramente ausência de linhas de carregamento em andamento.',
     states: ['vazio', 'loading'],
+    visual: { enabled: true, viewports: ['desktop'] },
     render: () => (
       <ScenarioGrid>
         <ScenarioItem label="Estado vazio"><EducationTable caption="Tabela vazia" columns={tableColumns} rows={[]} /></ScenarioItem>

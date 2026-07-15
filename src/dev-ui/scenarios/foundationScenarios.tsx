@@ -18,6 +18,7 @@ export const foundationScenarios: readonly CatalogScenario[] = [
     description: 'Amostra os papéis semânticos canônicos usados pela plataforma.',
     objective: 'Validar contraste, separação de superfícies e consistência dos tokens sem introduzir valores locais.',
     states: ['marca', 'ação', 'superfícies', 'positivo', 'atenção'],
+    visual: { enabled: true, viewports: ['desktop'] },
     render: () => (
       <div className="dev-ui-token-grid">
         {colorTokens.map((token) => (
@@ -36,6 +37,7 @@ export const foundationScenarios: readonly CatalogScenario[] = [
     description: 'Combina hierarquia editorial, prosa longa e valores tabulares.',
     objective: 'Inspecionar wrapping, ritmo tipográfico, unidade curta ou extensa e precisão numérica.',
     states: ['título curto', 'título longo', 'prosa longa', 'valor decimal', 'valor grande'],
+    visual: { enabled: true, viewports: ['desktop', 'mobile'] },
     render: () => (
       <ScenarioGrid columns="single">
         <ScenarioItem label="Hierarquia editorial">

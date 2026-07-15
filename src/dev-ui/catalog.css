@@ -4,6 +4,61 @@
   background: var(--surface-soft);
 }
 
+.dev-ui-catalog-error {
+  min-height: 100vh;
+  padding: var(--space-8);
+  color: var(--text);
+  background: var(--surface-soft);
+}
+
+.dev-ui-catalog-error h1 {
+  color: var(--text-strong);
+}
+
+.dev-ui-catalog-error p {
+  max-width: var(--content-reading-max);
+}
+
+.dev-ui-visual-stage {
+  width: 100%;
+  min-height: 100vh;
+  overflow: visible;
+  background: var(--background);
+}
+
+.dev-ui-visual-stage .dev-ui-preview-content {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100vh;
+  background: var(--background);
+}
+
+.dev-ui-visual-stage[data-viewport='desktop'] .dev-ui-preview-content {
+  padding: var(--space-8);
+}
+
+.dev-ui-visual-stage[data-viewport='notebook'] .dev-ui-preview-content {
+  padding: var(--space-6);
+}
+
+.dev-ui-visual-stage[data-viewport='mobile'] .dev-ui-preview-content {
+  padding: var(--space-4);
+}
+
+.dev-ui-visual-stage [data-testid='catalog-component'] {
+  min-width: 0;
+}
+
+[data-visual-test='true'] *,
+[data-visual-test='true'] *::before,
+[data-visual-test='true'] *::after {
+  animation: none !important;
+  caret-color: transparent !important;
+  cursor: default !important;
+  scroll-behavior: auto !important;
+  transition: none !important;
+}
+
 .dev-ui-header {
   min-height: 132px;
   padding: var(--space-6) clamp(var(--space-5), 4vw, var(--space-10));

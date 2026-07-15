@@ -24,6 +24,7 @@ export const stateScenarios: readonly CatalogScenario[] = [
     description: 'Estados compartilhados de loading, erro, vazio e indisponibilidade.',
     objective: 'Validar anúncio semântico, contraste, linguagem simples e distinção entre cada condição.',
     states: ['normal', 'loading', 'erro', 'vazio', 'indisponível'],
+    visual: { enabled: true, viewports: ['desktop', 'mobile'] },
     render: () => (
       <ScenarioGrid>
         <ScenarioItem label="Normal"><div className="page-card" style={{ padding: 'var(--space-4)' }}><StatusBadge displayStatus={undefined} marker={undefined} status="Com dados" title="Com dados" tone="success" /><p>Conteúdo disponível para leitura.</p></div></ScenarioItem>

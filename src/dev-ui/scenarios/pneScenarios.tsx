@@ -11,6 +11,7 @@ export const pneScenarios: readonly CatalogScenario[] = [
     description: 'MetaCard real nos ciclos 2014–2024 e 2026–2036.',
     objective: 'Comparar status, meta, distância, tendência, título longo e seleção entre os dois ciclos.',
     states: ['ciclo encerrado', 'ciclo vigente', 'abaixo da meta', 'tendência positiva', 'selecionado'],
+    visual: { enabled: true, viewports: ['desktop', 'mobile'] },
     render: () => (
       <ScenarioGrid>
         {pneItems.map((fixture, index) => (

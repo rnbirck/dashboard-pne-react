@@ -16,12 +16,17 @@ Estas regras se aplicam a todo arquivo em `src/dev-ui`.
 - Toda fixture deve ser pequena, explícita, determinística e tipada. Não use aleatoriedade, data atual ou rede.
 - Preserve a diferença entre zero, `null`, ausência de denominador e série vazia.
 - Registre cenários em `src/dev-ui/scenarios/index.ts` e mantenha pelo menos um cenário em cada categoria de `CATALOG_CATEGORIES`.
+- IDs de cenário e de categoria são contratos de navegação e baseline. Não os altere sem migrar referências intencionalmente; testes nunca devem localizar cenário pelo título visível.
+- Habilite regressão visual somente pelos metadados opcionais `visual` do próprio cenário. Não mantenha uma segunda lista no harness e não cadastre o modo Fluido como baseline.
 - Cenários interativos podem manter estado local. Não use providers globais salvo quando um componente real realmente exigir um provider seguro e previsível.
 - Novos arquivos usam TypeScript e evitam tipos inseguros.
 
 ## Validação
 
-- Execute `npm run typecheck`, `npm run test:dev-ui`, `npm run lint` e `npm run build`.
+- Execute primeiro o cenário afetado com `npm run test:dev-ui:visual -- --scenario <id>`; atualize somente a combinação revisada com `test:dev-ui:visual:update`, nunca pelo comando normal.
+- Execute `npm run typecheck`, `npm run test:dev-ui`, `npm run test:dev-ui:visual`, `npm run lint` e `npm run build`.
 - Confirme que o catálogo funciona sem município e que nenhuma requisição a `/data/` ocorre.
 - Confirme que `dist` não contém `dev-ui`, `src/dev-ui` nem o título do catálogo.
-- O seletor interno de largura é uma inspeção rápida. Continue validando breakpoints reais em E2E e regressão visual.
+- Preserve `[data-testid="catalog-preview"]`, `data-scenario-id` e `data-catalog-ready`; o harness depende desses contratos para captura e estabilização.
+- Resultados e diffs são temporários; somente `tests/dev-ui-visual/baselines` é versionado. Diferenças de dimensão são falhas e não devem ser mascaradas por tolerância.
+- O seletor interno de largura é uma inspeção rápida. Continue validando breakpoints reais em E2E e regressão visual pública.

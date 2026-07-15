@@ -20,6 +20,16 @@ Validação automatizada:
 npm run test:dev-ui
 ```
 
+Regressão visual isolada e seletiva:
+
+```powershell
+npm run test:dev-ui:visual
+npm run test:dev-ui:visual -- --scenario cards-explorable-states --viewport notebook
+npm run test:dev-ui:visual -- --category education
+```
+
+Baselines só são gravados por `npm run test:dev-ui:visual:update`. Consulte [REGRESSAO_VISUAL_DEV_UI.md](REGRESSAO_VISUAL_DEV_UI.md) para filtros, matriz, estabilização, diagnóstico e atualização.
+
 ## Estrutura
 
 ```text
@@ -54,6 +64,8 @@ O catálogo usa `root: "dev-ui"` e `publicDir: false` em uma configuração Vite
 - os imports do catálogo são unidirecionais: `src/dev-ui` reutiliza código público, mas o código público nunca importa `src/dev-ui`.
 
 O teste `test:dev-ui` compila o catálogo em `artifacts/dev-ui-build`, renderiza a página com Playwright, confirma as categorias registradas e a ausência de requisições a `/data/`. Depois executa um build público temporário e falha se encontrar nomes, caminhos ou conteúdo do catálogo no resultado. Os diretórios temporários são removidos ao final.
+
+O harness visual inicia somente `vite.dev-ui.config.ts` na porta 4175. Ele abre cada cenário por `?scenario=<id>&viewport=<id>&visual=1`, captura `[data-testid="catalog-preview"]`, aguarda `[data-catalog-ready="true"]` e falha se observar requisições `*/data/*.json`.
 
 Para uma confirmação manual adicional:
 
@@ -96,7 +108,8 @@ Não use `Math.random()`, relógio do sistema, rede ou arquivos de dados reais.
 3. Use `ScenarioGrid` e `ScenarioItem` apenas como moldura do catálogo.
 4. Renderize o componente real dentro da moldura e forneça uma fixture tipada.
 5. Adicione o conjunto de cenários ao registro em `scenarios/index.ts` se criar um novo arquivo.
-6. Execute `npm run test:dev-ui`.
+6. Se o cenário agregar cobertura visual, configure `visual.enabled` e somente os viewports relevantes.
+7. Execute `npm run test:dev-ui` e o cenário isolado com `npm run test:dev-ui:visual -- --scenario <id>`.
 
 Wrappers locais são adequados para estado interativo, providers mínimos ou adaptação de props. Não copie o JSX original para simular o componente.
 
@@ -120,10 +133,12 @@ Media queries continuam respondendo ao viewport real do navegador, não ao taman
 
 ## O que validar no catálogo
 
+A regressão isolada abre o modo sem shell em viewports reais. Ela complementa, mas não substitui, a validação da composição pública em E2E e `test:visual`.
+
 Use o catálogo para alterações em tokens, tipografia, cards, badges, valores grandes, textos longos, controles, foco, tabelas, gráficos, loading, erro, vazio, ausência, seleção, desabilitação e expansão.
 
 Continue usando E2E e regressão visual para shell completo, seleção de município, rotas e hashes, restauração de foco entre páginas, carregamento real, integração entre domínios, viewport real, overflow do documento, impressão, fontes, diferenças pixel a pixel e contratos de dados.
 
 ## Orientação para futuros agentes do Codex
 
-Leia primeiro `AGENTS.md`, `docs/GUIA_DE_DESIGN.md`, `docs/PLANO_MIGRACAO_UI.md` e `src/dev-ui/AGENTS.md`. Procure um componente ou cenário equivalente antes de criar outro. Preserve a direção de dependência e confirme o isolamento com `npm run test:dev-ui` e `npm run build` antes de concluir qualquer mudança visual.
+Leia primeiro `AGENTS.md`, `docs/GUIA_DE_DESIGN.md`, `docs/PLANO_MIGRACAO_UI.md`, `src/dev-ui/AGENTS.md` e `docs/REGRESSAO_VISUAL_DEV_UI.md`. Procure um componente ou cenário equivalente antes de criar outro. Preserve a direção de dependência e confirme o isolamento com `npm run test:dev-ui`, `npm run test:dev-ui:visual` e `npm run build` antes de concluir qualquer mudança visual.

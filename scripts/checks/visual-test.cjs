@@ -3,17 +3,21 @@ const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('playwright');
-const { PNG } = require('../../node_modules/playwright-core/lib/utilsBundle.js');
+const {
+  DEFAULT_CHANNEL_TOLERANCE,
+  DEFAULT_MAX_DIFFERENT_PIXEL_RATIO,
+  comparePng,
+  writeComparisonArtifacts,
+} = require('./visual-comparison.cjs');
 
 const BASE_URL = process.env.BASE_URL ?? 'http://localhost:5173';
 const UPDATE = process.env.UPDATE_VISUAL_BASELINES === '1';
 const VISUAL_CASE = process.env.VISUAL_CASE?.trim() ?? '';
-const MAX_DIFFERENT_PIXEL_RATIO = 0.002;
-const CHANNEL_TOLERANCE = 20;
+const MAX_DIFFERENT_PIXEL_RATIO = DEFAULT_MAX_DIFFERENT_PIXEL_RATIO;
+const CHANNEL_TOLERANCE = DEFAULT_CHANNEL_TOLERANCE;
 const VIEWPORTS = [[1366, 768], [1280, 720], [1024, 768]];
 const BASELINE_DIR = path.resolve(__dirname, 'visual-baselines');
 const DIFF_DIR = path.resolve(__dirname, 'visual-diffs');
-const NEUTRAL_PIXEL = [247, 245, 239, 255];
 
 const CASES = [
   { key: 'home', open: async (page) => page.locator('.home-page').waitFor(), region: '.home-page' },
@@ -43,69 +47,8 @@ function shouldRun(name) {
   return VISUAL_CASE === name || VISUAL_CASE === stem;
 }
 
-function fill(png, pixel) {
-  for (let index = 0; index < png.data.length; index += 4) {
-    png.data[index] = pixel[0];
-    png.data[index + 1] = pixel[1];
-    png.data[index + 2] = pixel[2];
-    png.data[index + 3] = pixel[3];
-  }
-}
-
-function copyToCanvas(source, target) {
-  const rowLength = source.width * 4;
-  for (let row = 0; row < source.height; row += 1) {
-    source.data.copy(target.data, row * target.width * 4, row * rowLength, (row + 1) * rowLength);
-  }
-}
-
-function comparePng(actualBuffer, expectedBuffer) {
-  const actual = PNG.sync.read(actualBuffer);
-  const expected = PNG.sync.read(expectedBuffer);
-  const width = Math.max(actual.width, expected.width);
-  const height = Math.max(actual.height, expected.height);
-  const actualCanvas = new PNG({ width, height });
-  const expectedCanvas = new PNG({ width, height });
-  const diff = new PNG({ width, height });
-  fill(actualCanvas, NEUTRAL_PIXEL);
-  fill(expectedCanvas, NEUTRAL_PIXEL);
-  copyToCanvas(actual, actualCanvas);
-  copyToCanvas(expected, expectedCanvas);
-
-  let differentPixels = 0;
-  for (let y = 0; y < height; y += 1) {
-    for (let x = 0; x < width; x += 1) {
-      const index = (y * width + x) * 4;
-      const inActual = x < actual.width && y < actual.height;
-      const inExpected = x < expected.width && y < expected.height;
-      const different = !inActual || !inExpected || [0, 1, 2, 3].some((channel) => (
-        Math.abs(actualCanvas.data[index + channel] - expectedCanvas.data[index + channel]) > CHANNEL_TOLERANCE
-      ));
-      if (different) differentPixels += 1;
-      diff.data[index] = different ? 220 : actualCanvas.data[index] * 0.25;
-      diff.data[index + 1] = different ? 38 : actualCanvas.data[index + 1] * 0.25;
-      diff.data[index + 2] = different ? 38 : actualCanvas.data[index + 2] * 0.25;
-      diff.data[index + 3] = 255;
-    }
-  }
-
-  return {
-    actual,
-    actualCanvas,
-    diff,
-    expected,
-    expectedCanvas,
-    ratio: differentPixels / (width * height),
-    sameDimensions: actual.width === expected.width && actual.height === expected.height,
-  };
-}
-
 function writeDiagnostics(name, comparison) {
-  const stem = name.replace(/\.png$/, '');
-  fs.mkdirSync(DIFF_DIR, { recursive: true });
-  fs.writeFileSync(path.join(DIFF_DIR, `${stem}-actual.png`), PNG.sync.write(comparison.actual));
-  fs.writeFileSync(path.join(DIFF_DIR, `${stem}-expected.png`), PNG.sync.write(comparison.expected));
-  fs.writeFileSync(path.join(DIFF_DIR, `${stem}-diff.png`), PNG.sync.write(comparison.diff));
+  writeComparisonArtifacts(DIFF_DIR, name, comparison, '-');
 }
 
 function assertComparison(name, comparison) {
@@ -263,7 +206,7 @@ async function runSnapshot(page, testCase, name, diagnostics) {
       return;
     }
     assert.ok(fs.existsSync(baselinePath), `baseline ausente: ${name}; atualize deliberadamente apenas este caso.`);
-    assertComparison(name, comparePng(actual, fs.readFileSync(baselinePath)));
+    assertComparison(name, comparePng(actual, fs.readFileSync(baselinePath), CHANNEL_TOLERANCE));
   } catch (error) {
     console.error(`[visual] case=${name} failed before comparison fonts=${JSON.stringify(diagnostics.fontResponses)} fontFailures=${JSON.stringify(diagnostics.fontFailures)} consoleErrors=${JSON.stringify(diagnostics.consoleErrors)}`);
     throw error;

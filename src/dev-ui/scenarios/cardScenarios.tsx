@@ -15,6 +15,7 @@ export const cardScenarios: readonly CatalogScenario[] = [
     description: 'Primitivas reais com zero, ausência, decimal, valor grande e textos extensos.',
     objective: 'Comparar densidade, alinhamento e comportamento de valor sem depender de um domínio completo.',
     states: ['comum', 'zero', 'ausente', 'decimal', 'muito grande', 'texto longo'],
+    visual: { enabled: true, viewports: ['desktop', 'mobile'] },
     render: () => (
       <ScenarioGrid columns="compact">
         <ScenarioItem label="Valor comum"><MetricCard label="Matrículas" value="8.420" detail="Ano 2024" /></ScenarioItem>
@@ -33,6 +34,7 @@ export const cardScenarios: readonly CatalogScenario[] = [
     description: 'Cards reais de Educação e Financiamento em estados comparáveis.',
     objective: 'Validar badges positivo, negativo e neutro, seleção, desabilitação e títulos de várias linhas.',
     states: ['badge positivo', 'badge negativo', 'badge neutro', 'selecionado', 'desabilitado'],
+    visual: { enabled: true, viewports: ['notebook', 'mobile'] },
     render: () => (
       <ScenarioGrid>
         <ScenarioItem label="Educação · positivo"><EducationIndicatorCard buttonRef={undefined} indicator={educationIndicators[0].value} onSelect={() => undefined} /></ScenarioItem>

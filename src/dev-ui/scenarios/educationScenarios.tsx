@@ -62,6 +62,7 @@ export const educationScenarios: readonly CatalogScenario[] = [
     description: 'Busca real sobre um conjunto determinístico de cards educacionais.',
     objective: 'Validar busca vazia, preenchida, com resultados, sem resultados e agrupamento denso.',
     states: ['busca vazia', 'busca preenchida', 'com resultados', 'sem resultados', 'muitos itens'],
+    visual: { enabled: true, viewports: ['desktop'] },
     render: () => (
       <ScenarioGrid columns="single">
         <ScenarioItem label="Busca interativa" description="Experimente “abandono” ou um termo inexistente."><EducationSearchFixture /></ScenarioItem>
@@ -76,6 +77,7 @@ export const educationScenarios: readonly CatalogScenario[] = [
     description: 'Detalhe real do indicador com série completa, parcial e ausente.',
     objective: 'Inspecionar métricas, leitura rápida, gráfico, fonte e ausência de histórico no componente final.',
     states: ['detalhe', 'série completa', 'série parcial', 'sem histórico', 'título longo'],
+    visual: { enabled: true, viewports: ['notebook'] },
     render: () => (
       <ScenarioGrid columns="single">
         <ScenarioItem label="Série completa"><EducationIndicatorDetailView blocos={{}} indicator={detailFixture()} /></ScenarioItem>
@@ -97,6 +99,7 @@ export const educationScenarios: readonly CatalogScenario[] = [
     description: 'Seções reais alimentadas por projeções e metadados locais controlados.',
     objective: 'Validar cenários completos, parciais, ausentes, notas longas e fontes extensas sem acessar JSON municipal.',
     states: ['projeção completa', 'projeção parcial', 'ausente', 'metodologia', 'nota longa'],
+    visual: { enabled: true, viewports: ['mobile'] },
     render: () => (
       <ScenarioGrid columns="single">
         <ScenarioItem label="Demanda e projeções">

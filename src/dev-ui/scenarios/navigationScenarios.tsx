@@ -85,6 +85,7 @@ export const navigationScenarios: readonly CatalogScenario[] = [
     description: 'Controles reais em estados vazios, preenchidos, selecionados e desabilitados.',
     objective: 'Validar foco, limpeza, labels longos, seleção exclusiva e alvos mínimos de interação.',
     states: ['busca vazia', 'busca preenchida', 'selecionado', 'desabilitado', 'rótulo longo'],
+    visual: { enabled: true, viewports: ['desktop', 'mobile'] },
     render: () => (
       <ScenarioGrid>
         <ScenarioItem label="Campos de busca"><SearchControls /></ScenarioItem>
@@ -99,6 +100,7 @@ export const navigationScenarios: readonly CatalogScenario[] = [
     description: 'Grupo de navegação real com item ativo, inativo, expandido e recolhido.',
     objective: 'Inspecionar duas linhas, aria-expanded, aria-current e navegação por teclado.',
     states: ['submenu', 'ativo', 'inativo', 'expandido', 'recolhido', 'duas linhas'],
+    visual: { enabled: true, viewports: ['notebook'] },
     render: () => <ScenarioItem label="Grupo financeiro"><NavigationFixture /></ScenarioItem>,
   },
 ]
