@@ -645,6 +645,7 @@ async function verifySidebarMobileDrawerFlow(page, viewport) {
   await closeButton.waitFor({ state: 'visible' });
   await closeButton.press('Escape');
   await page.waitForFunction(() => document.querySelector('.sidebar-menu-button')?.getAttribute('aria-expanded') === 'false');
+  await page.waitForFunction(() => document.activeElement?.matches('.sidebar-menu-button'));
   assert.equal(
     await page.evaluate(() => document.activeElement?.matches('.sidebar-menu-button')),
     true,

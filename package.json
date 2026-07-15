@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:ui": "vite --config vite.dev-ui.config.ts",
     "build": "vite build",
     "check:units": "node scripts/checks/verify-units.cjs",
     "check:state-reference": "python -m unittest discover -s data_pipeline/tests -p \"test_*.py\"",
@@ -15,6 +16,7 @@
     "preview": "vite preview",
     "test:app-routing": "node scripts/checks/app-routing-test.mjs",
     "test:education": "node scripts/checks/education-test.mjs",
+    "test:dev-ui": "node scripts/checks/dev-ui-test.mjs",
     "test:e2e": "node scripts/checks/e2e-test.cjs",
     "test:visual": "node scripts/checks/visual-test.cjs",
     "update:visual": "node -e \"process.env.UPDATE_VISUAL_BASELINES='1';require('./scripts/checks/visual-test.cjs')\"",
