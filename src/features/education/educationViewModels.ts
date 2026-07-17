@@ -802,6 +802,7 @@ function buildMatriculasExplore(mat, cut = { cutKey: 'total', cutLabel: 'Total d
       etapaItems.push({
         key: 'mat-fundamental-subetapas',
         type: 'bar',
+        presentation: 'compact-comparison',
         title: `Composição por etapa${latestYear}${titleSuffix}`,
         color: '#16713a',
         data: entriesToRows({
@@ -1186,12 +1187,15 @@ export function categoryHistorySeries(rows, key, field) {
     .sort((a, b) => a.ano - b.ano)
 }
 
-export function buildAgeRangeComparisonChart(data, categories, years, formatLabel) {
+export function buildAgeRangeComparisonChart(data, categories, years, formatLabel, chartWidth = 1500, chartHeight = 520) {
   if (!Array.isArray(data) || !data.length || !Array.isArray(categories) || !categories.length || !Array.isArray(years) || !years.length) return null
 
-  const width = 960
-  const height = 430
-  const padding = { top: 44, right: 36, bottom: 58, left: 78 }
+  const width = Math.max(180, Number(chartWidth) || 1500)
+  const height = Math.max(280, Number(chartHeight) || 520)
+  const isNarrow = width < 600
+  const padding = isNarrow
+    ? { top: 36, right: 12, bottom: 44, left: 54 }
+    : { top: 38, right: 16, bottom: 46, left: 62 }
   const visibleCategories = categories
     .filter((category) => data.some((row) => !isMissing(row.values?.[category.key])))
     .map((category, index) => ({ ...category, color: chartSeriesColor(index) }))
@@ -1205,13 +1209,17 @@ export function buildAgeRangeComparisonChart(data, categories, years, formatLabe
   const plotW = width - padding.left - padding.right
   const plotH = height - padding.top - padding.bottom
   const slotWidth = plotW / years.length
-  const groupWidth = Math.min(slotWidth * 0.88, 240)
-  const gap = visibleCategories.length > 4 ? 4 : 7
-  const barWidth = Math.max(8, Math.min(30, (groupWidth - gap * (visibleCategories.length - 1)) / visibleCategories.length))
+  const groupWidth = Math.min(slotWidth * 0.9, isNarrow ? slotWidth * 0.96 : 120)
+  const groupTravel = Math.max(0, plotW - groupWidth)
+  const groupStep = years.length > 1 ? groupTravel / (years.length - 1) : 0
+  const gap = isNarrow ? 1 : visibleCategories.length > 4 ? 4 : 7
+  const barWidth = Math.max(isNarrow ? 2 : 8, Math.min(30, (groupWidth - gap * (visibleCategories.length - 1)) / visibleCategories.length))
   const yScale = (value) => padding.top + ((domainMax - value) / domainMax) * plotH
 
   const rows = data.map((row, rowIndex) => {
-    const xBase = padding.left + rowIndex * slotWidth + (slotWidth - groupWidth) / 2
+    const xBase = years.length > 1
+      ? padding.left + rowIndex * groupStep
+      : padding.left + groupTravel / 2
     return {
       year: row.year,
       x: xBase,

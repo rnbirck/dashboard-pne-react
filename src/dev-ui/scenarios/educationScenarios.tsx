@@ -6,6 +6,7 @@ import { EducationDemandSection } from '../../features/education/components/Educ
 import { EducationIndicatorDetailView } from '../../features/education/components/EducationIndicatorDetailView'
 import { EducationMethodologySection } from '../../features/education/components/EducationMethodologySection'
 import type { EducationMunicipioData } from '../../features/education/educationTypes'
+import '../../styles/education-pages.css'
 import { ScenarioGrid, ScenarioItem } from '../components/ScenarioPrimitives'
 import { educationIndicators, educationMunicipioFixture } from '../fixtures/catalogFixtures'
 import type { EducationIndicatorFixture } from '../fixtures/catalogFixtures'
@@ -48,7 +49,7 @@ function detailFixture(overrides: Partial<EducationIndicatorFixture> = {}) {
   return { ...educationIndicators[0].value, ...overrides }
 }
 
-const tabbedExploreFixture = [
+const supportGridFixture = [
   {
     key: 'fixture-rede',
     type: 'bar',
@@ -104,11 +105,11 @@ export const educationScenarios: readonly CatalogScenario[] = [
     title: 'Detalhe e séries históricas',
     description: 'Detalhe real do indicador com série completa, parcial e ausente.',
     objective: 'Inspecionar métricas, leitura rápida, gráfico, fonte e ausência de histórico no componente final.',
-    states: ['detalhe', 'série completa', 'série parcial', 'sem histórico', 'título longo', 'abas'],
+    states: ['detalhe', 'série completa', 'série parcial', 'sem histórico', 'título longo', 'cards de apoio'],
     visual: { enabled: true, viewports: ['notebook'] },
     render: () => (
       <ScenarioGrid columns="single">
-        <ScenarioItem label="Série completa e abas"><div className="content-area"><EducationIndicatorDetailView blocos={{}} indicator={detailFixture({ explore: tabbedExploreFixture })} /></div></ScenarioItem>
+        <ScenarioItem label="Série completa e cards de apoio"><div className="content-area"><EducationIndicatorDetailView blocos={{}} indicator={detailFixture({ explore: supportGridFixture })} /></div></ScenarioItem>
         <ScenarioItem label="Série parcial">
           <div className="content-area">
             <EducationIndicatorDetailView blocos={{}} indicator={detailFixture({

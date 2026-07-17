@@ -2,7 +2,7 @@
 // @ts-nocheck
 // JSX renderers are preserved byte-for-byte in structure while the raw payload
 // adapters continue their incremental TypeScript migration.
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { EducationBarChart } from '../../../components/EducationBarChart.jsx'
 import { DataSourceNote } from '../../../components/DataSourceNote.jsx'
 import { DetailHeadingText } from '../../../components/HeadingText.jsx'
@@ -12,9 +12,10 @@ import { EducationStackedBarChart } from '../../../components/EducationStackedBa
 import { EducationTable } from '../../../components/EducationTable.jsx'
 import { MethodNote } from '../../../components/MethodNote.jsx'
 import { MetricCard } from '../../../components/MetricCard.jsx'
+import { QuickReadingHeading } from '../../../components/QuickReadingHeading.jsx'
 import { SegmentedControl } from '../../../components/SegmentedControl.jsx'
-import { StatusBadge } from '../../../components/StatusBadge.jsx'
 import { ChartEmptyState, ChartLegend, ChartTooltip } from '../../../components/ChartPrimitives.jsx'
+import { useChartViewport } from '../../../hooks/useChartViewport.js'
 import { getDataSourceParts } from '../../../utils/dataSourceNotes.js'
 import { closeChartTooltipOnEscape } from '../../../utils/chartVisuals.js'
 import {
@@ -51,11 +52,11 @@ import {
 const EM = '\u2014'
 const CATEGORY_COMPARISON_COLORS = ['#0f766e', '#2563eb', '#f59e0b', '#7c3aed', '#0891b2', '#db2777', '#65a30d', '#9333ea']
 
-function IndicatorSegmentedControl({ options, selectedKey, onSelect, ariaLabel }) {
+function IndicatorSegmentedControl({ options, selectedKey, onSelect, ariaLabel, scrollable = false }) {
   return (
     <SegmentedControl
       ariaLabel={ariaLabel}
-      className="indicator-stage-segmented platform-segmented-control"
+      className={`indicator-stage-segmented platform-segmented-control${scrollable ? ' platform-segmented-control--scrollable' : ''}`}
       optionClassName="indicator-stage-segmented__button platform-segmented-option"
       onSelect={onSelect}
       options={options.map(({ key, label }) => ({ key, label }))}
@@ -65,53 +66,121 @@ function IndicatorSegmentedControl({ options, selectedKey, onSelect, ariaLabel }
 }
 
 
-function EducationDetailHeader({ indicator, description }) {
+function EducationDetailHeader({ indicator }) {
   return (
     <div className="detail-heading educacao-detail-heading">
-      <DetailHeadingText eyebrow="Indicador selecionado" level={2} title={normalizeEducationIndicatorLabel(indicator.label)} description={description} />
+      <DetailHeadingText eyebrow="Indicador selecionado" level={2} title={normalizeEducationIndicatorLabel(indicator.label)} />
       <div className="educacao-detail-heading__badges">
         <span className="indicator-stage-badge">{indicator.themeShortLabel ?? indicator.themeLabel}</span>
-        <StatusBadge status={indicator.statusLabel} tone={indicator.statusTone} />
       </div>
     </div>
   )
 }
 
-function IndicatorReferenceBox({ description }) {
-  if (!description) return null
+function EducationQuickReading({ description, text, tone = 'default', cutLabel }) {
+  if (!text && !description) return null
 
   return (
-    <div className="educacao-indicator-reference">
-      <span>O que este indicador mede</span>
-      <p>{description}</p>
+    <aside className={`interpretation-box education-quick-reading education-quick-reading--${tone}`} aria-label="Leitura rápida">
+      <QuickReadingHeading />
+      <ul className="education-quick-reading__list">
+        {text ? (
+          <li>
+            <EducationInsightIcon name="trend" />
+            <div>
+              <span>Evolução observada</span>
+              <p>{text}</p>
+            </div>
+          </li>
+        ) : null}
+        {description ? (
+          <li>
+            <EducationInsightIcon name="measure" />
+            <div>
+              <span>O que o indicador mede</span>
+              <p>{description}</p>
+            </div>
+          </li>
+        ) : null}
+        {cutLabel ? (
+          <li>
+            <EducationInsightIcon name="cut" />
+            <div>
+              <span>Recorte exibido</span>
+              <p><strong>{cutLabel}</strong></p>
+            </div>
+          </li>
+        ) : null}
+      </ul>
+    </aside>
+  )
+}
+
+function EducationInsightIcon({ name }) {
+  const paths = {
+    trend: <><path d="M5 16 10 11l3 3 6-7" /><path d="M15 7h4v4" /></>,
+    measure: <><circle cx="12" cy="12" r="8" /><path d="M12 8v4l3 2" /></>,
+    cut: <><path d="M5 6h14M8 12h8M10 18h4" /></>,
+  }
+
+  return (
+    <svg aria-hidden="true" className="education-quick-reading__icon" fill="none" viewBox="0 0 24 24">
+      {paths[name] ?? paths.measure}
+    </svg>
+  )
+}
+
+function variationStatusLabel(variation) {
+  if (variation?.raw === null || variation?.raw === undefined) return 'Sem série'
+  if (variation.raw > 0) return 'Alta'
+  if (variation.raw < 0) return 'Queda'
+  return 'Estável'
+}
+
+function EducationMetricSummary({
+  currentValue,
+  currentYear,
+  initialValue,
+  initialYear,
+  statusLabel,
+  statusTone,
+  variation,
+}) {
+  const period = initialYear && currentYear ? `${initialYear} a ${currentYear}` : 'Período indisponível'
+
+  return (
+    <div className="metric-grid metric-grid--four education-metric-summary">
+      <MetricCard
+        icon="start"
+        label={initialYear ? `Valor inicial (${initialYear})` : 'Valor inicial'}
+        value={initialValue}
+        detail="Início da série histórica"
+      />
+      <MetricCard
+        icon="current"
+        label={currentYear ? `Valor mais recente (${currentYear})` : 'Valor mais recente'}
+        value={currentValue}
+        detail="Último dado disponível"
+        size="large"
+      />
+      <MetricCard
+        icon={variation?.raw < 0 ? 'variationDown' : 'variation'}
+        label="Variação no período"
+        value={variation?.display ?? EM}
+        detail={period}
+        tone={variation?.tone}
+      />
+      <MetricCard
+        icon="status"
+        label="Tendência observada"
+        value={statusLabel ?? variationStatusLabel(variation)}
+        detail="Leitura descritiva da série"
+        tone={statusTone ?? variation?.tone}
+      />
     </div>
   )
 }
 
-function EducationQuickReading({ text, tone = 'default' }) {
-  if (!text) return null
-
-  return (
-    <div className={`interpretation-box education-quick-reading education-quick-reading--${tone}`}>
-      <span>Leitura rápida</span>
-      <p>{text}</p>
-    </div>
-  )
-}
-
-
-function buildHistorySummary(series, formatLabel = (value) => String(value)) {
-  const points = normalizeYearSeries(series ?? [])
-    .filter((point) => !isMissing(point.valor) && point.ano)
-    .sort((a, b) => Number(a.ano) - Number(b.ano))
-
-  if (points.length < 2) return ''
-
-  const firstPoint = points[0]
-  const lastPoint = points[points.length - 1]
-
-  return `Série de ${firstPoint.ano} a ${lastPoint.ano}: ${formatLabel(firstPoint.valor)} no início e ${formatLabel(lastPoint.valor)} no dado mais recente.`
-}
 
 export function EducationIndicatorDetailView({ indicator, blocos }) {
   const [selectedStageKey, setSelectedStageKey] = useState('')
@@ -142,59 +211,68 @@ export function EducationIndicatorDetailView({ indicator, blocos }) {
   const displayIndicator = applyStageOption(indicator, selectedStageOption)
   const hasMainSeries = displayIndicator.series.length >= 2
   const showStageFilter = stageOptions.length > 1
-  const hasManyStageOptions = stageOptions.length > 4
   const stageFilterLabel = indicator.stageFilterLabel ?? 'Etapa exibida'
-  const chartSummary = buildHistorySummary(displayIndicator.series, displayIndicator.formatValue)
-
   return (
-    <section className="detail-panel educacao-detail-panel">
+    <section className="detail-panel educacao-detail-panel educacao-detail-panel--organized">
       <EducationDetailHeader indicator={indicator} description={indicator.description} />
 
-      <IndicatorReferenceBox description={indicator.description} />
+      <EducationMetricSummary
+        currentValue={indicator.currentDisplay}
+        currentYear={indicator.currentYear}
+        initialValue={indicator.initialDisplay}
+        initialYear={indicator.initialYear}
+        statusLabel={indicator.statusLabel}
+        statusTone={indicator.statusTone}
+        variation={{ display: indicator.variationDisplay, raw: indicator.variationRaw, tone: indicator.variationTone }}
+      />
 
-      <div className="metric-grid metric-grid--three">
-        <MetricCard label="Valor inicial" value={indicator.initialDisplay} detail={indicator.initialYear ? `Ano ${indicator.initialYear}` : null} />
-        <MetricCard label="Valor atual" value={indicator.currentDisplay} detail={indicator.currentYear ? `Ano ${indicator.currentYear}` : null} size="large" />
-        <MetricCard label="Variação" value={indicator.variationDisplay} tone={indicator.variationTone} />
-      </div>
-
-      <EducationQuickReading text={indicator.quickReading} tone={indicator.statusTone} />
-
-      <div className="indicator-chart-card educacao-main-chart-card">
-        <IndicatorChartHeader
-          title="Histórico do indicador"
-          subtitle={`${displayIndicator.label} · Recorte exibido: ${displayIndicator.mainCutLabel}`}
-          summary={chartSummary}
-          hasWideSegmented={hasManyStageOptions}
-        >
-          {showStageFilter ? (
-            <div className="indicator-stage-segmented-wrap">
-              <span className="indicator-stage-segmented-label">{stageFilterLabel}</span>
-
-              <IndicatorSegmentedControl
-                options={stageOptions}
-                selectedKey={selectedStageOption?.key}
-                onSelect={setSelectedStageKey}
-                ariaLabel="Recorte do histórico do indicador"
+      <div className="education-primary-analysis">
+        <div className="indicator-chart-card educacao-main-chart-card">
+          <IndicatorChartHeader
+            title="Evolução do indicador"
+            subtitle={`${displayIndicator.label} · Recorte exibido: ${displayIndicator.mainCutLabel}`}
+            hasWideSegmented={showStageFilter}
+          >
+            {showStageFilter ? (
+              <div className="indicator-stage-select-wrap">
+                <label className="educacao-age-detail__control indicator-stage-select">
+                  <span>{stageFilterLabel}</span>
+                  <select
+                    aria-label="Recorte do histórico do indicador"
+                    value={selectedStageOption?.key ?? ''}
+                    onChange={(event) => setSelectedStageKey(event.target.value)}
+                  >
+                    {stageOptions.map((option) => (
+                      <option key={option.key} value={option.key}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            ) : null}
+          </IndicatorChartHeader>
+          {hasMainSeries ? (
+            <>
+              <EducationLineChart
+                color={displayIndicator.chartColor}
+                formatLabel={displayIndicator.formatValue}
+                scaleType={displayIndicator.scaleType}
+                series={displayIndicator.series}
+                showPointLabels={displayIndicator.showPointLabels}
+                title={null}
               />
-            </div>
-          ) : null}
-        </IndicatorChartHeader>
-        {hasMainSeries ? (
-          <>
-            <EducationLineChart
-              color={displayIndicator.chartColor}
-              formatLabel={displayIndicator.formatValue}
-              scaleType={displayIndicator.scaleType}
-              series={displayIndicator.series}
-              showPointLabels={displayIndicator.showPointLabels}
-              title={null}
-            />
-            <EducationSourceNotes context={dataSourceContextForEducation(displayIndicator)} />
-          </>
-        ) : (
-          <ChartEmptyState message="Histórico não disponível." />
-        )}
+              <EducationSourceNotes context={dataSourceContextForEducation(displayIndicator)} />
+            </>
+          ) : (
+            <ChartEmptyState message="Histórico não disponível." />
+          )}
+        </div>
+
+        <EducationQuickReading
+          cutLabel={displayIndicator.mainCutLabel}
+          description={indicator.description}
+          text={indicator.quickReading}
+          tone={indicator.statusTone}
+        />
       </div>
 
       {displayIndicator.explore.length ? (
@@ -350,10 +428,10 @@ function InfraDetailPanel({ indicator, blocos }) {
 
   // ── Render ───────────────────────────────────────────────────────────
   return (
-    <section className="detail-panel educacao-detail-panel">
+    <section className="detail-panel educacao-detail-panel educacao-detail-panel--organized">
       <EducationDetailHeader indicator={indicator} description={detailDescription} />
 
-      <IndicatorReferenceBox description={detailDescription} />
+      <EducationQuickReading description={detailDescription} tone={indicator.statusTone} />
 
       <div className="infra-panorama-card">
         <span className="infra-panorama-title">
@@ -411,13 +489,13 @@ function InfraDetailPanel({ indicator, blocos }) {
       </div>
 
       {evolutionRows.length > 0 && years.length > 0 ? (
-        <div className="indicator-chart-card infra-evolution-table-wrap">
-          <div className="education-chart-heading">
+        <details className="indicator-chart-card infra-evolution-table-wrap platform-support-disclosure">
+          <summary className="education-chart-heading platform-support-disclosure__summary">
             <div>
               <span>Histórico dos principais indicadores de infraestrutura</span>
               <p>Percentual por ano — {tableLabel}</p>
             </div>
-          </div>
+          </summary>
           <div className="infra-table-scroll">
             <EducationTable
               caption="Histórico dos principais indicadores de infraestrutura"
@@ -431,7 +509,7 @@ function InfraDetailPanel({ indicator, blocos }) {
               title: 'Histórico dos principais indicadores de infraestrutura',
             })}
           />
-        </div>
+        </details>
       ) : null}
     </section>
   )
@@ -451,74 +529,107 @@ function applyStageOption(indicator, option) {
 
 function EducationIndicatorBreakdown({ indicator }) {
   const detailItems = sortDetailItems(indicator.explore ?? [])
-  const [selectedDetailKey, setSelectedDetailKey] = useState('')
-  const tabSetId = useId().replace(/:/g, '')
-  const tabRefs = useRef([])
-  const activeItem = detailItems.find((item) => item.key === selectedDetailKey) ?? detailItems[0] ?? null
-  const hasTabs = detailItems.length > 1
-
-  function selectTab(index) {
-    const item = detailItems[index]
-    if (!item) return
-    setSelectedDetailKey(item.key)
-    tabRefs.current[index]?.focus()
-  }
-
-  function handleTabKeyDown(event, index) {
-    let nextIndex = null
-    if (event.key === 'ArrowRight') nextIndex = (index + 1) % detailItems.length
-    if (event.key === 'ArrowLeft') nextIndex = (index - 1 + detailItems.length) % detailItems.length
-    if (event.key === 'Home') nextIndex = 0
-    if (event.key === 'End') nextIndex = detailItems.length - 1
-    if (nextIndex === null) return
-    event.preventDefault()
-    selectTab(nextIndex)
-  }
 
   if (!detailItems.length) return null
 
+  const supportId = `education-support-${String(indicator.key ?? 'detail').replace(/[^a-z0-9_-]/gi, '-')}`
+  const profileItems = detailItems.filter(isEducationSupportProfileItem)
+  const hasProfilePair = profileItems.length === 2
+  const compactItems = detailItems.filter((item) => !isEducationSupportWideItem(item) && !isEducationSupportProfileItem(item))
+  const lastCompactItem = compactItems.at(-1)
+  const hasOddCompactRow = compactItems.length % 2 === 1
+
   return (
-    <section className="educacao-explore education-support-data">
-      <div className="educacao-explore__heading">
-        <div>
+    <section className="educacao-explore education-support-data education-support-data--organized" aria-labelledby={`${supportId}-title`}>
+      <header className="education-support-data__header">
+        <EducationSupportDataIcon />
+        <div className="education-support-data__summary">
           <span className="educacao-explore__eyebrow">Aprofundamento</span>
-          <h3>Dados de apoio do indicador</h3>
+          <h3 id={`${supportId}-title`}>Dados de apoio do indicador</h3>
           <p>Recortes por etapa, rede, localização ou perfil, quando disponíveis na estrutura atual.</p>
+        </div>
+      </header>
+
+      <div className="education-support-data__body">
+        <div className="education-support-data__grid">
+          {detailItems.map((item) => {
+            const wide = isEducationSupportWideItem(item)
+            const paired = hasProfilePair && isEducationSupportProfileItem(item)
+            const fullRow = wide || (!paired && isEducationSupportProfileItem(item)) || (hasOddCompactRow && item === lastCompactItem)
+
+            return (
+              <EducationSupportDataItem
+                fullRow={fullRow}
+                item={item}
+                key={item.key}
+                paired={paired}
+                supportId={supportId}
+                wide={wide}
+              />
+            )
+          })}
         </div>
       </div>
 
-      {hasTabs ? (
-        <div className="educacao-detail-tabs platform-tab-list" role="tablist" aria-label="Detalhamentos do indicador">
-          {detailItems.map((item, index) => (
-            <button
-              ref={(element) => { tabRefs.current[index] = element }}
-              className={`educacao-detail-tab platform-tab${activeItem?.key === item.key ? ' is-active' : ''}`}
-              key={item.key}
-              id={`education-detail-tab-${tabSetId}-${item.key}`}
-              role="tab"
-              aria-selected={activeItem?.key === item.key}
-              aria-controls={`education-detail-panel-${tabSetId}`}
-              tabIndex={activeItem?.key === item.key ? 0 : -1}
-              type="button"
-              onClick={() => setSelectedDetailKey(item.key)}
-              onKeyDown={(event) => handleTabKeyDown(event, index)}
-            >
-              {getDetailTabLabel(item)}
-            </button>
-          ))}
-        </div>
-      ) : null}
+      <footer className="education-support-data__footer" aria-label="Fonte consolidada dos dados de apoio">
+        <EducationSourceNotes context={dataSourceContextForEducation(indicator)} />
+      </footer>
+    </section>
+  )
+}
 
-      <div
-        className="educacao-explore__panel"
-        id={`education-detail-panel-${tabSetId}`}
-        role="tabpanel"
-        aria-labelledby={hasTabs ? `education-detail-tab-${tabSetId}-${activeItem.key}` : undefined}
-      >
-        <ExploreItem indicator={indicator} item={activeItem} />
+function EducationSupportDataIcon() {
+  return (
+    <svg aria-hidden="true" className="education-support-data__icon" fill="none" viewBox="0 0 24 24">
+      <path d="M4 19V5" />
+      <path d="M4 19h16" />
+      <rect height="5" rx="1" width="3" x="7" y="12" />
+      <rect height="9" rx="1" width="3" x="12" y="8" />
+      <rect height="12" rx="1" width="3" x="17" y="5" />
+    </svg>
+  )
+}
+
+function EducationSupportDataItem({ fullRow, item, paired, supportId, wide }) {
+  const itemId = `${supportId}-${String(item.key ?? 'item').replace(/[^a-z0-9_-]/gi, '-')}`
+  const contextLabel = getDetailTabLabel(item)
+  const title = item.title ?? contextLabel
+
+  return (
+    <section
+      aria-labelledby={`${itemId}-title`}
+      className={`education-support-data__item${wide ? ' education-support-data__item--wide' : ''}${paired ? ' education-support-data__item--paired' : ''}${fullRow ? ' education-support-data__item--full-row' : ''}`}
+    >
+      <header className="education-support-data__item-heading">
+        <div>
+          <span>{contextLabel}</span>
+          <h4 id={`${itemId}-title`}>{title}</h4>
+          <p>{getEducationSupportDescription(item)}</p>
+        </div>
+      </header>
+      <div className="education-support-data__item-content">
+        <ExploreItem item={item} />
       </div>
     </section>
   )
+}
+
+function isEducationSupportWideItem(item) {
+  return ['modality-range', 'stage-detail', 'table'].includes(item.type)
+}
+
+function isEducationSupportProfileItem(item) {
+  return ['age-range', 'color-race'].includes(item.type)
+}
+
+function getEducationSupportDescription(item) {
+  if (item.type === 'stacked') return 'Distribuição histórica do indicador no recorte selecionado.'
+  if (item.type === 'bar') return 'Comparação dos valores mais recentes entre as categorias disponíveis.'
+  if (item.type === 'line') return 'Evolução anual da série complementar usada nesta leitura.'
+  if (item.type === 'table') return 'Valores detalhados que complementam a leitura do indicador.'
+  if (item.type === 'stage-detail') return 'Panorama, distribuição e evolução do recorte por etapa.'
+  if (item.type === 'stage-context') return 'Síntese dos valores mais recentes para o recorte selecionado.'
+  return 'Recorte complementar para interpretar o indicador com mais contexto.'
 }
 
 function TurmasPanoramaPanel({ indicator, blocos }) {
@@ -561,13 +672,9 @@ function TurmasPanoramaPanel({ indicator, blocos }) {
   const variation = calculateVariation(initialValue, currentValue, selectedMetricKey === 'turmas' || selectedMetricKey === 'docentes' ? 'number' : 'ratio')
   const hasMainSeries = displaySeries.length >= 2
   const quickReading = `Em ${currentYear ?? '—'}, o município registra ${!isMissing(currentValue) ? activeMetric.formatLabel(currentValue) : EM} em ${activeMetric.label.toLowerCase()} no recorte ${cutLabel}.`
-  const chartSummary = buildHistorySummary(displaySeries, activeMetric.formatLabel)
-
   return (
-    <section className="detail-panel educacao-detail-panel">
+    <section className="detail-panel educacao-detail-panel educacao-detail-panel--organized">
       <EducationDetailHeader indicator={indicator} description={indicator.description} />
-
-      <IndicatorReferenceBox description={indicator.description} />
 
       <div className="indicator-control-bar platform-control-bar">
         <div className="indicator-control-bar__copy">
@@ -582,39 +689,47 @@ function TurmasPanoramaPanel({ indicator, blocos }) {
         />
       </div>
 
-      <div className="metric-grid metric-grid--three">
-        <MetricCard label="Valor inicial" value={!isMissing(initialValue) ? activeMetric.formatLabel(initialValue) : EM} detail={firstPoint?.ano ? `Ano ${firstPoint.ano}` : null} />
-        <MetricCard label="Valor atual" value={!isMissing(currentValue) ? activeMetric.formatLabel(currentValue) : EM} detail={currentYear ? `Ano ${currentYear}` : null} size="large" />
-        <MetricCard label="Variação" value={variation.display} tone={variation.tone} />
-      </div>
+      <EducationMetricSummary
+        currentValue={!isMissing(currentValue) ? activeMetric.formatLabel(currentValue) : EM}
+        currentYear={currentYear}
+        initialValue={!isMissing(initialValue) ? activeMetric.formatLabel(initialValue) : EM}
+        initialYear={firstPoint?.ano}
+        variation={variation}
+      />
 
-      <EducationQuickReading text={quickReading} tone={indicator.statusTone} />
+      <div className="education-primary-analysis">
+        <div className="indicator-chart-card educacao-main-chart-card">
+          <IndicatorChartHeader
+            title="Evolução do indicador"
+            subtitle={`${activeMetric.label} · Recorte exibido: ${cutLabel}`}
+          />
+          {hasMainSeries ? (
+            <>
+              <EducationLineChart
+                color="#16713a"
+                formatLabel={activeMetric.formatLabel}
+                scaleType={selectedMetricKey === 'turmas' || selectedMetricKey === 'docentes' ? 'count' : 'dynamic'}
+                series={displaySeries}
+                showPointLabels
+              />
+              <EducationSourceNotes
+                context={dataSourceContextForEducation(indicator, {
+                  detailType: selectedMetricKey,
+                  title: activeMetric.label,
+                })}
+              />
+            </>
+          ) : (
+            <ChartEmptyState message="Histórico não disponível." />
+          )}
+        </div>
 
-      <div className="indicator-chart-card educacao-main-chart-card">
-        <IndicatorChartHeader
-          title="Histórico do indicador"
-          subtitle={`${activeMetric.label} · Recorte exibido: ${cutLabel}`}
-          summary={chartSummary}
+        <EducationQuickReading
+          cutLabel={cutLabel}
+          description={indicator.description}
+          text={quickReading}
+          tone={indicator.statusTone}
         />
-        {hasMainSeries ? (
-          <>
-            <EducationLineChart
-              color="#16713a"
-              formatLabel={activeMetric.formatLabel}
-              scaleType={selectedMetricKey === 'turmas' || selectedMetricKey === 'docentes' ? 'count' : 'dynamic'}
-              series={displaySeries}
-              showPointLabels
-            />
-            <EducationSourceNotes
-              context={dataSourceContextForEducation(indicator, {
-                detailType: selectedMetricKey,
-                title: activeMetric.label,
-              })}
-            />
-          </>
-        ) : (
-          <ChartEmptyState message="Histórico não disponível." />
-        )}
       </div>
 
       {displayExplore.length ? (
@@ -686,24 +801,13 @@ function getDetailTabLabel(item) {
   return item.title ?? 'Detalhamento'
 }
 
-function ExploreItem({ indicator, item }) {
-  const sourceContext = dataSourceContextForEducation(indicator, {
-    detailType: item.type,
-    title: item.title ?? item.tabLabel,
-  })
+function ExploreItem({ item }) {
   const isSchoolStageMethodology = item.key === 'rede-etapa' && Boolean(item.note)
-  const sourceParts = isSchoolStageMethodology ? getDataSourceParts(sourceContext) : null
   const noteEl = isSchoolStageMethodology ? (
     <MethodNote className="educacao-explore__note">{item.note}</MethodNote>
   ) : item.note ? (
     <p className="educacao-explore__note">{item.note}</p>
   ) : null
-  const sourceNote = sourceParts ? (
-    <DataSourceNote source={sourceParts.source} />
-  ) : (
-    <EducationSourceNotes context={sourceContext} />
-  )
-
   if (item.type === 'stacked') {
     return (
       <>
@@ -713,17 +817,23 @@ function ExploreItem({ indicator, item }) {
           formatLabel={item.formatLabel}
           title={item.title}
         />
-        {sourceNote}
         {noteEl}
       </>
     )
   }
 
   if (item.type === 'bar') {
+    if (item.presentation === 'compact-comparison') {
+      return (
+        <>
+          <EducationCompactComparison data={item.data} formatLabel={item.formatLabel} title={item.title} />
+          {noteEl}
+        </>
+      )
+    }
     return (
       <>
         <EducationBarChart color={item.color} data={item.data} formatLabel={item.formatLabel} orientation={item.orientation} preserveOrder={item.preserveOrder} title={item.title} />
-        {sourceNote}
         {noteEl}
       </>
     )
@@ -735,7 +845,6 @@ function ExploreItem({ indicator, item }) {
           <div className="educacao-explore-table educacao-explore-table--spaced">
             <h4>{item.panoramaTitle}</h4>
             <EducationTable columns={item.panoramaColumns} rows={item.panoramaRows} />
-            {sourceNote}
           </div>
         ) : null}
         <EducationBarChart
@@ -744,7 +853,6 @@ function ExploreItem({ indicator, item }) {
           formatLabel={item.formatLabel}
           title={item.distributionTitle}
         />
-        {sourceNote}
         {item.historyCategories && item.historyData && item.historyData.length >= 2 ? (
           <div className="educacao-explore-block--spaced">
             <EducationStackedBarChart
@@ -753,7 +861,6 @@ function ExploreItem({ indicator, item }) {
               formatLabel={item.formatLabel}
               title={item.historyTitle}
             />
-            {sourceNote}
           </div>
         ) : item.note ? (
           <p className="educacao-explore__note">{item.note}</p>
@@ -786,37 +893,17 @@ function ExploreItem({ indicator, item }) {
     )
   }
   if (item.type === 'age-range') {
-    return (
-      <>
-        <AgeRangeDetail key={item.key} item={item} />
-        {sourceNote}
-      </>
-    )
+    return <AgeRangeDetail key={item.key} item={item} />
   }
   if (item.type === 'color-race') {
-    return (
-      <>
-        <ColorRaceDetail key={item.key} item={item} />
-        {sourceNote}
-      </>
-    )
+    return <ColorRaceDetail key={item.key} item={item} />
   }
   if (item.type === 'modality-range') {
-    return (
-      <>
-        <ModalityDetail key={item.key} item={item} />
-        {sourceNote}
-      </>
-    )
+    return <ModalityDetail key={item.key} item={item} />
   }
   if (item.type === 'line') {
     return item.series.length >= 2
-      ? (
-        <>
-          <EducationLineChart color={item.color} formatLabel={item.formatLabel} scaleType={item.scaleType} series={item.series} title={item.title} />
-          {sourceNote}
-        </>
-      )
+      ? <EducationLineChart color={item.color} formatLabel={item.formatLabel} scaleType={item.scaleType} series={item.series} title={item.title} />
       : <div className="education-chart-empty"><p>Não há dados suficientes para exibir o gráfico.</p></div>
   }
   if (item.type === 'table') {
@@ -824,12 +911,36 @@ function ExploreItem({ indicator, item }) {
       <div className="educacao-explore-table">
         <h4>{item.title}</h4>
         <EducationTable columns={item.columns} rows={item.rows} />
-        {sourceNote}
         {noteEl}
       </div>
     )
   }
   return null
+}
+
+function EducationCompactComparison({ data, formatLabel = String, title }) {
+  const rows = (Array.isArray(data) ? data : [])
+    .filter((row) => !isMissing(row?.value) && Number(row.value) >= 0)
+    .map((row) => ({ ...row, value: Number(row.value) }))
+    .sort((a, b) => b.value - a.value)
+
+  if (!rows.length) return <ChartEmptyState />
+
+  const maxValue = Math.max(...rows.map((row) => row.value), 1)
+
+  return (
+    <dl className="education-compact-comparison" aria-label={title}>
+      {rows.map((row) => (
+        <div className="education-compact-comparison__item" key={row.label}>
+          <dt>{row.label}</dt>
+          <dd>
+            <strong>{formatLabel(row.value)}</strong>
+            <progress aria-label={`${row.label}: ${formatLabel(row.value)}`} max={maxValue} value={row.value} />
+          </dd>
+        </div>
+      ))}
+    </dl>
+  )
 }
 
 function AgeRangeDetail({ item }) {
@@ -857,9 +968,7 @@ function AgeRangeDetail({ item }) {
     : ''
   const comparisonTitlePrefix = item.comparisonTitlePrefix ?? 'Matrículas por faixa etária'
   const historyStageLabel = item.historyStageLabel ?? activeStageLabel
-  const comparisonTitle = comparisonYears.length
-    ? `${comparisonTitlePrefix} — ${activeStageLabel} — ${formatYearList(comparisonYears)}`
-    : `${comparisonTitlePrefix} — ${activeStageLabel} — comparação entre anos`
+  const comparisonTitle = `${comparisonTitlePrefix} — ${activeStageLabel}`
   const historyTitle = period
     ? `Histórico — ${historyStageLabel} — ${activeFaixa} — ${period}`
     : `Histórico — ${historyStageLabel} — ${activeFaixa}`
@@ -925,7 +1034,9 @@ function AgeRangeDetail({ item }) {
 
 function AgeRangeComparisonChart({ categories, data, years, title, formatLabel }) {
   const [activeBar, setActiveBar] = useState(null)
-  const chart = buildAgeRangeComparisonChart(data, categories, years, formatLabel)
+  const { containerRef, width: chartWidth } = useChartViewport(1000)
+  const chartHeight = chartWidth < 420 ? 280 : chartWidth < 900 ? 300 : 320
+  const chart = buildAgeRangeComparisonChart(data, categories, years, formatLabel, chartWidth, chartHeight)
 
   if (!chart || !chart.rows.length || !chart.categories.length) {
     return <ChartEmptyState />
@@ -937,7 +1048,7 @@ function AgeRangeComparisonChart({ categories, data, years, title, formatLabel }
       {chart.categories.length > 1 ? (
         <ChartLegend className="education-stacked-legend" items={chart.categories} />
       ) : null}
-      <div className="education-chart__canvas">
+      <div className="education-chart__canvas" ref={containerRef}>
         <svg viewBox={`0 0 ${chart.width} ${chart.height}`} role="img" aria-label={title}>
           <g className="chart-grid">
             {chart.yTicks.map((tick, i) => (
@@ -986,7 +1097,14 @@ function AgeRangeComparisonChart({ categories, data, years, title, formatLabel }
                   ) : null}
                 </g>
               ))}
-              <text x={row.x + row.width / 2} y={chart.height - 18} textAnchor="middle" className="chart-x-label">{row.year}</text>
+              <text
+                x={row.x + row.width / 2}
+                y={chart.height - chart.padding.bottom + 24}
+                textAnchor="middle"
+                className="chart-x-label"
+              >
+                {row.year}
+              </text>
             </g>
           ))}
         </svg>
@@ -1114,9 +1232,7 @@ function ColorRaceDetail({ item }) {
     : ''
   const comparisonTitlePrefix = item.comparisonTitlePrefix ?? 'Matrículas por cor/raça'
   const historyStageLabel = item.historyStageLabel ?? activeStageLabel
-  const comparisonTitle = comparisonYears.length
-    ? `${comparisonTitlePrefix} — ${activeStageLabel} — ${formatYearList(comparisonYears)}`
-    : `${comparisonTitlePrefix} — ${activeStageLabel} — comparação entre anos`
+  const comparisonTitle = `${comparisonTitlePrefix} — ${activeStageLabel}`
   const historyTitle = period
     ? `Histórico — ${historyStageLabel} — ${corRacaLabel(activeCorRaca)} — ${period}`
     : `Histórico — ${historyStageLabel} — ${corRacaLabel(activeCorRaca)}`

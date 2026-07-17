@@ -1,27 +1,19 @@
 import { useMemo, useState } from 'react'
 import { closeChartTooltipOnEscape } from '../utils/chartVisuals'
+import {
+  buildPneAbsoluteScale,
+  PNE_CHART_GEOMETRY,
+  resolvePneAuxiliaryYearTickLimit,
+  selectPneYearTicks,
+} from '../utils/pneChartSystem'
+import { useChartViewport } from '../hooks/useChartViewport'
 import { ChartTooltip } from './ChartPrimitives'
 
-const CHART_WIDTH = 980
-const CHART_HEIGHT = 260
-const PADDING = { top: 34, right: 28, bottom: 48, left: 64 }
+const FALLBACK_CHART_WIDTH = 420
 
 function formatNumber(value) {
   if (!Number.isFinite(value)) return '-'
   return value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })
-}
-
-function roundUp(value) {
-  if (!Number.isFinite(value) || value <= 0) return 1
-  const magnitude = 10 ** Math.floor(Math.log10(value))
-  return Math.ceil(value / magnitude) * magnitude
-}
-
-function shouldShowYearLabel(index, total) {
-  const lastIndex = total - 1
-  if (index === 0 || index === lastIndex) return true
-  if (total <= 8) return true
-  return index % 2 === 0 && index < lastIndex - 1
 }
 
 function shouldShowValueLabel(point, index, points, maxValue) {
@@ -36,8 +28,14 @@ export function ComplementaryEnrollmentChart({
   unit = 'Matrículas',
   valueMode = 'legacy',
   valueFormatter,
+  maxYearTicks = 6,
 }) {
   const [activePoint, setActivePoint] = useState(null)
+  const { containerRef, width: chartWidth } = useChartViewport(FALLBACK_CHART_WIDTH)
+  const chartHeight = chartWidth < 300
+    ? PNE_CHART_GEOMETRY.auxiliary.mobileHeight
+    : PNE_CHART_GEOMETRY.auxiliary.desktopHeight
+  const padding = PNE_CHART_GEOMETRY.auxiliary.padding
   const formatValue = typeof valueFormatter === 'function' ? valueFormatter : formatNumber
   const displayUnit = valueMode === 'count' ? 'Matrículas' : unit
   const rawPoints = useMemo(() => {
@@ -53,21 +51,22 @@ export function ComplementaryEnrollmentChart({
   const values = points.map((p) => p.value)
   const minValue = 0
   const maxValue = values.length > 0 ? Math.max(...values) : 0
-  const yMax = roundUp(maxValue * 1.12)
+  const yScaleModel = buildPneAbsoluteScale(values)
+  const yMax = yScaleModel.domain.max
   const valueSpan = yMax - minValue || 1
 
   const minYear = allYears.length > 0 ? Math.min(...allYears) : 0
   const maxYear = allYears.length > 0 ? Math.max(...allYears) : 0
   const yearSpan = Math.max(maxYear - minYear, 1)
 
-  const plotWidth = CHART_WIDTH - PADDING.left - PADDING.right
-  const plotHeight = CHART_HEIGHT - PADDING.top - PADDING.bottom
+  const plotWidth = chartWidth - padding.left - padding.right
+  const plotHeight = chartHeight - padding.top - padding.bottom
 
-  const xScale = (year) => PADDING.left + ((year - minYear) / yearSpan) * plotWidth
+  const xScale = (year) => padding.left + ((year - minYear) / yearSpan) * plotWidth
   const yScale = (value) =>
-    PADDING.top + plotHeight - ((value - minValue) / valueSpan) * plotHeight
+    padding.top + plotHeight - ((value - minValue) / valueSpan) * plotHeight
 
-  const baselineY = CHART_HEIGHT - PADDING.bottom
+  const baselineY = chartHeight - padding.bottom
 
   if (rawPoints.length === 0) return null
   if (points.length === 0) return null
@@ -98,6 +97,13 @@ export function ComplementaryEnrollmentChart({
       x: xScale(point.year),
       y: yScale(point.value),
     }))
+  const maxPointIndex = scaledPoints.findIndex((point) => point.value === maxValue)
+  const lastPointIndex = scaledPoints.length - 1
+  const maxPoint = scaledPoints[maxPointIndex]
+  const lastPoint = scaledPoints[lastPointIndex]
+  const crowdedFinalLabels = maxPointIndex !== lastPointIndex
+    && Math.abs((maxPoint?.x ?? 0) - (lastPoint?.x ?? 0)) < 60
+    && Math.abs((maxPoint?.y ?? 0) - (lastPoint?.y ?? 0)) < 32
 
   return (
     <section className="complementary-chart">
@@ -106,50 +112,47 @@ export function ComplementaryEnrollmentChart({
           <span className="eyebrow">{title}</span>
         </div>
       ) : null}
-      <div className="complementary-chart__canvas">
-        <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} role="img" aria-label={`${title}: histórico por ano`}>
-          {[0.25, 0.5, 0.75].map((ratio) => {
-            const y = PADDING.top + plotHeight * ratio
+      <div className="complementary-chart__canvas" ref={containerRef}>
+        <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} role="img" aria-label={`${title}: histórico por ano`}>
+          {yScaleModel.ticks.map((value) => {
+            const y = yScale(value)
             return (
-              <line
-                className="complementary-chart__gridline"
-                key={ratio}
-                x1={PADDING.left}
-                x2={CHART_WIDTH - PADDING.right}
-                y1={y}
-                y2={y}
-              />
+              <g key={value}>
+                <line
+                  className="complementary-chart__gridline"
+                  x1={padding.left}
+                  x2={chartWidth - padding.right}
+                  y1={y}
+                  y2={y}
+                />
+                <text x={padding.left - 10} y={y + 4} textAnchor="end" className="complementary-chart__tick">
+                  {formatValue(value)}
+                </text>
+              </g>
             )
           })}
           <line
-            x1={PADDING.left}
-            x2={CHART_WIDTH - PADDING.right}
-            y1={CHART_HEIGHT - PADDING.bottom}
-            y2={CHART_HEIGHT - PADDING.bottom}
+            x1={padding.left}
+            x2={chartWidth - padding.right}
+            y1={chartHeight - padding.bottom}
+            y2={chartHeight - padding.bottom}
             className="complementary-chart__axis complementary-chart__axis--x"
           />
           <line
-            x1={PADDING.left}
-            x2={PADDING.left}
-            y1={PADDING.top}
-            y2={CHART_HEIGHT - PADDING.bottom}
+            x1={padding.left}
+            x2={padding.left}
+            y1={padding.top}
+            y2={chartHeight - padding.bottom}
             className="complementary-chart__axis complementary-chart__axis--y"
           />
-
-          <text x={PADDING.left - 10} y={PADDING.top + 6} textAnchor="end" className="complementary-chart__tick">
-            {formatValue(yMax)}
-          </text>
-          <text x={PADDING.left - 10} y={CHART_HEIGHT - PADDING.bottom} textAnchor="end" className="complementary-chart__tick">
-            0
-          </text>
 
           {activePoint ? (
             <line
               className="complementary-chart__hover-line"
               x1={activePoint.x}
               x2={activePoint.x}
-              y1={PADDING.top}
-              y2={CHART_HEIGHT - PADDING.bottom}
+              y1={padding.top}
+              y2={chartHeight - padding.bottom}
             />
           ) : null}
 
@@ -179,7 +182,9 @@ export function ComplementaryEnrollmentChart({
 
           {scaledPoints.map((p, i) => {
             if (!shouldShowValueLabel(p, i, scaledPoints, maxValue)) return null
-            const y = Math.max(p.y - 10, PADDING.top + 10)
+            const y = crowdedFinalLabels && i === lastPointIndex
+              ? Math.min(p.y + 18, baselineY - 8)
+              : Math.max(p.y - 10, padding.top + 10)
             const anchor = i === 0 ? 'start' : i === scaledPoints.length - 1 ? 'end' : 'middle'
             return (
               <text
@@ -194,8 +199,10 @@ export function ComplementaryEnrollmentChart({
             )
           })}
 
-          {rawPoints.filter((p) => Number.isFinite(p.year)).map((p, i, arr) => {
-            if (!shouldShowYearLabel(i, arr.length)) return null
+          {selectPneYearTicks(
+            rawPoints,
+            resolvePneAuxiliaryYearTickLimit(chartWidth, maxYearTicks),
+          ).map((p, i, arr) => {
             const x = xScale(p.year)
             const anchor = i === 0 ? 'start' : i === arr.length - 1 ? 'end' : 'middle'
             const dx = i === 0 ? 6 : i === arr.length - 1 ? -6 : 0
@@ -203,7 +210,7 @@ export function ComplementaryEnrollmentChart({
               <text
                 key={`label-${p.year}`}
                 x={x + dx}
-                y={CHART_HEIGHT - 18}
+                y={chartHeight - 14}
                 textAnchor={anchor}
                 className="complementary-chart__x-label"
               >
@@ -219,10 +226,10 @@ export function ComplementaryEnrollmentChart({
             series={title}
             value={`${formatValue(activePoint.value)} ${displayUnit.toLocaleLowerCase('pt-BR')}`}
             style={{
-              left: `${Math.min(92, Math.max(10, (activePoint.x / CHART_WIDTH) * 100))}%`,
-              top: `${(activePoint.y / CHART_HEIGHT) * 100}%`,
+              left: `${Math.min(92, Math.max(10, (activePoint.x / chartWidth) * 100))}%`,
+              top: `${(activePoint.y / chartHeight) * 100}%`,
               transform:
-                activePoint.y < PADDING.top + 38
+                activePoint.y < padding.top + 38
                   ? 'translate(-50%, 12px)'
                   : 'translate(-50%, calc(-100% - 12px))',
             }}

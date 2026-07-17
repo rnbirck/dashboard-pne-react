@@ -362,6 +362,131 @@
   fill: var(--chart-series-3);
 }
 
+.population-coverage-chart__heading {
+  padding-bottom: 0;
+}
+
+.population-coverage-chart__legend {
+  margin: 0;
+}
+
+.population-coverage-chart__canvas {
+  height: var(--detail-chart-height-main);
+  max-height: var(--detail-chart-height-main);
+  padding-top: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+}
+
+.population-coverage-chart__stage {
+  position: relative;
+  width: 100%;
+  min-width: 720px;
+  height: var(--detail-chart-height-main);
+}
+
+.population-coverage-chart .population-coverage-chart__stage svg {
+  width: 100%;
+  min-width: 720px;
+  height: var(--detail-chart-height-main);
+  max-height: var(--detail-chart-height-main);
+}
+
+.population-coverage-chart__percent-axis text,
+.population-coverage-chart__axis-units text {
+  fill: var(--chart-axis-text);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+}
+
+.population-coverage-chart__bar {
+  transition:
+    filter var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
+}
+
+.population-coverage-chart__bar--enrolled {
+  fill: var(--chart-series-1);
+}
+
+.population-coverage-chart__bar--unattended {
+  fill: var(--chart-series-2);
+  opacity: 0.34;
+  stroke: var(--chart-series-2);
+  stroke-width: 0.75;
+}
+
+.population-coverage-chart__bars .is-active .population-coverage-chart__bar {
+  filter: drop-shadow(0 2px 3px rgba(16, 56, 47, 0.2));
+}
+
+.population-coverage-chart__percent-line {
+  fill: none;
+  stroke: var(--surface-ink);
+  stroke-width: 2.25;
+  stroke-dasharray: 2 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.population-coverage-chart__percent-points circle {
+  fill: var(--surface-card);
+  stroke: var(--surface-ink);
+  stroke-width: 1.75;
+  transition:
+    filter var(--duration-fast) var(--ease-out),
+    r var(--duration-fast) var(--ease-out);
+}
+
+.population-coverage-chart__percent-points circle.is-active {
+  filter: drop-shadow(0 1px 3px rgba(16, 56, 47, 0.28));
+}
+
+.population-coverage-chart__meta-line line {
+  stroke: var(--chart-series-3);
+  stroke-width: 1.5;
+  stroke-dasharray: 7 5;
+  opacity: 0.82;
+}
+
+.population-coverage-chart__meta-line text,
+.population-coverage-chart__latest-percent {
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+  paint-order: stroke;
+  stroke: var(--chart-label-halo);
+  stroke-width: 3.5px;
+  stroke-linejoin: round;
+}
+
+.population-coverage-chart__meta-line text {
+  fill: var(--chart-series-3);
+}
+
+.population-coverage-chart__latest-percent {
+  fill: var(--surface-ink);
+}
+
+.population-coverage-chart__hit-area {
+  fill: transparent;
+  stroke: transparent;
+  outline: none;
+  cursor: pointer;
+}
+
+.population-coverage-chart__hit-area:focus-visible {
+  stroke: var(--focus-ring-color);
+  stroke-width: 2;
+  stroke-dasharray: 4 4;
+}
+
+.population-coverage-chart__tooltip {
+  min-width: 188px;
+}
+
 .chart-points circle,
 .complementary-chart__point {
   fill: var(--surface-card);

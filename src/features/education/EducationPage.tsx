@@ -221,8 +221,9 @@ export function EducationPage({ indicadores, municipioData, navigationContext, s
   }
 
   return (
-    <div className={`page-stack educacao-page educacao-page--${selectedSectionKey}`}>
-      <section className="page-card educacao-hero">
+    <div className={`page-stack educacao-page educacao-page--${selectedSectionKey}${isShowingIndicatorDetail ? ' educacao-page--detail' : ''}`}>
+      {isShowingIndicatorDetail ? <h1 className="u-sr-only">{pageCopy.title}</h1> : null}
+      {!isShowingIndicatorDetail ? <section className="page-card educacao-hero">
         <div className="educacao-hero__intro">
           <PageHeadingText eyebrow={pageCopy.eyebrow} title={pageCopy.title} description={pageCopy.description} />
           <aside className="educacao-hero__meta" aria-label="Contexto desta página">
@@ -241,7 +242,7 @@ export function EducationPage({ indicadores, municipioData, navigationContext, s
           </aside>
         </div>
 
-      </section>
+      </section> : null}
 
       {isOverviewSection && !isSistemaSTheme ? (
         <EducationOverviewSection overview={model.overview} sections={EDUCATION_SECTION_CATALOG} />

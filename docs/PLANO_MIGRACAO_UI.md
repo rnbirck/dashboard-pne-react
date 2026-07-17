@@ -25,6 +25,7 @@ Use este arquivo para:
 | Navegação e foco | Implementado | `Layout`, `useDetailViewNavigation`, `resolveDetailSequence`, `DetailNavigation`, `hashNavigation`, páginas e módulos financeiros | Troca de página, hash estável, seleção, vizinhança, retorno ao grid e restauração de foco estão cobertos; resets de domínio permanecem nos consumidores. |
 | Cards exploráveis | Implementado no escopo aprovado | `ExplorableIndicatorCardFrame`, `EducationIndicatorCard`, `FinancialIndicatorCard`, `InteractionChevron`, `Sparkline` | Educação e Financeiro compartilham o frame; `MetaCard` continua específico do PNE conforme decisão aprovada. |
 | Gráficos compartilhados | Implementado no escopo aprovado | `ChartPrimitives`, `Sparkline`, `IndicatorChartHeader`, `FinancialChartFrame`, `chart-system.css` | Tooltip, legenda, vazio, foco, sparkline e cabeçalhos equivalentes são compartilhados; renderers e composições PNE permanecem específicos. |
+| Detalhes de Educação | Implementado | `EducationIndicatorDetailView`, `EducationLineChart`, `SegmentedControl`, `education-pages.css` | Indicadores compartilham análise principal 70/30, leitura estruturada, seletor segmentado com alvo de 44 px e dados de apoio visíveis em cards; infraestrutura preserva panorama multivariado em largura total. |
 | Exceções PNE | Implementado | `pne-cycle-experience.css`, `CyclePage`, detalhes de indicador | Meta, ciclo, distância e projeção mantêm composição específica. |
 | Exceções Financeiras | Implementado | `FundebPanel`, `PnatePanel`, `SiopeIndicatorsPanel`, `VaarPanel`, `SistemaSPanel` | Tabelas e leituras monetárias preservam contexto próprio. |
 | Legado central | Ativo e documentado | `src/App.css` e seus consumidores | Continua responsável por shell, composições locais, exceções e cascata histórica; é dívida técnica separada e não referência para novos padrões. |
@@ -42,7 +43,7 @@ Use este arquivo para:
 | UI-07 | Extração gradual do legado | Implementado no escopo comprovado (Lote 4) | P2 | `state-box`, modificadores de loading/erro, spinner/keyframe e foco das regiões roláveis de tabelas foram movidos de `App.css` para `platform-ui.css`, junto às primitivas que os possuem. Não houve mudança de seletor ou valor. | Permanecem em `App.css`: layout e breakpoints estruturais, composições PNE/Financeiro/Educação, cards com exceções de domínio, gráficos legados e `DataSourceNote`, cuja mudança de ordem alteraria a cascata. Nenhum seletor sem equivalência comprovada foi removido. |
 | UI-08 | Redução de breakpoints locais | Implementado (Lote 2, sem remoções) | P2 | Foram revisados somente 861–1080 px e até 620 px, tocados por UI-03/UI-06. Nenhum breakpoint legado foi removido porque não houve equivalência integral comprovada entre navegação de notebook e rolagem móvel. | As duas regras adicionadas documentam comportamentos estruturais distintos; não houve limpeza ampla nem perseguição de redução numérica. |
 | UI-09 | Teste E2E e baseline visual | Implementado (Lote 3) | P1 | `visual-test.cjs` persiste 21 regiões: Home, PNE 2014–2024, PNE 2026–2036, Educação, Diagnóstico, FUNDEB e SIOPE em 1366×768, 1280×720 e 1024×768. `npm run update:visual` atualiza deliberadamente; falhas acima de 0,2% geram PNG de diferença em `visual-diffs`. | Animações, caret e movimento são neutralizados. O E2E funcional cobre loading, erro de console, ausência, nenhum resultado, textos/valores representativos, teclado, foco, recarga e overflow; smoke adicional cobre 768×1024 e 390×844. |
-| UI-10 | Semântica completa de abas | Implementado (Lote 2) | P1 | `EducationIndicatorBreakdown` e `IndicatorComplementaryData` usam IDs por instância, `tablist`, `tab`, `tabpanel`, `aria-selected`, `aria-controls`, `aria-labelledby` e roving `tabIndex`. | Ativação automática por ArrowLeft/ArrowRight/Home/End preserva estado inicial, clique, classes e DOM visual. Filtros, segmentos, módulos financeiros, navegação sequencial e pills não foram tratados como abas. |
+| UI-10 | Semântica completa de abas | Implementado (Lote 2) | P1 | `IndicatorComplementaryData` preserva IDs por instância, `tablist`, `tab`, `tabpanel`, `aria-selected`, `aria-controls`, `aria-labelledby` e roving `tabIndex` nos fluxos legados que ainda alternam painéis. Educação passou a expor todos os dados de apoio em cards nomeados e visíveis. | Ativação automática por ArrowLeft/ArrowRight/Home/End permanece nos consumidores de abas. Filtros, segmentos, cards de apoio, módulos financeiros, navegação sequencial e pills não são tratados como abas. |
 | UI-11 | Fonte e nota metodológica comuns | Implementado (Lote 1) | P2 | Todas as ocorrências equivalentes no escopo Educação, Diagnóstico e PNE resolvem `source` e `methodology` separadamente com `getDataSourceParts`: Educação mantém composição local; PNE usa `PneSourceNotes`; Diagnóstico preserva o `details` de Evidência e usa `MethodNote` somente quando há metodologia. `DataSourceNote` continua responsável apenas pela origem, sem alterar texto, classe, posição ou regra de resolução. FUNDEB, PNATE e SIOPE, já migrados, não foram tocados. | Permanecem específicos por semântica: notas de cobertura/disponibilidade, leituras e interpretações, alertas, referências legais, “Aviso metodológico” misto das metas legais, nota complementar de associação/cobertura do PNE, fonte legal/consulta complementar e a nota de privadas conveniadas. `SourceLine`, VAAR e áreas externas ao lote não entram nesta conclusão. O E2E cobre presença, ausência, unicidade e ordem fonte→metodologia por área. |
 | UI-12 | Contexto endereçável de módulo e detalhe | Implementado (Lote 4) | P2 | A estratégia de hash cobre páginas, temas, módulos, Sistema S e detalhes estáveis de PNE, Educação, FUNDEB, PNATE e SIOPE. Os painéis financeiros recebem somente `detailKey` e `onDetailChange`; builders e disponibilidade continuam internos. | Acesso direto, recarga, abrir/trocar/fechar, voltar/avançar, foco restaurado, chave inválida e troca municipal são resolvidos após os dados. Trocar de módulo remove detalhe incompatível. |
 | UI-13 | Primitiva comum de sparkline | Implementado (piloto) | P2 | `src/utils/sparkline.js`, `src/components/Sparkline.jsx`, `EducationIndicatorCard`, `FinancialIndicatorCard`. | Educação e Financeiro usam o mesmo modelo geométrico e JSX, preservando filtragem, ordenação, escala constante, paths, período, estado vazio, classes legadas e `aria-hidden`; `MetaCard` permanece fora do piloto. |
@@ -729,6 +730,92 @@ sem seletor órfão relevante comprovado nesta auditoria. Qualquer nova reduçã
 deve ser uma migração própria, baseada em consumidor, catálogo, página real e
 regressão; não faz parte da convergência visual encerrada.
 
+## Linha de base dos indicadores acumulativos do PNE 2026–2036 (2026-07-15)
+
+Os indicadores `medio_tecnico_participacao_publica` e
+`subsequente_expansao` passaram a usar 2025 como linha de base do ciclo
+vigente. A camada de apresentação não usa mais a evolução de 2015–2025 como
+avanço da meta de 2036 e não altera os JSONs ou o pipeline publicados.
+
+- `pneAccumulativeCycle.js` calcula a participação pública nas expansões
+  positivas acumuladas após 2025 e o crescimento das matrículas subsequentes
+  entre a base de 2025 e a meta de +60%.
+- Em 2025, cards, detalhes, resumo do ciclo, diagnóstico e metas legais usam
+  estado neutro. A participação pública não recebe classificação antes de
+  existir expansão posterior à base.
+- Para Novo Hamburgo, a base de 2.185 matrículas produz meta de 3.496 e
+  necessidade adicional de 1.311 matrículas. Distâncias negativas foram
+  substituídas por textos orientados à ação nos dois indicadores.
+- O histórico de 2015–2025 saiu do bloco principal e permanece fechado por
+  padrão em uma seção secundária nativa, operável por teclado e identificada
+  explicitamente como contexto sem efeito sobre a meta de 2036.
+- A composição específica permanece em `pne-cycle-experience.css`, reutiliza
+  tokens, `MetricCard`, `StatusBadge` e o aprofundamento já existente, sem criar
+  regra em `App.css`.
+
+Evidência: teste unitário dos quatro estados do cálculo, `typecheck`, lint,
+build, testes de Educação, rotas e arquitetura; inspeção real em 1366×768,
+1024×768 e 390×844 confirmou foco, disclosure fechado, texto completo e zero
+overflow horizontal.
+
+## Leitura recente nos detalhes do PNE 2026–2036 (2026-07-15)
+
+Os detalhes dos três indicadores relacionados passaram a priorizar valor mais
+recente, referência final de 2036, distância e situação atual. A linha de base
+de 2025 e a metodologia do novo ciclo continuam disponíveis em disclosure
+secundário, assim como o contexto histórico anterior ao ciclo.
+
+- `medio_tecnico_participacao_publica` usa, como leitura histórica de apoio, a
+  participação pública na expansão entre os extremos dos cinco anos completos
+  comparáveis mais recentes. O cálculo só ocorre quando a expansão total é
+  positiva e nunca usa a participação pública no estoque como substituta. A
+  interface identifica expressamente que o recorte não é o resultado oficial
+  do ciclo 2026–2036.
+- `subsequente_expansao` compara a matrícula mais recente com a referência
+  absoluta de 2036 e mostra a quantidade faltante ou excedente. Quando o último
+  dado coincide com a base de 2025, a comparação não é apresentada como
+  progresso do ciclo.
+- `eja_integrada_educacao_profissional_percentual` mantém o percentual mais
+  recente, a meta final, a distância em pontos percentuais, a situação e a
+  série recente com linha de referência.
+- Os três detalhes reutilizam `MetricCard`, `StatusBadge`, `PneHistoricalChart`,
+  disclosures nativos, tokens e a gramática existente em
+  `pne-cycle-experience.css`; nenhuma regra foi adicionada a `App.css`.
+
+A cobertura unitária agora inclui expansão zero e negativa, dados ausentes,
+série insuficiente, igualdade com a meta, valores acima e abaixo e a proibição
+explícita da participação no estoque. A inspeção em navegador cobriu notebook
+e celular sem overflow horizontal, com quatro cards e disclosures fechados por
+padrão.
+
+### Consistência entre grade, detalhe e contadores
+
+`pneAccumulativeCycle.js` passou a gerar um único modelo de apresentação para
+os dois indicadores acumulativos. `MetaCard`, `IndicatorDetail` e o resumo do
+cabeçalho consomem essa mesma saída; textos, status, período, referência,
+distância e classificação não são mais reconstruídos no card.
+
+- A leitura histórica da participação pública entra nos contadores somente
+  quando o percentual pode ser calculado. Acima ou no patamar conta como
+  referência alcançada; abaixo conta como atenção; sem expansão suficiente
+  fica fora dos três totais classificatórios.
+- Cursos subsequentes sempre usam a comparação entre matrícula recente e
+  referência absoluta de 2036. A faixa representa `valor recente / referência`,
+  sem usar a expressão ou o conceito de progresso do ciclo.
+- O card público não possui barra, pois a participação na expansão pode ficar
+  fora do intervalo de 0% a 100%. O rodapé recente quebra dentro da anatomia
+  compartilhada do PNE, mantendo paddings, tipografia, bordas, raio e altura
+  mínima dos cards irmãos.
+- As mensagens legadas de espera e linha de base foram removidas integralmente
+  do componente de grade. Demais indicadores continuam pelo fluxo genérico
+  anterior e ficam explicitamente fora do modelo acumulativo.
+
+Evidência: 15 testes unitários cobrem o modelo oficial e o modelo de
+apresentação, incluindo igualdade entre card e detalhe, período, estados acima,
+igual, abaixo e não calculável, textos proibidos, comparação proporcional e
+isolamento dos demais cards. A página real foi inspecionada em 1366×768 e
+390×844, sem overflow ou erro de console.
+
 ## Auditoria incremental de código morto (2026-07-15)
 
 O ponto de partida desta rodada foi a árvore limpa no commit
@@ -812,3 +899,210 @@ Evidência exigida para o estado final: `npm run typecheck`,
 As diferenças permanecem vazias em `public/data/`, `data_pipeline/` e nos
 diretórios de baseline. Nenhum baseline foi atualizado para fazer a regressão
 passar.
+
+## Detalhes compactos de PNE, Educação e Financiamento (2026-07-15)
+
+As páginas de detalhe passaram a priorizar a evidência principal na primeira
+dobra sem alterar `--shell-max`, a largura do conteúdo ou as rotas existentes.
+O modo de exploração continua com os heroes, resumos e introduções anteriores;
+ao abrir um indicador, esses blocos dão lugar ao workspace compacto.
+
+- `DetailNavigation` reúne voltar, posição, contexto e anterior/próximo em uma
+  barra de 54 px no desktop, com duas linhas no celular e os mesmos alvos de
+  toque e estados de foco da plataforma. No PNE 2026–2036, o contexto passou a
+  exibir o tema do indicador em vez da situação da meta.
+- PNE, Educação e Financiamento usam faixa única de KPIs, com 80–82 px nas
+  amostras desktop e composição 2×2 em telas estreitas. Ano, valor, referência,
+  distância e variação continuam próximos do dado quando aplicáveis.
+- Acompanhamento e leitura rápida formam um único bloco curto. Descrições,
+  metodologia, referências legais, séries auxiliares e tabelas permanecem
+  disponíveis em `details` nativos fechados por padrão.
+- O gráfico principal usa o token `--detail-chart-height-main` de 224 px e os
+  gráficos auxiliares usam `--detail-chart-height-auxiliary` de 184 px. Nenhuma
+  largura canônica, dado, cálculo, filtro, fonte ou regra de negócio foi alterada.
+- Cabeçalhos operacionais foram reduzidos a título e contexto indispensável;
+  Educação e Financiamento mantêm o status na navegação local, enquanto o PNE
+  2026–2036 usa o tema para orientar a sequência.
+
+Evidência visual real em Novo Hamburgo: em 1366×768, o SVG principal termina em
+787 px no PNE, 775 px em Educação e 764 px em Financiamento; os três começam na
+primeira dobra. Em 1024×768, 768×1024 e 390×844 não houve overflow horizontal,
+os aprofundamentos iniciaram fechados e a navegação inferior redundante ficou
+oculta. A inspeção incluiu os estados de foco, abertura/fechamento dos
+disclosures, textos longos e valores financeiros grandes.
+
+Validação final: `npm run typecheck`, `npm run lint`,
+`npm run test:ui-architecture`, `npm run test:education` 9/9,
+`npm run test:pne-cycle` 15/15, `npm run test:app-routing` 7/7,
+`npm run test:dev-ui`, `npm run build`, `npm run test:e2e` nas larguras
+1366×768, 1280×720 e 1024×768, além de `git diff --check`.
+
+## Organização visual dos detalhes do PNE 2026–2036 (2026-07-15)
+
+O detalhe dos indicadores do ciclo vigente passou a seguir uma anatomia única:
+navegação, título, faixa de KPIs, acompanhamento em largura total, análise
+principal com gráfico e leitura rápida, dados de apoio em grid e referências ao
+final. O componente compartilhado exibe todos os gráficos, projeções, tabelas e
+recortes auxiliares existentes; histórico, dependência administrativa e rede
+privada compõem a primeira linha, enquanto projeção e tabela dividem a segunda.
+Os títulos das séries auxiliares agora são derivados da métrica exibida: usam o
+nome do indicador para percentuais e a descrição específica da série para
+matrículas, escolas, turmas, salas e pessoas, eliminando o rótulo genérico
+“Histórico de matrículas” nos demais conteúdos.
+Nos indicadores docentes, a série percentual duplicada foi substituída por
+quantidades nominais. `pos_graduacao` e `temporarios` usam numerador e denominador
+exatos da memória de cálculo. `adequacao_ai`, `adequacao_af` e `adequacao_em`
+mostram uma estimativa de docentes com formação adequada, calculada pela taxa
+oficial sobre o total de docentes da etapa no Censo Escolar, sempre identificada
+como estimativa. Nos anos iniciais e finais, a descrição registra que o total
+nominal disponível abrange o ensino fundamental inteiro. O percentual permanece
+na análise principal e as tabelas anuais existentes continuam disponíveis. Cards
+de dependência administrativa sem nenhum valor real deixaram de ser materializados.
+Em `alfabetizacao_pop_15_mais`, o gráfico auxiliar de dois pontos foi removido
+por repetir os mesmos valores já apresentados na tabela; a memória de cálculo,
+a fonte e a nota metodológica permanecem visíveis.
+Indicadores acumulativos e de leitura recente usam o mesmo bloco visível de
+apoio, preservando a metodologia específica e a distinção entre contexto
+histórico e avanço do ciclo. Os demais ciclos permanecem com as abas anteriores.
+
+Evidência em Novo Hamburgo: 1366×768 e 1024×768 mantêm análise 70/30, três cards
+de apoio e o par projeção/tabela; 768×1024 e 390×844 empilham os blocos e mantêm a tabela com rolagem
+local e não geram overflow global. O indicador de creche e o caso acumulativo de
+participação pública foram inspecionados sem alerta ou erro de console. Passaram
+`typecheck`, `lint`, `test:ui-architecture`, `test:pne-cycle` 15/15,
+`test:app-routing` 7/7, `test:e2e` em 1366×768, 1280×720 e 1024×768,
+`build` e `git diff --check`.
+
+### Equivalência dos detalhes do PNE 2014–2024 (2026-07-16)
+
+O ciclo encerrado passou a reutilizar a mesma anatomia visual dos detalhes do
+PNE 2026–2036: faixa de KPIs, acompanhamento em largura total, análise 70/30,
+leitura rápida estruturada e dados de apoio visíveis em grid. A redação preserva
+o caráter consolidado do ciclo e a referência final de 2024. Projeções continuam
+exclusivas do ciclo vigente; dados, cálculos, filtros e regras de negócio não
+foram alterados. Nos indicadores `ensino_fundamental_ou_completo_pop_6_14`,
+`ensino_medio_ou_basica_completa_pop_15_17` e
+`eja_integrada_educacao_profissional_percentual`, os gráficos auxiliares
+duplicados foram omitidos por repetirem os valores já disponíveis nas tabelas
+de cálculo; os gráficos principais, as tabelas, as fontes e as notas
+metodológicas permanecem visíveis. A tabela do indicador de EJA mantém os
+cabeçalhos longos com quebra e centraliza cabeçalhos e valores nas quatro colunas.
+
+### Navegação ao final dos detalhes do PNE (2026-07-16)
+
+Os ciclos PNE 2014–2024 e PNE 2026–2036 passaram a exibir também ao final do
+detalhe a navegação compartilhada de indicadores. A barra reutiliza os mesmos
+atalhos de voltar, anterior e próximo do topo, inclusive posição, estados
+desabilitados, alvos de toque e foco visível, sem alterar filtros, sequência ou
+rotas.
+
+## Legibilidade dos gráficos nos detalhes do PNE 2026–2036 (2026-07-15)
+
+O refinamento substitui a compressão uniforme por dimensões internas adequadas
+a cada gráfico. A análise principal usa proporção 70/30 e gráfico com pelo menos
+280 px; histórico, dependência e rede privada dividem a primeira linha; projeção
+e tabela dividem a segunda. A projeção preserva os quatro cards acima do gráfico.
+
+Os SVGs compartilhados usam geometria compatível com a largura real dos cards,
+tipografia final de pelo menos 12 px, traços principais de 2–2,25 px, projeção
+tracejada de 2 px e marcadores de 3,5–6 px. Em menos de 900 px, os gráficos são
+empilhados; em celular, a rolagem permanece contida no canvas.
+
+Evidência manual em 1366×768, 1280×720, 1024×768, 768×1024 e 390×844: gráfico
+principal de 300 px no desktop, auxiliares de 240–255 px e projeção de 284–316
+px, sem overflow global ou erro de console. A inspeção cobriu creche e o caso
+acumulativo de participação pública.
+
+Validação final: `typecheck`, `lint`, `test:ui-architecture`,
+`test:pne-cycle` 15/15, `test:app-routing` 7/7, `test:e2e` em 1366×768,
+1280×720 e 1024×768, `build` e `git diff --check` passaram.
+
+### Sistema compartilhado de escalas e geometria (2026-07-15)
+
+Os gráficos do ciclo vigente passaram a derivar largura do próprio canvas e a
+usar uma configuração compartilhada de geometria, seleção de anos e escalas.
+Percentuais até 100 usam domínio fixo de 0–100 e marcas 0, 25, 50, 75 e 100;
+valores acima de 100 recebem folga e limite superior arredondado sem corte.
+Séries absolutas e barras empilhadas partem de zero e calculam limite legível a
+partir do maior valor ou total anual. Histórico e projeção percentual recebem o
+mesmo domínio no detalhe.
+
+As alturas finais são 320 px para gráfico principal e projeção, 270 px para os
+auxiliares no desktop e 280 px para todos no celular. A responsividade reduz
+somente a quantidade de anos do eixo X; os SVGs temporais não usam largura
+mínima nem rolagem horizontal interna.
+
+Evidência em 1366×768, 1280×720, 1024×768, 768×1024 e 390×844: todos os
+canvases permaneceram contidos, sem overflow global, com texto final mínimo de
+12 px; o celular exibiu três anos nos gráficos temporais. Passaram `typecheck`,
+`lint`, os testes de escalas, `test:pne-cycle`, `test:app-routing`,
+`test:ui-architecture`, `build`, `test:e2e` e `git diff --check`.
+
+## Variante editorial para participação na expansão (2026-07-16)
+
+Concluída no detalhe de `medio_tecnico_participacao_publica` do PNE 2026–2036.
+A ativação permanece por metadata explícita e o contexto anterior a 2026 não é
+classificado como cumprimento oficial. A leitura principal agora apresenta os
+movimentos concretos das matrículas públicas e totais, explica o sinal do
+resultado e somente então o compara à referência de 50%, sem barras ou escala
+divergente. A evolução indexada permanece como apoio e a tabela anual, fórmula
+e metodologia foram reunidas em disclosure fechado por padrão; a projeção
+continua oculta nesse modo. Demais indicadores conservam o fluxo compartilhado.
+
+Evidência em 1366×768, 1024×768 e 390×844, sem overflow horizontal. A inspeção
+municipal cobriu resultado negativo (Porto Alegre), igual a 100% (Maçambará),
+superior a 100% (Candelária) e não calculável (Ajuricaba), além do fluxo
+percentual tradicional. Passaram `lint`, `build`, `test:pne-cycle` e
+`git diff --check`.
+
+Refinamento posterior integrou a análise principal e a leitura rápida em
+proporção aproximada de 68/32 no desktop, removeu somente desta variante o bloco
+de rede privada conveniada e recolocou “Dados usados no cálculo” no card tabular
+compartilhado, visível em largura total. O disclosure passou a conter apenas
+metodologia e memória do cálculo, seguido pela fonte consolidada. A inspeção em
+1366×768, 1024×768 e 390×844 confirmou a ordem, o empilhamento, a tabela anual,
+ausência de overflow e console sem erros.
+
+A memória do resultado recebeu hierarquia interna própria: variação pública,
+operação, variação total e participação calculada formam uma linha de cálculo;
+a interpretação aparece em prosa curta e as regras metodológicas em lista. Em
+larguras estreitas, a operação empilha sem overflow e preserva a mesma ordem de
+leitura e os mesmos textos.
+
+O acabamento do disclosure ampliou o padding superior e a largura útil da
+interpretação e da metodologia. Nos detalhes do PNE 2026–2036, a descrição do
+disclosure passou a funcionar como subtítulo abaixo do título. Os glifos
+genéricos de “Leitura rápida” e “Dados de apoio” foram substituídos por SVGs
+semânticos compartilhados; a inspeção confirmou o padrão em outro indicador e
+no celular, sem overflow ou erro de console.
+
+## Variante de meta absoluta para cursos técnicos subsequentes (2026-07-16)
+
+O indicador `subsequente_expansao` passou a usar a metadata de apresentação
+`absolute-expansion-target`. No detalhe do PNE 2026–2036, a linha de base de
+2025, a meta absoluta de 2036, a necessidade adicional, o avanço real desde a
+base e a situação formam a leitura principal. O gráfico histórico foi movido
+para o contexto de apoio e a fórmula `base 2025 × 1,60` aparece junto aos dados
+anuais usados no cálculo. Indicadores percentuais e os demais consumidores
+permanecem no fluxo compartilhado anterior.
+
+Evidência: Porto Alegre e Novo Hamburgo foram conferidos em 1366×768,
+1024×768 e 390×844; o indicador percentual de EJA manteve o gráfico e a
+composição anteriores. Não houve overflow horizontal nem erro de console.
+Passaram `test:pne-cycle` 15/15, `lint`, `build` e `git diff --check`.
+
+Refinamento de comunicação: a camada visível passou a usar “Ponto de partida”
+e “Acompanhamento começa em 2026”, reduziu a leitura superior para quatro
+cards e substituiu o bullet chart pela equação visual `11.883 + 7.130 = 19.013`
+com valores dinâmicos. Em 2025, o acompanhamento é apresentado como início do
+ciclo, sem expor `0%` como desempenho. A variante exclusiva e a metodologia
+permanecem inalteradas. A composição foi reconferida em 1366×768, 1024×768,
+768×1024 e 390×844, sem overflow horizontal ou erro de console.
+
+O bloco tabular desta variante passou a se chamar “Série histórica usada no
+cálculo” e, no desktop, distribui a tabela e os marcos derivados da própria
+série em proporção 60/40. Início, maior valor, menor valor e ponto de partida
+reutilizam exclusivamente os anos e matrículas já carregados; a fórmula da meta
+foi preservada. A inspeção em 1366×768 e 1024×768 confirmou o grid com gap de
+20 px; em 768×1024 e 390×844, o empilhamento e a rolagem local da tabela foram
+mantidos, sem overflow global ou erro de console.

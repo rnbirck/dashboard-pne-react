@@ -1,6 +1,9 @@
+import { StatusBadge } from './StatusBadge'
+
 export function DetailNavigation({
   activeIndex,
   className = '',
+  contextLabel = '',
   isBottom = false,
   itemLabel = 'Indicador',
   itemPlural = 'indicadores',
@@ -11,6 +14,8 @@ export function DetailNavigation({
   onPrevious,
   previousItem,
   showBack = true,
+  statusLabel = '',
+  statusTone = '',
   total,
 }) {
   return (
@@ -22,6 +27,18 @@ export function DetailNavigation({
           <span aria-hidden="true">&larr;</span>
           Voltar aos indicadores
         </button>
+      ) : null}
+      {contextLabel && !isBottom ? (
+        <span className="platform-detail-navigation__context">
+          <span>Seção de indicadores</span>
+          <strong>{contextLabel}</strong>
+        </span>
+      ) : statusLabel && !isBottom ? (
+        <StatusBadge
+          className="platform-detail-navigation__status"
+          status={statusLabel}
+          tone={statusTone}
+        />
       ) : null}
       <div
         className="cycle-detail-nav__sequence platform-detail-navigation__sequence"

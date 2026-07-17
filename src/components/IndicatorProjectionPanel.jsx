@@ -1,28 +1,55 @@
 import { useId, useMemo, useRef, useState } from 'react'
 import { ChartEmptyState, ChartLegend, ChartTooltip } from './ChartPrimitives'
 import { closeChartTooltipOnEscape } from '../utils/chartVisuals'
+import {
+  buildPnePercentScale,
+  buildPnePercentTicks,
+  PNE_CHART_GEOMETRY,
+  selectPneYearTicks,
+} from '../utils/pneChartSystem'
+import { useChartViewport } from '../hooks/useChartViewport'
 
-const CHART_WIDTH = 980
-const CHART_HEIGHT = 260
-const PADDING = { bottom: 44, left: 64, right: 68, top: 38 }
+const DEFAULT_CHART_WIDTH = 980
+const DEFAULT_CHART_HEIGHT = 260
+const LEGACY_PADDING = { bottom: 44, left: 64, right: 68, top: 38 }
 
 const percentFormatter = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 1,
   minimumFractionDigits: 1,
 })
 
-export function IndicatorProjectionPanel({ chartLabel, projection, showTitle = true, contextOnly = false }) {
+export function IndicatorProjectionPanel({
+  chartHeight = DEFAULT_CHART_HEIGHT,
+  chartLabel,
+  chartWidth = DEFAULT_CHART_WIDTH,
+  domainOverride = null,
+  pneLayout = false,
+  projection,
+  showTitle = true,
+  contextOnly = false,
+}) {
   const [activePoint, setActivePoint] = useState(null)
   const [tabStopYear, setTabStopYear] = useState(null)
   const pointRefs = useRef([])
   const chartId = useId().replace(/:/g, '')
+  const { containerRef, width: measuredWidth } = useChartViewport(chartWidth)
+  const responsiveChartWidth = pneLayout ? measuredWidth : chartWidth
+  const responsiveChartHeight = pneLayout
+    ? measuredWidth < 300
+      ? PNE_CHART_GEOMETRY.projection.mobileHeight
+      : PNE_CHART_GEOMETRY.projection.desktopHeight
+    : chartHeight
 
   const chart = useMemo(
     () => buildProjectionChart(projection, {
+      chartHeight: responsiveChartHeight,
       chartMinYear: contextOnly ? projection?.historical_years?.[0] : undefined,
+      chartWidth: responsiveChartWidth,
+      domainOverride,
+      padding: pneLayout ? PNE_CHART_GEOMETRY.projection.padding : LEGACY_PADDING,
       showGoalContext: !contextOnly,
     }),
-    [contextOnly, projection],
+    [contextOnly, domainOverride, pneLayout, projection, responsiveChartHeight, responsiveChartWidth],
   )
   const lastChartPointYear = chart.points.filter((point) => point.valid !== false).slice(-1)[0]?.year
   const transitionYear = chart.points.filter((point) => point.valid !== false && !point.isProjected).slice(-1)[0]?.year
@@ -133,22 +160,23 @@ export function IndicatorProjectionPanel({ chartLabel, projection, showTitle = t
           />
           <div
             className="history-chart__canvas complementary-projection__chart"
+            ref={containerRef}
             role="region"
             aria-label={chartLabel ? `Área rolável do gráfico: ${chartLabel}` : 'Área rolável do gráfico'}
             tabIndex={0}
           >
           <svg
-            viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
+            viewBox={`0 0 ${chart.width} ${chart.height}`}
             role="group"
             aria-label={accessibleChartLabel}
           >
             <defs>
               <clipPath id={`proj-clip-${chartId}`}>
                 <rect
-                  x={PADDING.left}
-                  y={PADDING.top}
-                  width={CHART_WIDTH - PADDING.left - PADDING.right}
-                  height={CHART_HEIGHT - PADDING.top - PADDING.bottom}
+                  x={chart.padding.left}
+                  y={chart.padding.top}
+                  width={chart.width - chart.padding.left - chart.padding.right}
+                  height={chart.height - chart.padding.top - chart.padding.bottom}
                 />
               </clipPath>
             </defs>
@@ -157,10 +185,10 @@ export function IndicatorProjectionPanel({ chartLabel, projection, showTitle = t
               {chart.yTicks.map((tick, i) => (
                 <g key={i}>
                   <line
-                    x1={PADDING.left} x2={CHART_WIDTH - PADDING.right}
+                    x1={chart.padding.left} x2={chart.width - chart.padding.right}
                     y1={tick.y} y2={tick.y}
                   />
-                  <text x={PADDING.left - 12} y={tick.y + 4} textAnchor="end">
+                  <text x={chart.padding.left - 12} y={tick.y + 4} textAnchor="end">
                     {tick.label}
                   </text>
                 </g>
@@ -170,11 +198,11 @@ export function IndicatorProjectionPanel({ chartLabel, projection, showTitle = t
             {chart.metaLine && (
               <g className="chart-meta-line" aria-hidden="true">
                 <line
-                  x1={PADDING.left} x2={CHART_WIDTH - PADDING.right}
+                  x1={chart.padding.left} x2={chart.width - chart.padding.right}
                   y1={chart.metaLine.y} y2={chart.metaLine.y}
                 />
                 <text
-                  x={CHART_WIDTH - PADDING.right - 6} y={chart.metaLine.labelY}
+                  x={chart.width - chart.padding.right - 6} y={chart.metaLine.labelY}
                   textAnchor="end" className="chart-meta-label"
                 >
                   Meta {percentFormatter.format(target)}%
@@ -183,8 +211,8 @@ export function IndicatorProjectionPanel({ chartLabel, projection, showTitle = t
             )}
 
             <g className="chart-axis" aria-hidden="true">
-              <line className="chart-axis__x" x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={CHART_HEIGHT - PADDING.bottom} y2={CHART_HEIGHT - PADDING.bottom} />
-              <line className="chart-axis__y" x1={PADDING.left} x2={PADDING.left} y1={PADDING.top} y2={CHART_HEIGHT - PADDING.bottom} />
+              <line className="chart-axis__x" x1={chart.padding.left} x2={chart.width - chart.padding.right} y1={chart.height - chart.padding.bottom} y2={chart.height - chart.padding.bottom} />
+              <line className="chart-axis__y" x1={chart.padding.left} x2={chart.padding.left} y1={chart.padding.top} y2={chart.height - chart.padding.bottom} />
             </g>
 
             <g clipPath={`url(#proj-clip-${chartId})`} aria-hidden="true">
@@ -228,7 +256,7 @@ export function IndicatorProjectionPanel({ chartLabel, projection, showTitle = t
                 <text
                   key={tick.year}
                   x={i === 0 ? tick.x + 4 : i === arr.length - 1 ? tick.x - 4 : tick.x}
-                  y={CHART_HEIGHT - 12}
+                  y={chart.height - 20}
                   textAnchor={i === 0 ? 'start' : i === arr.length - 1 ? 'end' : 'middle'}
                 >
                   {tick.year}
@@ -244,9 +272,9 @@ export function IndicatorProjectionPanel({ chartLabel, projection, showTitle = t
               series={activePoint.isProjected ? 'Projetado' : 'Observado'}
               value={activePoint.valid === false ? '—' : `${percentFormatter.format(activePoint.value)}%`}
               style={{
-                left: `${Math.min(92, Math.max(10, (activePoint.x / CHART_WIDTH) * 100))}%`,
-                top: `${(activePoint.y / CHART_HEIGHT) * 100}%`,
-                transform: activePoint.y < PADDING.top + 38
+                left: `${Math.min(92, Math.max(10, (activePoint.x / chart.width) * 100))}%`,
+                top: `${(activePoint.y / chart.height) * 100}%`,
+                transform: activePoint.y < chart.padding.top + 38
                   ? 'translate(-50%, 12px)'
                   : 'translate(-50%, calc(-100% - 12px))',
               }}
@@ -290,16 +318,41 @@ function formatProjectionQuality(quality) {
   return labels[quality] ?? quality
 }
 
-function buildProjectionChart(projection, { chartMinYear, showGoalContext = true } = {}) {
-  if (!projection?.available) {
-    return { points: [], yTicks: [], metaLine: null, areaPath: null, historicalPaths: [], projectionPaths: [], xTicks: [] }
+function buildProjectionChart(projection, {
+  chartHeight,
+  chartMinYear,
+  chartWidth,
+  domainOverride,
+  padding = LEGACY_PADDING,
+  showGoalContext = true,
+} = {}) {
+  const width = Math.max(180, Number(chartWidth) || DEFAULT_CHART_WIDTH)
+  const height = Math.max(240, Number(chartHeight) || DEFAULT_CHART_HEIGHT)
+  const emptyChart = {
+    areaPath: null,
+    height,
+    historicalPaths: [],
+    metaLine: null,
+    points: [],
+    projectionPaths: [],
+    padding,
+    width,
+    xTicks: [],
+    yTicks: [],
   }
 
-  const CHART_MIN_YEAR = chartMinYear ?? 2016
-  const CHART_MAX_YEAR = 2036
+  if (!projection?.available) {
+    return emptyChart
+  }
 
   const historicalPct = projection.historical_percent || []
   const historicalYears = projection.historical_years || []
+  const firstHistoricalYear = historicalYears
+    .map(Number)
+    .filter(Number.isFinite)
+    .sort((a, b) => a - b)[0]
+  const CHART_MIN_YEAR = chartMinYear ?? Math.max(firstHistoricalYear ?? 2015, 2015)
+  const CHART_MAX_YEAR = 2036
   const histPoints = historicalYears
     .map((y, i) => ({
       year: y,
@@ -321,7 +374,7 @@ function buildProjectionChart(projection, { chartMinYear, showGoalContext = true
 
   const validPoints = [...histPoints, ...projPoints].filter((point) => point.valid)
   if (validPoints.length < 1) {
-    return { points: [], yTicks: [], metaLine: null, areaPath: null, historicalPaths: [], projectionPaths: [], xTicks: [] }
+    return emptyChart
   }
 
   const allPoints = [...histPoints, ...projPoints]
@@ -329,24 +382,23 @@ function buildProjectionChart(projection, { chartMinYear, showGoalContext = true
   const target = showGoalContext ? projection.target_percent : null
   const values = validPoints.map(p => p.value)
   if (target != null) values.push(target)
-  const minVal = Math.min(...values)
-  const maxVal = Math.max(...values)
-  const domainMin = minVal >= 0 ? 0 : Math.floor(minVal / 10) * 10
-  const domainMax = Math.min(100, Math.max(10, Math.ceil((maxVal * 1.1) / 10) * 10))
+  const domain = domainOverride ?? buildPnePercentScale(values).domain
+  const domainMin = domain.min
+  const domainMax = domain.max
 
-  const plotWidth = CHART_WIDTH - PADDING.left - PADDING.right
-  const plotHeight = CHART_HEIGHT - PADDING.top - PADDING.bottom
+  const plotWidth = width - padding.left - padding.right
+  const plotHeight = height - padding.top - padding.bottom
 
   const minYear = CHART_MIN_YEAR
   const maxYear = CHART_MAX_YEAR
 
-  const xScale = (year) => PADDING.left + ((year - minYear) / (maxYear - minYear)) * plotWidth
-  const yScale = (value) => PADDING.top + ((domainMax - value) / (domainMax - domainMin)) * plotHeight
+  const xScale = (year) => padding.left + ((year - minYear) / (maxYear - minYear)) * plotWidth
+  const yScale = (value) => padding.top + ((domainMax - value) / (domainMax - domainMin)) * plotHeight
 
   const scaledPoints = allPoints.map(p => ({
     ...p,
     x: xScale(p.year),
-    y: p.valid ? yScale(p.value) : PADDING.top + plotHeight / 2,
+    y: p.valid ? yScale(p.value) : padding.top + plotHeight / 2,
   }))
 
   const histScaled = scaledPoints.filter((point) => !point.isProjected)
@@ -363,46 +415,45 @@ function buildProjectionChart(projection, { chartMinYear, showGoalContext = true
   const allScaledValid = scaledPoints.filter(p => p.valid)
   const firstPt = allScaledValid[0]
   const lastPt = allScaledValid[allScaledValid.length - 1]
-  const zeroY = CHART_HEIGHT - PADDING.bottom
+  const zeroY = height - padding.bottom
 
   const fullLinePath = allScaledValid.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
   const areaPath = allScaledValid.length > 1 && allPoints.every((point) => point.valid)
     ? `${fullLinePath} L${lastPt.x.toFixed(1)} ${zeroY.toFixed(1)} L${firstPt.x.toFixed(1)} ${zeroY.toFixed(1)} Z`
     : ''
 
-  const yStep = pickProjectionTickStep(domainMax - domainMin)
-  const yTicks = []
-  for (let v = Math.max(0, Math.floor(domainMin / yStep) * yStep); v <= domainMax; v += yStep) {
-    yTicks.push({ value: v, y: yScale(v), label: `${v}%` })
-  }
+  const yTicks = buildPnePercentTicks(domain).map((value) => ({
+    label: `${value}%`,
+    value,
+    y: yScale(value),
+  }))
 
   const metaLine = target != null
     ? buildProjectionMetaLine({
         points: allScaledValid,
         value: target,
-        y: Math.max(PADDING.top, Math.min(yScale(target), CHART_HEIGHT - PADDING.bottom)),
+        chartHeight: height,
+        chartWidth: width,
+        padding,
+        y: Math.max(padding.top, Math.min(yScale(target), height - padding.bottom)),
       })
     : null
 
-  const yearStep = Math.max(1, Math.floor((maxYear - minYear) / 8))
-  const xTicks = []
-  for (let y = minYear; y <= maxYear; y += yearStep) {
-    const p = allScaledValid.find(pt => pt.year === y)
-    if (p) {
-      xTicks.push({ year: y, x: p.x })
-    }
-  }
-  if ((xTicks.length === 0 || xTicks[xTicks.length - 1].year !== maxYear) && lastPt) {
-    xTicks.push({ year: lastPt.year, x: lastPt.x })
-  }
+  const xTicks = selectPneYearTicks(
+    allScaledValid,
+    width < 320 ? 3 : width < 420 ? 5 : width < 520 ? 6 : 8,
+  )
 
   return {
     points: scaledPoints,
     yTicks,
     metaLine,
     areaPath,
+    height,
     historicalPaths,
+    padding,
     projectionPaths,
+    width,
     xTicks,
   }
 }
@@ -430,17 +481,10 @@ function buildProjectionPath(points) {
     .join(' ')
 }
 
-function pickProjectionTickStep(span) {
-  if (span <= 20) return 5
-  if (span <= 50) return 10
-  if (span <= 80) return 20
-  return 25
-}
-
-function buildProjectionMetaLine({ points, value, y }) {
-  const plotTop = PADDING.top
-  const plotBottom = CHART_HEIGHT - PADDING.bottom
-  const labelX = CHART_WIDTH - PADDING.right - 6
+function buildProjectionMetaLine({ chartHeight, chartWidth, padding, points, value, y }) {
+  const plotTop = padding.top
+  const plotBottom = chartHeight - padding.bottom
+  const labelX = chartWidth - padding.right - 6
   let labelY = y - 12
 
   if (y < plotTop + 24) {

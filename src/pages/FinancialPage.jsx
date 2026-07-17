@@ -61,9 +61,10 @@ export function FinancialPage({
   if (!module) return null
 
   return (
-    <div className="page-stack financial-page financial-module-page">
-      <FinancialPageHeader module={module} selectedMunicipio={selectedMunicipio} />
-      <FinancialCompactModuleSelector activePageKey={pageKey} />
+    <div className={`page-stack financial-page financial-module-page${detailKey ? ' financial-page--detail' : ''}`}>
+      {detailKey ? <h1 className="u-sr-only">{module.title}</h1> : null}
+      {!detailKey ? <FinancialPageHeader module={module} selectedMunicipio={selectedMunicipio} /> : null}
+      {!detailKey ? <FinancialCompactModuleSelector activePageKey={pageKey} /> : null}
 
       {!selectedMunicipio ? (
         <FinancialModuleEmpty module={module} />

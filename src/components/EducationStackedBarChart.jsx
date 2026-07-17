@@ -5,7 +5,7 @@ import { ChartEmptyState, ChartLegend, ChartTooltip } from './ChartPrimitives'
 
 const CHART_WIDTH = 820
 const CHART_HEIGHT = 340
-const PADDING = { top: 26, right: 32, bottom: 50, left: 78 }
+const PADDING = { top: 26, right: 32, bottom: 50, left: 104 }
 const BAR_GAP = 8
 
 export function EducationStackedBarChart({
@@ -26,7 +26,7 @@ export function EducationStackedBarChart({
   return (
     <div className="education-chart education-chart--stacked">
       {title && <h4 className="education-chart__title">{title}</h4>}
-      {chart.categories.length > 1 ? (
+      {chart.categories.length ? (
         <ChartLegend className="education-stacked-legend" items={chart.categories} />
       ) : null}
       <div className="education-chart__canvas">

@@ -1,11 +1,10 @@
 import { useMemo, useState } from 'react'
+import { useChartViewport } from '../hooks/useChartViewport'
 import { isMissing } from '../utils/educationFormatters'
 import { closeChartTooltipOnEscape, resolveChartColor } from '../utils/chartVisuals'
 import { ChartEmptyState, ChartTooltip } from './ChartPrimitives'
 
-const CHART_WIDTH = 760
-const CHART_HEIGHT = 300
-const PADDING = { top: 34, right: 36, bottom: 42, left: 62 }
+const FALLBACK_CHART_WIDTH = 760
 
 export function EducationLineChart({
   series,
@@ -16,7 +15,12 @@ export function EducationLineChart({
   showPointLabels = false,
 }) {
   const [activePoint, setActivePoint] = useState(null)
-  const chart = useMemo(() => buildChart(series, scaleType), [scaleType, series])
+  const { containerRef, width: chartWidth } = useChartViewport(FALLBACK_CHART_WIDTH)
+  const chartHeight = chartWidth < 420 ? 280 : 300
+  const chart = useMemo(
+    () => buildChart(series, scaleType, chartWidth, chartHeight),
+    [chartHeight, chartWidth, scaleType, series],
+  )
   const resolvedColor = resolveChartColor(color)
 
   if (!chart || chart.points.length < 2) {
@@ -28,9 +32,9 @@ export function EducationLineChart({
   return (
     <div className="education-chart">
       {title && <h4 className="education-chart__title">{title}</h4>}
-      <div className="education-chart__canvas">
+      <div className="education-chart__canvas" ref={containerRef}>
         <svg
-          viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
+          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
           role="img"
           aria-label={title || 'Gráfico de linha'}
           data-series-segments={chart.linePaths.length}
@@ -38,13 +42,13 @@ export function EducationLineChart({
           <g className="chart-grid">
             {chart.yTicks.map((tick, i) => (
               <g key={`y-${i}`}>
-                <line x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={tick.y} y2={tick.y} stroke="var(--chart-grid)" strokeWidth="1" />
-                <text x={PADDING.left - 10} y={tick.y + 4} textAnchor="end" className="chart-axis-label">{tick.label}</text>
+                <line x1={chart.padding.left} x2={chartWidth - chart.padding.right} y1={tick.y} y2={tick.y} stroke="var(--chart-grid)" strokeWidth="1" />
+                <text x={chart.padding.left - 10} y={tick.y + 4} textAnchor="end" className="chart-axis-label">{tick.label}</text>
               </g>
             ))}
           </g>
-          <line x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={CHART_HEIGHT - PADDING.bottom} y2={CHART_HEIGHT - PADDING.bottom} stroke="var(--chart-axis)" strokeWidth="1" />
-          <line x1={PADDING.left} x2={PADDING.left} y1={PADDING.top} y2={CHART_HEIGHT - PADDING.bottom} stroke="var(--chart-axis)" strokeWidth="1" />
+          <line x1={chart.padding.left} x2={chartWidth - chart.padding.right} y1={chartHeight - chart.padding.bottom} y2={chartHeight - chart.padding.bottom} stroke="var(--chart-axis)" strokeWidth="1" />
+          <line x1={chart.padding.left} x2={chart.padding.left} y1={chart.padding.top} y2={chartHeight - chart.padding.bottom} stroke="var(--chart-axis)" strokeWidth="1" />
           {chart.areaPaths.map((path, index) => (
             <path className="education-chart__series-area" d={path} fill={resolvedColor} fillOpacity="0.08" key={`area-${index}`} />
           ))}
@@ -71,7 +75,7 @@ export function EducationLineChart({
               {showPointLabels && point.showLabel ? (
                 <text
                   x={point.x}
-                  y={point.y < PADDING.top + 18 ? point.y + 18 : point.y - 10}
+                  y={point.y < chart.padding.top + 18 ? point.y + 18 : point.y - 10}
                   textAnchor="middle"
                   className={point.isLast ? 'chart-point-label is-last' : 'chart-point-label'}
                 >
@@ -82,7 +86,7 @@ export function EducationLineChart({
           ))}
           <g className="chart-x-labels">
             {chart.xTicks.map((tick) => (
-              <text x={tick.x} y={CHART_HEIGHT - 14} textAnchor="middle" className="chart-x-label" key={tick.year}>{tick.year}</text>
+              <text x={tick.x} y={chartHeight - 14} textAnchor="middle" className="chart-x-label" key={tick.year}>{tick.year}</text>
             ))}
           </g>
         </svg>
@@ -93,9 +97,9 @@ export function EducationLineChart({
             series={title || 'Município'}
             value={formatLabel(activePoint.value)}
             style={{
-              left: `${Math.min(90, Math.max(10, (activePoint.x / CHART_WIDTH) * 100))}%`,
-              top: `${(activePoint.y / CHART_HEIGHT) * 100}%`,
-              transform: activePoint.y < PADDING.top + 46
+              left: `${Math.min(90, Math.max(10, (activePoint.x / chartWidth) * 100))}%`,
+              top: `${(activePoint.y / chartHeight) * 100}%`,
+              transform: activePoint.y < chart.padding.top + 46
                 ? 'translate(-50%, 12px)'
                 : 'translate(-50%, calc(-100% - 12px))',
             }}
@@ -106,8 +110,11 @@ export function EducationLineChart({
   )
 }
 
-function buildChart(series, scaleType) {
+function buildChart(series, scaleType, chartWidth, chartHeight) {
   if (!Array.isArray(series) || series.length < 2) return null
+  const padding = chartWidth < 420
+    ? { top: 30, right: 34, bottom: 40, left: 64 }
+    : { top: 34, right: 56, bottom: 42, left: 76 }
   const rawPoints = normalizeChartYearSeries(series)
     .filter((p) => p.ano)
     .map((p) => ({
@@ -124,10 +131,10 @@ function buildChart(series, scaleType) {
   const years = rawPoints.map((p) => p.year)
   const minYear = Math.min(...years); const maxYear = Math.max(...years)
   const yearRange = maxYear - minYear || 1
-  const plotW = CHART_WIDTH - PADDING.left - PADDING.right
-  const plotH = CHART_HEIGHT - PADDING.top - PADDING.bottom
-  const xScale = (year) => PADDING.left + ((year - minYear) / yearRange) * plotW
-  const yScale = (val) => PADDING.top + ((domain.max - val) / (domain.max - domain.min || 1)) * plotH
+  const plotW = chartWidth - padding.left - padding.right
+  const plotH = chartHeight - padding.top - padding.bottom
+  const xScale = (year) => padding.left + ((year - minYear) / yearRange) * plotW
+  const yScale = (val) => padding.top + ((domain.max - val) / (domain.max - domain.min || 1)) * plotH
   const minValue = Math.min(...values)
   const maxValue = Math.max(...values)
   const firstYear = points[0].year
@@ -137,7 +144,7 @@ function buildChart(series, scaleType) {
     x: xScale(p.year),
     y: p.valid ? yScale(p.value) : null,
     isLast: p.year === lastYear,
-    showLabel: p.valid && shouldShowPointLabel(p, points.length, { firstYear, lastYear, minValue, maxValue }),
+    showLabel: p.valid && shouldShowPointLabel(p, points.length, chartWidth, { firstYear, lastYear, minValue, maxValue }),
   }))
   const scaled = scaledRaw.filter((point) => point.valid)
   const segments = buildLineSegments(scaledRaw)
@@ -148,7 +155,8 @@ function buildChart(series, scaleType) {
     : [])
   const yTicksRaw = [domain.min, domain.min + range * 0.25, domain.min + range * 0.5, domain.min + range * 0.75, domain.max]
   const yTicks = yTicksRaw.map((val) => ({ label: formatAxisTick(val, scaleType), y: yScale(val) }))
-  return { areaPaths, linePaths, points: scaled, xTicks: scaledRaw, yTicks }
+  const xTickLimit = chartWidth < 420 ? 3 : chartWidth < 620 ? 5 : 7
+  return { areaPaths, linePaths, padding, points: scaled, xTicks: selectYearTicks(scaledRaw, xTickLimit), yTicks }
 }
 
 function normalizeChartYearSeries(series) {
@@ -179,7 +187,8 @@ function buildLineSegments(points) {
   return segments
 }
 
-function shouldShowPointLabel(point, pointCount, { firstYear, lastYear, minValue, maxValue }) {
+function shouldShowPointLabel(point, pointCount, chartWidth, { firstYear, lastYear, minValue, maxValue }) {
+  if (chartWidth < 420) return point.year === firstYear || point.year === lastYear
   if (pointCount <= 7) return true
   return (
     point.year === firstYear ||
@@ -187,6 +196,17 @@ function shouldShowPointLabel(point, pointCount, { firstYear, lastYear, minValue
     point.value === minValue ||
     point.value === maxValue
   )
+}
+
+function selectYearTicks(points, limit) {
+  if (points.length <= limit) return points
+  const selected = []
+  const lastIndex = points.length - 1
+  for (let index = 0; index < limit; index += 1) {
+    const point = points[Math.round((index * lastIndex) / (limit - 1))]
+    if (selected.at(-1) !== point) selected.push(point)
+  }
+  return selected
 }
 
 function getYAxisDomain(values, scaleType) {

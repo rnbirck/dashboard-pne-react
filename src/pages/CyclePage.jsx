@@ -9,7 +9,7 @@ import { SegmentedControl } from '../components/SegmentedControl'
 import { PNE_2026_INDICATOR_GOAL_REFS } from '../data/pne2026IndicatorGoalRefs'
 import { PNE_2014_INDICATOR_GOAL_REFS } from '../data/pne2014IndicatorGoalRefs'
 import { buildThematicGroups } from '../data/thematicGroups'
-import { loadPneStateReference } from '../data/staticData'
+import { loadMunicipioDetails, loadPneStateReference } from '../data/staticData'
 import { normalizePopulationPercentResults } from '../utils/indicatorValues'
 import { getPneCycleCopy } from '../utils/pneCycleCopy'
 import { filterPneComparableCategories } from '../utils/pneDisplayRules'
@@ -17,6 +17,7 @@ import { resolveDetailSequence, useDetailViewNavigation } from '../hooks/useDeta
 import { PageHeadingText } from '../components/HeadingText'
 import { getHashContext, setHashContext } from '../utils/hashNavigation'
 import { useAsyncData } from '../utils/useAsyncData'
+import { buildPne2026AccumulativePresentationModel } from '../utils/pneAccumulativeCycle'
 
 const CYCLE_SOURCE_NOTE = 'INEP, Censo Escolar, SAEB, IBGE e bases oficiais consolidadas no painel.'
 const PNE_2026_DETAIL_REDIRECTS = {
@@ -46,6 +47,10 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   const { data: stateReference } = useAsyncData(
     () => loadPneStateReference(cycle).catch(() => null),
     [cycle],
+  )
+  const { data: municipioDetails } = useAsyncData(
+    () => municipioData?.slug ? loadMunicipioDetails(municipioData.slug) : null,
+    [municipioData?.slug],
   )
   const allCycleItems = useMemo(
     () => categories.flatMap((category) => category.items ?? []),
@@ -86,6 +91,9 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
 
   useEffect(() => {
     if (!selectedIndicatorKey) return
+    const currentGroup = thematicGroups.find((group) => group.key === selectedGroupKey)
+    if (currentGroup?.items?.some((item) => item.key === selectedIndicatorKey)) return
+
     const targetGroup = thematicGroups.find((group) => (
       group.items?.some((item) => item.key === selectedIndicatorKey)
     ))
@@ -112,11 +120,17 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   const activeResult = activeItem ? normalizedMunicipioResults?.[activeItem.key] : null
   const { activeIndex, previousItem, nextItem } = resolveDetailSequence(filteredGroupItems, activeItem?.key)
   const cycleManagementStats = useMemo(
-    () => buildCycleManagementStats(comparableCategories, normalizedMunicipioResults),
-    [comparableCategories, normalizedMunicipioResults],
+    () => buildCycleManagementStats(
+      comparableCategories,
+      normalizedMunicipioResults,
+      cycle,
+      municipioDetails,
+    ),
+    [comparableCategories, normalizedMunicipioResults, cycle, municipioDetails],
   )
   const isCycleTransition = previousCycleRef.current !== cycle
   const isShowingDetail = Boolean(!isCycleTransition && isDetailOpen && activeItem)
+  const activeThemeLabel = selectedGroup?.shortLabel ?? selectedGroup?.label ?? null
   const detailNavigation = useDetailViewNavigation({
     activeKey: activeIndicatorKey,
     isOpen: isShowingDetail,
@@ -201,8 +215,9 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   }
 
   return (
-    <div className="page-stack cycle-page">
-      <section className="page-card cycle-hero">
+    <div className={`page-stack cycle-page${isShowingDetail ? ' cycle-page--detail' : ''}`}>
+      {isShowingDetail ? <h1 className="u-sr-only">{title}</h1> : null}
+      {!isShowingDetail ? <section className="page-card cycle-hero">
         <div className="cycle-hero__copy">
           <PageHeadingText eyebrow={cycleCopy.eyebrow} title={title} description={cycleCopy.supportText} />
           <p className="cycle-hero__context">
@@ -238,7 +253,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
               : '-'}
           />
         </div>
-      </section>
+      </section> : null}
 
       <section className="cycle-workspace cycle-card-workspace">
         {isShowingDetail ? (
@@ -253,6 +268,8 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
               onNext={handleAdjacentMeta}
               onPrevious={handleAdjacentMeta}
               previousItem={previousItem}
+              statusLabel={activeThemeLabel}
+              statusTone="info"
               total={filteredGroupItems.length}
             />
             <IndicatorDetail
@@ -272,6 +289,8 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
               onNext={handleAdjacentMeta}
               onPrevious={handleAdjacentMeta}
               previousItem={previousItem}
+              statusLabel={activeThemeLabel}
+              statusTone="info"
               total={filteredGroupItems.length}
             />
           </div>
@@ -326,6 +345,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
                     cycle={cycle}
                     isSelected={isDetailOpen && item.key === selectedIndicatorKey}
                     item={item}
+                    details={municipioDetails?.[item.key]}
                     key={item.key}
                     onSelect={() => handleCardSelect(item.key)}
                     result={normalizedMunicipioResults?.[item.key]}
@@ -435,7 +455,7 @@ const STAGE_COMPACT_LABELS = {
   ensino_medio: 'Médio',
 }
 
-function buildCycleManagementStats(categories, municipioResults) {
+function buildCycleManagementStats(categories, municipioResults, cycle, municipioDetails) {
   const stats = {
     achieved: 0,
     achievedPercent: 0,
@@ -447,6 +467,12 @@ function buildCycleManagementStats(categories, municipioResults) {
 
   allCycleItems.forEach((item) => {
     const result = municipioResults?.[item.key]
+    const accumulativePresentation = buildPne2026AccumulativePresentationModel({
+      cycle,
+      indicatorKey: item.key,
+      details: municipioDetails?.[item.key],
+      presentationMode: item.presentationMode,
+    })
 
     if (
       item.include_in_cycle_summary === false ||
@@ -459,8 +485,12 @@ function buildCycleManagementStats(categories, municipioResults) {
       return
     }
 
+    if (accumulativePresentation && accumulativePresentation.summaryState === null) {
+      return
+    }
+
     stats.monitorableTotal += 1
-    if (result.atingida === true) {
+    if (accumulativePresentation ? accumulativePresentation.summaryState === 'achieved' : result.atingida === true) {
       stats.achieved += 1
     } else {
       stats.attention += 1

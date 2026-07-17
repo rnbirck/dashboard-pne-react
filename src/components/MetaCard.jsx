@@ -10,6 +10,7 @@ import {
 import { formatPpDifference, getStateReferenceComparison } from '../utils/stateReference'
 import { getPneCycleCopy } from '../utils/pneCycleCopy'
 import { InteractionChevron } from './InteractionChevron'
+import { buildPne2026AccumulativePresentationModel } from '../utils/pneAccumulativeCycle'
 
 const STATE_REFERENCE_EPSILON = 0.05
 const TREND_PRESENTATIONS = Object.freeze({
@@ -21,6 +22,7 @@ const TREND_PRESENTATIONS = Object.freeze({
 export function MetaCard({
   buttonRef,
   cycle,
+  details = null,
   isSelected = false,
   item,
   onSelect,
@@ -32,49 +34,66 @@ export function MetaCard({
   const unit = resolveIndicatorUnit(item, result)
   const isApproximate = isApproximateIndicator(item, result)
   const comparable = isComparableIndicator(result)
-  const status = getMetaCardStatus(result, comparable, cycleCopy, isApproximate)
+  const accumulativePresentation = buildPne2026AccumulativePresentationModel({
+    cycle,
+    indicatorKey: item?.key,
+    details,
+    presentationMode: item?.presentationMode,
+  })
+  const status = accumulativePresentation
+    ? getAccumulativeMetaCardStatus(accumulativePresentation)
+    : getMetaCardStatus(result, comparable, cycleCopy, isApproximate)
   const isNextCycle = cycle === 'pne_2026_2036'
-  const currentValue = result
+  const currentValue = accumulativePresentation
+    ? accumulativePresentation.currentDisplay
+    : result
     ? isApproximate
       ? formatApproximatePercent(result.end_value)
       : formatIndicatorValue(result.end_value, unit)
     : '—'
   const referenceValue = result?.reference_value ?? item?.reference_value
-  const metaValue = comparable
+  const metaValue = accumulativePresentation
+    ? accumulativePresentation.referenceDisplay
+    : comparable
     ? formatMetaValue(result, unit)
     : isApproximate
       ? formatIndicatorValue(referenceValue, unit)
       : 'Sem meta'
-  const progress = comparable ? getProgressPercent(result) : null
-  const supportValue = comparable
+  const progress = accumulativePresentation
+    ? accumulativePresentation.progress
+    : comparable ? getProgressPercent(result) : null
+  const supportValue = accumulativePresentation
+    ? accumulativePresentation.distanceDisplay
+    : comparable
     ? roundPpString(result?.display?.distance ?? '—')
     : isApproximate
       ? formatApproximateDifference(result?.reference_difference)
       : roundPpString(result?.display?.variation ?? '—')
-  const supportLabel = comparable
+  const supportLabel = accumulativePresentation
+    ? accumulativePresentation.distanceLabel
+    : comparable
     ? 'Distância'
     : isApproximate
       ? 'Diferença'
       : 'Variação'
   const identifier = item?.metaRef ? `Meta ${item.metaRef}` : 'Indicador'
   const title = getIndicatorTitle(item, result)
-  const stateComparison = getStateReferenceComparison(
-    stateReference,
-    item?.key,
-    result,
-    unit,
-  )
+  const stateComparison = accumulativePresentation
+    ? null
+    : getStateReferenceComparison(stateReference, item?.key, result, unit)
   const stateComparisonTone = stateComparison
     ? getStateComparisonTone(stateComparison.difference)
     : null
-  const trendPresentation = isNextCycle ? getTrendPresentation(result?.trend) : null
+  const trendPresentation = isNextCycle && !accumulativePresentation
+    ? getTrendPresentation(result?.trend)
+    : null
   const cardAriaLabel = trendPresentation
     ? `Abrir detalhe do indicador ${title}. Tendência: ${trendPresentation.ariaDirection}, de ${trendPresentation.startYear} a ${trendPresentation.endYear}.`
     : `Abrir detalhe do indicador ${title}`
 
   return (
     <button
-      className={`meta-card meta-card--cycle interaction-card--explorable meta-card--${status.state}${isNextCycle ? ' meta-card--next-cycle' : ' meta-card--closed-cycle'}${trendPresentation ? ' meta-card--has-trend' : ''}${isSelected ? ' is-selected' : ''}`}
+      className={`meta-card meta-card--cycle interaction-card--explorable meta-card--${status.state}${isNextCycle ? ' meta-card--next-cycle' : ' meta-card--closed-cycle'}${trendPresentation ? ' meta-card--has-trend' : ''}${accumulativePresentation ? ` meta-card--${accumulativePresentation.kind}` : ''}${isSelected ? ' is-selected' : ''}`}
       ref={buttonRef}
       type="button"
       onClick={onSelect}
@@ -96,11 +115,11 @@ export function MetaCard({
 
       <span className="meta-card__value-row">
         <span className="meta-card__metric meta-card__metric--current">
-          <span>Município</span>
+          <span>{accumulativePresentation?.currentLabel ?? 'Município'}</span>
           <strong>{currentValue}</strong>
         </span>
         <span className="meta-card__metric meta-card__metric--target">
-          <span>{isApproximate ? 'Ref.' : 'Meta PNE'}</span>
+          <span>{accumulativePresentation?.referenceLabel ?? (isApproximate ? 'Ref.' : 'Meta PNE')}</span>
           <strong>{metaValue}</strong>
         </span>
         <span className="meta-card__metric meta-card__metric--distance">
@@ -120,20 +139,29 @@ export function MetaCard({
         ) : null}
       </span>
 
-      <span className="meta-card__progress-group">
-        {progress !== null ? (
-          <span
-            className="meta-card__progress"
-            aria-label={`Comparação do resultado municipal ${currentValue} com a meta ${metaValue}`}
-          >
-            <span style={{ width: `${progress}%` }} />
-          </span>
-        ) : (
-          <span className="meta-card__no-progress">
-            {isApproximate ? 'Referência legal final: 50% em 2036' : 'Sem meta comparável'}
-          </span>
-        )}
-      </span>
+      {accumulativePresentation?.kind === 'public-share' ? null : (
+        <span className="meta-card__progress-group">
+          {progress !== null ? (
+            <span
+              className="meta-card__progress"
+              aria-label={accumulativePresentation
+                ? accumulativePresentation.comparisonAriaLabel
+                : `Comparação do resultado municipal ${currentValue} com a meta ${metaValue}`}
+            >
+              <span style={{ width: `${progress}%` }} />
+            </span>
+          ) : (
+            <span className="meta-card__no-progress">
+              {accumulativePresentation?.comparisonTitle ?? (isApproximate ? 'Referência legal final: 50% em 2036' : 'Sem meta comparável')}
+            </span>
+          )}
+          {accumulativePresentation?.comparisonTitle ? (
+            <span className="meta-card__progress-caption">
+              {accumulativePresentation.comparisonTitle}
+            </span>
+          ) : null}
+        </span>
+      )}
 
       {stateComparison ? (
         <span
@@ -152,11 +180,28 @@ export function MetaCard({
       ) : null}
 
       <span className="meta-card__footer">
-        {stageLabel ? <span>{stageLabel}</span> : null}
+        {accumulativePresentation?.footerText || stageLabel ? (
+          <span>{accumulativePresentation?.footerText ?? stageLabel}</span>
+        ) : null}
         <InteractionChevron />
       </span>
     </button>
   )
+}
+
+function getAccumulativeMetaCardStatus(model) {
+  const state = model.achieved === true
+    ? 'success'
+    : model.achieved === false
+      ? 'warning'
+      : 'missing'
+
+  return {
+    label: model.statusLabel,
+    rawStatus: model.statusLabel,
+    state,
+    tone: model.tone,
+  }
 }
 
 function getTrendPresentation(trend) {

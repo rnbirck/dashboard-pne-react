@@ -20,6 +20,7 @@ import {
   FinancialMetricStrip,
   FinancialMetricGrid,
   FinancialQuickReading,
+  FinancialMethodologyDisclosure,
   FinancialSupportData,
 } from './FinancialIndicatorPrimitives'
 
@@ -445,14 +446,14 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
             onNext={handleIndicatorSelect}
             onPrevious={handleIndicatorSelect}
             previousIndicator={previousIndicator}
+            statusLabel={selectedIndicatorModel.statusLabel}
+            statusTone={selectedIndicatorModel.statusTone}
             total={indicatorModels.length}
           />
           <section className="detail-panel educacao-detail-panel financial-detail-panel fundeb-detail">
             <FinancialDetailHeader indicator={selectedIndicatorModel} />
             <FinancialMetricGrid indicator={selectedIndicatorModel} />
-            <FinancialQuickReading text={selectedIndicatorModel.quickReading} tone={selectedIndicatorModel.statusTone} />
-            <FinancialIndicatorMetadata metadata={getFinancialIndicatorMetadata('fundeb', selectedIndicatorModel.key)} />
-
+            <FinancialQuickReading description={selectedIndicatorModel.description} text={selectedIndicatorModel.quickReading} tone={selectedIndicatorModel.statusTone} />
             {(selectedKey === 'despesa_remuneracao_profissionais_creche' || selectedKey === 'despesa_remuneracao_profissionais_pre_escola') && (
               <MethodNote className="fundeb-indicator-note"><strong>Nota metodológica:</strong> Série exibida a partir de 2021 para manter comparabilidade com a estrutura do Novo FUNDEB.</MethodNote>
             )}
@@ -474,7 +475,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
             >
               {validSeries.length >= 2 ? (
                 <IndicatorHistoryChart
-                  chartHeight={validSeries.length <= 5 ? 300 : 320}
+                  chartHeight={224}
                   endYear={series[series.length - 1].ano}
                   formatDataLabel={chartUnit === 'currency' ? (v) => formatCompactDataLabel(v, 'financeiro') : (v) => formatCompactDataLabel(v, 'percentual')}
                   formatYAxis={chartUnit === 'currency' ? formatCompactCurrency : undefined}
@@ -494,6 +495,10 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
                 <ChartEmptyState message="Histórico não disponível." />
               )}
             </FinancialChartFrame>
+
+            <FinancialMethodologyDisclosure>
+              <FinancialIndicatorMetadata metadata={getFinancialIndicatorMetadata('fundeb', selectedIndicatorModel.key)} />
+            </FinancialMethodologyDisclosure>
 
             {series.length >= 1 ? (
               <FinancialSupportData subtitle="Tabela anual do demonstrativo do FUNDEB para o indicador selecionado.">
@@ -567,6 +572,8 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
             onNext={handleIndicatorSelect}
             onPrevious={handleIndicatorSelect}
             previousIndicator={previousIndicator}
+            statusLabel={selectedIndicatorModel.statusLabel}
+            statusTone={selectedIndicatorModel.statusTone}
             total={indicatorModels.length}
           />
         </div>
@@ -641,7 +648,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
                 {validSeries.length >= 2 && (
                 <div className="fundeb-chart-card">
                   <IndicatorHistoryChart
-                    chartHeight={validSeries.length <= 5 ? 300 : 320}
+                    chartHeight={224}
                     endYear={series[series.length - 1].ano}
                     formatDataLabel={chartUnit === 'currency' ? (v) => formatCompactDataLabel(v, 'financeiro') : (v) => formatCompactDataLabel(v, 'percentual')}
                     formatYAxis={chartUnit === 'currency' ? formatCompactCurrency : undefined}

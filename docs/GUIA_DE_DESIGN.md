@@ -105,6 +105,50 @@ O município permanece visível no contexto global. Breadcrumb é opcional: usar
 
 Trocas de página devem restaurar o topo e transferir foco para o `h1`. Retornos explícitos de detalhe para lista devem restaurar o contexto de leitura e o foco do item de origem.
 
+Detalhes de cards do PNE, Educação e Financiamento preservam a largura canônica
+do shell, a navegação local com voltar, posição, contexto e anterior/próximo, o
+título operacional curto e os KPIs prioritários em uma única faixa. No PNE
+2026–2036, esse contexto identifica o tema do indicador; os demais domínios
+podem manter o status quando ele for a orientação mais útil para a sequência.
+Nos dois ciclos do PNE, detalhes longos repetem ao final os atalhos de voltar,
+anterior e próximo, preservando a mesma sequência e os mesmos estados do topo.
+
+Nos ciclos PNE 2014–2024 e PNE 2026–2036, o detalhe organiza o acompanhamento em largura total e, logo
+abaixo, o gráfico principal em aproximadamente 70% da linha, com altura útil
+de 320 px no desktop, ao lado da leitura rápida. O bloco “Dados de apoio da meta”
+organiza histórico e dependência administrativa na primeira linha; a rede privada
+ocupa uma faixa horizontal própria na segunda linha; quando houver projeção, ela
+divide a terceira linha com a tabela. O título de cada série auxiliar deve identificar a métrica
+efetivamente exibida — matrículas, escolas, turmas, salas, pessoas ou o próprio
+indicador percentual — e não reutilizar “Histórico de matrículas” como rótulo
+genérico. Quando o gráfico principal já apresenta um percentual e a memória de
+cálculo possui séries anuais de numerador e denominador, os dados de apoio podem
+priorizar essas duas quantidades para evitar duplicação da leitura percentual.
+Quando uma quantidade nominal for derivada de uma taxa e de um total de outra
+série oficial, o título deve identificá-la como estimativa e a descrição deve
+explicitar a base usada e qualquer limitação de recorte.
+Os gráficos auxiliares
+usam 270 px de altura e a projeção, exclusiva do ciclo PNE 2026–2036, mantém
+cards de síntese antes do gráfico, com 320 px de altura. Abaixo de
+aproximadamente 900 px, os gráficos são empilhados; no celular, usam 280 px de
+altura e reduzem a quantidade de anos exibidos no eixo X, sem rolagem interna,
+compressão tipográfica ou overflow global. A referência do PNE aparece no topo
+da leitura rápida, enquanto a nota metodológica e a fonte consolidada encerram
+o detalhe. Nenhum gráfico, tabela, fonte ou nota existente deve ser ocultado por
+abas nesses ciclos.
+Nos detalhes de Educação, o gráfico principal e a leitura rápida compartilham a
+mesma linha em proporção aproximada de 70/30 no desktop. O gráfico usa 300 px de
+altura, e a leitura separa evolução observada, definição da medida e recorte
+exibido. Em notebook e tablet, os blocos são empilhados; no celular, os gráficos
+usam 280 px, mantêm texto final de pelo menos 12 px e reduzem a quantidade de
+anos do eixo X. Infraestrutura pode preservar seu panorama em largura total por
+ser uma composição multivariada sem série principal equivalente. Em Educação,
+os dados de apoio seguem o padrão visível do PNE: cabeçalho contextual e cards
+em grid para cada recorte disponível, sem ocultar gráficos, tabelas, fontes ou
+notas em abas ou disclosures. Financiamento e os demais domínios podem manter o
+aprofundamento progressivo quando a densidade ou a tarefa justificar, sem
+remover acesso por teclado ou alternativa textual.
+
 Desktop e notebook são as prioridades de composição. Acima de 1080 px, a sidebar pode ser persistente; em larguras menores, a navegação deve reduzir seu impacto vertical e preservar o acesso ao município e ao conteúdo prioritário.
 
 ## 5. Regras de componentes
@@ -206,3 +250,7 @@ guia para foco, teclado, contraste, zoom, movimento reduzido e responsividade.
 No hero de Educação, o bloco lateral organiza contexto, município em destaque,
 seção atual e escopo disponível. Leituras rápidas usam título e texto sobre
 superfície neutra, sem ponto decorativo de status competindo com o conteúdo.
+
+## Indicadores de participação acumulada na expansão
+
+Indicadores configurados com `presentationMode: 'expansion-share-baseline'` usam uma apresentação divergente própria. Antes de haver dados suficientes do ciclo iniciado em 2026, o recorte histórico deve ser identificado como contexto pré-ciclo, sem classificação de alcance da meta. A análise principal deve decompor as variações pública e total ao redor de zero e comparar o resultado com o patamar em uma escala que preserve valores negativos e superiores a 100%. Indicadores percentuais tradicionais permanecem no padrão de série temporal existente.

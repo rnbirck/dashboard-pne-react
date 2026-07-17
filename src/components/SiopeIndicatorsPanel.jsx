@@ -13,6 +13,7 @@ import {
   FinancialMetricStrip,
   FinancialMetricGrid,
   FinancialQuickReading,
+  FinancialMethodologyDisclosure,
 } from './FinancialIndicatorPrimitives'
 import { IndicatorHistoryChart } from './IndicatorHistoryChart'
 import { ChartEmptyState } from './ChartPrimitives'
@@ -366,18 +367,18 @@ function SiopeHistoricalData({ children }) {
   if (!children) return null
 
   return (
-    <section className="educacao-explore education-support-data financial-support-data siope-history-table-section">
-      <div className="educacao-explore__heading">
+    <details className="educacao-explore education-support-data financial-support-data siope-history-table-section platform-support-disclosure">
+      <summary className="platform-support-disclosure__summary">
         <div>
           <span className="educacao-explore__eyebrow">Série histórica em tabela</span>
           <h3>Dados históricos</h3>
           <p>Série anual declarada no SIOPE para o indicador selecionado.</p>
         </div>
-      </div>
+      </summary>
       <div className="educacao-explore__panel siope-history-table-panel">
         {children}
       </div>
-    </section>
+    </details>
   )
 }
 
@@ -560,18 +561,14 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
             onNext={handleIndicatorSelect}
             onPrevious={handleIndicatorSelect}
             previousIndicator={previousIndicator}
+            statusLabel={selectedIndicatorModel.statusLabel}
+            statusTone={selectedIndicatorModel.statusTone}
             total={indicatorModels.length}
           />
           <section className="detail-panel educacao-detail-panel financial-detail-panel siope-detail">
             <FinancialDetailHeader indicator={selectedIndicatorModel} />
-            <SiopeReadingGuide
-              fallback={selectedIndicatorModel.description}
-              guide={selectedIndicatorModel.readingGuide}
-            />
             <FinancialMetricGrid indicator={selectedIndicatorModel} />
-            <FinancialQuickReading text={selectedIndicatorModel.quickReading} tone={selectedIndicatorModel.statusTone} />
-            <FinancialIndicatorMetadata metadata={getFinancialIndicatorMetadata('siope', selectedIndicatorModel.key)} />
-
+            <FinancialQuickReading description={selectedIndicatorModel.description} text={selectedIndicatorModel.quickReading} tone={selectedIndicatorModel.statusTone} />
             {selectedIndicatorHasMissingValues ? (
               <p className="fundeb-indicator-note siope-register-alert platform-coverage-note">
                 <strong>Registro:</strong> {MISSING_VALUE_NOTE}
@@ -585,7 +582,7 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
             >
               {validSeries.length >= 2 ? (
                 <IndicatorHistoryChart
-                  chartHeight={validSeries.length <= 5 ? 300 : 320}
+                  chartHeight={224}
                   endYear={2025}
                   formatDataLabel={(value) => formatCompactDataLabel(value, selectedIndicator.unidade)}
                   formatYAxis={selectedIndicator.unidade === 'reais' ? formatCompactCurrency : undefined}
@@ -605,6 +602,14 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
                 <ChartEmptyState message="Histórico não disponível." />
               )}
             </FinancialChartFrame>
+
+            <FinancialMethodologyDisclosure>
+              <SiopeReadingGuide
+                fallback={selectedIndicatorModel.description}
+                guide={selectedIndicatorModel.readingGuide}
+              />
+              <FinancialIndicatorMetadata metadata={getFinancialIndicatorMetadata('siope', selectedIndicatorModel.key)} />
+            </FinancialMethodologyDisclosure>
 
             <SiopeHistoricalData>
               <div className="fundeb-table-card financial-support-table">
@@ -646,6 +651,8 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
             onNext={handleIndicatorSelect}
             onPrevious={handleIndicatorSelect}
             previousIndicator={previousIndicator}
+            statusLabel={selectedIndicatorModel.statusLabel}
+            statusTone={selectedIndicatorModel.statusTone}
             total={indicatorModels.length}
           />
         </div>

@@ -55,6 +55,7 @@ interface EducationIndicatorsSectionProps {
 
 interface EducationDetailNavigationProps {
   activeIndex: number
+  contextLabel?: string
   isBottom?: boolean
   nextIndicator: EducationIndicatorResult | null
   onBack: () => void
@@ -122,6 +123,7 @@ export function EducationIndicatorsSection({ actions, viewModel }: EducationIndi
       <div className="education-detail-view" ref={detailNavigation.detailViewRef}>
         <EducationDetailNavigation
           activeIndex={activeIndicatorIndex}
+          contextLabel={section?.label}
           nextIndicator={nextIndicator}
           onBack={onBackToIndicators}
           onNext={onAdjacentIndicator}
@@ -132,6 +134,7 @@ export function EducationIndicatorsSection({ actions, viewModel }: EducationIndi
         <EducationIndicatorDetailView indicator={activeIndicator} blocos={blocos} />
         <EducationDetailNavigation
           activeIndex={activeIndicatorIndex}
+          contextLabel={section?.label}
           isBottom
           nextIndicator={nextIndicator}
           onBack={onBackToIndicators}
@@ -220,6 +223,7 @@ export function EducationIndicatorsSection({ actions, viewModel }: EducationIndi
 
 function EducationDetailNavigation({
   activeIndex,
+  contextLabel,
   isBottom = false,
   nextIndicator,
   onBack,
@@ -232,6 +236,7 @@ function EducationDetailNavigation({
     <DetailNavigation
       activeIndex={activeIndex}
       className={`education-detail-nav${isBottom ? ' education-detail-nav--bottom' : ''}`}
+      contextLabel={contextLabel}
       isBottom={isBottom}
       nextLabel={undefined}
       nextItem={nextIndicator}

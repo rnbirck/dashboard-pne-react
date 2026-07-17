@@ -16,26 +16,46 @@ import {
   getStableVisualDomain,
   projectValueToPercent,
 } from '../utils/visualDomain'
-import { IndicatorComplementaryData } from './IndicatorComplementaryData'
+import { CalculationComponentsTable, IndicatorComplementaryData } from './IndicatorComplementaryData'
 import { IndicatorHistoryChart } from './IndicatorHistoryChart'
 import { ChartEmptyState } from './ChartPrimitives'
 import { isDemographicCensusIndicator, buildDisplayIndicatorSeries } from '../utils/indicatorSeries'
 import { loadIndicatorDetail } from '../data/staticData'
 import { PneSourceNotes } from './PneSourceNotes'
 import { MetricCard } from './MetricCard'
+import { QuickReadingHeading } from './QuickReadingHeading'
 import { PNE_2026_GOAL_TEXTS } from '../data/pne2026GoalTexts'
 import { PNE_2014_GOAL_TEXTS } from '../data/pne2014GoalTexts'
 import { getPneCycleCopy, isClosedPneCycle } from '../utils/pneCycleCopy'
-import { StatusBadge } from './StatusBadge'
+import { buildPne2026AccumulativePresentationModel } from '../utils/pneAccumulativeCycle'
+import { buildPnePercentScale } from '../utils/pneChartSystem'
+import {
+  ExpansionShareBaselineAnalysis,
+  ExpansionShareQuickReading,
+  ExpansionShareTechnicalDisclosure,
+} from './ExpansionShareBaselineDetail'
+import {
+  SubsequentExpansionQuickReading,
+  SubsequentExpansionTargetAnalysis,
+  SubsequentExpansionTracking,
+} from './SubsequentExpansionTargetDetail'
+import { RatioDualMilestoneDetail } from './RatioDualMilestoneDetail'
 
 export const IndicatorDetail = forwardRef(function IndicatorDetail(
   { cycle, item, municipioData, result },
   ref,
 ) {
   const cycleCopy = getPneCycleCopy(cycle)
+  const isOrganizedPneDetail = cycle === 'pne_2014_2024' || cycle === 'pne_2026_2036'
   const [loadedDetails, setLoadedDetails] = useState(null)
   const fallbackDetails = municipioData?.indicator_details?.[item?.key] ?? null
   const details = loadedDetails ?? fallbackDetails
+  const accumulativePresentationModel = buildPne2026AccumulativePresentationModel({
+    cycle,
+    indicatorKey: item?.key,
+    details,
+    presentationMode: item?.presentationMode,
+  })
 
   useEffect(() => {
     let isMounted = true
@@ -83,9 +103,30 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
     )
   }
 
+  if (item?.presentationMode === 'ratio-dual-milestone') {
+    return (
+      <RatioDualMilestoneDetail
+        cycle={cycle}
+        details={details}
+        item={item}
+        ref={ref}
+        result={result}
+      />
+    )
+  }
+
   const cycleMinYear = cycle === 'pne_2014_2024' ? 2014 : null
   const isCensusIndicator = isDemographicCensusIndicator({ indicatorKey: item?.key, item, details })
   const displaySeries = buildDisplayIndicatorSeries({ cycle, result, details, item, indicatorKey: item?.key })
+  const currentDetailModel = buildPneCurrentDetailModel({
+    accumulativePresentationModel,
+    cycle,
+    displaySeries,
+    presentationMode: item?.presentationMode,
+    result,
+  })
+  const isExpansionShareBaseline = item?.presentationMode === 'expansion-share-baseline'
+  const isAbsoluteExpansionTarget = item?.presentationMode === 'absolute-expansion-target'
   const effectiveCycleMinYear = isCensusIndicator ? null : cycleMinYear
   const filteredStartYear = effectiveCycleMinYear && Number.isFinite(Number(result.start_year)) && Number(result.start_year) < effectiveCycleMinYear
     ? effectiveCycleMinYear
@@ -105,7 +146,9 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
     normalizedStatus.includes('critico') ||
     normalizedStatus.includes('não atingida') ||
     normalizedStatus.includes('nao atingida')
-  const tone = isApproximate || isInformative
+  const tone = currentDetailModel
+    ? currentDetailModel.tone
+    : isApproximate || isInformative
     ? 'muted'
     : result.atingida
       ? 'success'
@@ -158,9 +201,18 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
   const hasStartYear = typeof startYear === 'number' && startYear > 0
   const hasEndYear = typeof endYear === 'number' && endYear > 0
   const isSingleYear = isSingleYearIndicator(result)
+  const validYears = [...new Set(displaySeries
+    .filter((point) => Number.isFinite(Number(point?.valor)))
+    .map((point) => Number(point?.ano))
+    .filter(Number.isFinite))]
+  const hasHistory = validYears.length >= 2
   const seriesValues = displaySeries.map((p) => Number(p?.valor)).filter(Number.isFinite)
   const hasRealSeriesValues = seriesValues.some((v) => v !== 0)
   const hasSeries = seriesValues.length >= 2 && (isApproximate || hasRealSeriesValues)
+  const hasRenderableHistory = isOrganizedPneDetail ? hasHistory : hasSeries
+  const usesSingleYearComposition = isOrganizedPneDetail && !hasHistory
+  const availableYear = validYears[0] ?? (hasEndYear ? endYear : startYear)
+  const cycleTargetYear = isClosedPneCycle(cycle) ? 2024 : 2036
 
   const metaValue = isApproximate
     ? formatApproximatePercent(result.reference_value)
@@ -171,6 +223,14 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
   const historyReferenceValue = isApproximate ? result.reference_value : goalResult.meta
   const showHistoryReference =
     (isComparable || isApproximate) && Number.isFinite(Number(historyReferenceValue))
+  const sharedPnePercentDomain = buildSharedPnePercentDomain({
+    cycle,
+    displaySeries,
+    indicatorKey: item?.key,
+    municipioData,
+    referenceValue: historyReferenceValue,
+    unit,
+  })
   const goalTexts = cycle === 'pne_2026_2036'
     ? PNE_2026_GOAL_TEXTS
     : cycle === 'pne_2014_2024'
@@ -179,7 +239,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
   const legalGoal = goalTexts && item.metaRef
     ? goalTexts[item.metaRef]
     : null
-  const quickReading = buildQuickReading({
+  const quickReading = currentDetailModel?.reading ?? buildQuickReading({
     atingida: goalResult.atingida,
     cycle,
     distanceValue,
@@ -195,6 +255,23 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
       ? compactVariation
       : variation,
   })
+  const quickReadingInsights = isOrganizedPneDetail
+    ? buildPneQuickReadingInsights({
+        atingida: goalResult.atingida,
+        cycle,
+        distanceValue,
+        endYear,
+        formattedEnd,
+        isComparable,
+        isApproximate,
+        metaValue,
+        quickReading,
+        startYear,
+        variation: item?.key === 'medio_tecnico_articulado_percentual'
+          ? compactVariation
+          : variation,
+      })
+    : null
   const historySummary = buildHistoryChartSummary({
     atingida: goalResult.atingida,
     distanceValue,
@@ -207,63 +284,69 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
   })
 
   return (
-    <section className={`detail-panel detail-panel--${tone}`} ref={ref}>
+    <section
+      className={`detail-panel detail-panel--${tone}${isOrganizedPneDetail ? ' detail-panel--organized' : ''}`}
+      ref={ref}
+    >
       <div className="detail-heading">
         <div className="detail-heading__copy">
           <span className="eyebrow">{cycleCopy.detailEyebrow}</span>
           <h2 data-detail-title tabIndex={-1}>{getIndicatorTitle(item, result)}</h2>
-          {item.sub && <p>{item.sub}</p>}
-          {item.desc && <p>{appendStageExplanations(item.desc)}</p>}
-          {legalGoal && (
-            <div className="indicator-goal-reference">
-              <span>Referência do PNE</span>
-              <p>
-                <strong>Meta {item.metaRef} —</strong>{' '}
-                {legalGoal.dashboardText || legalGoal.displayText || legalGoal.originalText}
-              </p>
-            </div>
-          )}
-          {!isApproximate && Array.isArray(result.meta_references) && result.meta_references.length > 0 && (
-            <div className="indicator-goal-reference">
-              <span>Referências quantitativas</span>
-              {result.meta_references.map((reference) => (
-                <p key={`${reference.year}-${reference.value}`}>
-                  <strong>{reference.label} ({reference.year}) —</strong>{' '}
-                  {Number(reference.value).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%
-                </p>
-              ))}
-            </div>
-          )}
+          {isExpansionShareBaseline ? (
+            <>
+              <p className="expansion-share-detail-period">Período de referência: {currentDetailModel.composition.period ?? 'indisponível'}</p>
+              <p className="expansion-share-detail-note">Contexto pré-ciclo: estes dados antecedem o acompanhamento do PNE 2026–2036.</p>
+            </>
+          ) : null}
         </div>
-        <StatusBadge
-          displayStatus={getDetailStatusLabel({ cycle, isComparable, result, status })}
-          status={status}
-          title={getDetailStatusLabel({ cycle, isComparable, result, status })}
-          tone={tone}
-        />
       </div>
 
-      {isSingleYear ? (
+      {usesSingleYearComposition ? (
+        <div className="metric-grid metric-grid--four metric-grid--single-year">
+          <MetricCard
+            icon="current"
+            label={`Valor disponível${hasReadableYear(availableYear) ? ` (${availableYear})` : ''}`}
+            value={formattedEnd}
+          />
+          <MetricCard icon="target" label={result.meta_label ?? `Meta PNE ${cycleTargetYear}`} value={metaValue} />
+          <MetricCard
+            icon="distance"
+            label="Distância da meta"
+            value={distanceValue}
+            tone={distanceTone}
+          />
+          <MetricCard
+            icon="status"
+            label="Situação"
+            value={status || (result.atingida ? cycleCopy.status.achieved : cycleCopy.status.below)}
+            tone={distanceTone}
+          />
+        </div>
+      ) : currentDetailModel ? (
+        <PneCurrentMetrics model={currentDetailModel} />
+      ) : isSingleYear ? (
         isApproximate ? (
           <div className="metric-grid metric-grid--three">
             {hasStartYear && (
-              <MetricCard label={`Valor inicial (${startYear})`} value={formattedStart} />
+              <MetricCard icon="start" label={`Valor inicial (${startYear})`} value={formattedStart} />
             )}
-            <MetricCard label="Referência legal final (2036)" value={metaValue} />
-            <MetricCard label="Tipo" value="Indicador aproximado" tone="muted" />
+            <MetricCard icon="target" label="Referência legal final (2036)" value={metaValue} />
+            <MetricCard icon="type" label="Tipo" value="Indicador aproximado" tone="muted" />
           </div>
         ) : isComparable ? (
           <div className="metric-grid metric-grid--four">
             {hasStartYear && (
-              <MetricCard label={`Valor inicial (${startYear})`} value={formattedStart} />
+              <MetricCard icon="start" label={`Valor inicial (${startYear})`} value={formattedStart} />
             )}
-            <MetricCard label={result.meta_label ?? 'Meta'} value={metaValue} />
+            <MetricCard icon="target" label={result.meta_label ?? 'Meta'} value={metaValue} />
             <MetricCard
+              icon="distance"
               label="Distância da meta"
               value={distanceValue}
               tone={distanceTone}
             />
             <MetricCard
+              icon="status"
               label="Situação"
               value={result.atingida ? cycleCopy.status.achieved : cycleCopy.status.below}
               tone={distanceTone}
@@ -272,28 +355,30 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
         ) : (
           <div className="metric-grid metric-grid--two">
             {hasStartYear && (
-              <MetricCard label={`Valor inicial (${startYear})`} value={formattedStart} />
+              <MetricCard icon="start" label={`Valor inicial (${startYear})`} value={formattedStart} />
             )}
-            <MetricCard label="Tipo" value="Informativo" tone="muted" />
+            <MetricCard icon="type" label="Tipo" value="Informativo" tone="muted" />
           </div>
         )
       ) : (
         isApproximate ? (
           <div className="metric-grid">
             {hasStartYear && (
-              <MetricCard label={`Valor inicial (${startYear})`} value={formattedStart} />
+              <MetricCard icon="start" label={`Valor inicial (${startYear})`} value={formattedStart} />
             )}
             {hasEndYear && (
-              <MetricCard label={cycleCopy.valueLabel(endYear)} value={formattedEnd} size="large" />
+              <MetricCard icon="current" label={cycleCopy.valueLabel(endYear)} value={formattedEnd} size="large" />
             )}
             <MetricCard
+              icon={getPneMetricIcon('Variação', compactVariation, getVariationDetail(variation, startYear))}
               detail={getVariationDetail(variation, startYear)}
               label="Variação"
               value={compactVariation}
             />
-            <MetricCard label="Referência legal final (2036)" value={metaValue} />
+            <MetricCard icon="target" label="Referência legal final (2036)" value={metaValue} />
             {Number.isFinite(Number(result.reference_difference)) ? (
               <MetricCard
+                icon="distance"
                 label="Diferença para a referência de 2036"
                 value={referenceDifferenceValue}
               />
@@ -302,18 +387,20 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
         ) : isComparable ? (
           <div className="metric-grid">
             {hasStartYear && (
-              <MetricCard label={`Valor inicial (${startYear})`} value={formattedStart} />
+              <MetricCard icon="start" label={`Valor inicial (${startYear})`} value={formattedStart} />
             )}
             {hasEndYear && (
-              <MetricCard label={cycleCopy.valueLabel(endYear)} value={formattedEnd} size="large" />
+              <MetricCard icon="current" label={cycleCopy.valueLabel(endYear)} value={formattedEnd} size="large" />
             )}
             <MetricCard
+              icon={getPneMetricIcon('Variação', compactVariation, getVariationDetail(variation, startYear))}
               detail={getVariationDetail(variation, startYear)}
               label="Variação"
               value={compactVariation}
             />
-            <MetricCard label={result.meta_label ?? 'Meta'} value={metaValue} />
+            <MetricCard icon="target" label={result.meta_label ?? 'Meta'} value={metaValue} />
             <MetricCard
+              icon="distance"
               label="Distância da meta"
               value={distanceValue}
               tone={distanceTone}
@@ -322,117 +409,676 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
         ) : (
           <div className="metric-grid metric-grid--four">
             {hasStartYear && (
-              <MetricCard label={`Valor inicial (${startYear})`} value={formattedStart} />
+              <MetricCard icon="start" label={`Valor inicial (${startYear})`} value={formattedStart} />
             )}
             {hasEndYear && (
-              <MetricCard label={cycleCopy.valueLabel(endYear)} value={formattedEnd} size="large" />
+              <MetricCard icon="current" label={cycleCopy.valueLabel(endYear)} value={formattedEnd} size="large" />
             )}
             <MetricCard
+              icon={getPneMetricIcon('Variação', compactVariation, getVariationDetail(variation, startYear))}
               detail={getVariationDetail(variation, startYear)}
               label="Variação"
               value={compactVariation}
             />
-            <MetricCard label="Tipo" value="Informativo" tone="muted" />
+            <MetricCard icon="type" label="Tipo" value="Informativo" tone="muted" />
           </div>
         )
       )}
 
-      {showGoalProgress && (
-        <GoalProgress
-          label={cycleCopy.progressLabel}
-          result={goalResult}
-          unit={unit}
+      {isAbsoluteExpansionTarget && currentDetailModel?.composition ? (
+        <SubsequentExpansionTracking model={currentDetailModel} />
+      ) : currentDetailModel?.composition ? (
+        null
+      ) : !currentDetailModel && showGoalProgress ? (
+        <div className="indicator-goal-tracking">
+          <GoalProgress
+            label={cycleCopy.progressLabel}
+            result={goalResult}
+            unit={unit}
+          />
+        </div>
+      ) : currentDetailModel && showGoalProgress ? (
+        <div className="indicator-goal-tracking">
+          <GoalProgress
+            label={cycleCopy.progressLabel}
+            result={goalResult}
+            unit={unit}
+          />
+        </div>
+      ) : currentDetailModel ? (
+        <PneCurrentTracking model={currentDetailModel} />
+      ) : null}
+
+      <div className={`indicator-primary-analysis${usesSingleYearComposition ? ' indicator-primary-analysis--single-year' : ''}${isExpansionShareBaseline ? ' indicator-primary-analysis--expansion-share' : ''}${isAbsoluteExpansionTarget ? ' indicator-primary-analysis--absolute-expansion' : ''}`}>
+        {usesSingleYearComposition ? (
+          <PneSingleYearDataCard availableYear={availableYear} cycle={cycle} details={details} />
+        ) : isExpansionShareBaseline && currentDetailModel?.composition ? (
+          <ExpansionShareBaselineAnalysis model={currentDetailModel} />
+        ) : isAbsoluteExpansionTarget && currentDetailModel?.composition ? (
+          <SubsequentExpansionTargetAnalysis model={currentDetailModel} />
+        ) : currentDetailModel ? (
+          <PneRecentIndicatorChart
+            cycle={cycle}
+            details={details}
+            domainOverride={sharedPnePercentDomain}
+            item={item}
+            model={currentDetailModel}
+            result={result}
+          />
+        ) : null}
+
+        {!usesSingleYearComposition && !currentDetailModel && hasRenderableHistory && (
+          <div className="indicator-chart-card">
+            <IndicatorHistoryChart
+              chartHeight={320}
+              chartWidth={700}
+              domainOverride={sharedPnePercentDomain}
+              endYear={endYear}
+              essentialLabels
+              item={item}
+              meta={showHistoryReference ? historyReferenceValue : null}
+              referenceLabel={isApproximate
+                ? 'Referência 2036'
+                : isClosedPneCycle(cycle)
+                  ? 'Referência final'
+                  : 'Meta'}
+              result={isAccExpansion ? flooredResult : result}
+              series={displaySeries}
+              showMetaLine={showHistoryReference}
+              startYear={startYear}
+              subtitle={isApproximate
+                ? 'Série histórica do ciclo vigente, com referência legal final para 2036.'
+                : isClosedPneCycle(cycle)
+                  ? 'Série histórica consolidada do ciclo encerrado, com meta de referência quando aplicável.'
+                  : 'Série histórica do ciclo vigente, com meta de referência quando aplicável.'}
+                title={isOrganizedPneDetail ? 'Evolução do indicador' : historySummary}
+              unit={unit}
+              floorNegativeValues={isAccExpansion}
+              pneLayout={isOrganizedPneDetail}
+            />
+            <PneSourceNotes
+              compact
+              includeMethodology={false}
+              context={{
+                block: 'pne',
+                cycle,
+                details,
+                indicatorKey: item?.key,
+                item,
+                result,
+              }}
+            />
+          </div>
+        )}
+
+        {!usesSingleYearComposition && !currentDetailModel && !hasRenderableHistory && !isInformative && (
+          <div className="indicator-chart-card indicator-chart-card--empty">
+            <ChartEmptyState message="Histórico não disponível." />
+            <PneSourceNotes
+              includeMethodology={false}
+              context={{
+                block: 'pne',
+                cycle,
+                details,
+                indicatorKey: item?.key,
+                item,
+                result,
+              }}
+            />
+          </div>
+        )}
+
+        {!usesSingleYearComposition && !currentDetailModel && isInformative && !hasRenderableHistory && (
+          <div className="detail-empty-state indicator-chart-card--empty">
+            <p>Este indicador é informativo e não possui acompanhamento de meta neste ciclo.</p>
+          </div>
+        )}
+
+        {usesSingleYearComposition ? (
+          <PneQuickReading
+            insights={buildSingleYearQuickReadingInsights({ availableYear, distanceValue, status })}
+            isSingleYear={false}
+            legalGoal={legalGoal}
+            metaRef={item.metaRef}
+            quickReading=""
+            tone={tone}
+          />
+        ) : isExpansionShareBaseline && currentDetailModel?.composition ? (
+          <ExpansionShareQuickReading
+            legalGoal={legalGoal}
+            metaRef={item.metaRef}
+            model={currentDetailModel}
+          />
+        ) : isAbsoluteExpansionTarget && currentDetailModel?.composition ? (
+          <SubsequentExpansionQuickReading
+            legalGoal={legalGoal}
+            metaRef={item.metaRef}
+            model={currentDetailModel}
+          />
+        ) : quickReading ? (
+          <PneQuickReading
+            insights={quickReadingInsights}
+            isSingleYear={isSingleYear}
+            legalGoal={legalGoal}
+            metaRef={item.metaRef}
+            quickReading={quickReading}
+            tone={tone}
+          />
+        ) : null}
+      </div>
+
+      {usesSingleYearComposition ? null : currentDetailModel ? (
+        <>
+          <PneHistoricalContext
+            cycle={cycle}
+            domainOverride={sharedPnePercentDomain}
+            indicatorKey={item?.key}
+            item={item}
+            key={`history-${item?.key}`}
+            municipioData={municipioData}
+            presentationMode={item?.presentationMode}
+            result={result}
+          />
+        </>
+      ) : (
+        <IndicatorComplementaryData
+          cycle={cycle}
+          domainOverride={sharedPnePercentDomain}
+          indicatorKey={item?.key}
+          item={item}
+          municipioData={municipioData}
+          result={result}
         />
       )}
 
-      {quickReading && (
-        <div className={`interpretation-box interpretation-box--${tone}`}>
-          <span>Leitura rápida</span>
-          <p>{quickReading}</p>
-          {isSingleYear && (
-            <small style={{ display: 'block', marginTop: '6px', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
-              Há apenas um ano disponível para este indicador.
-            </small>
-          )}
-        </div>
-      )}
-
-      {hasSeries && (
-        <div className="indicator-chart-card">
-          <IndicatorHistoryChart
-            adaptiveDomain
-            chartHeight={340}
-            endYear={endYear}
-            essentialLabels
-            item={item}
-            meta={showHistoryReference ? historyReferenceValue : null}
-            referenceLabel={isApproximate
-              ? 'Referência 2036'
-              : isClosedPneCycle(cycle)
-                ? 'Referência final'
-                : 'Meta'}
-            result={isAccExpansion ? flooredResult : result}
-            series={displaySeries}
-            showMetaLine={showHistoryReference}
-            startYear={startYear}
-            subtitle={isApproximate
-              ? 'Série histórica do ciclo vigente, com referência legal final para 2036.'
-              : isClosedPneCycle(cycle)
-                ? 'Série histórica consolidada do ciclo encerrado, com meta de referência quando aplicável.'
-                : 'Série histórica do ciclo vigente, com meta de referência quando aplicável.'}
-            title={historySummary}
-            unit={unit}
-            floorNegativeValues={isAccExpansion}
-          />
-          <PneSourceNotes
-            context={{
-              block: 'pne',
-              cycle,
-              details,
-              indicatorKey: item?.key,
-              item,
-              result,
-            }}
-          />
-        </div>
-      )}
-
-      {!hasSeries && !isInformative && (
-        <>
-          <ChartEmptyState message="Histórico não disponível." />
-          <PneSourceNotes
-            context={{
-              block: 'pne',
-              cycle,
-              details,
-              indicatorKey: item?.key,
-              item,
-              result,
-            }}
-          />
-        </>
-      )}
-
-      {isInformative && !hasSeries && (
-        <div className="detail-empty-state">
-          <p>Este indicador é informativo e não possui acompanhamento de meta neste ciclo.</p>
-        </div>
-      )}
-
-      <IndicatorComplementaryData cycle={cycle} indicatorKey={item?.key} municipioData={municipioData} result={result} />
+      {isExpansionShareBaseline ? (
+        <ExpansionShareTechnicalDisclosure model={currentDetailModel} />
+      ) : null}
+      <footer className="pne-detail-footer">
+        <PneSourceNotes
+          context={{
+            block: 'pne',
+            cycle,
+            details,
+            indicatorKey: item?.key,
+            item,
+            result,
+            title: item?.label,
+          }}
+        />
+        {isExpansionShareBaseline ? <p className="expansion-share-footer-note">Fonte e método: matrículas públicas e totais da EPT no período disponível; participação calculada pela variação pública dividida pela variação total, multiplicada por 100.</p> : null}
+      </footer>
+      {!isExpansionShareBaseline && currentDetailModel ? (
+        <PneMethodologyDisclosure key={`methodology-${item?.key}`} model={currentDetailModel} />
+      ) : null}
     </section>
   )
 })
 
-function appendStageExplanations(desc) {
-  if (!desc) return desc
-  if (desc.includes('anos iniciais do ensino fundamental') && !desc.includes('1º ao 5º ano')) {
-    desc = desc.replace('anos iniciais do ensino fundamental', 'anos iniciais do ensino fundamental (1º ao 5º ano)')
+function PneCurrentTracking({ model }) {
+  return (
+    <section className={`indicator-goal-tracking indicator-goal-tracking--${model.tone}`} aria-label="Acompanhamento atual da meta">
+      <span>Acompanhamento atual da meta</span>
+      <strong>{model.statusLabel}</strong>
+    </section>
+  )
+}
+
+function PneSingleYearDataCard({ availableYear, cycle, details }) {
+  const componentRows = details?.series_components_by_cycle?.[cycle] ?? details?.series_components
+  const rows = (Array.isArray(componentRows) ? componentRows : [])
+    .filter((row) => Number.isFinite(Number(row?.ano)))
+    .slice()
+    .sort((a, b) => Number(b.ano) - Number(a.ano))
+  const numeratorLabel = details?.calculation?.numerator_label || 'Numerador'
+  const denominatorLabel = details?.calculation?.denominator_label || 'Denominador'
+  const availabilityReference = hasReadableYear(availableYear)
+    ? `referente a ${availableYear}`
+    : 'referente ao ano de referência'
+
+  return (
+    <section className="indicator-data-card" aria-labelledby="single-year-indicator-data-title">
+      <header className="indicator-data-card__heading">
+        <h3 id="single-year-indicator-data-title">Dados do indicador</h3>
+        <p>Valores disponíveis para o município no ano de referência</p>
+      </header>
+      <div className="indicator-data-card__notice">
+        <svg aria-hidden="true" className="indicator-data-card__notice-icon" fill="none" viewBox="0 0 24 24">
+          <ellipse cx="12" cy="6" rx="7" ry="3" />
+          <path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6" />
+          <path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" />
+        </svg>
+        <div>
+          <strong>Disponibilidade do dado</strong>
+          <p>
+            Há somente um valor municipal disponível, {availabilityReference}. Por isso, não é possível apresentar evolução histórica ou projeção tendencial.
+          </p>
+        </div>
+      </div>
+      <CalculationComponentsTable
+        denominatorLabel={denominatorLabel}
+        numeratorLabel={numeratorLabel}
+        rows={rows}
+        showHeading={false}
+        singleYearLayout
+      />
+    </section>
+  )
+}
+
+function buildSingleYearQuickReadingInsights({ availableYear, distanceValue, status }) {
+  const year = hasReadableYear(availableYear) ? availableYear : 'de referência'
+
+  return [
+    {
+      detail: `Valor municipal disponível em ${year}.`,
+      icon: 'current',
+      key: 'current',
+      label: 'Situação atual',
+      value: status || 'Dado disponível',
+    },
+    {
+      detail: 'Diferença entre o valor disponível e a referência final do PNE.',
+      icon: 'distance',
+      key: 'distance',
+      label: 'Distância da meta',
+      value: hasReadableValue(distanceValue) ? distanceValue : '—',
+    },
+  ]
+}
+
+function PneQuickReading({ insights, isSingleYear, legalGoal, metaRef, quickReading, tone }) {
+  const hasInsights = Array.isArray(insights) && insights.length > 0
+  const goalSummary = getPneGoalSummary(legalGoal)
+  const hasGoalReference = Boolean(legalGoal && goalSummary)
+
+  return (
+    <aside className={`indicator-quick-reading interpretation-box interpretation-box--${tone}`} aria-label="Leitura rápida">
+      <QuickReadingHeading />
+      {hasGoalReference || hasInsights ? (
+        <ul className="indicator-quick-reading__list">
+          {hasGoalReference ? (
+            <li className="indicator-quick-reading__reference">
+              <PneInsightIcon name="reference" />
+              <div>
+                <span>Referência do PNE</span>
+                <p><strong>Meta {metaRef} —</strong> {goalSummary}</p>
+              </div>
+            </li>
+          ) : null}
+          {(insights ?? []).map((insight) => (
+            <li key={insight.key}>
+              <PneInsightIcon name={insight.icon} />
+              <div>
+                <span>{insight.label}</span>
+                <p><strong>{insight.value}</strong>{insight.detail ? ` — ${insight.detail}` : ''}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>{quickReading}</p>
+      )}
+      {isSingleYear ? <small>Há apenas um ano disponível para este indicador.</small> : null}
+    </aside>
+  )
+}
+
+function PneInsightIcon({ name }) {
+  const paths = {
+    current: <><circle cx="12" cy="12" r="8" /><path d="M12 7v5l3 2" /></>,
+    distance: <><path d="M4 18 18 4" /><path d="M5 7v11h11" /><path d="M14 4h4v4" /></>,
+    variation: <><path d="M5 16 10 11l3 3 6-7" /><path d="M15 7h4v4" /></>,
+    variationDown: <><path d="M5 8 10 13l3-3 6 7" /><path d="M15 17h4v-4" /></>,
+    reference: <><path d="M6 4v16" /><path d="M7 5h10l-2.5 4L17 13H7" /></>,
   }
-  if (desc.includes('anos finais do ensino fundamental') && !desc.includes('6º ao 9º ano')) {
-    desc = desc.replace('anos finais do ensino fundamental', 'anos finais do ensino fundamental (6º ao 9º ano)')
+
+  return (
+    <svg aria-hidden="true" className="indicator-quick-reading__icon" fill="none" viewBox="0 0 24 24">
+      {paths[name] ?? paths.current}
+    </svg>
+  )
+}
+
+function PneCurrentMetrics({ model }) {
+  const compactMetrics = model.metrics.filter((metric) => metric.label !== 'Situação atual')
+  const compositionMode = model.composition?.mode
+
+  return (
+    <div className={`metric-grid accumulative-cycle-metrics${compositionMode === 'expansion-share-baseline' ? ' accumulative-cycle-metrics--expansion-share' : ''}${compositionMode === 'absolute-expansion-target' ? ' accumulative-cycle-metrics--absolute-expansion' : ''}`}>
+      {compactMetrics.map((metric) => (
+        <MetricCard
+          detail={metric.detail}
+          icon={getPneMetricIcon(metric.label, metric.value, metric.detail)}
+          key={metric.label}
+          label={metric.label}
+          size={metric.size}
+          tone={metric.tone}
+          value={metric.value}
+        />
+      ))}
+    </div>
+  )
+}
+
+function getPneMetricIcon(label, value, detail) {
+  const normalized = String(label ?? '').toLocaleLowerCase('pt-BR')
+  if (normalized.includes('inicial') || normalized.includes('ponto de partida')) return 'start'
+  if (normalized.includes('acompanhamento') || normalized.includes('recente') || normalized.includes('atual')) return 'current'
+  if (normalized.includes('varia')) {
+    const valueText = `${value ?? ''} ${detail ?? ''}`
+    return /^\s*-/.test(valueText) || /queda|redu[cç][aã]o/i.test(valueText)
+      ? 'variationDown'
+      : 'variation'
   }
-  return desc
+  if (normalized.includes('expansão necessária')) return 'variation'
+  if (normalized.includes('meta') || normalized.includes('refer')) return 'target'
+  if (normalized.includes('dist')) return 'distance'
+  return 'status'
+}
+
+function getPneGoalSummary(goal) {
+  if (!goal) return ''
+  const declaredSummary = goal.dashboardText || ''
+  if (declaredSummary) return declaredSummary
+
+  const text = goal.displayText || goal.originalText || ''
+  if (!text) return ''
+  const firstClause = text.split(/[.;:]/, 1)[0].trim()
+  if (firstClause.length >= 24 && firstClause.length <= 180) {
+    return `${firstClause}.`
+  }
+  if (text.length <= 180) return text
+  return `${text.slice(0, 177).trimEnd()}…`
+}
+
+function buildPneQuickReadingInsights({
+  atingida,
+  cycle,
+  distanceValue,
+  endYear,
+  formattedEnd,
+  isComparable,
+  isApproximate,
+  metaValue,
+  quickReading,
+  startYear,
+  variation,
+}) {
+  const isClosedCycle = isClosedPneCycle(cycle)
+  const targetYear = isClosedCycle ? 2024 : 2036
+  const hasCurrentValue = hasReadableYear(endYear) && hasReadableValue(formattedEnd)
+  const hasVariation = hasReadableYear(startYear) && hasReadableValue(variation)
+  const hasDistance = isComparable && hasReadableValue(distanceValue) && hasReadableValue(metaValue)
+  const currentDetail = !hasCurrentValue
+    ? 'Sem valor recente disponível.'
+    : !isComparable
+      ? isClosedCycle
+        ? `Resultado consolidado do município em ${endYear}.`
+        : `Valor municipal mais recente, em ${endYear}.`
+      : atingida
+        ? isClosedCycle
+          ? `No resultado de ${endYear}, atingiu a meta do ciclo.`
+          : `Em ${endYear}, atinge a meta no momento.`
+        : isClosedCycle
+          ? `No resultado de ${endYear}, não atingiu a meta do ciclo.`
+          : `Em ${endYear}, ainda não atinge a meta.`
+
+  return [
+    {
+      detail: currentDetail,
+      icon: 'current',
+      key: 'current',
+      label: isClosedCycle ? 'Resultado final' : 'Situação atual',
+      value: hasCurrentValue ? formattedEnd : '—',
+    },
+    {
+      detail: hasVariation
+        ? `Variação acumulada desde ${startYear}.`
+        : hasReadableYear(startYear) && hasReadableYear(endYear) && startYear !== endYear
+          ? `Série disponível entre ${startYear} e ${endYear}.`
+          : 'Evolução não comparável no período.',
+      icon: /^\s*-/.test(String(variation ?? '')) ? 'variationDown' : 'variation',
+      key: 'evolution',
+      label: isClosedCycle ? 'Evolução no ciclo' : 'Evolução desde o início',
+      value: hasVariation ? variation : '—',
+    },
+    {
+      detail: hasDistance
+        ? atingida ? `Acima da meta de ${metaValue}.` : `Para alcançar a meta de ${metaValue}.`
+        : isApproximate && hasReadableValue(metaValue)
+          ? `Referência legal final em ${targetYear}: ${metaValue}.`
+          : hasReadableValue(quickReading) ? quickReading : 'Distância não disponível para comparação.',
+      icon: 'distance',
+      key: 'distance',
+      label: 'Distância da meta',
+      value: hasDistance ? distanceValue : isApproximate && hasReadableValue(metaValue) ? metaValue : '—',
+    },
+  ]
+}
+
+function PneRecentIndicatorChart({ cycle, details, domainOverride, item, model, result }) {
+  if (model.loading) {
+    return <ChartEmptyState message="Carregando série recente." />
+  }
+
+  const validChartPoints = model.chart.series.filter(hasFiniteSeriesValue)
+
+  if (validChartPoints.length < 2) {
+    return <ChartEmptyState message="Série recente insuficiente para exibir o gráfico." />
+  }
+
+  return (
+    <div className="indicator-chart-card recent-goal-chart">
+      <IndicatorHistoryChart
+        chartHeight={320}
+        chartWidth={700}
+        domainOverride={domainOverride}
+        endYear={model.chart.endYear}
+        essentialLabels
+        item={item}
+        meta={model.chart.showMetaLine ? model.chart.meta : null}
+        pneLayout
+        referenceLabel={model.chart.referenceLabel}
+        result={result}
+        series={model.chart.series}
+        showMetaLine={model.chart.showMetaLine}
+        showMissingPoints={model.chart.showMissingPoints}
+        startYear={model.chart.startYear}
+        subtitle={model.chart.subtitle}
+        title="Evolução do indicador"
+        unit={model.chart.unit}
+      />
+      {model.chart.note ? <p className="recent-goal-chart__note">{model.chart.note}</p> : null}
+      <PneSourceNotes
+        compact
+        includeMethodology={false}
+        context={{
+          block: 'pne',
+          cycle,
+          details,
+          indicatorKey: item?.key,
+          item,
+          result,
+        }}
+      />
+    </div>
+  )
+}
+
+function PneMethodologyDisclosure({ model }) {
+  return (
+    <details className="accumulative-history-disclosure accumulative-history-disclosure--methodology">
+      <summary>
+        <span>Linha de base e metodologia</span>
+        <small>{model.methodSummary}</small>
+      </summary>
+      <div className="accumulative-history-disclosure__body">
+        {model.methodology.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+      </div>
+    </details>
+  )
+}
+
+function PneHistoricalContext({ cycle, domainOverride, indicatorKey, item, municipioData, presentationMode, result }) {
+  const isExpansionShareBaseline = presentationMode === 'expansion-share-baseline'
+  const isAbsoluteExpansionTarget = presentationMode === 'absolute-expansion-target'
+  return (
+    <section className="pne-historical-context" aria-label="Dados históricos de apoio">
+      <p>
+        {isExpansionShareBaseline
+          ? 'Dados de apoio para observar a evolução das matrículas e a composição por rede.'
+          : isAbsoluteExpansionTarget
+            ? 'O histórico ajuda a compreender o contexto, mas a evolução da meta será acompanhada somente a partir do valor de referência de 2025.'
+          : 'Os dados históricos abaixo oferecem contexto para a leitura e não representam avanço da meta de 2036.'}
+      </p>
+      <IndicatorComplementaryData
+        cycle={cycle}
+        domainOverride={domainOverride}
+        indicatorKey={indicatorKey}
+        item={item}
+        municipioData={municipioData}
+        presentationMode={presentationMode}
+        result={result}
+      />
+    </section>
+  )
+}
+
+function buildSharedPnePercentDomain({
+  cycle,
+  displaySeries,
+  indicatorKey,
+  municipioData,
+  referenceValue,
+  unit,
+}) {
+  if (!['pne_2014_2024', 'pne_2026_2036'].includes(cycle) || unit !== 'percent') return null
+  const projection = municipioData?.[cycle]?.projecoes?.[indicatorKey]
+  const values = [
+    ...(displaySeries ?? []).map((point) => point?.valor),
+    ...(projection?.historical_percent ?? []),
+    ...(projection?.projected_percent ?? []),
+    projection?.target_percent,
+    referenceValue,
+  ]
+  return buildPnePercentScale(values).domain
+}
+
+function buildPneCurrentDetailModel({
+  accumulativePresentationModel,
+  cycle,
+  displaySeries,
+  presentationMode,
+  result,
+}) {
+  if (cycle !== 'pne_2026_2036') return null
+
+  if (accumulativePresentationModel) {
+    return accumulativePresentationModel.detail
+  }
+
+  if (presentationMode === 'ratio-dual-milestone') {
+    return buildEjaRecentDetailModel(displaySeries, result)
+  }
+
+  return null
+}
+
+function buildEjaRecentDetailModel(displaySeries, result) {
+  const recentSeries = takeRecentSeries(displaySeries)
+  const latest = recentSeries.at(-1) ?? null
+  const finalReference = result?.meta_references?.find((reference) => Number(reference?.year) === 2036)
+  const targetValue = Number(finalReference?.value ?? result?.meta)
+  const currentValue = Number(latest?.valor)
+  const hasValues = latest && Number.isFinite(currentValue) && Number.isFinite(targetValue)
+  const achieved = hasValues ? currentValue >= targetValue : null
+  const tone = achieved === true ? 'success' : achieved === false ? 'warning' : 'muted'
+  const statusLabel = achieved === true
+    ? 'Atinge a referência no momento'
+    : achieved === false
+      ? 'Ainda não atinge a referência'
+      : 'Sem dados suficientes'
+  const distance = hasValues
+    ? formatCycleReferenceDifference(currentValue, targetValue, 'percent')
+    : 'Não calculável'
+
+  return {
+    chart: {
+      endYear: latest?.ano ?? null,
+      meta: hasValues ? targetValue : null,
+      note: null,
+      referenceLabel: 'Meta',
+      series: recentSeries,
+      showMetaLine: hasValues,
+      showMissingPoints: false,
+      startYear: recentSeries[0]?.ano ?? null,
+      subtitle: 'Percentual dos cinco anos mais recentes, comparado à meta final de 2036.',
+      title: 'EJA articulada à educação profissional',
+      unit: 'percent',
+    },
+    description: 'Percentual das matrículas da EJA articuladas à educação profissional, comparado à meta final do PNE para 2036.',
+    loading: false,
+    methodSummary: 'Recorte recente e referências do ciclo',
+    methodology: [
+      `O valor mais recente disponível é de ${hasValues ? formatCyclePercent(currentValue) : '—'} em ${latest?.ano ?? 'ano não disponível'}. A comparação principal usa a meta final de ${Number.isFinite(targetValue) ? formatCyclePercent(targetValue) : '—'} para 2036.`,
+      'As referências intermediárias e os componentes usados no cálculo permanecem disponíveis no aprofundamento histórico, sem alterar a metodologia validada.',
+    ],
+    metrics: [
+      { detail: latest ? `Ano ${latest.ano}` : 'Ano não disponível', label: 'Valor mais recente', size: 'large', value: hasValues ? formatCyclePercent(currentValue) : '—' },
+      { detail: 'Referência final', label: 'Meta PNE 2036', value: Number.isFinite(targetValue) ? formatCyclePercent(targetValue) : '—' },
+      { label: 'Distância da meta', tone, value: distance },
+      { label: 'Situação atual', tone, value: statusLabel },
+    ],
+    reading: hasValues
+      ? `Em ${latest.ano}, o município registra ${formatCyclePercent(currentValue)} das matrículas da EJA articuladas à educação profissional. O valor mais recente permanece ${achieved ? 'no patamar ou acima' : 'abaixo'} da referência de ${formatCyclePercent(targetValue)} do PNE 2036. ${distance}`
+      : 'Não há dados suficientes para comparar o recorte mais recente com a meta de 2036.',
+    statusLabel,
+    tone,
+  }
+}
+
+function takeRecentSeries(series, maxPoints = 5) {
+  if (!Array.isArray(series)) return []
+
+  return series
+    .map((point) => ({
+      ano: Number(point?.ano),
+      valor: point?.valor === null || point?.valor === undefined || point?.valor === ''
+        ? null
+        : Number(point.valor),
+    }))
+    .filter((point) => Number.isFinite(point.ano) && Number.isFinite(point.valor))
+    .sort((a, b) => a.ano - b.ano)
+    .slice(-maxPoints)
+}
+
+function hasFiniteSeriesValue(point) {
+  return point?.valor !== null && point?.valor !== undefined && point?.valor !== '' && Number.isFinite(Number(point.valor))
+}
+
+function formatCycleReferenceDifference(currentValue, targetValue, unit) {
+  const difference = Number(currentValue) - Number(targetValue)
+  if (!Number.isFinite(difference)) return 'Não calculável'
+  if (Math.abs(difference) < 1e-9) return 'No patamar da referência'
+
+  const formatted = unit === 'count'
+    ? `${formatCycleCount(Math.abs(difference))} matrículas`
+    : formatCyclePp(Math.abs(difference))
+
+  return difference < 0 ? `Faltam ${formatted}` : `Excede em ${formatted}`
+}
+
+function formatCycleCount(value) {
+  return Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 0 })
+}
+
+function formatCyclePercent(value) {
+  return `${Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`
+}
+
+function formatCyclePp(value) {
+  return `${Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} p.p.`
 }
 
 function GoalProgress({ label, result, unit }) {
@@ -543,35 +1189,6 @@ function getVariationDetail(value, startYear) {
   return undefined
 }
 
-function getDetailStatusLabel({ cycle, isComparable, result, status }) {
-  const cycleCopy = getPneCycleCopy(cycle)
-  const normalizedStatus = String(status).toLocaleLowerCase('pt-BR')
-  if (normalizedStatus.includes('visualiza') || normalizedStatus.includes('informativo')) {
-    return 'Informativo'
-  }
-  if (
-    !result ||
-    result.available === false ||
-    normalizedStatus.includes('indispon') ||
-    normalizedStatus.includes('sem dados')
-  ) {
-    return cycleCopy.status.missing
-  }
-  if (result?.monitoring_mode === 'approximate_reference') {
-    return 'Indicador aproximado'
-  }
-  if (!isComparable) {
-    return 'Informativo'
-  }
-  if (result.atingida === true) {
-    return cycleCopy.status.achieved
-  }
-  if (result.atingida === false) {
-    return cycleCopy.status.below
-  }
-  return cycleCopy.status.missing
-}
-
 export function isComparableIndicator(result) {
   if (
     !result ||
@@ -622,8 +1239,10 @@ function calculateGoalProgress(result, unit) {
     isYears: unit === 'years',
   })
 
-  const fill = clampMarkerPosition(projectValueToPercent(current, domain))
-  const metaPosition = clampMarkerPosition(projectValueToPercent(meta, domain))
+  const currentPosition = projectValueToPercent(current, domain)
+  const targetPosition = projectValueToPercent(meta, domain)
+  const fill = unit === 'percent' ? currentPosition : clampMarkerPosition(currentPosition)
+  const metaPosition = unit === 'percent' ? targetPosition : clampMarkerPosition(targetPosition)
 
   return {
     current: fill,

@@ -3,7 +3,6 @@ import { DetailHeadingText } from './HeadingText'
 import { ExplorableIndicatorCardFrame } from './ExplorableIndicatorCardFrame'
 import { IndicatorChartHeader } from './IndicatorChartHeader'
 import { MetricCard } from './MetricCard'
-import { StatusBadge } from './StatusBadge'
 
 const EM = '\u2014'
 const FINANCIAL_CARD_CLASS_CONTRACT = Object.freeze({
@@ -133,6 +132,8 @@ export function FinancialDetailNavigation({
   onNext,
   onPrevious,
   previousIndicator,
+  statusLabel,
+  statusTone,
   total,
   isBottom = false,
 }) {
@@ -147,6 +148,8 @@ export function FinancialDetailNavigation({
       onPrevious={onPrevious}
       previousItem={previousIndicator}
       showBack={!isBottom}
+      statusLabel={statusLabel}
+      statusTone={statusTone}
       total={total}
     />
   )
@@ -205,11 +208,10 @@ export function FinancialMetricStrip({ children, className = '' }) {
 export function FinancialDetailHeader({ indicator }) {
   return (
     <div className="detail-heading educacao-detail-heading financial-detail-heading">
-      <DetailHeadingText eyebrow="Indicador selecionado" title={indicator.label} description={indicator.description} />
-      <div className="educacao-detail-heading__badges financial-detail-heading__badges">
+      <DetailHeadingText eyebrow="Indicador selecionado" title={indicator.label} />
+      <div className="educacao-detail-heading__badges financial-detail-heading__badges" aria-label="Contexto do indicador">
         {indicator.moduleLabel ? <span className="indicator-stage-badge">{indicator.moduleLabel}</span> : null}
         {indicator.unitLabel ? <span className="indicator-stage-badge">{indicator.unitLabel}</span> : null}
-        <StatusBadge status={indicator.statusLabel ?? 'Com dados'} tone={indicator.statusTone ?? 'default'} />
       </div>
     </div>
   )
@@ -217,7 +219,7 @@ export function FinancialDetailHeader({ indicator }) {
 
 export function FinancialMetricGrid({ indicator }) {
   return (
-    <div className="metric-grid metric-grid--three financial-metric-grid">
+    <div className="metric-grid metric-grid--four financial-metric-grid">
       <MetricCard
         label="Valor inicial"
         value={indicator.initialDisplay ?? EM}
@@ -229,6 +231,7 @@ export function FinancialMetricGrid({ indicator }) {
         detail={indicator.currentYear ? `Ano ${indicator.currentYear}` : null}
         size="large"
       />
+      <MetricCard label="Ano" value={indicator.currentYear ?? EM} />
       <MetricCard
         label="Variação"
         value={indicator.variationDisplay ?? EM}
@@ -238,13 +241,14 @@ export function FinancialMetricGrid({ indicator }) {
   )
 }
 
-export function FinancialQuickReading({ text, tone = 'default' }) {
-  if (!text) return null
+export function FinancialQuickReading({ description, text, tone = 'default' }) {
+  if (!text && !description) return null
 
   return (
     <div className={`interpretation-box education-quick-reading financial-quick-reading financial-quick-reading--${tone}`}>
-      <span>Leitura rápida</span>
-      <p>{text}</p>
+      <span>Acompanhamento e leitura rápida</span>
+      {text ? <p>{text}</p> : null}
+      {description ? <small>{description}</small> : null}
     </div>
   )
 }
@@ -263,17 +267,34 @@ export function FinancialSupportData({ children, subtitle = 'Tabela e recortes d
   if (!children) return null
 
   return (
-    <section className="educacao-explore education-support-data financial-support-data">
-      <div className="educacao-explore__heading">
+    <details className="educacao-explore education-support-data financial-support-data platform-support-disclosure">
+      <summary className="platform-support-disclosure__summary">
         <div>
           <span className="educacao-explore__eyebrow">Aprofundamento</span>
           <h3>Dados de apoio do indicador</h3>
           <p>{subtitle}</p>
         </div>
-      </div>
+      </summary>
       <div className="educacao-explore__panel">
         {children}
       </div>
-    </section>
+    </details>
+  )
+}
+
+export function FinancialMethodologyDisclosure({ children }) {
+  if (!children) return null
+
+  return (
+    <details className="platform-support-disclosure financial-methodology-disclosure">
+      <summary className="platform-support-disclosure__summary">
+        <div>
+          <span className="educacao-explore__eyebrow">Referência técnica</span>
+          <h3>Metodologia e fonte</h3>
+          <p>Conceito, forma de cálculo, período e cuidados de interpretação.</p>
+        </div>
+      </summary>
+      <div className="platform-support-disclosure__body">{children}</div>
+    </details>
   )
 }

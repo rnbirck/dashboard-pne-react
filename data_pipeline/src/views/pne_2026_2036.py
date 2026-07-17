@@ -1534,6 +1534,7 @@ INDICADORES = {
                 "sub": "",
                 "desc": "Percentual das matrículas da EJA articuladas à educação profissional no município.",
                 "meta_label": "Referência intermediária PNE 2031",
+                "presentationMode": "ratio-dual-milestone",
                 "compute": _calc_eja_integrada_educacao_profissional,
                 "tracks_goal": True,
                 "value_mode": "percent",

@@ -8,17 +8,25 @@ import {
 } from '../utils/visualDomain'
 import { formatIndicatorValue, resolveIndicatorUnit } from '../utils/format'
 import { closeChartTooltipOnEscape } from '../utils/chartVisuals'
+import {
+  buildPnePercentTicks,
+  PNE_CHART_GEOMETRY,
+  selectPneYearTicks,
+} from '../utils/pneChartSystem'
+import { useChartViewport } from '../hooks/useChartViewport'
 import { ChartTooltip } from './ChartPrimitives'
 
 const CHART_WIDTH = 980
 const CHART_HEIGHT_INFORMATIVE = 280
 const CHART_HEIGHT_NORMAL = 300
 const CHART_HEIGHT_NEGATIVE = 330
-const PADDING = { bottom: 44, left: 64, right: 86, top: 38 }
+const LEGACY_PADDING = { bottom: 44, left: 64, right: 86, top: 38 }
 
 export function IndicatorHistoryChart({
   adaptiveDomain = false,
   chartHeight,
+  chartWidth,
+  domainOverride,
   endYear,
   essentialLabels = false,
   formatDataLabel: formatDataLabelProp,
@@ -38,11 +46,19 @@ export function IndicatorHistoryChart({
   unit: unitProp,
   yTickCount,
   floorNegativeValues = false,
+  pneLayout = false,
 }) {
   const [activePoint, setActivePoint] = useState(null)
   const rawClipId = useId()
   const clipId = `history-chart-clip-${rawClipId.replace(/:/g, '')}`
   const resolvedUnit = unitProp || resolveIndicatorUnit(item, result)
+  const { containerRef, width: measuredWidth } = useChartViewport(chartWidth || CHART_WIDTH)
+  const responsiveChartWidth = pneLayout ? measuredWidth : chartWidth
+  const responsiveChartHeight = pneLayout
+    ? measuredWidth < 480
+      ? PNE_CHART_GEOMETRY.main.mobileHeight
+      : PNE_CHART_GEOMETRY.main.desktopHeight
+    : chartHeight
   const chart = useMemo(
     () =>
       buildChartModel({
@@ -61,9 +77,14 @@ export function IndicatorHistoryChart({
         floorNegativeValues,
         adaptiveDomain,
         essentialLabels,
-        chartHeightOverride: chartHeight,
+        exactHeightOverride: pneLayout,
+        chartHeightOverride: responsiveChartHeight,
+        chartWidthOverride: responsiveChartWidth,
+        chartMinWidthOverride: pneLayout ? 180 : 420,
+        domainOverride,
+        paddingOverride: pneLayout ? PNE_CHART_GEOMETRY.main.padding : LEGACY_PADDING,
       }),
-    [chartHeight, endYear, formatDataLabelProp, formatYAxisProp, labelMode, meta, missingLabel, resolvedUnit, series, showMetaLine, showMissingPoints, startYear, yTickCount, floorNegativeValues, adaptiveDomain, essentialLabels],
+    [adaptiveDomain, domainOverride, endYear, essentialLabels, floorNegativeValues, formatDataLabelProp, formatYAxisProp, labelMode, meta, missingLabel, pneLayout, resolvedUnit, responsiveChartHeight, responsiveChartWidth, series, showMetaLine, showMissingPoints, startYear, yTickCount],
   )
 
   const validCount = chart.points.filter(p => p.valid !== false).length
@@ -81,19 +102,19 @@ export function IndicatorHistoryChart({
         </div>
       </div>
 
-      <div className="history-chart__canvas">
+      <div className="history-chart__canvas" ref={containerRef}>
         <svg
-          viewBox={`0 0 ${CHART_WIDTH} ${chart.height}`}
+          viewBox={`0 0 ${chart.width} ${chart.height}`}
           role="img"
           aria-label={`${title}: linha histórica por ano`}
         >
           <defs>
             <clipPath id={clipId}>
               <rect
-                x={PADDING.left}
-                y={PADDING.top}
-                width={CHART_WIDTH - PADDING.left - PADDING.right}
-                height={chart.height - PADDING.top - PADDING.bottom}
+                x={chart.padding.left}
+                y={chart.padding.top}
+                width={chart.width - chart.padding.left - chart.padding.right}
+                height={chart.height - chart.padding.top - chart.padding.bottom}
               />
             </clipPath>
           </defs>
@@ -101,12 +122,12 @@ export function IndicatorHistoryChart({
             {chart.yTicks.map((tick, index) => (
               <g key={`${tick.value}-${index}`}>
                 <line
-                  x1={PADDING.left}
-                  x2={CHART_WIDTH - PADDING.right}
+                  x1={chart.padding.left}
+                  x2={chart.width - chart.padding.right}
                   y1={tick.y}
                   y2={tick.y}
                 />
-                <text x={PADDING.left - 12} y={tick.y + 4}>
+                <text x={chart.padding.left - 12} y={tick.y + 4}>
                   {chart.formatYAxis ? chart.formatYAxis(tick.value) : chart.formatValue(tick.value)}
                 </text>
               </g>
@@ -116,8 +137,8 @@ export function IndicatorHistoryChart({
           {chart.metaLine && (
             <g className="chart-meta-line">
               <line
-                x1={PADDING.left}
-                x2={CHART_WIDTH - PADDING.right}
+                x1={chart.padding.left}
+                x2={chart.width - chart.padding.right}
                 y1={chart.metaLine.y}
                 y2={chart.metaLine.y}
               />
@@ -127,25 +148,25 @@ export function IndicatorHistoryChart({
           <g className="chart-axis">
             <line
               className="chart-axis__x"
-              x1={PADDING.left}
-              x2={CHART_WIDTH - PADDING.right}
-              y1={chart.height - PADDING.bottom}
-              y2={chart.height - PADDING.bottom}
+              x1={chart.padding.left}
+              x2={chart.width - chart.padding.right}
+              y1={chart.height - chart.padding.bottom}
+              y2={chart.height - chart.padding.bottom}
             />
             <line
               className="chart-axis__y"
-              x1={PADDING.left}
-              x2={PADDING.left}
-              y1={PADDING.top}
-              y2={chart.height - PADDING.bottom}
+              x1={chart.padding.left}
+              x2={chart.padding.left}
+              y1={chart.padding.top}
+              y2={chart.height - chart.padding.bottom}
             />
           </g>
 
           {chart.zeroLine && (
             <g className="chart-zero-line">
               <line
-                x1={PADDING.left}
-                x2={CHART_WIDTH - PADDING.right}
+                x1={chart.padding.left}
+                x2={chart.width - chart.padding.right}
                 y1={chart.zeroLine.y}
                 y2={chart.zeroLine.y}
               />
@@ -158,8 +179,8 @@ export function IndicatorHistoryChart({
                 key={marker.year}
                 x1={marker.x}
                 x2={marker.x}
-                y1={PADDING.top}
-                y2={chart.height - PADDING.bottom}
+                y1={chart.padding.top}
+                y2={chart.height - chart.padding.bottom}
               />
             ))}
           </g>
@@ -249,10 +270,10 @@ export function IndicatorHistoryChart({
             series="Município"
             value={activePoint.valid === false ? missingLabel : chart.formatValue(activePoint.value)}
             style={{
-              left: `${Math.min(92, Math.max(10, (activePoint.x / CHART_WIDTH) * 100))}%`,
+              left: `${Math.min(92, Math.max(10, (activePoint.x / chart.width) * 100))}%`,
               top: `${(activePoint.y / chart.height) * 100}%`,
               transform:
-                activePoint.y < PADDING.top + 38
+                activePoint.y < chart.padding.top + 38
                   ? 'translate(-50%, 12px)'
                   : 'translate(-50%, calc(-100% - 12px))',
             }}
@@ -279,8 +300,14 @@ function buildChartModel({
   startYear,
   yTickCount,
   floorNegativeValues = false,
+  exactHeightOverride = false,
   chartHeightOverride,
+  chartMinWidthOverride,
+  chartWidthOverride,
+  domainOverride,
+  paddingOverride,
 }) {
+  const padding = paddingOverride ?? LEGACY_PADDING
   const rawPoints = normalizeSeries(series, floorNegativeValues, showMissingPoints)
   const validPoints = rawPoints.filter((p) => p.valid !== false)
   const points = showMissingPoints ? rawPoints : validPoints
@@ -290,15 +317,18 @@ function buildChartModel({
 
   if (validPoints.length < 2) {
     const baseChartHeight = showMetaLine ? CHART_HEIGHT_NORMAL : CHART_HEIGHT_INFORMATIVE
-    const chartHeight = resolveChartHeight(baseChartHeight, chartHeightOverride)
+    const chartHeight = resolveChartHeight(baseChartHeight, chartHeightOverride, exactHeightOverride)
+    const chartWidth = resolveChartWidth(chartWidthOverride, chartMinWidthOverride)
     return {
       formatDataLabel,
       formatValue: (value) => formatIndicatorValue(value, resolvedUnit),
       formatYAxis,
       hasNegativeValues: false,
       height: chartHeight,
+      width: chartWidth,
       isInformative: !showMetaLine,
       missingPointLabels: showMissingPoints ? computeMissingLabels(points, chartHeight, missingLabel) : undefined,
+      padding,
       points,
     }
   }
@@ -310,12 +340,13 @@ function buildChartModel({
     : showMetaLine
       ? CHART_HEIGHT_NORMAL
       : CHART_HEIGHT_INFORMATIVE
-  const chartHeight = resolveChartHeight(baseChartHeight, chartHeightOverride)
+  const chartHeight = resolveChartHeight(baseChartHeight, chartHeightOverride, exactHeightOverride)
+  const chartWidth = resolveChartWidth(chartWidthOverride, chartMinWidthOverride)
   const isPercent = resolvedUnit === 'percent'
   const isIndex = resolvedUnit === 'index'
   const isYears = resolvedUnit === 'years'
   const domainValues = metaValue !== null ? [...values, metaValue] : values
-  const domain = adaptiveDomain
+  const domain = domainOverride ?? (adaptiveDomain
     ? getAdaptiveHistoryDomain({
         values: domainValues,
         meta: metaValue,
@@ -329,26 +360,26 @@ function buildChartModel({
         isPercent,
         isIndex,
         isYears,
-      })
+      }))
   const allYears = points.map((point) => point.year)
   const minYear = Math.min(...allYears)
   const maxYear = Math.max(...allYears)
-  const plotWidth = CHART_WIDTH - PADDING.left - PADDING.right
-  const plotHeight = chartHeight - PADDING.top - PADDING.bottom
+  const plotWidth = chartWidth - padding.left - padding.right
+  const plotHeight = chartHeight - padding.top - padding.bottom
 
   const xScale = (year) => {
-    if (maxYear === minYear) return PADDING.left + plotWidth / 2
-    return PADDING.left + ((year - minYear) / (maxYear - minYear)) * plotWidth
+    if (maxYear === minYear) return padding.left + plotWidth / 2
+    return padding.left + ((year - minYear) / (maxYear - minYear)) * plotWidth
   }
   const yScale = (value) => {
-    if (domain.max === domain.min) return PADDING.top + plotHeight / 2
-    return PADDING.top + ((domain.max - value) / (domain.max - domain.min)) * plotHeight
+    if (domain.max === domain.min) return padding.top + plotHeight / 2
+    return padding.top + ((domain.max - value) / (domain.max - domain.min)) * plotHeight
   }
 
   const scaledPoints = points.map((point) => ({
     ...point,
     x: xScale(point.year),
-    y: point.valid !== false ? yScale(point.value) : PADDING.top + plotHeight / 2,
+    y: point.valid !== false ? yScale(point.value) : padding.top + plotHeight / 2,
   }))
   const scaledValidPoints = scaledPoints.filter((p) => p.valid !== false)
   const lastValidYear = scaledValidPoints[scaledValidPoints.length - 1]?.year
@@ -366,12 +397,14 @@ function buildChartModel({
   const hasGaps = showMissingPoints && scaledPoints.some((p) => p.valid === false)
   const zeroY = domain.min < 0 && domain.max > 0
     ? yScale(0)
-    : chartHeight - PADDING.bottom
+    : chartHeight - padding.bottom
   const areaPath = hasNegativeValues || hasGaps
     ? null
     : `${linePath} L${last.x.toFixed(1)} ${zeroY.toFixed(1)} L${first.x.toFixed(1)} ${zeroY.toFixed(1)} Z`
 
-  const yTicksRaw = domain.adaptive
+  const yTicksRaw = domainOverride?.isPercent
+    ? buildPnePercentTicks(domain)
+    : domain.adaptive
     ? buildAdaptiveTicks(domain)
     : isPercent
       ? stablePercentTicks(domain) ?? [domain.min, domain.max]
@@ -400,7 +433,7 @@ function buildChartModel({
     const baseY = yScale(metaValue)
     metaLine = {
       value: metaValue,
-      y: Math.max(PADDING.top, Math.min(baseY, chartHeight - PADDING.bottom)),
+      y: Math.max(padding.top, Math.min(baseY, chartHeight - padding.bottom)),
     }
   }
 
@@ -426,10 +459,10 @@ function buildChartModel({
   const formatValue = (value) => formatIndicatorValue(value, resolvedUnit)
   const formatLabel = formatDataLabel || formatValue
   const labelsForCompute = labelMode === 'all' ? scaledValidPoints : scaledPoints
-  const dataLabels = computeDataLabels(labelsForCompute, metaLine, formatLabel, chartHeight, labelMode, essentialLabels)
+  const dataLabels = computeDataLabels(labelsForCompute, metaLine, formatLabel, chartHeight, chartWidth, padding, labelMode, essentialLabels)
 
   const missingPointLabels = showMissingPoints
-    ? scaledPoints.filter((p) => p.valid === false).map((p) => ({ year: p.year, x: p.x, y: chartHeight - PADDING.bottom + 18 }))
+    ? scaledPoints.filter((p) => p.valid === false).map((p) => ({ year: p.year, x: p.x, y: chartHeight - padding.bottom + 18 }))
     : undefined
 
   return {
@@ -440,22 +473,32 @@ function buildChartModel({
     formatYAxis,
     hasNegativeValues,
     height: chartHeight,
+    width: chartWidth,
     isInformative: !showMetaLine,
     linePath,
     metaLine,
     missingPointLabels,
+    padding,
     points: displayPoints,
-    xTicks: showMissingPoints ? pickAllYearTicks(scaledPoints) : pickYearTicks(scaledPoints),
+    xTicks: showMissingPoints
+      ? selectPneYearTicks(pickAllYearTicks(scaledPoints), chartWidth < 420 ? 3 : 6)
+      : selectPneYearTicks(scaledPoints, chartWidth < 420 ? 3 : 6),
     yTicks,
     yearMarkers,
     zeroLine,
   }
 }
 
-function resolveChartHeight(baseHeight, override) {
+function resolveChartHeight(baseHeight, override, exact = false) {
   const numericOverride = Number(override)
   if (!Number.isFinite(numericOverride)) return baseHeight
-  return Math.max(baseHeight, numericOverride)
+  return exact ? numericOverride : Math.max(baseHeight, numericOverride)
+}
+
+function resolveChartWidth(override, minWidth = 420) {
+  const numericOverride = Number(override)
+  if (!Number.isFinite(numericOverride)) return CHART_WIDTH
+  return Math.max(minWidth, numericOverride)
 }
 
 function normalizeSeries(series = [], floorNegativeValues = false, showMissingPoints = false) {
@@ -599,21 +642,13 @@ function computeMissingLabels(points, chartHeight) {
     .map((p) => ({ year: p.year, x: p.x, y }))
 }
 
-function pickYearTicks(points) {
-  if (points.length <= 6) return points
-  const first = points[0]
-  const last = points[points.length - 1]
-  const middle = points[Math.floor(points.length / 2)]
-  return [first, middle, last]
-}
-
-function computeDataLabels(points, metaLine, formatValue, chartHeight, labelMode, essentialLabels = false) {
+function computeDataLabels(points, metaLine, formatValue, chartHeight, chartWidth, padding, labelMode, essentialLabels = false) {
   if (points.length === 0) return []
 
-  const plotLeft = PADDING.left
-  const plotRight = CHART_WIDTH - PADDING.right
-  const plotTop = PADDING.top
-  const plotBottom = chartHeight - PADDING.bottom
+  const plotLeft = padding.left
+  const plotRight = chartWidth - padding.right
+  const plotTop = padding.top
+  const plotBottom = chartHeight - padding.bottom
 
   const LABEL_OFFSET_Y = 14
   const MIN_DISTANCE_Y = 24

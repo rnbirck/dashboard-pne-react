@@ -18,6 +18,7 @@ import {
   FinancialMetricStrip,
   FinancialMetricGrid,
   FinancialQuickReading,
+  FinancialMethodologyDisclosure,
   FinancialSupportData,
 } from './FinancialIndicatorPrimitives'
 
@@ -323,14 +324,14 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
             onNext={handleIndicatorSelect}
             onPrevious={handleIndicatorSelect}
             previousIndicator={previousIndicator}
+            statusLabel={selectedIndicatorModel.statusLabel}
+            statusTone={selectedIndicatorModel.statusTone}
             total={indicatorModels.length}
           />
           <section className="detail-panel educacao-detail-panel financial-detail-panel fundeb-detail pnate-detail">
             <FinancialDetailHeader indicator={selectedIndicatorModel} />
             <FinancialMetricGrid indicator={selectedIndicatorModel} />
-            <FinancialQuickReading text={selectedIndicatorModel.quickReading} tone={selectedIndicatorModel.statusTone} />
-            <FinancialIndicatorMetadata metadata={getFinancialIndicatorMetadata('pnate', selectedIndicatorModel.key)} />
-
+            <FinancialQuickReading description={selectedIndicatorModel.description} text={selectedIndicatorModel.quickReading} tone={selectedIndicatorModel.statusTone} />
             <FinancialChartFrame
               subtitle={`${selectedIndicator.label} · PNATE`}
               summary={selectedIndicatorModel.historySummary}
@@ -348,7 +349,7 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
             >
               {validSeries.length >= 2 ? (
                 <IndicatorHistoryChart
-                  chartHeight={validSeries.length <= 5 ? 300 : 320}
+                  chartHeight={224}
                   endYear={series[series.length - 1].ano}
                   formatDataLabel={(v) => formatCompactDataLabel(v, selectedIndicator.tipo)}
                   formatYAxis={selectedIndicator.tipo === 'numero' ? formatCompactNumber : formatCompactCurrency}
@@ -368,6 +369,10 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
                 <ChartEmptyState message="Histórico não disponível." />
               )}
             </FinancialChartFrame>
+
+            <FinancialMethodologyDisclosure>
+              <FinancialIndicatorMetadata metadata={getFinancialIndicatorMetadata('pnate', selectedIndicatorModel.key)} />
+            </FinancialMethodologyDisclosure>
 
             {series.length >= 1 ? (
               <FinancialSupportData subtitle="Tabela anual do PNATE para o indicador selecionado.">
@@ -445,6 +450,8 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
             onNext={handleIndicatorSelect}
             onPrevious={handleIndicatorSelect}
             previousIndicator={previousIndicator}
+            statusLabel={selectedIndicatorModel.statusLabel}
+            statusTone={selectedIndicatorModel.statusTone}
             total={indicatorModels.length}
           />
         </div>
@@ -501,7 +508,7 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
                 {validSeries.length >= 2 && (
                   <div className="fundeb-chart-card">
                     <IndicatorHistoryChart
-                      chartHeight={validSeries.length <= 5 ? 300 : 320}
+                      chartHeight={224}
                       endYear={series[series.length - 1].ano}
                       formatDataLabel={(v) => formatCompactDataLabel(v, selectedIndicator.tipo)}
                       formatYAxis={selectedIndicator.tipo === 'numero' ? formatCompactNumber : formatCompactCurrency}

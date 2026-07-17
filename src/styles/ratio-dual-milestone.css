@@ -1,0 +1,519 @@
+.cycle-page--detail .detail-panel--ratio-dual {
+  gap: var(--space-4);
+}
+
+.cycle-page--detail .detail-panel--ratio-dual .detail-heading h2 {
+  max-width: 58ch;
+}
+
+.ratio-dual-metrics {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.cycle-page--detail .detail-panel--ratio-dual .ratio-dual-metrics .metric-card {
+  min-width: 0;
+  min-height: 132px;
+  grid-template-columns: 36px minmax(0, 1fr);
+  column-gap: var(--space-2);
+}
+
+.cycle-page--detail .detail-panel--ratio-dual .ratio-dual-metrics .metric-card__icon {
+  width: 36px;
+  height: 36px;
+  padding: 8px;
+}
+
+.cycle-page--detail .detail-panel--ratio-dual .ratio-dual-metrics .metric-card__label {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+  text-wrap: balance;
+}
+
+.cycle-page--detail .detail-panel--ratio-dual .ratio-dual-metrics .metric-card__value {
+  color: var(--text-strong);
+  font-size: var(--font-size-xl);
+  overflow-wrap: anywhere;
+}
+
+.cycle-page--detail .detail-panel--ratio-dual .ratio-dual-metrics .metric-card__detail {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: 1.35;
+  text-wrap: pretty;
+}
+
+.ratio-dual-ruler-card,
+.ratio-dual-support,
+.ratio-dual-equation-card,
+.ratio-dual-table-card {
+  min-width: 0;
+  padding: var(--space-5);
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+}
+
+.ratio-dual-section-heading {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.ratio-dual-section-heading :is(h3, h4, p) {
+  margin: 0;
+}
+
+.ratio-dual-section-heading h3 {
+  color: var(--text-strong);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.ratio-dual-section-heading p {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  text-wrap: pretty;
+}
+
+.cycle-page--detail .detail-panel--ratio-dual .ratio-dual-ruler {
+  min-height: 94px;
+  margin: 0;
+  padding: 0 var(--space-2);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  display: block;
+  overflow: visible;
+}
+
+.cycle-page--detail .detail-panel--ratio-dual .ratio-dual-ruler__track {
+  height: 6px;
+  margin: 38px 0 34px;
+  background: var(--surface-muted);
+}
+
+.cycle-page--detail .detail-panel--ratio-dual .ratio-dual-ruler__target-label {
+  max-width: 144px;
+  overflow: visible;
+  display: grid;
+  gap: 1px;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.ratio-dual-ruler__target-label strong {
+  color: var(--text-strong);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.ratio-dual-ruler__target-label--milestone strong {
+  color: var(--status-warn-ink);
+}
+
+.ratio-dual-ruler__target-label--final strong {
+  color: var(--green-deep);
+}
+
+.cycle-page--detail .detail-panel--ratio-dual .ratio-dual-ruler__target-tick--milestone {
+  width: 2px;
+  background: var(--status-warn-line);
+  opacity: 1;
+}
+
+.cycle-page--detail .detail-panel--ratio-dual .ratio-dual-ruler__target-tick--final {
+  background: var(--green-deep);
+  opacity: 0.72;
+}
+
+.ratio-dual-ruler__distance {
+  margin: 0;
+  padding-top: var(--space-3);
+  border-top: var(--border-divider);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+  text-align: center;
+}
+
+.ratio-dual-primary {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 7.2fr) minmax(250px, 2.8fr);
+  gap: var(--space-5);
+  align-items: stretch;
+}
+
+.ratio-dual-primary > * {
+  min-width: 0;
+}
+
+.cycle-page--detail .detail-panel--ratio-dual .ratio-dual-main-chart,
+.cycle-page--detail .detail-panel--ratio-dual .ratio-dual-reading {
+  height: 100%;
+}
+
+.cycle-page--detail .detail-panel--ratio-dual .ratio-dual-main-chart {
+  display: flex;
+  flex-direction: column;
+}
+
+.cycle-page--detail .detail-panel--ratio-dual .ratio-dual-main-chart .history-chart__canvas,
+.cycle-page--detail .detail-panel--ratio-dual .ratio-dual-main-chart .history-chart svg {
+  min-height: 300px;
+  height: 300px;
+  max-height: 300px;
+}
+
+.ratio-dual-reading {
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+}
+
+.ratio-dual-reading h3 {
+  margin: 0 0 var(--space-3);
+  color: var(--green-deep);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.ratio-dual-reading ol {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  list-style: none;
+}
+
+.ratio-dual-reading li {
+  min-width: 0;
+  padding: var(--space-3) 0;
+  border-top: var(--border-divider);
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+.ratio-dual-reading li:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.ratio-dual-reading__index {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--green-soft);
+  display: grid;
+  place-items: center;
+}
+
+.ratio-dual-reading__index::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green-primary);
+}
+
+.ratio-dual-reading li div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.ratio-dual-reading li strong {
+  color: var(--text-strong);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.ratio-dual-reading li p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  text-wrap: pretty;
+}
+
+.ratio-dual-support {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.ratio-dual-support-grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.ratio-dual-support-card {
+  min-width: 0;
+  padding: var(--space-5);
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.ratio-dual-support-card > header {
+  min-height: 64px;
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+}
+
+.ratio-dual-support-card > header h4 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.ratio-dual-support-card > header p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+}
+
+.cycle-page--detail .detail-panel--ratio-dual .ratio-dual-support-card .complementary-chart,
+.cycle-page--detail .detail-panel--ratio-dual .ratio-dual-support-card .complementary-chart__canvas {
+  min-height: 296px;
+  height: 296px;
+  max-height: 296px;
+}
+
+.cycle-page--detail .detail-panel--ratio-dual .ratio-dual-support-card .complementary-chart__canvas {
+  box-sizing: border-box;
+  padding: var(--space-3) var(--space-4);
+}
+
+.cycle-page--detail .detail-panel--ratio-dual .ratio-dual-support-card .complementary-chart__canvas svg {
+  min-height: 270px;
+  height: 270px;
+  max-height: 270px;
+}
+
+.ratio-dual-equation-card,
+.ratio-dual-table-card {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.ratio-dual-equation {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: var(--space-3);
+}
+
+.ratio-dual-equation__segment {
+  min-width: 0;
+  min-height: 104px;
+  padding: var(--space-4);
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--space-1);
+  text-align: center;
+}
+
+.ratio-dual-equation__segment.is-accent {
+  border-color: color-mix(in srgb, var(--green-primary) 38%, var(--border-card));
+  background: var(--surface-moss);
+}
+
+.ratio-dual-equation__segment strong {
+  color: var(--text-strong);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+}
+
+.ratio-dual-equation__segment span {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-snug);
+}
+
+.ratio-dual-equation__operator {
+  align-self: center;
+  color: var(--green-deep);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+}
+
+.ratio-dual-equation__notice {
+  margin: 0;
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--status-warn-line);
+  border-radius: var(--radius-xs);
+  background: var(--status-warn-bg);
+  color: var(--status-warn-ink);
+  font-size: var(--font-size-sm);
+}
+
+.ratio-dual-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+.ratio-dual-table-wrap:focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
+  box-shadow: var(--focus-ring);
+}
+
+.ratio-dual-table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--text);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.ratio-dual-table :is(th, td) {
+  height: var(--table-row-height);
+  padding: var(--table-cell-padding-block) var(--table-cell-padding-inline);
+  border: 0;
+  border-bottom: var(--border-divider);
+  vertical-align: middle;
+}
+
+.ratio-dual-table thead th {
+  background: var(--surface-moss);
+  color: var(--green-deep);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+  text-align: center;
+  text-wrap: balance;
+  white-space: normal;
+}
+
+.ratio-dual-table tbody td {
+  text-align: center;
+}
+
+.ratio-dual-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.ratio-dual-table tbody tr:hover {
+  background: var(--surface-moss);
+}
+
+.cycle-page--detail .detail-panel--ratio-dual .ratio-dual-footer {
+  margin-top: 0;
+}
+
+@media screen and (max-width: 900px) {
+  .ratio-dual-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ratio-dual-metrics > :last-child {
+    grid-column: 1 / -1;
+  }
+
+  .ratio-dual-primary,
+  .ratio-dual-support-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cycle-page--detail .detail-panel--ratio-dual .ratio-dual-main-chart,
+  .cycle-page--detail .detail-panel--ratio-dual .ratio-dual-reading {
+    height: auto;
+  }
+}
+
+@media screen and (max-width: 620px) {
+  .ratio-dual-ruler-card,
+  .ratio-dual-support,
+  .ratio-dual-equation-card,
+  .ratio-dual-table-card {
+    padding: var(--space-4);
+  }
+
+  .ratio-dual-ruler {
+    margin-inline: 0;
+  }
+
+  .ratio-dual-ruler__target-label--milestone {
+    text-align: right;
+    transform: translateX(-100%);
+  }
+
+  .ratio-dual-equation {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+
+  .ratio-dual-equation__operator {
+    line-height: 1;
+    justify-self: center;
+  }
+
+  .cycle-page--detail .detail-panel--ratio-dual .ratio-dual-main-chart .history-chart__canvas,
+  .cycle-page--detail .detail-panel--ratio-dual .ratio-dual-main-chart .history-chart svg {
+    min-height: 280px;
+    height: 280px;
+    max-height: 280px;
+  }
+
+  .cycle-page--detail .detail-panel--ratio-dual .ratio-dual-support-card .complementary-chart,
+  .cycle-page--detail .detail-panel--ratio-dual .ratio-dual-support-card .complementary-chart__canvas {
+    min-height: 298px;
+    height: 298px;
+    max-height: 298px;
+  }
+
+  .cycle-page--detail .detail-panel--ratio-dual .ratio-dual-support-card .complementary-chart__canvas {
+    padding: var(--space-2);
+  }
+
+  .cycle-page--detail .detail-panel--ratio-dual .ratio-dual-support-card .complementary-chart__canvas svg {
+    min-height: 280px;
+    height: 280px;
+    max-height: 280px;
+  }
+}
+
+@media screen and (max-width: 360px) {
+  .ratio-dual-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ratio-dual-metrics > :last-child {
+    grid-column: auto;
+  }
+}

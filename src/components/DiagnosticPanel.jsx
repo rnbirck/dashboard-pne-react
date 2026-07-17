@@ -8,6 +8,7 @@ import { MethodNote } from './MethodNote'
 import { ContentState } from './ContentState'
 import { getDataSourceParts } from '../utils/dataSourceNotes'
 import { getPneCycleCopy } from '../utils/pneCycleCopy'
+import { isPne2026AccumulativeIndicator } from '../utils/pneAccumulativeCycle'
 import { isPneComparableIndicator } from '../utils/pneDisplayRules'
 
 const PNE_2026_COPY = getPneCycleCopy('pne_2026_2036')
@@ -616,6 +617,12 @@ function buildAreaAnalysis(category, results) {
 function normalizeDiagnosticIndicator(item, category, result) {
   const sourceParts = getDataSourceParts({ indicatorKey: item.key, item, result })
   if (!hasDiagnosticRealData(result)) return null
+  if (
+    isPne2026AccumulativeIndicator('pne_2026_2036', item.key) &&
+    Number(result?.end_year) <= 2025
+  ) {
+    return null
+  }
   if (!isPneComparableIndicator({ indicatorKey: item.key, result })) return null
 
   const isAccExpansion = isAccumulativeExpansionIndicator(item, result)

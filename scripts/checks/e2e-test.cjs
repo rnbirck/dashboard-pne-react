@@ -1484,42 +1484,44 @@ async function verifyEducationFlow(page, viewport) {
   });
   await totalSchoolsCard.click();
 
-  const educationSupportPanel = page.locator('.educacao-explore__panel');
-  const supportTabs = page.getByRole('tablist', { name: 'Detalhamentos do indicador' });
-  const schoolStageTab = supportTabs.getByRole('tab', { name: 'Por etapa', exact: true });
-  const schoolNetworkTab = supportTabs.getByRole('tab', { name: 'Por rede', exact: true });
-  const supportPanel = page.getByRole('tabpanel').filter({ has: page.locator('.educacao-explore-table, .education-chart') }).first();
-  assert.ok(await schoolNetworkTab.getAttribute('id'), 'Educação: aba possui ID único');
-  assert.equal(await schoolNetworkTab.getAttribute('aria-controls'), await supportPanel.getAttribute('id'), 'Educação: aba controla o painel');
-  await schoolNetworkTab.focus();
-  await page.keyboard.press('ArrowRight');
-  assert.equal(await supportTabs.locator('[aria-selected="true"]').count(), 1, 'Educação: ArrowRight mantém uma aba ativa');
-  await page.keyboard.press('End');
-  assert.equal(await supportTabs.getByRole('tab').last().getAttribute('aria-selected'), 'true', 'Educação: End ativa a última aba');
-  await page.keyboard.press('Home');
-  assert.equal(await supportTabs.getByRole('tab').first().getAttribute('aria-selected'), 'true', 'Educação: Home ativa a primeira aba');
-  await schoolStageTab.click();
+  const educationSupportSection = page.locator('section.education-support-data--organized');
+  const educationSupportCards = educationSupportSection.locator('.education-support-data__item');
+  await educationSupportSection.getByRole('heading', { name: 'Dados de apoio do indicador', exact: true }).waitFor({ state: 'visible' });
+  assert.equal(await page.locator('details.education-support-data').count(), 0, 'Educação: dados de apoio não ficam ocultos em disclosure');
+  assert.equal(await page.getByRole('tablist', { name: 'Detalhamentos do indicador' }).count(), 0, 'Educação: dados de apoio não alternam conteúdo por abas');
+  assert.ok(await educationSupportCards.count() >= 2, 'Educação: recortes complementares aparecem como cards visíveis');
 
-  const educationStageSource = educationSupportPanel.getByText(SISTEMA_S_SOURCE, { exact: true });
-  const educationStageMethod = educationSupportPanel.getByText(EDUCATION_SCHOOL_STAGE_METHOD, { exact: true });
+  const visibleSupportCards = await educationSupportCards.evaluateAll((elements) => elements.map((element) => ({
+    height: element.getBoundingClientRect().height,
+    width: element.getBoundingClientRect().width,
+  })));
+  assert.ok(visibleSupportCards.every(({ height, width }) => height > 0 && width > 0), 'Educação: todos os cards de apoio permanecem visíveis');
+
+  const schoolStageCard = educationSupportCards.filter({
+    has: page.locator('.education-support-data__item-heading').filter({ hasText: 'Por etapa' }),
+  });
+  const schoolNetworkCard = educationSupportCards.filter({
+    has: page.locator('.education-support-data__item-heading').filter({ hasText: 'Por rede' }),
+  });
+  assert.equal(await schoolStageCard.count(), 1, 'Educação: recorte por etapa aparece uma vez');
+  assert.equal(await schoolNetworkCard.count(), 1, 'Educação: recorte por rede aparece uma vez');
+
+  const educationStageSource = schoolStageCard.getByText(SISTEMA_S_SOURCE, { exact: true });
+  const educationStageMethod = schoolStageCard.getByText(EDUCATION_SCHOOL_STAGE_METHOD, { exact: true });
   await educationStageMethod.waitFor({ state: 'visible' });
-  assert.equal(await educationStageSource.count(), 1, 'Educa\u00e7\u00e3o: fonte do recorte por etapa aparece uma vez');
+  assert.equal(await educationStageSource.count(), 0, 'Educa\u00e7\u00e3o: fonte n\u00e3o se repete no recorte por etapa');
   assert.equal(await educationStageMethod.count(), 1, 'Educa\u00e7\u00e3o: metodologia do recorte por etapa aparece uma vez');
 
   const educationStageNoteOrder = await educationStageMethod.evaluate((element) => ({
     className: element.className,
-    previousClassName: element.previousElementSibling?.className,
-    previousText: element.previousElementSibling?.textContent?.trim(),
     tagName: element.tagName,
   }));
   assert.equal(educationStageNoteOrder.tagName, 'P', 'Educa\u00e7\u00e3o: metodologia preserva o par\u00e1grafo');
   assert.equal(educationStageNoteOrder.className, 'educacao-explore__note', 'Educa\u00e7\u00e3o: metodologia preserva a classe');
-  assert.equal(educationStageNoteOrder.previousClassName, 'data-source-note', 'Educa\u00e7\u00e3o: fonte precede imediatamente a metodologia');
-  assert.equal(educationStageNoteOrder.previousText, SISTEMA_S_SOURCE, 'Educa\u00e7\u00e3o: fonte preserva texto e posi\u00e7\u00e3o');
 
-  await schoolNetworkTab.click();
-  assert.equal(await educationStageMethod.count(), 0, 'Educa\u00e7\u00e3o: metodologia n\u00e3o aparece em recorte sem nota');
-  assert.equal(await educationSupportPanel.getByText(SISTEMA_S_SOURCE, { exact: true }).count(), 1, 'Educa\u00e7\u00e3o: fonte permanece \u00fanica sem metodologia');
+  assert.equal(await schoolNetworkCard.getByText(EDUCATION_SCHOOL_STAGE_METHOD, { exact: true }).count(), 0, 'Educa\u00e7\u00e3o: metodologia n\u00e3o aparece em recorte sem nota');
+  assert.equal(await schoolNetworkCard.getByText(SISTEMA_S_SOURCE, { exact: true }).count(), 0, 'Educa\u00e7\u00e3o: fonte n\u00e3o se repete no recorte por rede');
+  assert.equal(await educationSupportSection.locator('.education-support-data__footer').getByText(SISTEMA_S_SOURCE, { exact: true }).count(), 1, 'Educa\u00e7\u00e3o: fonte consolidada encerra os dados de apoio');
 
   await page.getByRole('button', { name: 'Voltar aos indicadores', exact: true }).first().click();
   await totalSchoolsCard.waitFor({ state: 'visible' });
@@ -1544,36 +1546,20 @@ async function verifyEducationFlow(page, viewport) {
   await page.getByRole('heading', { level: 3, name: 'Organiza\u00e7\u00e3o das turmas', exact: true }).waitFor({ state: 'visible' });
   const wideStageCard = page.getByRole('button', { name: WIDE_STAGE_CARD });
   await wideStageCard.click();
-  const historyCut = page.getByRole('group', { name: EDUCATION_HISTORY_CUT });
-  const historyOptions = historyCut.getByRole('button');
-  const totalStage = historyCut.getByRole('button', { name: 'Total — Ensino Fundamental', exact: true });
-  const initialStage = historyCut.getByRole('button', { name: 'Anos Iniciais', exact: true });
-  const finalStage = historyCut.getByRole('button', { name: 'Anos Finais', exact: true });
+  const historyCut = page.getByLabel(EDUCATION_HISTORY_CUT, { exact: true });
+  const historyOptions = historyCut.locator('option');
   await historyCut.waitFor({ state: 'visible' });
-  assert.equal(await historyCut.getAttribute('role'), 'group', 'Educa\u00e7\u00e3o: segmento usa grupo, n\u00e3o tablist');
-  assert.equal(await historyCut.getByRole('tab').count(), 0, 'Educa\u00e7\u00e3o: segmento n\u00e3o possui tabs');
+  assert.equal(await historyCut.evaluate((element) => element.tagName), 'SELECT', 'Educa\u00e7\u00e3o: recorte amplo usa seletor compacto');
   assert.ok(await historyOptions.count() > 4, 'Educa\u00e7\u00e3o: recorte amplo preserva mais de quatro op\u00e7\u00f5es');
-  assert.equal(await (await selectedPressedButton(historyCut, 'Educa\u00e7\u00e3o')).innerText(), 'Total — Ensino Fundamental', 'Educa\u00e7\u00e3o: recorte inicial');
+  assert.equal(await historyCut.evaluate((element) => element.selectedOptions[0]?.textContent?.trim()), 'Total — Ensino Fundamental', 'Educa\u00e7\u00e3o: recorte inicial');
 
-  await totalStage.focus();
-  await page.keyboard.press('Tab');
-  assert.equal(await initialStage.evaluate((element) => document.activeElement === element), true, 'Educa\u00e7\u00e3o: Tab alcan\u00e7a a pr\u00f3xima op\u00e7\u00e3o');
-  await page.keyboard.press('Shift+Tab');
-  assert.equal(await totalStage.evaluate((element) => document.activeElement === element), true, 'Educa\u00e7\u00e3o: Shift+Tab retorna \u00e0 op\u00e7\u00e3o anterior');
-
-  await initialStage.focus();
-  await page.keyboard.press('Enter');
+  await historyCut.selectOption({ label: 'Anos Iniciais' });
   await page.getByText(/Recorte exibido: Anos Iniciais/).waitFor({ state: 'visible' });
-  assert.equal(await initialStage.getAttribute('aria-pressed'), 'true', 'Educa\u00e7\u00e3o: Enter atualiza o recorte');
-  assert.equal(await (await selectedPressedButton(historyCut, 'Educa\u00e7\u00e3o')).innerText(), 'Anos Iniciais', 'Educa\u00e7\u00e3o: uma op\u00e7\u00e3o ativa ap\u00f3s Enter');
+  assert.equal(await historyCut.evaluate((element) => element.selectedOptions[0]?.textContent?.trim()), 'Anos Iniciais', 'Educa\u00e7\u00e3o: seletor atualiza o recorte');
 
-  await finalStage.focus();
-  await page.keyboard.press('Space');
+  await historyCut.selectOption({ label: 'Anos Finais' });
   await page.getByText(/Recorte exibido: Anos Finais/).waitFor({ state: 'visible' });
-  assert.equal(await finalStage.getAttribute('aria-pressed'), 'true', 'Educa\u00e7\u00e3o: Espa\u00e7o atualiza o recorte');
-  await page.keyboard.press('ArrowRight');
-  assert.equal(await finalStage.evaluate((element) => document.activeElement === element), true, 'Educa\u00e7\u00e3o: setas n\u00e3o operam como tabs');
-  assert.equal(await finalStage.getAttribute('aria-pressed'), 'true', 'Educa\u00e7\u00e3o: seta n\u00e3o altera o recorte');
+  assert.equal(await historyCut.evaluate((element) => element.selectedOptions[0]?.textContent?.trim()), 'Anos Finais', 'Educa\u00e7\u00e3o: seletor preserva uma op\u00e7\u00e3o ativa');
   await assertDataSourceLegibility(
     page.locator('.data-source-note').first(),
     `Educação em ${viewport.width}x${viewport.height}`,

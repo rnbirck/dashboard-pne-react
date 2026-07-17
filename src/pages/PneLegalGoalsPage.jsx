@@ -15,6 +15,7 @@ import {
 } from '../utils/format'
 import { normalizePopulationPercentResults } from '../utils/indicatorValues'
 import { getPneCycleCopy } from '../utils/pneCycleCopy'
+import { isPne2026AccumulativeIndicator } from '../utils/pneAccumulativeCycle'
 import {
   isPneComparableIndicator,
   isPneContextProxyRelation,
@@ -510,8 +511,12 @@ function UntrackedLegalGoals({ goals, isOpen, itemByKey, normalizedResults, onTo
 function LegalGoalIndicator({ indicatorRelation, item, onNavigate, projection, result }) {
   const hasCatalogItem = Boolean(item)
   const hasMunicipalResult = hasUsableMunicipalResult(indicatorRelation, result)
+  const isAccumulativeBaseline = (
+    isPne2026AccumulativeIndicator(PNE_2026_CYCLE, indicatorRelation.indicatorId) &&
+    Number(result?.end_year) <= 2025
+  )
   const unit = resolveIndicatorUnit(item, result)
-  const comparable = hasMunicipalResult && isComparableLegalIndicator(indicatorRelation, result)
+  const comparable = !isAccumulativeBaseline && hasMunicipalResult && isComparableLegalIndicator(indicatorRelation, result)
   const showDistance = comparable && hasComparableDistance(indicatorRelation, result)
   const showProjection = comparable && hasProjection2036(indicatorRelation, projection)
   const showStatus = comparable && hasReadableStatus(result)
@@ -538,7 +543,9 @@ function LegalGoalIndicator({ indicatorRelation, item, onNavigate, projection, r
             Indicador usado no painel · {item?.categoryLabel ?? 'Indicador relacionado'} · {indicatorRelation.indicatorId}
           </span>
           <h3>{indicatorTitle}</h3>
-          {item?.desc ? <p>{item.desc}</p> : null}
+          {item?.desc ? (
+            <p>{isAccumulativeBaseline ? getAccumulativeLegalDescription(indicatorRelation.indicatorId) : item.desc}</p>
+          ) : null}
         </div>
         <CoverageBadge coverage={indicatorCoverage} />
       </header>
@@ -574,6 +581,16 @@ function LegalGoalIndicator({ indicatorRelation, item, onNavigate, projection, r
       ) : !hasMunicipalResult ? (
         <div className="legal-goal-indicator__empty">
           Sem leitura municipal disponível para este indicador no ciclo vigente.
+        </div>
+      ) : isAccumulativeBaseline ? (
+        <div className="legal-goal-metric-grid">
+          <LegalMetric label="Situação no ciclo" tone="muted" value="Linha de base definida" />
+          <LegalMetric label="Ano de referência" value="2025" />
+          <LegalMetric
+            label="Meta de referência"
+            value={indicatorRelation.indicatorId === 'medio_tecnico_participacao_publica' ? '50%' : '+60%'}
+          />
+          <LegalMetric label="Resultado do ciclo" tone="muted" value="Disponível a partir de 2026" />
         </div>
       ) : (
         <div className="legal-goal-metric-grid">
@@ -631,6 +648,13 @@ function LegalGoalIndicator({ indicatorRelation, item, onNavigate, projection, r
       </div>
     </article>
   )
+}
+
+function getAccumulativeLegalDescription(indicatorId) {
+  if (indicatorId === 'medio_tecnico_participacao_publica') {
+    return 'Pelo menos 50% das novas matrículas de EPT de nível médio criadas no ciclo deverão ser públicas. O acompanhamento começa na linha de base de 2025.'
+  }
+  return 'A expansão de 60% das matrículas em cursos técnicos subsequentes será acompanhada a partir da linha de base de 2025.'
 }
 
 function LegalMetric({ detail, label, tone = 'default', value }) {

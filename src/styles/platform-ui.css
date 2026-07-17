@@ -1485,6 +1485,183 @@
   }
 }
 
+/* Compact detail workspace shared by PNE, Education and Finance. */
+.content-area .platform-detail-navigation {
+  padding: var(--space-1);
+  border: var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  box-shadow: none;
+}
+
+.content-area .platform-detail-navigation__status {
+  justify-self: center;
+  align-self: center;
+  max-width: 100%;
+}
+
+.content-area .platform-detail-navigation__context {
+  min-width: 0;
+  justify-self: center;
+  align-self: center;
+  display: grid;
+  gap: 1px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.content-area .platform-detail-navigation__context span {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.content-area .platform-detail-navigation__context strong {
+  color: var(--text-strong);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+  overflow-wrap: anywhere;
+}
+
+.content-area .platform-detail-navigation__sequence {
+  justify-self: end;
+}
+
+.content-area .platform-support-disclosure {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  box-shadow: none;
+}
+
+.content-area .platform-support-disclosure__summary {
+  min-height: 52px;
+  padding: var(--space-2) var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  color: var(--text-strong);
+  cursor: pointer;
+  list-style: none;
+}
+
+.content-area .platform-support-disclosure__summary::-webkit-details-marker {
+  display: none;
+}
+
+.content-area .platform-support-disclosure__summary::after {
+  content: "+";
+  flex: 0 0 auto;
+  color: var(--green-deep);
+  font-size: var(--font-size-xl);
+  line-height: 1;
+}
+
+.content-area .platform-support-disclosure[open] > .platform-support-disclosure__summary::after {
+  content: "−";
+}
+
+.content-area .platform-support-disclosure__summary > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.content-area .platform-support-disclosure__summary :is(h3, p),
+.content-area .platform-support-disclosure__summary > span {
+  margin: 0;
+}
+
+.content-area .platform-support-disclosure__summary h3 {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.content-area .platform-support-disclosure__summary p {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+}
+
+.content-area .platform-support-disclosure__summary:focus,
+.content-area .platform-support-disclosure__summary:focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+
+.dashboard-shell .content-area details.platform-support-disclosure > summary.platform-support-disclosure__summary:focus,
+.dashboard-shell .content-area details.platform-support-disclosure > summary.platform-support-disclosure__summary:focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
+  box-shadow: var(--focus-ring);
+}
+
+.content-area .platform-support-disclosure__body,
+.content-area .platform-support-disclosure[open] > .educacao-explore__panel,
+.content-area .platform-support-disclosure[open] > .complementary-data__body {
+  padding: var(--space-4);
+  border-top: var(--border-divider);
+}
+
+.content-area .platform-support-disclosure[open] :is(
+  .education-chart,
+  .education-chart__canvas,
+  .history-chart,
+  .history-chart__canvas,
+  .complementary-chart__canvas,
+  .complementary-projection__chart
+) {
+  min-height: 0;
+}
+
+.content-area .platform-support-disclosure[open] :is(
+  .education-chart svg,
+  .history-chart svg,
+  .complementary-chart__canvas svg,
+  .complementary-projection__chart svg
+) {
+  min-height: 0;
+  height: var(--detail-chart-height-auxiliary);
+  max-height: var(--detail-chart-height-auxiliary);
+}
+
+@media screen and (max-width: 760px) {
+  .content-area .platform-detail-navigation {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .content-area .platform-detail-navigation__status {
+    justify-self: end;
+  }
+
+  .content-area .platform-detail-navigation__context {
+    justify-self: end;
+    text-align: end;
+  }
+
+  .content-area .platform-detail-navigation__sequence {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+  }
+
+  .content-area .platform-detail-navigation__sequence .platform-navigation-button {
+    flex: 1 1 0;
+  }
+}
+
+.content-area .educacao-page--detail .education-detail-nav--bottom,
+.content-area .financial-page--detail .financial-detail-nav--bottom {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .platform-filter-option,
 .platform-segmented-option,
@@ -1710,6 +1887,10 @@
   display: inline-block;
   font-weight: var(--font-weight-medium);
   text-align: inherit;
+}
+
+.metric-card__icon {
+  display: none;
 }
 
 .fundeb-table :where(

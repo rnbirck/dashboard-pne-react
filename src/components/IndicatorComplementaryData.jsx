@@ -1,11 +1,13 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { loadIndicatorDetail, loadMunicipioSharedInfo } from '../data/staticData'
+import { loadEducationMunicipio } from '../data/educationData'
 import { isDemographicCensusIndicator } from '../utils/indicatorSeries'
 import { AdministrativeDependencyChart } from './AdministrativeDependencyChart'
 import { ComplementaryEnrollmentChart } from './ComplementaryEnrollmentChart'
 import { PneSourceNotes } from './PneSourceNotes'
 import { IndicatorProjectionPanel } from './IndicatorProjectionPanel'
+import { IndexedEnrollmentComparison } from './ExpansionShareBaselineDetail'
 
 const numberFormatter = new Intl.NumberFormat('pt-BR')
 const percentFormatter = new Intl.NumberFormat('pt-BR', {
@@ -15,6 +17,31 @@ const percentFormatter = new Intl.NumberFormat('pt-BR', {
 
 const EJA_PERCENTUAL_INDICATOR_KEY = 'eja_integrada_educacao_profissional_percentual'
 const MEDIO_TECNICO_ARTICULADO_INDICATOR_KEY = 'medio_tecnico_articulado_percentual'
+const TABLE_ONLY_SUPPORT_INDICATORS = new Set(['alfabetizacao_pop_15_mais'])
+const PNE_2014_TABLE_ONLY_SUPPORT_INDICATORS = new Set([
+  'eja_integrada_educacao_profissional_percentual',
+  'ensino_fundamental_ou_completo_pop_6_14',
+  'ensino_medio_ou_basica_completa_pop_15_17',
+])
+const ADEQUATE_TEACHER_INDICATORS = {
+  adequacao_ai: { label: 'Docentes com formação adequada nos anos iniciais', stageKey: 'fundamental', stageLabel: 'ensino fundamental' },
+  adequacao_af: { label: 'Docentes com formação adequada nos anos finais', stageKey: 'fundamental', stageLabel: 'ensino fundamental' },
+  adequacao_em: { label: 'Docentes com formação adequada no ensino médio', stageKey: 'medio', stageLabel: 'ensino médio' },
+}
+const TEACHER_COMPONENT_INDICATORS = {
+  pos_graduacao: {
+    denominatorDescription: 'Quantidade anual de docentes da educação básica considerada no cálculo do indicador.',
+    denominatorLabel: 'Total de docentes',
+    numeratorDescription: 'Quantidade anual de docentes da educação básica com especialização, mestrado ou doutorado.',
+    numeratorLabel: 'Docentes com pós-graduação',
+  },
+  temporarios: {
+    denominatorDescription: 'Quantidade anual de docentes da rede pública considerada no cálculo do indicador.',
+    denominatorLabel: 'Total de docentes da rede pública',
+    numeratorDescription: 'Quantidade anual de docentes da rede pública com contrato temporário.',
+    numeratorLabel: 'Docentes com contrato temporário',
+  },
+}
 const EJA_PERCENTUAL_NUMERATOR_LABEL =
   'Matrículas articuladas à\neducação profissional'
 const EJA_PERCENTUAL_DENOMINATOR_LABEL =
@@ -25,14 +52,12 @@ const EJA_AUXILIARY_HISTORY_FORMATTER = (value) => {
   return value.toLocaleString('pt-BR', { maximumFractionDigits: 0 })
 }
 
-export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData, result }) {
+export function IndicatorComplementaryData({ cycle, domainOverride, indicatorKey, item, municipioData, presentationMode, result }) {
   const slug = municipioData?.slug
   const fallbackDetails = municipioData?.indicator_details?.[indicatorKey] ?? null
   const [details, setDetails] = useState(null)
-  const [activeTab, setActiveTab] = useState('')
   const [sharedPrivadas, setSharedPrivadas] = useState(null)
-  const tabSetId = useId().replace(/:/g, '')
-  const tabRefs = useRef([])
+  const [educationData, setEducationData] = useState(null)
 
   useEffect(() => {
     loadMunicipioSharedInfo(slug, 'privadas_conveniadas').then((data) => {
@@ -73,6 +98,29 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
       isMounted = false
     }
   }, [slug, indicatorKey, fallbackDetails])
+
+  useEffect(() => {
+    let isMounted = true
+
+    if (!ADEQUATE_TEACHER_INDICATORS[indicatorKey] || !municipioData?.id_municipio) {
+      setEducationData(null)
+      return () => {
+        isMounted = false
+      }
+    }
+
+    loadEducationMunicipio(municipioData.id_municipio)
+      .then((data) => {
+        if (isMounted) setEducationData(data)
+      })
+      .catch(() => {
+        if (isMounted) setEducationData(null)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [indicatorKey, municipioData?.id_municipio])
 
   const cycleRange = useMemo(
     () => resolveCycleRange(cycle, result, details),
@@ -131,21 +179,120 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
     : filteredTotal.length > 0
   const isEjaPercentualIndicator = indicatorKey === EJA_PERCENTUAL_INDICATOR_KEY
   const isMedioTecnicoArticuladoIndicator = indicatorKey === MEDIO_TECNICO_ARTICULADO_INDICATOR_KEY
+  const adequateTeacherConfig = ADEQUATE_TEACHER_INDICATORS[indicatorKey]
+  const teacherComponentConfig = TEACHER_COMPONENT_INDICATORS[indicatorKey]
+  const isExpansionShareBaseline = presentationMode === 'expansion-share-baseline'
+  const isAbsoluteExpansionTarget = presentationMode === 'absolute-expansion-target'
+  const expansionShareSeries = useMemo(
+    () => buildExpansionShareSeries(calculationComponents).slice(-5),
+    [calculationComponents],
+  )
   const hasDependencia =
     !isEjaPercentualIndicator &&
     !isMedioTecnicoArticuladoIndicator &&
-    filteredDependencia.length > 0
+    filteredDependencia.some((row) => rowHasRealValue(row))
   const hasComponents = filteredComponents.length > 0
+  const teacherStageTotalSeries = useMemo(() => {
+    if (!adequateTeacherConfig) return []
+    const rows = educationData?.blocos?.turmas_docentes?.series?.por_etapa?.[adequateTeacherConfig.stageKey]
+    return filterRowsByCycle(rows, cycleRange)
+      .map((row) => ({ ano: Number(row?.ano), valor: Number(row?.docentes) }))
+      .filter((row) => Number.isFinite(row.ano) && Number.isFinite(row.valor))
+  }, [adequateTeacherConfig, cycleRange, educationData])
+  const adequateTeacherEstimateSeries = useMemo(
+    () => buildEstimatedTeacherSeries(filteredTotal, teacherStageTotalSeries),
+    [filteredTotal, teacherStageTotalSeries],
+  )
+  const hasTeacherNominalSeries = Boolean(
+    (teacherComponentConfig && hasComponents) ||
+    (adequateTeacherConfig && teacherStageTotalSeries.length > 0),
+  )
   const numeratorLabel = details?.calculation?.numerator_label || 'Numerador'
   const denominatorLabel = details?.calculation?.denominator_label || 'Denominador'
+  const historyLabel = resolveHistoryLabel({
+    cycle,
+    details,
+    isAbsoluteExpansionTarget,
+    isCensusIndicator,
+    isEjaPercentualIndicator,
+    isExpansionShareBaseline,
+    item,
+  })
 
   const projection = municipioData?.[cycle]?.projecoes?.[indicatorKey]
-  const hasProjection = cycle === 'pne_2026_2036' && projection?.available === true
+  const hasProjection = cycle === 'pne_2026_2036' && !isExpansionShareBaseline && !isAbsoluteExpansionTarget && projection?.available === true
 
   const options = useMemo(() => {
     const availableOptions = []
 
     if (details) {
+      if (teacherComponentConfig && hasComponents) {
+        const teacherSeries = [
+          {
+            description: teacherComponentConfig.numeratorDescription,
+            key: 'teacher-numerator-history',
+            label: teacherComponentConfig.numeratorLabel,
+            valueKey: 'numerador',
+          },
+          {
+            description: teacherComponentConfig.denominatorDescription,
+            key: 'teacher-total-history',
+            label: teacherComponentConfig.denominatorLabel,
+            valueKey: 'denominador',
+          },
+        ]
+
+        teacherSeries.forEach(({ description, key, label, valueKey }) => {
+          availableOptions.push({
+            key,
+            label,
+            description,
+            content: (
+              <ComplementaryEnrollmentChart
+                showHeading={false}
+                series={buildComponentValueSeries(filteredComponents, valueKey)}
+                title={label}
+                unit="Docentes"
+              />
+            ),
+          })
+        })
+      }
+
+      if (adequateTeacherConfig && teacherStageTotalSeries.length > 0) {
+        const usesWholeFundamentalStage = adequateTeacherConfig.stageKey === 'fundamental'
+        const estimateDescription = usesWholeFundamentalStage
+          ? 'Estimativa calculada pela taxa oficial do indicador sobre o total de docentes do ensino fundamental, pois a série nominal disponível não separa anos iniciais e finais.'
+          : `Estimativa calculada pela taxa oficial do indicador sobre o total de docentes do ${adequateTeacherConfig.stageLabel}.`
+
+        availableOptions.push({
+          key: 'teacher-numerator-history',
+          label: `Estimativa de ${adequateTeacherConfig.label.toLowerCase()}`,
+          description: estimateDescription,
+          content: (
+            <ComplementaryEnrollmentChart
+              showHeading={false}
+              series={adequateTeacherEstimateSeries}
+              title={adequateTeacherConfig.label}
+              unit="Docentes"
+            />
+          ),
+        })
+        availableOptions.push({
+          key: 'teacher-total-history',
+          label: `Total de docentes no ${adequateTeacherConfig.stageLabel}`,
+          description: `Quantidade anual de docentes do ${adequateTeacherConfig.stageLabel} registrada no Censo Escolar.`,
+          content: (
+            <ComplementaryEnrollmentChart
+              showHeading={false}
+              series={teacherStageTotalSeries}
+              title={`Total de docentes no ${adequateTeacherConfig.stageLabel}`}
+              unit="Docentes"
+            />
+          ),
+        })
+      }
+
       if (isMedioTecnicoArticuladoIndicator) {
         const supportingSeries = [
           ['integrado', 'Matrículas integradas'],
@@ -175,23 +322,37 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
         })
       }
 
-      if (!isMedioTecnicoArticuladoIndicator && hasTotal) {
+      if (
+        !isMedioTecnicoArticuladoIndicator &&
+        !hasTeacherNominalSeries &&
+        !TABLE_ONLY_SUPPORT_INDICATORS.has(indicatorKey) &&
+        !(cycle === 'pne_2014_2024' && PNE_2014_TABLE_ONLY_SUPPORT_INDICATORS.has(indicatorKey)) &&
+        hasTotal
+      ) {
         const isCountHistory = isEjaPercentualIndicator || isMedioTecnicoArticuladoIndicator
         availableOptions.push({
           key: 'enrollment-history',
-          label: isCensusIndicator ? 'Histórico' : 'Histórico de matrículas',
-          description: 'Evolu\u00e7\u00e3o anual da s\u00e9rie complementar usada para contextualizar o indicador.',
+          label: historyLabel,
+          description: isExpansionShareBaseline
+            ? `Primeiro ano = 100. As duas linhas mostram trajetórias independentes, sem comparar volumes absolutos.`
+            : isAbsoluteExpansionTarget
+              ? 'Contexto anterior e recente para leitura do indicador. Não representa diretamente o avanço da meta de 2036.'
+              : 'Evolu\u00e7\u00e3o anual da s\u00e9rie complementar usada para contextualizar o indicador.',
           content: (
-            <ComplementaryEnrollmentChart
-              showHeading={false}
-              series={filteredTotal}
-              title={isEjaPercentualIndicator
-                ? EJA_AUXILIARY_HISTORY_LABEL
-                : details.title || 'Matrículas em creche'}
-              unit={isCountHistory ? 'Matrículas' : details.unit || 'Matrículas'}
-              valueMode={isCountHistory ? 'count' : undefined}
-              valueFormatter={isCountHistory ? EJA_AUXILIARY_HISTORY_FORMATTER : undefined}
-            />
+            isExpansionShareBaseline ? (
+              <IndexedEnrollmentComparison series={expansionShareSeries} />
+            ) : (
+              <ComplementaryEnrollmentChart
+                showHeading={false}
+                series={filteredTotal}
+                title={isEjaPercentualIndicator
+                  ? EJA_AUXILIARY_HISTORY_LABEL
+                  : details.title || 'Matrículas em creche'}
+                unit={isCountHistory ? 'Matrículas' : details.unit || 'Matrículas'}
+                valueMode={isCountHistory ? 'count' : undefined}
+                valueFormatter={isCountHistory ? EJA_AUXILIARY_HISTORY_FORMATTER : undefined}
+              />
+            )
           ),
         })
       }
@@ -220,6 +381,7 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
           description: 'Numerador, denominador e percentual que comp\u00f5em o indicador selecionado.',
           content: (
             <CalculationComponentsTable
+              centerColumns={cycle === 'pne_2014_2024' && isEjaPercentualIndicator}
               denominatorLabel={isEjaPercentualIndicator ? EJA_PERCENTUAL_DENOMINATOR_LABEL : denominatorLabel}
               numeratorLabel={isEjaPercentualIndicator ? EJA_PERCENTUAL_NUMERATOR_LABEL : numeratorLabel}
               rows={filteredComponents}
@@ -230,48 +392,311 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
           ),
         })
       }
+
+      if (isAbsoluteExpansionTarget && filteredTotal.length > 0 && !hasComponents) {
+        availableOptions.push({
+          key: 'calculation-numbers',
+          label: 'Série histórica usada no cálculo',
+          description: 'Valores considerados para definir o ponto de partida de 2025.',
+          content: (
+            <AbsoluteExpansionCalculationTable rows={filteredTotal} />
+          ),
+        })
+      }
     }
 
     if (hasProjection) {
       availableOptions.push({
         key: 'trend-projection',
-        label: 'Projeção tendencial',
+        label: 'Projeção do indicador',
         description: 'Cen\u00e1rio estimativo para planejamento, sem car\u00e1ter de previs\u00e3o oficial.',
         badge: 'Estimativa',
-        content: <IndicatorProjectionPanel projection={projection} showTitle={false} />,
+        content: (
+          <IndicatorProjectionPanel
+            chartHeight={320}
+            chartWidth={860}
+            domainOverride={domainOverride}
+            pneLayout
+            projection={projection}
+            showTitle={false}
+          />
+        ),
       })
     }
 
     return availableOptions
   }, [
+    cycle,
     denominatorLabel,
     details,
+    domainOverride,
     filteredComponents,
     filteredDependencia,
     filteredAuxiliarySeries,
     filteredTotal,
     hasComponents,
     hasDependencia,
+    hasTeacherNominalSeries,
     hasTotal,
-    isCensusIndicator,
+    historyLabel,
+    indicatorKey,
     isEjaPercentualIndicator,
+    isExpansionShareBaseline,
+    isAbsoluteExpansionTarget,
     isMedioTecnicoArticuladoIndicator,
+    adequateTeacherConfig,
+    adequateTeacherEstimateSeries,
+    expansionShareSeries,
     numeratorLabel,
     hasProjection,
     projection,
+    teacherComponentConfig,
+    teacherStageTotalSeries,
   ])
-
-  useEffect(() => {
-    setActiveTab(options[0]?.key ?? '')
-  }, [indicatorKey, options])
 
   if (options.length === 0) {
     return null
   }
 
+  if (cycle !== 'pne_2014_2024' && cycle !== 'pne_2026_2036') {
+    return (
+      <LegacyComplementaryData
+        cycle={cycle}
+        details={details}
+        hasDependencia={hasDependencia}
+        indicatorKey={indicatorKey}
+        numberFormatter={numberFormatter}
+        options={options}
+        result={result}
+        sharedPrivadas={sharedPrivadas}
+        totalPrivadaRede={totalPrivadaRede}
+      />
+    )
+  }
+
+  const contentId = `indicator-support-data-${indicatorKey || 'detail'}`
+  const calculationOptions = options.filter((option) => option.key === 'calculation-numbers')
+  const projectionOptions = options.filter((option) => option.key === 'trend-projection')
+  const supportOptions = options.filter((option) => (
+    option.key !== 'calculation-numbers' && option.key !== 'trend-projection'
+  ))
+
+  return (
+    <section className="complementary-data complementary-data--organized" aria-labelledby={`${contentId}-title`}>
+      <header className="complementary-data__trigger">
+        <SupportDataIcon />
+        <span className="complementary-data__summary">
+          <span className="complementary-data__eyebrow">{isExpansionShareBaseline ? 'Contexto complementar' : 'Aprofundamento'}</span>
+          <h3 className="complementary-data__title" id={`${contentId}-title`}>{isExpansionShareBaseline ? 'Dados de apoio' : 'Dados de apoio da meta'}</h3>
+          <span className="complementary-data__description">
+            {isExpansionShareBaseline
+              ? 'Evolução relativa e composição por rede para complementar a leitura principal.'
+              : isAbsoluteExpansionTarget
+                ? 'Histórico, composição por rede e valores usados para calcular a meta absoluta.'
+              : 'Séries auxiliares, recortes e memória de cálculo para interpretar este indicador com mais contexto.'}
+          </span>
+        </span>
+      </header>
+
+      <div className="complementary-data__body" id={contentId}>
+        <div className="complementary-data__grid">
+          {supportOptions.map((option) => (
+            <ComplementaryDataItem
+              cycle={cycle}
+              details={details}
+              indicatorKey={indicatorKey}
+              key={option.key}
+              option={option}
+              result={result}
+            />
+          ))}
+          {hasDependencia && !isExpansionShareBaseline ? (
+            <PrivadasConveniadasSection
+              data={sharedPrivadas}
+              numberFormatter={numberFormatter}
+              indicatorKey={indicatorKey}
+              totalPrivadaRede={totalPrivadaRede}
+            />
+          ) : null}
+          {projectionOptions.map((option) => (
+            <ComplementaryDataItem
+              cycle={cycle}
+              details={details}
+              indicatorKey={indicatorKey}
+              key={option.key}
+              option={option}
+              result={result}
+              wide
+            />
+          ))}
+          {calculationOptions.map((option) => (
+            <ComplementaryDataItem
+              cycle={cycle}
+              details={details}
+              fullRow={projectionOptions.length === 0}
+              indicatorKey={indicatorKey}
+              key={option.key}
+              option={option}
+              result={result}
+              wide
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function resolveHistoryLabel({
+  cycle,
+  details,
+  isAbsoluteExpansionTarget,
+  isCensusIndicator,
+  isEjaPercentualIndicator,
+  isExpansionShareBaseline,
+  item,
+}) {
+  if (cycle !== 'pne_2014_2024' && cycle !== 'pne_2026_2036') {
+    return isCensusIndicator ? 'Histórico' : 'Histórico de matrículas'
+  }
+  if (isExpansionShareBaseline) return 'Evolução relativa das matrículas'
+  if (isEjaPercentualIndicator) return EJA_AUXILIARY_HISTORY_LABEL
+  if (isAbsoluteExpansionTarget) return 'Matrículas em cursos técnicos subsequentes'
+
+  const unit = String(details?.unit ?? '').trim().toLocaleLowerCase('pt-BR')
+  const isIndicatorRate = unit === '%' || unit.includes('percent') || unit.includes('razão')
+
+  if (isIndicatorRate && item?.label) return item.label
+  return details?.title || item?.label || 'Histórico do indicador'
+}
+
+function AbsoluteExpansionCalculationTable({ rows }) {
+  const orderedRows = rows
+    .filter((row) => Number.isFinite(Number(row?.ano)) && Number.isFinite(Number(row?.valor)))
+    .slice()
+    .sort((a, b) => Number(b.ano) - Number(a.ano))
+  const chronologicalRows = orderedRows.slice().reverse()
+  const firstRow = chronologicalRows[0]
+  const baselineRow = orderedRows.find((row) => Number(row.ano) === 2025) ?? orderedRows[0]
+  const maximumRow = orderedRows.reduce((maximum, row) => (
+    Number(row.valor) > Number(maximum?.valor ?? Number.NEGATIVE_INFINITY) ? row : maximum
+  ), null)
+  const minimumRow = orderedRows.reduce((minimum, row) => (
+    Number(row.valor) < Number(minimum?.valor ?? Number.POSITIVE_INFINITY) ? row : minimum
+  ), null)
+  const milestones = [
+    { label: 'Início da série', row: firstRow },
+    { label: 'Maior valor', row: maximumRow },
+    { label: 'Menor valor', row: minimumRow },
+    { label: 'Ponto de partida', row: baselineRow },
+  ]
+
+  return (
+    <div className="absolute-expansion-calculation">
+      <div className="absolute-expansion-calculation__layout">
+        <div
+          aria-label="Série histórica de matrículas usada no cálculo"
+          className="complementary-components__table-wrap absolute-expansion-calculation__table-wrap"
+          role="region"
+          tabIndex="0"
+        >
+          <table className="complementary-components__table absolute-expansion-calculation__table">
+            <caption className="u-sr-only">Série histórica usada no cálculo</caption>
+            <thead>
+              <tr>
+                <th scope="col">Ano</th>
+                <th scope="col">Matrículas</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orderedRows.map((row) => (
+                <tr key={row.ano}>
+                  <td>{row.ano}</td>
+                  <td>{numberFormatter.format(Number(row.valor))}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <aside className="absolute-expansion-calculation__milestones" aria-label="Marcos da série">
+          <h5>Marcos da série</h5>
+          <dl>
+            {milestones.map(({ label, row }) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>
+                  <strong>{row?.ano}</strong>
+                  <span>{numberFormatter.format(Number(row?.valor))} matrículas</span>
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <div className="absolute-expansion-calculation__formula">
+            <span>Fórmula da meta</span>
+            <strong>Meta 2036 = matrículas registradas em 2025 × 1,60</strong>
+          </div>
+        </aside>
+      </div>
+    </div>
+  )
+}
+
+function SupportDataIcon() {
+  return (
+    <svg aria-hidden="true" className="complementary-data__trigger-icon" fill="none" viewBox="0 0 24 24">
+      <path d="M4 19V5" />
+      <path d="M4 19h16" />
+      <rect height="5" rx="1" width="3" x="7" y="12" />
+      <rect height="9" rx="1" width="3" x="12" y="8" />
+      <rect height="12" rx="1" width="3" x="17" y="5" />
+    </svg>
+  )
+}
+
+function ComplementaryDataItem({ fullRow = false, indicatorKey, option, wide = false }) {
+  const headingId = `indicator-support-${indicatorKey || 'detail'}-${option.key}`
+
+  return (
+    <section
+      className={`complementary-data__item complementary-data__item--${option.key}${wide ? ' complementary-data__item--wide' : ''}${fullRow ? ' complementary-data__item--full-row' : ''}`}
+      aria-labelledby={headingId}
+    >
+      <div className="complementary-data__panel-heading">
+        <div>
+          <h4 id={headingId}>{option.label}</h4>
+          {option.description ? <p>{option.description}</p> : null}
+        </div>
+        {option.badge ? (
+          <span className="complementary-data__tab-badge">{option.badge}</span>
+        ) : null}
+      </div>
+      <div className="complementary-data__item-content">{option.content}</div>
+    </section>
+  )
+}
+
+function LegacyComplementaryData({
+  cycle,
+  details,
+  hasDependencia,
+  indicatorKey,
+  numberFormatter,
+  options,
+  result,
+  sharedPrivadas,
+  totalPrivadaRede,
+}) {
+  const [activeTab, setActiveTab] = useState(options[0]?.key ?? '')
+  const tabSetId = useId().replace(/:/g, '')
+  const tabRefs = useRef([])
   const activeOption = options.find((option) => option.key === activeTab) ?? options[0]
   const contentId = `indicator-explore-more-${indicatorKey || 'detail'}`
   const panelId = `complementary-panel-${tabSetId}`
+
+  useEffect(() => {
+    setActiveTab(options[0]?.key ?? '')
+  }, [indicatorKey, options])
 
   function selectTab(index) {
     const option = options[index]
@@ -294,6 +719,7 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
   return (
     <section className="complementary-data is-open" aria-label="Dados de apoio da meta">
       <div className="complementary-data__trigger">
+        <SupportDataIcon />
         <span className="complementary-data__summary">
           <span className="complementary-data__eyebrow">Aprofundamento</span>
           <span className="complementary-data__title">Dados de apoio da meta</span>
@@ -304,62 +730,62 @@ export function IndicatorComplementaryData({ cycle, indicatorKey, municipioData,
       </div>
 
       <div className="complementary-data__body" id={contentId}>
-          {options.length > 1 ? (
-            <div className="complementary-data__tabs platform-tab-list" role="tablist" aria-label="Opções de exploração">
-              {options.map((option, index) => (
-                <button
-                  ref={(element) => { tabRefs.current[index] = element }}
-                  type="button"
-                  className={`complementary-data__tab platform-tab${activeOption?.key === option.key ? ' is-active' : ''}`}
-                  key={option.key}
-                  id={`complementary-tab-${tabSetId}-${option.key}`}
-                  role="tab"
-                  aria-selected={activeOption?.key === option.key}
-                  aria-controls={panelId}
-                  tabIndex={activeOption?.key === option.key ? 0 : -1}
-                  onClick={() => setActiveTab(option.key)}
-                  onKeyDown={(event) => handleTabKeyDown(event, index)}
-                >
-                  <span>{option.label}</span>
-                  {option.badge ? (
-                    <span className="complementary-data__tab-badge">{option.badge}</span>
-                  ) : null}
-                </button>
-              ))}
-            </div>
-          ) : null}
-          <div
-            className="complementary-data__panel"
-            id={panelId}
-            role="tabpanel"
-            aria-labelledby={`complementary-tab-${tabSetId}-${activeOption.key}`}
-          >
-            <div className="complementary-data__panel-heading">
-              <h5>{activeOption?.label}</h5>
-              {activeOption?.description ? <p>{activeOption.description}</p> : null}
-            </div>
-            {activeOption?.content}
-            <PneSourceNotes
-              context={{
-                block: 'pne',
-                cycle,
-                detailType: activeOption?.key,
-                details,
-                indicatorKey,
-                result,
-                title: activeOption?.label,
-              }}
-            />
+        {options.length > 1 ? (
+          <div className="complementary-data__tabs platform-tab-list" role="tablist" aria-label="Opções de exploração">
+            {options.map((option, index) => (
+              <button
+                ref={(element) => { tabRefs.current[index] = element }}
+                type="button"
+                className={`complementary-data__tab platform-tab${activeOption?.key === option.key ? ' is-active' : ''}`}
+                key={option.key}
+                id={`complementary-tab-${tabSetId}-${option.key}`}
+                role="tab"
+                aria-selected={activeOption?.key === option.key}
+                aria-controls={panelId}
+                tabIndex={activeOption?.key === option.key ? 0 : -1}
+                onClick={() => setActiveTab(option.key)}
+                onKeyDown={(event) => handleTabKeyDown(event, index)}
+              >
+                <span>{option.label}</span>
+                {option.badge ? (
+                  <span className="complementary-data__tab-badge">{option.badge}</span>
+                ) : null}
+              </button>
+            ))}
           </div>
-          {hasDependencia ? (
-            <PrivadasConveniadasSection
-              data={sharedPrivadas}
-              numberFormatter={numberFormatter}
-              indicatorKey={indicatorKey}
-              activeTab={activeTab}
-              totalPrivadaRede={totalPrivadaRede}
-            />
-          ) : null}
+        ) : null}
+        <div
+          className="complementary-data__panel"
+          id={panelId}
+          role="tabpanel"
+          aria-labelledby={`complementary-tab-${tabSetId}-${activeOption.key}`}
+        >
+          <div className="complementary-data__panel-heading">
+            <h5>{activeOption?.label}</h5>
+            {activeOption?.description ? <p>{activeOption.description}</p> : null}
+          </div>
+          {activeOption?.content}
+          <PneSourceNotes
+            context={{
+              block: 'pne',
+              cycle,
+              detailType: activeOption?.key,
+              details,
+              indicatorKey,
+              result,
+              title: activeOption?.label,
+            }}
+          />
+        </div>
+        {hasDependencia ? (
+          <PrivadasConveniadasSection
+            activeTab={activeTab}
+            data={sharedPrivadas}
+            indicatorKey={indicatorKey}
+            numberFormatter={numberFormatter}
+            totalPrivadaRede={totalPrivadaRede}
+          />
+        ) : null}
       </div>
     </section>
   )
@@ -427,7 +853,7 @@ function findSecaoEntry(porSecao, secao) {
 
 function PrivadasConveniadasSection({ data, numberFormatter, indicatorKey, activeTab, totalPrivadaRede }) {
   if (!data) return null
-  if (activeTab !== 'administrative-dependency') return null
+  if (activeTab && activeTab !== 'administrative-dependency') return null
 
   const secao = resolveSecaoFromIndicator(indicatorKey)
   if (!secao) return null
@@ -467,7 +893,7 @@ function PrivadasConveniadasSection({ data, numberFormatter, indicatorKey, activ
   const showBar = pctMunicipalTotal != null
 
   return (
-    <div className="privadas-conveniadas">
+    <section className="privadas-conveniadas complementary-data__item complementary-data__item--private-network">
       <div className="privadas-conveniadas__header">
         <h5 className="privadas-conveniadas__title">
           Rede privada conveniada sob responsabilidade municipal
@@ -530,21 +956,30 @@ function PrivadasConveniadasSection({ data, numberFormatter, indicatorKey, activ
         Dado disponível a partir de {data.disponivel_desde} na Sinopse Estatística do
         Censo Escolar.
       </p>
-    </div>
+    </section>
   )
 }
 
-function CalculationComponentsTable({
+export function CalculationComponentsTable({
+  centerColumns = false,
   denominatorLabel,
   numeratorLabel,
   rows,
+  singleYearLayout = false,
   showHeading = true,
   showArticulatedBreakdown = false,
+  summary = null,
   wrapHeaders = false,
 }) {
-  const tableClassName = wrapHeaders
-    ? 'complementary-components__table complementary-components__table--eja'
-    : 'complementary-components__table'
+  const tableClassName = [
+    'complementary-components__table',
+    centerColumns ? 'complementary-components__table--centered' : null,
+    wrapHeaders ? 'complementary-components__table--eja' : null,
+    showArticulatedBreakdown ? 'complementary-components__table--articulated' : null,
+    !wrapHeaders && !showArticulatedBreakdown ? 'complementary-components__table--fit' : null,
+    singleYearLayout ? 'complementary-components__table--single-year' : null,
+    singleYearLayout ? 'single-year-indicator-table' : null,
+  ].filter(Boolean).join(' ')
   const renderHeader = (label) => (
     wrapHeaders ? <span className="complementary-components__table-header">{label}</span> : label
   )
@@ -552,7 +987,22 @@ function CalculationComponentsTable({
   return (
     <div className="complementary-components">
       {showHeading ? <h5>Dados usados no cálculo</h5> : null}
-      <div className="complementary-components__table-wrap" role="region" aria-label="Dados usados no cálculo do indicador. Role horizontalmente para consultar todas as colunas quando necessário." tabIndex={0}>
+      {summary ? (
+        <div className="expansion-share-calculation-summary" aria-label="Resumo do cálculo do período de referência">
+          <span><small>Variação pública</small><strong>{summary.publicExpansion}</strong></span>
+          <span><small>Variação total</small><strong>{summary.totalExpansion}</strong></span>
+          <span><small>Participação calculada</small><strong>{summary.share}</strong></span>
+          <p>Participação pública na expansão = variação das matrículas públicas ÷ variação total das matrículas × 100.</p>
+        </div>
+      ) : null}
+      <div
+        className={`complementary-components__table-wrap${singleYearLayout ? ' complementary-components__table-wrap--single-year' : ''}`}
+        role={singleYearLayout ? undefined : 'region'}
+        aria-label={singleYearLayout
+          ? undefined
+          : 'Dados usados no cálculo do indicador. Role horizontalmente para consultar todas as colunas quando necessário.'}
+        tabIndex={singleYearLayout ? undefined : 0}
+      >
         <table className={tableClassName}>
           <caption className="u-sr-only">Dados usados no cálculo do indicador</caption>
           <thead>
@@ -609,6 +1059,45 @@ function CalculationComponentsTable({
   )
 }
 
+function buildExpansionShareSeries(rows) {
+  if (!Array.isArray(rows)) return []
+  return rows
+    .map((row) => ({
+      ano: Number(row?.ano),
+      publicEnrollment: Number(row?.numerador),
+      totalEnrollment: Number(row?.denominador),
+    }))
+    .filter((row) => Number.isFinite(row.ano) && Number.isFinite(row.publicEnrollment) && Number.isFinite(row.totalEnrollment))
+    .sort((a, b) => a.ano - b.ano)
+}
+
+function buildComponentValueSeries(rows, valueKey) {
+  if (!Array.isArray(rows)) return []
+  return rows
+    .map((row) => ({
+      ano: Number(row?.ano),
+      valor: Number(row?.[valueKey]),
+    }))
+    .filter((row) => Number.isFinite(row.ano) && Number.isFinite(row.valor))
+}
+
+function buildEstimatedTeacherSeries(percentSeries, totalSeries) {
+  const totalsByYear = new Map(totalSeries.map((row) => [Number(row?.ano), Number(row?.valor)]))
+  return percentSeries
+    .map((row) => {
+      const ano = Number(row?.ano)
+      const percentual = Number(row?.valor)
+      const total = totalsByYear.get(ano)
+      return {
+        ano,
+        valor: Number.isFinite(percentual) && Number.isFinite(total)
+          ? Math.round((percentual / 100) * total)
+          : null,
+      }
+    })
+    .filter((row) => Number.isFinite(row.ano) && Number.isFinite(row.valor))
+}
+
 function filterRowsByCycle(rows, range) {
   if (!Array.isArray(rows)) return []
   return rows.filter((row) => {
@@ -629,6 +1118,7 @@ function rowHasRealValue(row) {
   if (!row) return false
   return Object.entries(row).some(([key, value]) => {
     if (key === 'ano') return false
+    if (value === null || value === undefined || value === '') return false
     const numeric = Number(value)
     return Number.isFinite(numeric)
   })
