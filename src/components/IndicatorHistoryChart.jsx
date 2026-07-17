@@ -47,17 +47,19 @@ export function IndicatorHistoryChart({
   yTickCount,
   floorNegativeValues = false,
   pneLayout = false,
+  responsiveLayout = false,
 }) {
   const [activePoint, setActivePoint] = useState(null)
   const rawClipId = useId()
   const clipId = `history-chart-clip-${rawClipId.replace(/:/g, '')}`
   const resolvedUnit = unitProp || resolveIndicatorUnit(item, result)
   const { containerRef, width: measuredWidth } = useChartViewport(chartWidth || CHART_WIDTH)
-  const responsiveChartWidth = pneLayout ? measuredWidth : chartWidth
-  const responsiveChartHeight = pneLayout
+  const usesResponsiveGeometry = pneLayout || responsiveLayout
+  const responsiveChartWidth = usesResponsiveGeometry ? measuredWidth : chartWidth
+  const responsiveChartHeight = usesResponsiveGeometry
     ? measuredWidth < 480
-      ? PNE_CHART_GEOMETRY.main.mobileHeight
-      : PNE_CHART_GEOMETRY.main.desktopHeight
+      ? (pneLayout ? PNE_CHART_GEOMETRY.main.mobileHeight : 280)
+      : (pneLayout ? PNE_CHART_GEOMETRY.main.desktopHeight : chartHeight)
     : chartHeight
   const chart = useMemo(
     () =>
@@ -77,14 +79,14 @@ export function IndicatorHistoryChart({
         floorNegativeValues,
         adaptiveDomain,
         essentialLabels,
-        exactHeightOverride: pneLayout,
+        exactHeightOverride: usesResponsiveGeometry,
         chartHeightOverride: responsiveChartHeight,
         chartWidthOverride: responsiveChartWidth,
-        chartMinWidthOverride: pneLayout ? 180 : 420,
+        chartMinWidthOverride: usesResponsiveGeometry ? 180 : 420,
         domainOverride,
         paddingOverride: pneLayout ? PNE_CHART_GEOMETRY.main.padding : LEGACY_PADDING,
       }),
-    [adaptiveDomain, domainOverride, endYear, essentialLabels, floorNegativeValues, formatDataLabelProp, formatYAxisProp, labelMode, meta, missingLabel, pneLayout, resolvedUnit, responsiveChartHeight, responsiveChartWidth, series, showMetaLine, showMissingPoints, startYear, yTickCount],
+    [adaptiveDomain, domainOverride, endYear, essentialLabels, floorNegativeValues, formatDataLabelProp, formatYAxisProp, labelMode, meta, missingLabel, pneLayout, resolvedUnit, responsiveChartHeight, responsiveChartWidth, series, showMetaLine, showMissingPoints, startYear, usesResponsiveGeometry, yTickCount],
   )
 
   const validCount = chart.points.filter(p => p.valid !== false).length

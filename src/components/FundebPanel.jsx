@@ -202,6 +202,7 @@ function buildFundebIndicatorModel(indicator, historico) {
     cardDescription: indicator.cardDescription ?? getIndicatorHelpText(indicator),
     description: getIndicatorHelpText(indicator),
     initialDisplay: first ? formatFundebValue(first.valor, indicator.tipo) : '—',
+    initialDisplayCompact: first ? formatFundebCompactValue(first.valor, indicator.tipo) : '—',
     initialYear: first?.ano ?? null,
     key: indicator.key,
     label: indicator.label,
@@ -453,48 +454,57 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
           <section className="detail-panel educacao-detail-panel financial-detail-panel fundeb-detail">
             <FinancialDetailHeader indicator={selectedIndicatorModel} />
             <FinancialMetricGrid indicator={selectedIndicatorModel} />
-            <FinancialQuickReading description={selectedIndicatorModel.description} text={selectedIndicatorModel.quickReading} tone={selectedIndicatorModel.statusTone} />
             {(selectedKey === 'despesa_remuneracao_profissionais_creche' || selectedKey === 'despesa_remuneracao_profissionais_pre_escola') && (
               <MethodNote className="fundeb-indicator-note"><strong>Nota metodológica:</strong> Série exibida a partir de 2021 para manter comparabilidade com a estrutura do Novo FUNDEB.</MethodNote>
             )}
 
-            <FinancialChartFrame
-              subtitle={`${selectedIndicator.label} · FUNDEB`}
-              summary={selectedIndicatorModel.historySummary}
-              source={(
-                <DataSourceNote
-                  className="fundeb-data-source"
-                  context={{
-                    block: 'fundeb',
-                    detailType: 'chart',
-                    indicatorKey: selectedIndicator?.key,
-                    indicatorName: selectedIndicator?.label,
-                  }}
-                />
-              )}
-            >
-              {validSeries.length >= 2 ? (
-                <IndicatorHistoryChart
-                  chartHeight={224}
-                  endYear={series[series.length - 1].ano}
-                  formatDataLabel={chartUnit === 'currency' ? (v) => formatCompactDataLabel(v, 'financeiro') : (v) => formatCompactDataLabel(v, 'percentual')}
-                  formatYAxis={chartUnit === 'currency' ? formatCompactCurrency : undefined}
-                  item={{ label: selectedIndicator.label }}
-                  labelMode="all"
-                  missingLabel="—"
-                  result={null}
-                  series={series}
-                  showMetaLine={false}
-                  showMissingPoints={true}
-                  startYear={series[0].ano}
-                  title={selectedIndicator.label}
-                  unit={chartUnit}
-                  yTickCount={5}
-                />
-              ) : (
-                <ChartEmptyState message="Histórico não disponível." />
-              )}
-            </FinancialChartFrame>
+            <div className="financial-primary-analysis">
+              <FinancialChartFrame
+                subtitle={`${selectedIndicator.label} · FUNDEB`}
+                summary={selectedIndicatorModel.historySummary}
+                source={(
+                  <DataSourceNote
+                    className="fundeb-data-source"
+                    context={{
+                      block: 'fundeb',
+                      detailType: 'chart',
+                      indicatorKey: selectedIndicator?.key,
+                      indicatorName: selectedIndicator?.label,
+                    }}
+                  />
+                )}
+              >
+                {validSeries.length >= 2 ? (
+                  <IndicatorHistoryChart
+                    chartHeight={300}
+                    endYear={series[series.length - 1].ano}
+                    essentialLabels
+                    formatDataLabel={chartUnit === 'currency' ? (v) => formatCompactDataLabel(v, 'financeiro') : (v) => formatCompactDataLabel(v, 'percentual')}
+                    formatYAxis={chartUnit === 'currency' ? formatCompactCurrency : undefined}
+                    item={{ label: selectedIndicator.label }}
+                    missingLabel="—"
+                    responsiveLayout
+                    result={null}
+                    series={series}
+                    showMetaLine={false}
+                    showMissingPoints={true}
+                    startYear={series[0].ano}
+                    title={selectedIndicator.label}
+                    unit={chartUnit}
+                    yTickCount={5}
+                  />
+                ) : (
+                  <ChartEmptyState message="Histórico não disponível." />
+                )}
+              </FinancialChartFrame>
+
+              <FinancialQuickReading
+                description={selectedIndicatorModel.description}
+                indicator={selectedIndicatorModel}
+                text={selectedIndicatorModel.quickReading}
+                tone={selectedIndicatorModel.statusTone}
+              />
+            </div>
 
             <FinancialMethodologyDisclosure>
               <FinancialIndicatorMetadata metadata={getFinancialIndicatorMetadata('fundeb', selectedIndicatorModel.key)} />

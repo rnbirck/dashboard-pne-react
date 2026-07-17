@@ -147,6 +147,7 @@ function buildPnateIndicatorModel(indicator, historico) {
   const model = {
     description: indicator.description,
     initialDisplay: first ? formatPnateValue(first.valor, indicator.tipo) : '—',
+    initialDisplayCompact: first ? formatCompactDataLabel(first.valor, indicator.tipo) : '—',
     initialYear: first?.ano ?? null,
     key: indicator.key,
     label: indicator.label,
@@ -331,44 +332,53 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
           <section className="detail-panel educacao-detail-panel financial-detail-panel fundeb-detail pnate-detail">
             <FinancialDetailHeader indicator={selectedIndicatorModel} />
             <FinancialMetricGrid indicator={selectedIndicatorModel} />
-            <FinancialQuickReading description={selectedIndicatorModel.description} text={selectedIndicatorModel.quickReading} tone={selectedIndicatorModel.statusTone} />
-            <FinancialChartFrame
-              subtitle={`${selectedIndicator.label} · PNATE`}
-              summary={selectedIndicatorModel.historySummary}
-              source={(
-                <DataSourceNote
-                  className="fundeb-data-source"
-                  context={{
-                    block: 'pnate',
-                    detailType: 'chart',
-                    indicatorKey: selectedIndicator?.key,
-                    indicatorName: selectedIndicator?.label,
-                  }}
-                />
-              )}
-            >
-              {validSeries.length >= 2 ? (
-                <IndicatorHistoryChart
-                  chartHeight={224}
-                  endYear={series[series.length - 1].ano}
-                  formatDataLabel={(v) => formatCompactDataLabel(v, selectedIndicator.tipo)}
-                  formatYAxis={selectedIndicator.tipo === 'numero' ? formatCompactNumber : formatCompactCurrency}
-                  item={{ label: selectedIndicator.label }}
-                  labelMode="all"
-                  missingLabel="—"
-                  result={null}
-                  series={series}
-                  showMetaLine={false}
-                  showMissingPoints={true}
-                  startYear={series[0].ano}
-                  title={selectedIndicator.label}
-                  unit={chartUnit}
-                  yTickCount={5}
-                />
-              ) : (
-                <ChartEmptyState message="Histórico não disponível." />
-              )}
-            </FinancialChartFrame>
+            <div className="financial-primary-analysis">
+              <FinancialChartFrame
+                subtitle={`${selectedIndicator.label} · PNATE`}
+                summary={selectedIndicatorModel.historySummary}
+                source={(
+                  <DataSourceNote
+                    className="fundeb-data-source"
+                    context={{
+                      block: 'pnate',
+                      detailType: 'chart',
+                      indicatorKey: selectedIndicator?.key,
+                      indicatorName: selectedIndicator?.label,
+                    }}
+                  />
+                )}
+              >
+                {validSeries.length >= 2 ? (
+                  <IndicatorHistoryChart
+                    chartHeight={300}
+                    endYear={series[series.length - 1].ano}
+                    essentialLabels
+                    formatDataLabel={(v) => formatCompactDataLabel(v, selectedIndicator.tipo)}
+                    formatYAxis={selectedIndicator.tipo === 'numero' ? formatCompactNumber : formatCompactCurrency}
+                    item={{ label: selectedIndicator.label }}
+                    missingLabel="—"
+                    responsiveLayout
+                    result={null}
+                    series={series}
+                    showMetaLine={false}
+                    showMissingPoints={true}
+                    startYear={series[0].ano}
+                    title={selectedIndicator.label}
+                    unit={chartUnit}
+                    yTickCount={5}
+                  />
+                ) : (
+                  <ChartEmptyState message="Histórico não disponível." />
+                )}
+              </FinancialChartFrame>
+
+              <FinancialQuickReading
+                description={selectedIndicatorModel.description}
+                indicator={selectedIndicatorModel}
+                text={selectedIndicatorModel.quickReading}
+                tone={selectedIndicatorModel.statusTone}
+              />
+            </div>
 
             <FinancialMethodologyDisclosure>
               <FinancialIndicatorMetadata metadata={getFinancialIndicatorMetadata('pnate', selectedIndicatorModel.key)} />

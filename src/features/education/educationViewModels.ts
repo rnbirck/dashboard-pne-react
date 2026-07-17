@@ -1210,16 +1210,14 @@ export function buildAgeRangeComparisonChart(data, categories, years, formatLabe
   const plotH = height - padding.top - padding.bottom
   const slotWidth = plotW / years.length
   const groupWidth = Math.min(slotWidth * 0.9, isNarrow ? slotWidth * 0.96 : 120)
-  const groupTravel = Math.max(0, plotW - groupWidth)
-  const groupStep = years.length > 1 ? groupTravel / (years.length - 1) : 0
   const gap = isNarrow ? 1 : visibleCategories.length > 4 ? 4 : 7
   const barWidth = Math.max(isNarrow ? 2 : 8, Math.min(30, (groupWidth - gap * (visibleCategories.length - 1)) / visibleCategories.length))
+  const barsWidth = barWidth * visibleCategories.length + gap * (visibleCategories.length - 1)
+  const barsOffset = Math.max(0, (groupWidth - barsWidth) / 2)
   const yScale = (value) => padding.top + ((domainMax - value) / domainMax) * plotH
 
   const rows = data.map((row, rowIndex) => {
-    const xBase = years.length > 1
-      ? padding.left + rowIndex * groupStep
-      : padding.left + groupTravel / 2
+    const xBase = padding.left + rowIndex * slotWidth + (slotWidth - groupWidth) / 2
     return {
       year: row.year,
       x: xBase,
@@ -1235,12 +1233,12 @@ export function buildAgeRangeComparisonChart(data, categories, years, formatLabe
           color: category.color,
           year: row.year,
           value,
-          x: xBase + categoryIndex * (barWidth + gap),
+          x: xBase + barsOffset + categoryIndex * (barWidth + gap),
           y,
           width: barWidth,
           height,
           label: isMissing(value) ? EM : formatLabel(value),
-          labelX: xBase + categoryIndex * (barWidth + gap) + barWidth / 2,
+          labelX: xBase + barsOffset + categoryIndex * (barWidth + gap) + barWidth / 2,
           labelY: Math.max(padding.top + 12, y - 7),
         }
       }),

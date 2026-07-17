@@ -3,6 +3,7 @@ import { DetailHeadingText } from './HeadingText'
 import { ExplorableIndicatorCardFrame } from './ExplorableIndicatorCardFrame'
 import { IndicatorChartHeader } from './IndicatorChartHeader'
 import { MetricCard } from './MetricCard'
+import { QuickReadingHeading } from './QuickReadingHeading'
 
 const EM = '\u2014'
 const FINANCIAL_CARD_CLASS_CONTRACT = Object.freeze({
@@ -221,18 +222,23 @@ export function FinancialMetricGrid({ indicator }) {
   return (
     <div className="metric-grid metric-grid--four financial-metric-grid">
       <MetricCard
+        accessibleValue={indicator.initialDisplay}
+        icon="start"
         label="Valor inicial"
-        value={indicator.initialDisplay ?? EM}
+        value={indicator.initialDisplayCompact ?? indicator.initialDisplay ?? EM}
         detail={indicator.initialYear ? `Ano ${indicator.initialYear}` : null}
       />
       <MetricCard
+        accessibleValue={indicator.currentDisplay}
+        icon="current"
         label="Valor atual"
-        value={indicator.currentDisplay ?? EM}
+        value={indicator.currentDisplayCompact ?? indicator.currentDisplay ?? EM}
         detail={indicator.currentYear ? `Ano ${indicator.currentYear}` : null}
         size="large"
       />
-      <MetricCard label="Ano" value={indicator.currentYear ?? EM} />
+      <MetricCard icon="current" label="Ano" value={indicator.currentYear ?? EM} />
       <MetricCard
+        icon={indicator.variationRaw < 0 ? 'variationDown' : 'variation'}
         label="Variação"
         value={indicator.variationDisplay ?? EM}
         tone={indicator.variationTone ?? 'default'}
@@ -241,15 +247,67 @@ export function FinancialMetricGrid({ indicator }) {
   )
 }
 
-export function FinancialQuickReading({ description, text, tone = 'default' }) {
-  if (!text && !description) return null
+export function FinancialQuickReading({ description, indicator, text, tone = 'default' }) {
+  const cutLabel = buildFinancialCutLabel(indicator)
+  if (!text && !description && !cutLabel) return null
 
   return (
-    <div className={`interpretation-box education-quick-reading financial-quick-reading financial-quick-reading--${tone}`}>
-      <span>Acompanhamento e leitura rápida</span>
-      {text ? <p>{text}</p> : null}
-      {description ? <small>{description}</small> : null}
-    </div>
+    <aside className={`interpretation-box education-quick-reading financial-quick-reading financial-quick-reading--${tone}`} aria-label="Leitura rápida">
+      <QuickReadingHeading />
+      <ul className="financial-quick-reading__list">
+        {text ? (
+          <li>
+            <FinancialInsightIcon name="trend" />
+            <div>
+              <span>Evolução observada</span>
+              <p>{text}</p>
+            </div>
+          </li>
+        ) : null}
+        {description ? (
+          <li>
+            <FinancialInsightIcon name="measure" />
+            <div>
+              <span>O que o indicador mede</span>
+              <p>{description}</p>
+            </div>
+          </li>
+        ) : null}
+        {cutLabel ? (
+          <li>
+            <FinancialInsightIcon name="cut" />
+            <div>
+              <span>Recorte exibido</span>
+              <p><strong>{cutLabel}</strong></p>
+            </div>
+          </li>
+        ) : null}
+      </ul>
+    </aside>
+  )
+}
+
+function buildFinancialCutLabel(indicator) {
+  if (!indicator) return ''
+  const period = indicator.initialYear && indicator.currentYear
+    ? `${indicator.initialYear} a ${indicator.currentYear}`
+    : indicator.currentYear
+      ? `Ano ${indicator.currentYear}`
+      : ''
+  return [indicator.moduleLabel, indicator.unitLabel, period].filter(Boolean).join(' · ')
+}
+
+function FinancialInsightIcon({ name }) {
+  const paths = {
+    trend: <><path d="M5 16 10 11l3 3 6-7" /><path d="M15 7h4v4" /></>,
+    measure: <><circle cx="12" cy="12" r="8" /><path d="M12 8v4l3 2" /></>,
+    cut: <><path d="M5 6h14M8 12h8M10 18h4" /></>,
+  }
+
+  return (
+    <svg aria-hidden="true" className="financial-quick-reading__icon" fill="none" viewBox="0 0 24 24">
+      {paths[name] ?? paths.measure}
+    </svg>
   )
 }
 

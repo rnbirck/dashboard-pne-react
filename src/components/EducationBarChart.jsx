@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useChartViewport } from '../hooks/useChartViewport'
 import { isMissing } from '../utils/educationFormatters'
 import { closeChartTooltipOnEscape, resolveChartColor } from '../utils/chartVisuals'
 import { ChartEmptyState, ChartTooltip } from './ChartPrimitives'
@@ -17,12 +18,13 @@ export function EducationBarChart({
   preserveOrder = false,
 }) {
   const [activeBar, setActiveBar] = useState(null)
+  const { containerRef, width: viewportWidth } = useChartViewport(CHART_WIDTH)
   const resolvedColor = resolveChartColor(color)
   const chart = useMemo(
     () => orientation === 'vertical'
       ? buildVerticalBars(data, formatLabel, preserveOrder)
-      : buildBars(data, formatLabel, preserveOrder),
-    [data, formatLabel, orientation, preserveOrder],
+      : buildBars(data, formatLabel, preserveOrder, viewportWidth),
+    [data, formatLabel, orientation, preserveOrder, viewportWidth],
   )
 
   if (!chart || chart.bars.length === 0) {
@@ -30,8 +32,6 @@ export function EducationBarChart({
       <ChartEmptyState />
     )
   }
-
-  const chartHeight = PADDING.top + PADDING.bottom + chart.bars.length * BAR_ROW_HEIGHT
 
   if (orientation === 'vertical') {
     return (
@@ -107,26 +107,26 @@ export function EducationBarChart({
   return (
     <div className="education-chart education-chart--bar">
       {title && <h4 className="education-chart__title">{title}</h4>}
-      <div className="education-chart__canvas">
-        <svg viewBox={`0 0 ${CHART_WIDTH} ${chartHeight}`} role="img" aria-label={title || 'Gráfico de barras'}>
+      <div className="education-chart__canvas" ref={containerRef}>
+        <svg viewBox={`0 0 ${chart.width} ${chart.height}`} role="img" aria-label={title || 'Gráfico de barras'}>
           <g className="chart-grid">
             {chart.xTicks.map((tick, i) => (
               <g key={`x-${i}`}>
-                <line x1={tick.x} x2={tick.x} y1={PADDING.top - 4} y2={chartHeight - PADDING.bottom + 4} stroke="var(--chart-grid)" strokeWidth="1" />
-                <text x={tick.x} y={chartHeight - 3} textAnchor="middle" className="chart-axis-label">{tick.label}</text>
+                <line x1={tick.x} x2={tick.x} y1={chart.padding.top - 4} y2={chart.height - chart.padding.bottom + 4} stroke="var(--chart-grid)" strokeWidth="1" />
+                <text x={tick.x} y={chart.height - 5} textAnchor="middle" className="chart-axis-label">{tick.label}</text>
               </g>
             ))}
           </g>
           {chart.bars.map((bar, i) => (
             <g key={`bar-${i}`}>
-              <text x={PADDING.left - 12} y={bar.y + 15} textAnchor="end" className="chart-bar-cat">{bar.category}</text>
+              <text x={chart.padding.left - 12} y={bar.y + chart.barHeight / 2 + 4} textAnchor="end" className="chart-bar-cat">{bar.category}</text>
               <rect
                 aria-label={`${bar.fullCategory}: ${formatLabel(bar.rawValue)}`}
                 className="chart-mark"
-                x={PADDING.left}
+                x={chart.padding.left}
                 y={bar.y}
                 width={bar.width}
-                height={BAR_ROW_HEIGHT - BAR_GAP}
+                height={chart.barHeight}
                 fill={resolvedColor}
                 fillOpacity={activeBar?.index === i ? '1' : '0.86'}
                 rx="4"
@@ -140,10 +140,10 @@ export function EducationBarChart({
               >
                 <title>{`${bar.fullCategory}: ${formatLabel(bar.rawValue)}`}</title>
               </rect>
-              <text x={PADDING.left + bar.width + 8} y={bar.y + 15} textAnchor="start" className="chart-bar-label">{bar.label}</text>
+              <text x={chart.padding.left + bar.width + 8} y={bar.y + chart.barHeight / 2 + 4} textAnchor="start" className="chart-bar-label">{bar.label}</text>
             </g>
           ))}
-          <line x1={PADDING.left} x2={CHART_WIDTH - PADDING.right} y1={chartHeight - PADDING.bottom} y2={chartHeight - PADDING.bottom} stroke="var(--chart-axis)" strokeWidth="1" />
+          <line x1={chart.padding.left} x2={chart.width - chart.padding.right} y1={chart.height - chart.padding.bottom} y2={chart.height - chart.padding.bottom} stroke="var(--chart-axis)" strokeWidth="1" />
         </svg>
         {activeBar && (
           <ChartTooltip
@@ -152,9 +152,9 @@ export function EducationBarChart({
             series={title}
             value={formatLabel(activeBar.rawValue)}
             style={{
-              left: `${Math.min(88, Math.max(18, ((PADDING.left + activeBar.width) / CHART_WIDTH) * 100))}%`,
-              top: `${Math.min(82, Math.max(14, ((activeBar.y + 8) / chartHeight) * 100))}%`,
-              transform: activeBar.y < PADDING.top + 46
+              left: `${Math.min(88, Math.max(18, ((chart.padding.left + activeBar.width) / chart.width) * 100))}%`,
+              top: `${Math.min(82, Math.max(14, ((activeBar.y + chart.barHeight / 2) / chart.height) * 100))}%`,
+              transform: activeBar.y < chart.padding.top + 46
                 ? 'translate(-50%, 12px)'
                 : 'translate(-50%, calc(-100% - 12px))',
             }}
@@ -215,7 +215,7 @@ function buildVerticalBars(data, formatLabel, preserveOrder) {
   return { bars, height, padding, width, yTicks }
 }
 
-function buildBars(data, formatLabel, preserveOrder) {
+function buildBars(data, formatLabel, preserveOrder, chartWidth = CHART_WIDTH) {
   if (!Array.isArray(data) || data.length === 0) return null
   const filteredData = data
     .filter((d) => !isMissing(d.value) && Number(d.value) >= 0)
@@ -224,15 +224,27 @@ function buildBars(data, formatLabel, preserveOrder) {
     : filteredData.sort((a, b) => Number(b.value) - Number(a.value))
   if (filtered.length === 0) return null
 
+  const width = Math.max(280, Number(chartWidth) || CHART_WIDTH)
+  const compact = width < 720
+  const narrow = width < 480
+  const padding = narrow
+    ? { top: 18, right: 56, bottom: 32, left: 140 }
+    : compact
+      ? { top: 18, right: 84, bottom: 32, left: 184 }
+      : PADDING
+  const rowHeight = compact ? 40 : BAR_ROW_HEIGHT
+  const barGap = compact ? 14 : BAR_GAP
+  const barHeight = rowHeight - barGap
+  const labelMaxLength = narrow ? 20 : compact ? 28 : 34
   const maxVal = Math.max(...filtered.map((d) => Number(d.value)), 1)
-  const plotW = CHART_WIDTH - PADDING.left - PADDING.right
+  const plotW = Math.max(24, width - padding.left - padding.right)
   const bars = filtered.map((d, i) => {
     const value = Number(d.value)
     return {
       index: i,
-      y: PADDING.top + i * BAR_ROW_HEIGHT,
+      y: padding.top + i * rowHeight,
       width: (value / maxVal) * plotW,
-      category: shortenLabel(d.label),
+      category: shortenLabel(d.label, labelMaxLength),
       fullCategory: d.label,
       label: formatLabel(value),
       rawValue: value,
@@ -241,9 +253,16 @@ function buildBars(data, formatLabel, preserveOrder) {
   const xTicksRaw = [0, maxVal * 0.25, maxVal * 0.5, maxVal * 0.75, maxVal]
   const xTicks = xTicksRaw.map((val) => ({
     label: Math.round(val).toLocaleString('pt-BR'),
-    x: PADDING.left + (val / maxVal) * plotW,
+    x: padding.left + (val / maxVal) * plotW,
   }))
-  return { bars, xTicks }
+  return {
+    bars,
+    barHeight,
+    height: padding.top + padding.bottom + filtered.length * rowHeight,
+    padding,
+    width,
+    xTicks,
+  }
 }
 
 function shortenLabel(label, maxLength = 34) {

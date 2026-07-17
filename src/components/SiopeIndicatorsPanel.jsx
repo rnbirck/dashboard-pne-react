@@ -275,6 +275,7 @@ function buildSiopeIndicatorModel(indicator, municipality, activeGroup) {
   const model = {
     description: indicator.descricao_curta,
     initialDisplay: first ? formatSiopeValue(first.valor, indicator.unidade) : EM,
+    initialDisplayCompact: first ? formatCompactDataLabel(first.valor, indicator.unidade) : EM,
     initialYear: first?.ano ?? null,
     key: indicator.slug,
     label: indicator.nome_dashboard,
@@ -568,40 +569,49 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
           <section className="detail-panel educacao-detail-panel financial-detail-panel siope-detail">
             <FinancialDetailHeader indicator={selectedIndicatorModel} />
             <FinancialMetricGrid indicator={selectedIndicatorModel} />
-            <FinancialQuickReading description={selectedIndicatorModel.description} text={selectedIndicatorModel.quickReading} tone={selectedIndicatorModel.statusTone} />
             {selectedIndicatorHasMissingValues ? (
               <p className="fundeb-indicator-note siope-register-alert platform-coverage-note">
                 <strong>Registro:</strong> {MISSING_VALUE_NOTE}
               </p>
             ) : null}
 
-            <FinancialChartFrame
-              subtitle={`${selectedIndicatorModel.label} · ${selectedIndicatorModel.groupLabel}`}
-              summary={selectedIndicatorModel.historySummary}
-              source={<DataSourceNote className="fundeb-data-source siope-chart-source" source={SIOPE_SOURCE} />}
-            >
-              {validSeries.length >= 2 ? (
-                <IndicatorHistoryChart
-                  chartHeight={224}
-                  endYear={2025}
-                  formatDataLabel={(value) => formatCompactDataLabel(value, selectedIndicator.unidade)}
-                  formatYAxis={selectedIndicator.unidade === 'reais' ? formatCompactCurrency : undefined}
-                  item={{ label: selectedIndicator.nome_dashboard }}
-                  labelMode="all"
-                  missingLabel={EM}
-                  result={null}
-                  series={chartSeries}
-                  showMetaLine={false}
-                  showMissingPoints={true}
-                  startYear={2021}
-                  title={selectedIndicator.nome_dashboard}
-                  unit={getIndicatorUnit(selectedIndicator)}
-                  yTickCount={5}
-                />
-              ) : (
-                <ChartEmptyState message="Histórico não disponível." />
-              )}
-            </FinancialChartFrame>
+            <div className="financial-primary-analysis">
+              <FinancialChartFrame
+                subtitle={`${selectedIndicatorModel.label} · ${selectedIndicatorModel.groupLabel}`}
+                summary={selectedIndicatorModel.historySummary}
+                source={<DataSourceNote className="fundeb-data-source siope-chart-source" source={SIOPE_SOURCE} />}
+              >
+                {validSeries.length >= 2 ? (
+                  <IndicatorHistoryChart
+                    chartHeight={300}
+                    endYear={2025}
+                    essentialLabels
+                    formatDataLabel={(value) => formatCompactDataLabel(value, selectedIndicator.unidade)}
+                    formatYAxis={selectedIndicator.unidade === 'reais' ? formatCompactCurrency : undefined}
+                    item={{ label: selectedIndicator.nome_dashboard }}
+                    missingLabel={EM}
+                    responsiveLayout
+                    result={null}
+                    series={chartSeries}
+                    showMetaLine={false}
+                    showMissingPoints={true}
+                    startYear={2021}
+                    title={selectedIndicator.nome_dashboard}
+                    unit={getIndicatorUnit(selectedIndicator)}
+                    yTickCount={5}
+                  />
+                ) : (
+                  <ChartEmptyState message="Histórico não disponível." />
+                )}
+              </FinancialChartFrame>
+
+              <FinancialQuickReading
+                description={selectedIndicatorModel.description}
+                indicator={selectedIndicatorModel}
+                text={selectedIndicatorModel.quickReading}
+                tone={selectedIndicatorModel.statusTone}
+              />
+            </div>
 
             <FinancialMethodologyDisclosure>
               <SiopeReadingGuide
