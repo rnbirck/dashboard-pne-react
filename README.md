@@ -1,3 +1,11 @@
+---
+status: reference
+scope: "Execução local, comandos e fluxo de dados estáticos"
+last_validated: 2026-07-17
+read_when: "Ao instalar, executar, validar ou atualizar dados do projeto"
+supersedes: []
+---
+
 # Dashboard PNE React/Vite
 
 Base navegavel do Dashboard PNE em React/Vite, usando dados JSON estaticos
@@ -6,12 +14,17 @@ exportados pelo pipeline local em `data_pipeline`.
 ## Rodar localmente
 
 ```powershell
-cd C:\Users\rnbirck\PROJETOS\DASHBOARD-PNE-REACT
 npm install
 npm run dev
 ```
 
 O Vite abre a aplicacao em `http://127.0.0.1:5173/` ou na proxima porta livre.
+
+## Documentação
+
+- [`PRODUCT.md`](PRODUCT.md): público, propósito e princípios do produto.
+- [`docs/README.md`](docs/README.md): índice de arquitetura, UI, testes e metodologia.
+- [`AGENTS.md`](AGENTS.md): regras operacionais e roteamento por área.
 
 ## Comandos disponiveis
 
@@ -81,7 +94,6 @@ indicador e fica somente em `data_pipeline/export/debug`, que é ignorado pelo
 Git.
 
 ```powershell
-cd C:\Users\rnbirck\PROJETOS\DASHBOARD-PNE-REACT
 npm run verify:indicator -- --cycle pne_2026_2036 --indicator creche --municipio "São Leopoldo" --profile
 ```
 
@@ -135,7 +147,6 @@ $env:PNE_PYTHON = "C:\caminho\para\python.exe" # opcional
 ```
 
 ```powershell
-cd C:\Users\rnbirck\PROJETOS\DASHBOARD-PNE-REACT
 .\scripts\update_react_data.ps1
 ```
 

@@ -1,3 +1,11 @@
+---
+status: reference
+scope: "Uso seguro das migrações manuais de dados"
+last_validated: 2026-07-17
+read_when: "Antes de executar qualquer script em scripts/migrations"
+supersedes: []
+---
+
 # Manual migrations
 
 These scripts are manual maintenance utilities. They mutate

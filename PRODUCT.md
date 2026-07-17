@@ -1,3 +1,11 @@
+---
+status: normative
+scope: "Público, propósito, personalidade e princípios do produto"
+last_validated: 2026-07-17
+read_when: "Ao decidir prioridade, linguagem, interpretação, design ou acessibilidade"
+supersedes: []
+---
+
 # Product
 
 ## Register

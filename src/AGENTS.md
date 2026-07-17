@@ -1,53 +1,14 @@
-# Guia operacional de `src`
+# Regras de `src`
 
-## Domain features
+Leia `docs/architecture/frontend.md` para fronteiras e `docs/ui/GUIDE.md` antes de mudar interface.
 
-New domain work should prefer `features/<domain>/`. Shared components stay in
-`components/`, and shared loaders stay in `data/`; do not move a file into a
-feature while it has consumers outside that domain.
+- Rotas, aliases e hashes ficam em `app/appRoutes.ts` e `app/appHash.ts`; não interprete `window.location` fora da navegação.
+- Páginas grandes são lazy em `app/AppPageRouter.tsx`. Home permanece eager.
+- Trabalho novo de domínio prefere `features/<domain>/`; mova um arquivo compartilhado somente quando não houver consumidores externos.
+- `pages/` compõe telas; `components/` contém UI compartilhada; `data/` carrega e adapta JSON; `context/` mantém estado global; cálculos pertencem a `data_pipeline/`.
+- Preserve as fronteiras TypeScript existentes. Não migre páginas analíticas ou componentes em uma tarefa não relacionada.
+- Nunca edite `public/data` manualmente nem implemente fórmula de indicador no frontend.
+- UI reutiliza `styles/design-tokens.css`, `styles/platform-ui.css`, `styles/chart-system.css` e componentes existentes. `App.css` é legado.
+- Mudança estrutural não pode alterar DOM, classes, textos ou aparência sem escopo visual explícito.
 
-## Lazy pages
-
-Large pages should be imported lazily from `app/AppPageRouter.tsx`. Do not add
-static page imports to the shell, and do not duplicate shared components just
-to influence chunk boundaries.
-
-| Mudança | Local principal |
-| --- | --- |
-| Rota, alias ou hash | `app/appRoutes.ts` e `app/appHash.ts` |
-| Página | `pages/` e `app/AppPageRouter.tsx` |
-| Shell ou navegação global | `app/`, `hooks/useAppHashNavigation.ts`, `components/Layout.jsx` |
-| Componente reutilizável | `components/` |
-| Carregador JSON | `data/` |
-| Apresentação de indicador | `pages/`, `components/` e catálogos em `data/` |
-| Cálculo de indicador | `data_pipeline/` |
-| Estado global | `context/` |
-| Estilos e tokens | `styles/` e `styles/design-tokens.css` |
-| Dados gerados | `data_pipeline/` — nunca `public/data/` manualmente |
-
-- `app/` compõe a aplicação e a navegação global; `hooks/` abriga infraestrutura reutilizável. As fronteiras centrais usam TypeScript; páginas e componentes analíticos continuam em JavaScript nesta etapa.
-- `pages/` compõe telas; `components/` contém elementos compartilhados; `data/` carrega, cataloga e transforma dados para apresentação.
-- Não adicione lógica de rota em `App.jsx` nem interprete `window.location` fora da camada de navegação.
-- Não implemente cálculos de indicador no frontend e não edite `public/data`.
-- Reutilize componentes e tokens existentes. `App.css` é legado e não cria padrões novos.
-- Alterações estruturais não podem mudar DOM, classes, textos ou aparência. Migração de CSS exige tarefa própria.
-- Durante o trabalho, execute o menor conjunto de testes relevante; antes de concluir, valide a alteração afetada.
-
-## Sistema visual estabilizado
-
-- Consulte `docs/GUIA_DE_DESIGN.md` e `docs/DESIGN_SYSTEM.md` antes de alterar interface.
-- Valores pertencem a `styles/design-tokens.css`; gramática compartilhada a `styles/platform-ui.css`; anatomia de gráficos a `styles/chart-system.css`.
-- CSS de domínio contém apenas layout, composição ou diferença funcional justificada. Não copie para ele controles, cards, tabelas, estados ou gráficos compartilhados.
-- Preserve a ordem de imports registrada em `docs/DESIGN_SYSTEM.md`; ela é protegida por `npm run test:ui-architecture`.
-- Não adicione tooltip ou legenda canônica de gráfico fora de `chart-system.css` e não faça `App.css` ultrapassar o teto de proteção sem uma migração documentada.
-
-Validação proporcional:
-
-- componente isolado: catálogo e regressão isolada;
-- navegação/interação: catálogo, roteamento e E2E;
-- página/composição: catálogo, E2E e regressão pública;
-- cálculo/indicador: `verify:indicator` e testes de domínio.
-
-Antes de concluir mudança estrutural de UI, execute também `npm run typecheck`,
-`npm run lint`, `npm run build`, `npm run test:ui-architecture` e
-`git diff --check`.
+Valide o menor conjunto relevante. Para mudança estrutural de UI, execute `npm run typecheck`, `npm run lint`, `npm run build`, `npm run test:ui-architecture` e `git diff --check`. Use a matriz de `docs/ui/TESTING.md` para escolher catálogo, roteamento, E2E e regressão visual.
