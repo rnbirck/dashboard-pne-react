@@ -7,6 +7,9 @@ import numpy as np
 import pandas as pd
 
 from src.data_loader import (
+    load_basico_0_5_data,
+    load_basico_4_17_data,
+    load_basico_6_14_data,
     load_basico_6_17_data,
     load_basico_15_17_data,
     load_pne_data,
@@ -64,6 +67,39 @@ INDICATOR_CONFIGS = {
         "age_group": "15-17",
         "ages": [15, 16, 17],
         "target_percent": 85.0,
+        "max_annual_pp": 2.0,
+        "slope_damping": 0.35,
+        "plausible_cap": 100.0,
+    },
+    "infantil_0_5": {
+        "loader": load_basico_0_5_data,
+        "numerator": "mat_basico_0_5",
+        "denominator": "pop_0_5",
+        "age_group": "0-5",
+        "ages": list(range(0, 6)),
+        "target_percent": None,
+        "max_annual_pp": 3.0,
+        "slope_damping": 0.30,
+        "plausible_cap": 100.0,
+    },
+    "obrigatoria_4_17": {
+        "loader": load_basico_4_17_data,
+        "numerator": "mat_basico_4_17",
+        "denominator": "pop_4_17",
+        "age_group": "4-17",
+        "ages": list(range(4, 18)),
+        "target_percent": None,
+        "max_annual_pp": 2.0,
+        "slope_damping": 0.35,
+        "plausible_cap": 100.0,
+    },
+    "escolar_6_14": {
+        "loader": load_basico_6_14_data,
+        "numerator": "mat_basico_6_14",
+        "denominator": "pop_6_14",
+        "age_group": "6-14",
+        "ages": list(range(6, 15)),
+        "target_percent": None,
         "max_annual_pp": 2.0,
         "slope_damping": 0.35,
         "plausible_cap": 100.0,
@@ -331,12 +367,19 @@ def build_indicator_projection(municipio, config, rs_by_group):
     historical_num_values = []
     historical_percent_raw = []
     for r in series:
-        pct = float(r[num_col]) / float(r[den_col]) * 100 if float(r[den_col]) > 0 else 0
+        pct = (
+            float(r[num_col]) / float(r[den_col]) * 100
+            if float(r[den_col]) > 0
+            else None
+        )
         historical_num_years.append(int(r["ano"]))
         historical_num_values.append(float(r[num_col]))
-        historical_percent_raw.append(round(pct, 2))
+        historical_percent_raw.append(round(pct, 2) if pct is not None else None)
 
-    historical_percent_capped = [max(0.0, min(100.0, v)) for v in historical_percent_raw]
+    historical_percent_capped = [
+        max(0.0, min(100.0, v)) if v is not None else None
+        for v in historical_percent_raw
+    ]
 
     projected_pop = []
     projected_num = []
@@ -352,15 +395,21 @@ def build_indicator_projection(municipio, config, rs_by_group):
             proj_pop = pop_base_value * pop_factor
 
         proj_num = proj["valor"]
-        pct_val = (proj_num / proj_pop * 100) if proj_pop > 0 else 0.0
+        pct_val = (proj_num / proj_pop * 100) if proj_pop > 0 else None
 
         projected_pop.append(round(proj_pop, 1))
         projected_num.append(round(proj_num, 1))
-        projected_pct_raw.append(round(pct_val, 2))
+        projected_pct_raw.append(round(pct_val, 2) if pct_val is not None else None)
 
     projected_pct_final = []
-    prev_pct = historical_percent_capped[-1] if historical_percent_capped else 0.0
+    valid_historical_percent = [
+        value for value in historical_percent_capped if value is not None
+    ]
+    prev_pct = valid_historical_percent[-1] if valid_historical_percent else 0.0
     for raw_pct in projected_pct_raw:
+        if raw_pct is None:
+            projected_pct_final.append(None)
+            continue
         capped = max(0.0, min(display_cap, raw_pct))
         diff = capped - prev_pct
         if diff > max_annual_pp:
@@ -383,7 +432,7 @@ def build_indicator_projection(municipio, config, rs_by_group):
     projected_2036_final = projected_pct_final[-1] if len(projected_pct_final) >= 11 else None
     target = cfg["target_percent"]
 
-    if projected_2036_final is not None:
+    if projected_2036_final is not None and target is not None:
         distance_to_target = round(projected_2036_final - target, 2)
         status_2036 = "tende_a_atingir" if projected_2036_final >= target else "risco_de_nao_atingir"
     else:

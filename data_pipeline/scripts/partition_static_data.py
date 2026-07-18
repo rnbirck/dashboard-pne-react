@@ -170,6 +170,16 @@ def load_aggregate_payloads() -> dict[str, dict]:
     payloads["projecoes"] = load_optional_json(
         SOURCE_DIR / "pne_2026_2036" / "projecoes_por_municipio.json"
     )
+    payloads["planning_scenarios"] = load_json(
+        SOURCE_DIR
+        / "pne_2026_2036"
+        / "cenarios_planejamento_por_municipio.json"
+    )
+    payloads["education_attendance"] = load_json(
+        SOURCE_DIR
+        / "pne_2026_2036"
+        / "atendimento_cenarios_por_municipio.json"
+    )
     return payloads
 
 
@@ -261,6 +271,42 @@ def validate_pnate_payload(payloads: dict[str, dict], municipios: list[str]) -> 
         )
 
 
+def validate_planning_scenarios_payload(
+    payloads: dict[str, dict], municipios: list[str]
+) -> None:
+    payload = payloads.get("planning_scenarios") or {}
+    scenarios = payload.get("municipios")
+    expected_keys = {
+        "basico_integral",
+        "escolas_integral",
+        "pos_graduacao",
+        "temporarios",
+    }
+    problems = []
+    if payload.get("publicationStatus") != "published":
+        problems.append("status de publicação inválido")
+    if payload.get("scenarioType") != "maintenance":
+        problems.append("tipo de cenário inválido")
+    if not isinstance(scenarios, dict) or len(scenarios) != EXPECTED_MUNICIPALITIES:
+        problems.append("cobertura municipal incompleta")
+    else:
+        for municipio in municipios:
+            contracts = scenarios.get(municipio)
+            if not isinstance(contracts, dict) or set(contracts) != expected_keys:
+                problems.append(f"contratos incompletos para {municipio}")
+                break
+            if any(
+                contract.get("targetValidationStatus") != "configured_unvalidated"
+                for contract in contracts.values()
+            ):
+                problems.append(f"situação jurídica inválida para {municipio}")
+                break
+    if problems:
+        raise RuntimeError(
+            "[partition] Cenários de planejamento inválidos: " + "; ".join(problems)
+        )
+
+
 def extract_results(payload: dict, municipio: str) -> dict:
     return payload.get("municipios", {}).get(municipio, {}).get("results", {})
 
@@ -278,6 +324,14 @@ def extract_indicator_details(payload: dict, municipio: str) -> dict:
 
 
 def extract_projections(payload: dict, municipio: str) -> dict:
+    return payload.get("municipios", {}).get(municipio, {})
+
+
+def extract_planning_scenarios(payload: dict, municipio: str) -> dict:
+    return payload.get("municipios", {}).get(municipio, {})
+
+
+def extract_education_attendance(payload: dict, municipio: str) -> dict:
     return payload.get("municipios", {}).get(municipio, {})
 
 
@@ -315,6 +369,12 @@ def build_municipio_payload(
     fundeb_data = extract_fundeb(payloads["fundeb"], municipio)
     pnate_data = extract_pnate(payloads["pnate"], municipio)
     projection_data = extract_projections(payloads["projecoes"], municipio)
+    planning_scenarios = extract_planning_scenarios(
+        payloads["planning_scenarios"], municipio
+    )
+    education_attendance = extract_education_attendance(
+        payloads["education_attendance"], municipio
+    )
     payload = {
         "id_municipio": id_municipio,
         "municipio": municipio,
@@ -328,6 +388,10 @@ def build_municipio_payload(
             "rankings": extract_rankings(payloads["pne_2026_2036_rankings"], municipio),
             "diagnostico": extract_diagnostico(payloads["diagnostico"], municipio),
             "projecoes": projection_data,
+            "cenarios_planejamento": planning_scenarios,
+        },
+        "educacao": {
+            "atendimento_cenarios": education_attendance,
         },
     }
     if fundeb_data is not None:
@@ -383,6 +447,7 @@ def main() -> int:
     municipios = payloads["municipios"].get("municipios", [])
     validate_fundeb_payload(payloads, municipios)
     validate_pnate_payload(payloads, municipios)
+    validate_planning_scenarios_payload(payloads, municipios)
     slug_map = unique_slugs(municipios)
     id_map = {
         municipio: extract_fundeb_id(payloads["fundeb"], municipio)

@@ -5,7 +5,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { EducationBarChart } from '../../../components/EducationBarChart.jsx'
 import { DataSourceNote } from '../../../components/DataSourceNote.jsx'
-import { DetailHeadingText } from '../../../components/HeadingText.jsx'
 import { IndicatorChartHeader } from '../../../components/IndicatorChartHeader.jsx'
 import { EducationLineChart } from '../../../components/EducationLineChart.jsx'
 import { EducationStackedBarChart } from '../../../components/EducationStackedBarChart.jsx'
@@ -27,7 +26,6 @@ import {
   modLabel,
   normalizeYearSeries,
 } from '../../../utils/educationFormatters.js'
-import { normalizeEducationIndicatorLabel } from '../educationFormatters'
 import {
   INFRA_METRIC_LABELS,
   ageRangeCategoryDefinitions,
@@ -65,17 +63,6 @@ function IndicatorSegmentedControl({ options, selectedKey, onSelect, ariaLabel, 
   )
 }
 
-
-function EducationDetailHeader({ indicator }) {
-  return (
-    <div className="detail-heading educacao-detail-heading">
-      <DetailHeadingText eyebrow="Indicador selecionado" level={2} title={normalizeEducationIndicatorLabel(indicator.label)} />
-      <div className="educacao-detail-heading__badges">
-        <span className="indicator-stage-badge">{indicator.themeShortLabel ?? indicator.themeLabel}</span>
-      </div>
-    </div>
-  )
-}
 
 function EducationQuickReading({ description, text, tone = 'default', cutLabel }) {
   if (!text && !description) return null
@@ -143,6 +130,7 @@ function EducationMetricSummary({
   initialValue,
   initialYear,
   statusLabel,
+  statusDetail,
   statusTone,
   variation,
 }) {
@@ -174,7 +162,7 @@ function EducationMetricSummary({
         icon="status"
         label="Tendência observada"
         value={statusLabel ?? variationStatusLabel(variation)}
-        detail="Leitura descritiva da série"
+        detail={statusDetail ?? 'Leitura descritiva da série'}
         tone={statusTone ?? variation?.tone}
       />
     </div>
@@ -214,14 +202,13 @@ export function EducationIndicatorDetailView({ indicator, blocos }) {
   const stageFilterLabel = indicator.stageFilterLabel ?? 'Etapa exibida'
   return (
     <section className="detail-panel educacao-detail-panel educacao-detail-panel--organized">
-      <EducationDetailHeader indicator={indicator} description={indicator.description} />
-
       <EducationMetricSummary
         currentValue={indicator.currentDisplay}
         currentYear={indicator.currentYear}
         initialValue={indicator.initialDisplay}
         initialYear={indicator.initialYear}
         statusLabel={indicator.statusLabel}
+        statusDetail={indicator.statusDetail}
         statusTone={indicator.statusTone}
         variation={{ display: indicator.variationDisplay, raw: indicator.variationRaw, tone: indicator.variationTone }}
       />
@@ -306,8 +293,13 @@ const DEP_LABELS = {
   federal: 'Federal',
 }
 
-function extractDepData(por_rede, dep) {
-  const rows = por_rede.filter((r) => r.dependencia === dep)
+const LOCATION_LABELS = {
+  urbana: 'Urbana',
+  rural: 'Rural',
+}
+
+function extractDimensionData(sourceRows, dimensionKey, selectedKey) {
+  const rows = sourceRows.filter((row) => row[dimensionKey] === selectedKey)
   if (!rows.length) return { resumo: {}, series: {}, ultimoAno: null }
   const anos = [...new Set(rows.map((r) => r.ano))].sort((a, b) => a - b)
   const ultimoAno = anos[anos.length - 1]
@@ -348,18 +340,32 @@ function InfraDetailPanel({ indicator, blocos }) {
   const grupos = infra.grupos ?? null
   const ultimoAno = infra.ultimo_ano
   const por_rede = infra.por_rede ?? []
+  const por_localizacao = infra.por_localizacao ?? []
 
-  // ── Filtro por rede ──────────────────────────────────────────────────
-  const availableDeps = ['total', ...new Set((por_rede || []).map((r) => r.dependencia).filter(Boolean))]
-  const [selectedDep, setSelectedDep] = useState('total')
+  // ── Filtro por rede ou localização ───────────────────────────────────
+  const dependencyOrder = ['publica', 'municipal', 'estadual', 'federal', 'privada']
+  const availableDepKeys = [...new Set(por_rede.map((row) => row.dependencia).filter(Boolean))]
+    .sort((a, b) => dependencyOrder.indexOf(a) - dependencyOrder.indexOf(b))
+  const locationOrder = ['urbana', 'rural']
+  const availableLocationKeys = [...new Set(por_localizacao.map((row) => row.localizacao).filter(Boolean))]
+    .sort((a, b) => locationOrder.indexOf(a) - locationOrder.indexOf(b))
+  const availableCuts = [
+    { key: 'total', label: 'Total' },
+    ...availableDepKeys.map((key) => ({ key: `rede:${key}`, label: `Rede ${DEP_LABELS[key]?.toLowerCase() ?? key}` })),
+    ...availableLocationKeys.map((key) => ({ key: `localizacao:${key}`, label: LOCATION_LABELS[key] ?? key })),
+  ]
+  const [selectedCut, setSelectedCut] = useState('total')
   // Reset to total when municipality changes
-  useEffect(() => { setSelectedDep('total') }, [blocos?.rede_escolar])
+  useEffect(() => { setSelectedCut('total') }, [blocos?.rede_escolar])
 
-  const isFiltered = selectedDep !== 'total'
-  const depData = isFiltered ? extractDepData(por_rede, selectedDep) : null
-  const activeResumo = depData ? depData.resumo : infraResumo
-  const activeUltimoAno = depData ? depData.ultimoAno : ultimoAno
-  const hasDepSeries = isFiltered && depData && Object.keys(depData.series).length > 0
+  const [selectedDimension, selectedKey] = selectedCut.split(':')
+  const isFiltered = selectedCut !== 'total'
+  const selectedRows = selectedDimension === 'rede' ? por_rede : por_localizacao
+  const selectedDimensionKey = selectedDimension === 'rede' ? 'dependencia' : 'localizacao'
+  const cutData = isFiltered ? extractDimensionData(selectedRows, selectedDimensionKey, selectedKey) : null
+  const activeResumo = cutData ? cutData.resumo : infraResumo
+  const activeUltimoAno = cutData ? cutData.ultimoAno : ultimoAno
+  const hasCutSeries = isFiltered && cutData && Object.keys(cutData.series).length > 0
 
   const GROUP_ORDER = ['ambiente_escolar', 'conectividade', 'rede_e_dispositivos']
 
@@ -388,8 +394,9 @@ function InfraDetailPanel({ indicator, blocos }) {
   }
 
   // ── Tabela de evolucao ──────────────────────────────────────────────
-  const sourceSeries = isFiltered && hasDepSeries ? depData.series : infraSeries
-  const tableLabel = isFiltered && !hasDepSeries ? 'total do município' : (DEP_LABELS[selectedDep] || selectedDep).toLowerCase()
+  const sourceSeries = isFiltered && hasCutSeries ? cutData.series : infraSeries
+  const selectedCutLabel = availableCuts.find((cut) => cut.key === selectedCut)?.label ?? selectedKey
+  const tableLabel = isFiltered && !hasCutSeries ? 'total do município' : selectedCutLabel.toLowerCase()
 
   const yearSet = new Set()
   for (const mk of INFRA_EVOLUTION_KEYS) {
@@ -429,8 +436,6 @@ function InfraDetailPanel({ indicator, blocos }) {
   // ── Render ───────────────────────────────────────────────────────────
   return (
     <section className="detail-panel educacao-detail-panel educacao-detail-panel--organized">
-      <EducationDetailHeader indicator={indicator} description={detailDescription} />
-
       <EducationQuickReading description={detailDescription} tone={indicator.statusTone} />
 
       <div className="infra-panorama-card">
@@ -438,22 +443,22 @@ function InfraDetailPanel({ indicator, blocos }) {
           Panorama da infraestrutura escolar{activeUltimoAno ? ` — ${activeUltimoAno}` : ''}
         </span>
 
-        {availableDeps.length > 1 && (
+        {availableCuts.length > 1 && (
           <div className="infra-dep-band">
             <div className="infra-dep-band__head">
-              <span className="infra-dep-band__title">Rede exibida</span>
+              <span className="infra-dep-band__title">Rede ou localização exibida</span>
               <span className="infra-dep-band__hint">
-                Os indicadores abaixo são recalculados conforme a rede selecionada.
+                Os indicadores abaixo são recalculados conforme o recorte selecionado.
               </span>
 
             </div>
             <SegmentedControl
-              ariaLabel="Rede exibida"
+              ariaLabel="Rede ou localização exibida"
               className="infra-dep-band__pills platform-segmented-control"
               optionClassName="infra-dep-pill platform-segmented-option"
-              onSelect={setSelectedDep}
-              options={availableDeps.map((dep) => ({ key: dep, label: DEP_LABELS[dep] || dep }))}
-              selectedKey={selectedDep}
+              onSelect={setSelectedCut}
+              options={availableCuts}
+              selectedKey={selectedCut}
             />
           </div>
         )}
@@ -555,15 +560,17 @@ function EducationIndicatorBreakdown({ indicator }) {
           {detailItems.map((item) => {
             const wide = isEducationSupportWideItem(item)
             const paired = hasProfilePair && isEducationSupportProfileItem(item)
-            const fullRow = wide || (!paired && isEducationSupportProfileItem(item)) || (hasOddCompactRow && item === lastCompactItem)
+            const third = item.supportLayout === 'third'
+            const fullRow = !third && (wide || (!paired && isEducationSupportProfileItem(item)) || (hasOddCompactRow && item === lastCompactItem))
 
             return (
               <EducationSupportDataItem
                 fullRow={fullRow}
                 item={item}
-                key={item.key}
+                key={`${item.key}-${item.orientation ?? 'horizontal'}`}
                 paired={paired}
                 supportId={supportId}
+                third={third}
                 wide={wide}
               />
             )
@@ -590,7 +597,7 @@ function EducationSupportDataIcon() {
   )
 }
 
-function EducationSupportDataItem({ fullRow, item, paired, supportId, wide }) {
+function EducationSupportDataItem({ fullRow, item, paired, supportId, third, wide }) {
   const itemId = `${supportId}-${String(item.key ?? 'item').replace(/[^a-z0-9_-]/gi, '-')}`
   const contextLabel = getDetailTabLabel(item)
   const title = item.title ?? contextLabel
@@ -598,7 +605,7 @@ function EducationSupportDataItem({ fullRow, item, paired, supportId, wide }) {
   return (
     <section
       aria-labelledby={`${itemId}-title`}
-      className={`education-support-data__item${wide ? ' education-support-data__item--wide' : ''}${paired ? ' education-support-data__item--paired' : ''}${fullRow ? ' education-support-data__item--full-row' : ''}`}
+      className={`education-support-data__item${wide ? ' education-support-data__item--wide' : ''}${paired ? ' education-support-data__item--paired' : ''}${third ? ' education-support-data__item--third' : ''}${fullRow ? ' education-support-data__item--full-row' : ''}`}
     >
       <header className="education-support-data__item-heading">
         <div>
@@ -615,7 +622,7 @@ function EducationSupportDataItem({ fullRow, item, paired, supportId, wide }) {
 }
 
 function isEducationSupportWideItem(item) {
-  return ['modality-range', 'stage-detail', 'table'].includes(item.type)
+  return item.supportLayout === 'full' || ['modality-range', 'stage-detail', 'table'].includes(item.type)
 }
 
 function isEducationSupportProfileItem(item) {
@@ -674,8 +681,6 @@ function TurmasPanoramaPanel({ indicator, blocos }) {
   const quickReading = `Em ${currentYear ?? '—'}, o município registra ${!isMissing(currentValue) ? activeMetric.formatLabel(currentValue) : EM} em ${activeMetric.label.toLowerCase()} no recorte ${cutLabel}.`
   return (
     <section className="detail-panel educacao-detail-panel educacao-detail-panel--organized">
-      <EducationDetailHeader indicator={indicator} description={indicator.description} />
-
       <div className="indicator-control-bar platform-control-bar">
         <div className="indicator-control-bar__copy">
           <span className="indicator-control-bar__label">Métrica analisada</span>
@@ -833,7 +838,7 @@ function ExploreItem({ item }) {
     }
     return (
       <>
-        <EducationBarChart color={item.color} data={item.data} formatLabel={item.formatLabel} orientation={item.orientation} preserveOrder={item.preserveOrder} title={item.title} />
+        <EducationBarChart color={item.color} data={item.data} formatLabel={item.formatLabel} orientation={item.orientation} preserveOrder={item.preserveOrder} size={item.chartSize} title={item.title} />
         {noteEl}
       </>
     )

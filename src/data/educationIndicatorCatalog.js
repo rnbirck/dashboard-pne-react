@@ -18,7 +18,7 @@ export const EDUCATION_SECTION_LABELS = Object.freeze({
   [EDUCATION_SECTION_KEYS.professionals]: 'Profissionais da educação',
   [EDUCATION_SECTION_KEYS.infrastructure]: 'Infraestrutura e condições de oferta',
   [EDUCATION_SECTION_KEYS.modalities]: 'Modalidades, inclusão e territórios',
-  [EDUCATION_SECTION_KEYS.demand]: 'Demanda e projeções',
+  [EDUCATION_SECTION_KEYS.demand]: 'Cenários de atendimento escolar',
   [EDUCATION_SECTION_KEYS.methodology]: 'Metodologia e fontes',
 })
 
@@ -29,7 +29,7 @@ export const EDUCATION_SECTION_DESCRIPTIONS = Object.freeze({
   [EDUCATION_SECTION_KEYS.professionals]: 'Docentes vinculados às diferentes etapas e modalidades.',
   [EDUCATION_SECTION_KEYS.infrastructure]: 'Condições físicas, conectividade e recursos de oferta.',
   [EDUCATION_SECTION_KEYS.modalities]: 'EJA, educação profissional, inclusão e recortes territoriais.',
-  [EDUCATION_SECTION_KEYS.demand]: 'Cenários estimados de atendimento para apoiar o planejamento educacional, sem previsão oficial.',
+  [EDUCATION_SECTION_KEYS.demand]: 'Evolução observada e trajetórias futuras calculadas para indicadores de cobertura e tempo integral.',
   [EDUCATION_SECTION_KEYS.methodology]: 'Fontes, períodos, recortes e limitações dos indicadores.',
 })
 

@@ -1,0 +1,8 @@
+SELECT
+    t1.ano,
+    t2.municipio,
+    SUM(t1.pop_estimada) AS pop_4_17
+FROM populacao_idade_rs t1
+JOIN municipios t2 ON t1.id_municipio = t2.id_municipio
+WHERE t1.idade BETWEEN 4 AND 17
+GROUP BY t1.ano, t2.municipio;

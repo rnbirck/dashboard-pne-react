@@ -52,7 +52,7 @@ export function buildEducationPageViewModel({
     : isOverviewSection
       ? 'Síntese municipal'
       : isDemandSection
-        ? 'Demanda e projeções'
+        ? 'Cenários de atendimento escolar'
         : 'Fontes e critérios'
 
   return { contextScope, isDemandSection, isMethodologySection, isOverviewSection }
@@ -68,6 +68,17 @@ export function buildProjectionHistory(projection) {
       population: projection.historical_population?.[index],
     }))
     .filter((point) => Number.isFinite(Number(point.year)) && Number.isFinite(Number(point.value)))
+}
+
+export function getLatestProjectionObservation(projection) {
+  const history = buildProjectionHistory(projection)
+
+  for (let index = history.length - 1; index >= 0; index -= 1) {
+    const point = history[index]
+    if (point.value != null && Number.isFinite(Number(point.value))) return point
+  }
+
+  return null
 }
 
 const EM = '\u2014'
@@ -155,7 +166,7 @@ const PANORAMA_THEME_KEYS = {
 }
 
 
-export function buildPneComplementaryTheme({ indicadores, results }) {
+export function buildPneComplementaryTheme({ indicadores, results, rede }) {
   if (!results) return null
 
   const itemByKey = buildPneCatalogItemMap(indicadores)
@@ -177,6 +188,7 @@ export function buildPneComplementaryTheme({ indicadores, results }) {
       const formatValueForType = getFormatter(formatType)
       const currentDisplay = result.display?.end_value ?? formatValueForType(result.end_value)
       const currentYear = result.end_year ?? getLatestSeriesYear(result.series)
+      const trendStatus = getContextTrendStatus(result.series, result.end_value, currentYear)
 
       return createIndicator({
         key: indicatorKey,
@@ -192,6 +204,7 @@ export function buildPneComplementaryTheme({ indicadores, results }) {
         currentYear,
         formatType,
         mainCutLabel: group?.label ?? catalogEntry.section,
+        explore: buildInfrastructureMetricExplore(rede, indicatorKey, formatValueForType),
         groupKey: catalogEntry.groupKey,
         pneComplementaryGroupKey: catalogEntry.groupKey,
         quickReading: `Indicador contextual do PNE: ${currentDisplay} em ${currentYear ?? 'ano indisponível'}. Não representa cumprimento da meta legal.`,
@@ -202,8 +215,9 @@ export function buildPneComplementaryTheme({ indicadores, results }) {
           catalogItem?.categoryLabel,
           'contexto proxy complementar PNE',
         ].filter(Boolean).join(' '),
-        statusLabel: 'Contexto',
-        statusTone: 'muted',
+        statusDetail: trendStatus.detail,
+        statusLabel: trendStatus.label,
+        statusTone: trendStatus.tone,
       })
   }).filter(Boolean)
 
@@ -248,6 +262,27 @@ function inferPneComplementaryFormatType(catalogItem, result) {
 
 function getLatestSeriesYear(series = []) {
   return normalizeYearSeries(series).at(-1)?.ano ?? null
+}
+
+function getContextTrendStatus(series, currentValue, currentYear) {
+  const normalizedSeries = normalizeYearSeries(series)
+  const initial = normalizedSeries[0]
+  const latestValue = isMissing(currentValue) ? normalizedSeries.at(-1)?.valor : currentValue
+
+  if (isMissing(latestValue)) {
+    return { detail: 'Último dado indisponível', label: 'Sem dados', tone: 'muted' }
+  }
+  if (normalizedSeries.length < 2 || isMissing(initial?.valor)) {
+    return { detail: 'Sem comparação temporal', label: 'Série disponível', tone: 'info' }
+  }
+
+  const endYear = currentYear ?? normalizedSeries.at(-1)?.ano
+  const period = initial.ano && endYear ? ` entre ${initial.ano} e ${endYear}` : ' no período'
+  const difference = Number(latestValue) - Number(initial.valor)
+
+  if (difference > 0) return { detail: `Aumento${period}`, label: 'Crescimento', tone: 'success' }
+  if (difference < 0) return { detail: `Redução${period}`, label: 'Redução', tone: 'warning' }
+  return { detail: `Sem variação${period}`, label: 'Estabilidade', tone: 'muted' }
 }
 
 export function buildEducationModel(blocos) {
@@ -1055,7 +1090,7 @@ function detailRowsToLatestRows(rows, dimension, labelFn, valueKey = 'valor') {
     }
   })
 
-  return [...latestByKey.entries()]
+  return Array.from(latestByKey.entries())
     .map(([key, point]) => ({ label: labelFn(key), value: point.value, year: point.ano }))
 }
 
@@ -1431,6 +1466,47 @@ export const INFRA_METRIC_LABELS = {
   salas_acessiveis: 'Salas de aula com acessibilidade',
 }
 
+function buildInfrastructureMetricExplore(rede, indicatorKey, formatLabel) {
+  if (!rede || !INFRA_METRIC_LABELS[indicatorKey]) return []
+
+  const infra = rede.infraestrutura ?? {}
+  const metricKey = `perc_${indicatorKey}`
+  const dependencyRows = detailRowsToLatestRows(
+    infra.por_rede ?? [],
+    'dependencia',
+    depLabel,
+    metricKey,
+  )
+  const locationRows = detailRowsToLatestRows(
+    infra.por_localizacao ?? [],
+    'localizacao',
+    locLabel,
+    metricKey,
+  )
+  const metricLabel = INFRA_METRIC_LABELS[indicatorKey]
+
+  return [
+    dependencyRows.length ? {
+      key: `${indicatorKey}-por-rede`,
+      type: 'bar',
+      chartSize: 'large',
+      title: titleWithYear(`${metricLabel} por rede`, dependencyRows),
+      color: '#16713a',
+      formatLabel,
+      data: dependencyRows,
+    } : null,
+    locationRows.length ? {
+      key: `${indicatorKey}-por-localizacao`,
+      type: 'bar',
+      chartSize: 'large',
+      title: titleWithYear(`${metricLabel} por localização`, locationRows),
+      color: '#2563eb',
+      formatLabel,
+      data: locationRows,
+    } : null,
+  ].filter(Boolean)
+}
+
 function buildRedeInfraExplore(rede) {
   const infra = rede.infraestrutura ?? {}
   const detalhamentos = rede.detalhamentos ?? {}
@@ -1547,14 +1623,14 @@ function buildAlunosTurmaExplore(alunosTurma, cut = { stageKey: 'fundamental', s
   const dependencyLatest = detailRowsToLatestRows(dependencyRows, 'dependencia', depLabel, 'alunos_por_turma')
   const locationLatest = detailRowsToLatestRows(locationRows, 'localizacao', locLabel, 'alunos_por_turma')
 
-  return [
+  const items = [
     serieRows.length ? {
       key: 'alunos-turma-series',
       type: 'bar',
+      chartSize: 'large',
       title: titleWithYear(`Média de alunos por turma por série — ${etapaLabel(cut.stageKey)}`, serieRows),
       color: '#16713a',
       formatLabel: formatRatio,
-      orientation: 'vertical',
       preserveOrder: true,
       data: serieRows,
       tabLabel: 'Por série',
@@ -1563,6 +1639,7 @@ function buildAlunosTurmaExplore(alunosTurma, cut = { stageKey: 'fundamental', s
     dependencyLatest.length ? {
       key: 'alunos-turma-rede',
       type: 'bar',
+      chartSize: 'large',
       title: titleWithYear(`Média de alunos por turma por rede${titleSuffix}`, dependencyLatest),
       color: '#2563eb',
       formatLabel: formatRatio,
@@ -1573,6 +1650,7 @@ function buildAlunosTurmaExplore(alunosTurma, cut = { stageKey: 'fundamental', s
     locationLatest.length ? {
       key: 'alunos-turma-localizacao',
       type: 'bar',
+      chartSize: 'large',
       title: titleWithYear(`Média de alunos por turma por localização${titleSuffix}`, locationLatest),
       color: '#7c3aed',
       formatLabel: formatRatio,
@@ -1581,6 +1659,16 @@ function buildAlunosTurmaExplore(alunosTurma, cut = { stageKey: 'fundamental', s
       tabPriority: 3,
     } : null,
   ].filter(Boolean)
+
+  if (cut.stageKey === 'fundamental') {
+    return items.map((item) => item.key === 'alunos-turma-series'
+      ? { ...item, orientation: 'vertical', supportLayout: 'full' }
+      : item)
+  }
+
+  return items.length === 3
+    ? items.map((item) => ({ ...item, supportLayout: 'third' }))
+    : items
 }
 
 export function buildTurmasExplore(turmas, cut = { cutLabel: 'Total do município', metricKey: 'turmas', formatLabel: formatNumber }) {
@@ -1694,18 +1782,18 @@ function buildFluxoExplore(fluxo, cut = { cutLabel: 'Ensino Fundamental', stageK
   const dependencyLatest = detailRowsToLatestRows(stageRows, 'dependencia', depLabel, cut.metricKey)
   const etapaLatest = detailRowsToLatestRows(detalhamentos.por_etapa, 'etapa_ensino', etapaLabel, cut.metricKey)
   const items = [
-    { key: 'fluxo-dep', type: 'bar', title: titleWithYear(`Taxa por rede${titleSuffix}`, dependencyLatest), color: '#2563eb', formatLabel: formatPercent, data: dependencyLatest },
+    { key: 'fluxo-dep', type: 'bar', chartSize: 'large', title: titleWithYear(`Taxa por rede${titleSuffix}`, dependencyLatest), color: '#2563eb', formatLabel: formatPercent, data: dependencyLatest },
   ]
   if (!cut.noLocation) {
     const locationLatest = detailRowsToLatestRows(locationRows.filter((row) => locKeys.includes(row.localizacao)), 'localizacao', locLabel, cut.metricKey)
-    items.push({ key: 'fluxo-loc', type: 'bar', title: titleWithYear(`Taxa por localização${titleSuffix}`, locationLatest), color: '#7c3aed', formatLabel: formatPercent, data: locationLatest })
+    items.push({ key: 'fluxo-loc', type: 'bar', chartSize: 'large', title: titleWithYear(`Taxa por localização${titleSuffix}`, locationLatest), color: '#7c3aed', formatLabel: formatPercent, data: locationLatest })
   }
   if (etapaLatest.length) {
-    items.push({ key: 'fluxo-etapa', type: 'bar', title: titleWithYear(`Taxa por etapa`, etapaLatest), color: '#16713a', formatLabel: formatPercent, data: etapaLatest })
+    items.push({ key: 'fluxo-etapa', type: 'bar', chartSize: 'large', title: titleWithYear(`Taxa por etapa`, etapaLatest), color: '#16713a', formatLabel: formatPercent, data: etapaLatest })
   }
-  return [
-    ...items,
-  ]
+  return items.length === 3
+    ? items.map((item) => ({ ...item, supportLayout: 'third' }))
+    : items
 }
 
 function buildAprendizagemExplore(aprend, metric) {
@@ -1714,14 +1802,14 @@ function buildAprendizagemExplore(aprend, metric) {
     const dependencyRows = detailRowsFor(detalhamentos.por_etapa_rede, { etapa_ensino: metric.stageKey })
     const dependencyLatest = detailRowsToLatestRows(dependencyRows, 'dependencia', depLabel, metric.metricKey)
     return [
-      { key: `apr-${metric.metricKey}-${metric.stageKey}-rede`, type: 'bar', title: titleWithYear(`${metric.metricLabel} por rede — ${metric.cutLabel}`, dependencyLatest), data: dependencyLatest, color: '#2563eb', formatLabel: metric.formatLabel },
+      { key: `apr-${metric.metricKey}-${metric.stageKey}-rede`, type: 'bar', chartSize: 'large', title: titleWithYear(`${metric.metricLabel} por rede — ${metric.cutLabel}`, dependencyLatest), data: dependencyLatest, color: '#2563eb', formatLabel: metric.formatLabel },
     ]
   }
   const etapaRows = detailRowsToLatestRows(detalhamentos.por_etapa, 'etapa_ensino', etapaLabel, metric.metricKey)
   const redeRows = detailRowsToLatestRows(detalhamentos.por_rede, 'dependencia', depLabel, metric.metricKey)
   return [
-    { key: `apr-${metric.metricKey}-etapa`, type: 'bar', title: titleWithYear(`${metric.metricLabel} por etapa`, etapaRows), data: etapaRows, color: '#16713a', formatLabel: metric.formatLabel },
-    { key: `apr-${metric.metricKey}-rede`, type: 'bar', title: titleWithYear(`${metric.metricLabel} por rede`, redeRows), data: redeRows, color: '#2563eb', formatLabel: metric.formatLabel },
+    { key: `apr-${metric.metricKey}-etapa`, type: 'bar', chartSize: 'large', title: titleWithYear(`${metric.metricLabel} por etapa`, etapaRows), data: etapaRows, color: '#16713a', formatLabel: metric.formatLabel },
+    { key: `apr-${metric.metricKey}-rede`, type: 'bar', chartSize: 'large', title: titleWithYear(`${metric.metricLabel} por rede`, redeRows), data: redeRows, color: '#2563eb', formatLabel: metric.formatLabel },
   ]
 }
 

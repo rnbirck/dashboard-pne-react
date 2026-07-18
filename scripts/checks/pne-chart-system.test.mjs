@@ -54,7 +54,29 @@ test('barras empilhadas calculam o limite pelo total anual', () => {
 test('seleção responsiva de anos mantém início e fim da série', () => {
   const years = Array.from({ length: 12 }, (_, index) => ({ year: 2015 + index }))
   const selected = selectPneYearTicks(years, 4)
-  assert.deepEqual(selected.map((point) => point.year), [2015, 2019, 2022, 2026])
+  assert.deepEqual(selected.map((point) => point.year), [2015, 2019, 2023, 2026])
+})
+
+test('eixos temporais priorizam cadências regulares de dois a quatro anos', () => {
+  const longSeries = Array.from({ length: 23 }, (_, index) => ({ year: 2014 + index }))
+  const shortSeries = Array.from({ length: 7 }, (_, index) => ({ year: 2019 + index }))
+
+  assert.deepEqual(
+    selectPneYearTicks(longSeries, 7).map((point) => point.year),
+    [2014, 2018, 2022, 2026, 2030, 2036],
+  )
+  assert.deepEqual(
+    selectPneYearTicks(shortSeries, 6).map((point) => point.year),
+    [2019, 2021, 2023, 2025],
+  )
+})
+
+test('marca terminal não colide com um ano intermediário muito próximo', () => {
+  const years = Array.from({ length: 23 }, (_, index) => ({ year: 2014 + index }))
+  const selected = selectPneYearTicks(years, 7).map((point) => point.year)
+
+  assert.equal(selected.at(-1), 2036)
+  assert.ok(selected.at(-1) - selected.at(-2) >= 3)
 })
 
 test('gráficos auxiliares compactos reduzem a densidade de anos', () => {

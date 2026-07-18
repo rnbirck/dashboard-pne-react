@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useChartViewport } from '../hooks/useChartViewport'
 import { isMissing } from '../utils/educationFormatters'
+import { selectPneYearTicks } from '../utils/pneChartSystem'
 import { closeChartTooltipOnEscape, resolveChartColor } from '../utils/chartVisuals'
 import { ChartEmptyState, ChartTooltip } from './ChartPrimitives'
 
@@ -156,7 +157,7 @@ function buildChart(series, scaleType, chartWidth, chartHeight) {
   const yTicksRaw = [domain.min, domain.min + range * 0.25, domain.min + range * 0.5, domain.min + range * 0.75, domain.max]
   const yTicks = yTicksRaw.map((val) => ({ label: formatAxisTick(val, scaleType), y: yScale(val) }))
   const xTickLimit = chartWidth < 420 ? 3 : chartWidth < 620 ? 5 : 7
-  return { areaPaths, linePaths, padding, points: scaled, xTicks: selectYearTicks(scaledRaw, xTickLimit), yTicks }
+  return { areaPaths, linePaths, padding, points: scaled, xTicks: selectPneYearTicks(scaledRaw, xTickLimit), yTicks }
 }
 
 function normalizeChartYearSeries(series) {
@@ -196,17 +197,6 @@ function shouldShowPointLabel(point, pointCount, chartWidth, { firstYear, lastYe
     point.value === minValue ||
     point.value === maxValue
   )
-}
-
-function selectYearTicks(points, limit) {
-  if (points.length <= limit) return points
-  const selected = []
-  const lastIndex = points.length - 1
-  for (let index = 0; index < limit; index += 1) {
-    const point = points[Math.round((index * lastIndex) / (limit - 1))]
-    if (selected.at(-1) !== point) selected.push(point)
-  }
-  return selected
 }
 
 function getYAxisDomain(values, scaleType) {

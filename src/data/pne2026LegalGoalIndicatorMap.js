@@ -74,7 +74,7 @@ const LEGAL_GOAL_RELATIONS = {
       indicator(
         'basico_15_17',
         'parcial',
-        'Acompanha apenas o recorte de 15 a 17 anos, com frequência escolar ou conclusão da educação básica.',
+        'Acompanha matrículas da educação básica associadas à faixa de 15 a 17 anos em relação à população residente da faixa.',
         { hasProjection2036: true },
       ),
     ],

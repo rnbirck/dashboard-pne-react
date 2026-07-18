@@ -902,6 +902,30 @@ def _export_projections(
     }
 
 
+def _export_planning_scenarios(*, municipios: list[str]) -> dict[str, Any]:
+    from src.planning_scenarios import load_approved_planning_scenarios
+
+    print("\nProcessando cenários de planejamento aprovados...")
+    artifact_root = BASE_DIR.parent / "artifacts" / "projections-v2"
+    return load_approved_planning_scenarios(artifact_root, municipios)
+
+
+def _export_education_attendance(
+    *,
+    municipios: list[str],
+    projections_payload: dict[str, Any],
+    planning_scenarios_payload: dict[str, Any],
+) -> dict[str, Any]:
+    from src.education_attendance import build_education_attendance_payload
+
+    print("\nProcessando contrato de atendimento e cenários...")
+    return build_education_attendance_payload(
+        projections_payload,
+        planning_scenarios_payload,
+        municipios,
+    )
+
+
 def _export_state_reference(
     cycle: str,
     errors: list[dict[str, Any]],
@@ -1312,6 +1336,30 @@ def main() -> int:
     projections_path = EXPORT_DIR / "pne_2026_2036" / "projecoes_por_municipio.json"
     _write_json(projections_path, projections_payload, profile)
     generated_files.append(projections_path)
+
+    with profile.measure("cenários de planejamento"):
+        planning_scenarios_payload = _export_planning_scenarios(municipios=municipios)
+    planning_scenarios_path = (
+        EXPORT_DIR
+        / "pne_2026_2036"
+        / "cenarios_planejamento_por_municipio.json"
+    )
+    _write_json(planning_scenarios_path, planning_scenarios_payload, profile)
+    generated_files.append(planning_scenarios_path)
+
+    with profile.measure("atendimento e cenários"):
+        education_attendance_payload = _export_education_attendance(
+            municipios=municipios,
+            projections_payload=projections_payload,
+            planning_scenarios_payload=planning_scenarios_payload,
+        )
+    education_attendance_path = (
+        EXPORT_DIR
+        / "pne_2026_2036"
+        / "atendimento_cenarios_por_municipio.json"
+    )
+    _write_json(education_attendance_path, education_attendance_payload, profile)
+    generated_files.append(education_attendance_path)
 
     with profile.measure("FUNDEB"):
         fundeb_payload = _export_fundeb_data(

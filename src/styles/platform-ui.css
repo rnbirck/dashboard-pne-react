@@ -707,6 +707,12 @@
     font-variant-numeric: tabular-nums;
   }
 
+  .content-area .platform-filter-option:is(.is-active, [aria-pressed="true"]) :where(.category-tab__count, .diagnostic-theme-filter__count) {
+    border: var(--border-width) solid var(--control-border-selected);
+    background: var(--surface-card);
+    color: var(--green-deep);
+  }
+
   .content-area .status-badge {
     min-height: 24px;
     padding: 4px 9px;
@@ -1657,7 +1663,6 @@
   }
 }
 
-.content-area .educacao-page--detail .education-detail-nav--bottom,
 .content-area .financial-page--detail .financial-detail-nav--bottom {
   display: none;
 }

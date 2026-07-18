@@ -20,6 +20,10 @@ const moduleUrl = (relativePath) => pathToFileURL(path.join(output, relativePath
 const selectors = await import(moduleUrl('src/features/education/educationSelectors.js'))
 const viewModels = await import(moduleUrl('src/features/education/educationViewModels.js'))
 const formatters = await import(moduleUrl('src/features/education/educationFormatters.js'))
+const planningScenarios = await import(moduleUrl('src/data/planningScenarios.js'))
+const attendancePresentation = await import(moduleUrl('src/features/education/educationAttendancePresentation.js'))
+const attendanceFilters = await import(moduleUrl('src/features/education/educationAttendanceFilters.js'))
+const projectionEndLabels = await import(pathToFileURL(path.resolve('src/utils/projectionEndLabels.js')).href)
 
 const indicators = [
   { key: 'b', label: 'Zeta', description: 'Atendimento escolar', themeLabel: 'Matrículas' },
@@ -55,12 +59,75 @@ test('view model resolve seção e resumo sem alterar dados', () => {
   const sections = { overview: 'overview', demand: 'demand', methodology: 'methodology' }
   assert.deepEqual(
     viewModels.buildEducationPageViewModel({ sectionItemCount: 0, selectedSectionKey: 'demand', sectionKeys: sections }),
-    { contextScope: 'Demanda e projeções', isDemandSection: true, isMethodologySection: false, isOverviewSection: false },
+    { contextScope: 'Cenários de atendimento escolar', isDemandSection: true, isMethodologySection: false, isOverviewSection: false },
   )
   assert.equal(
     viewModels.buildEducationPageViewModel({ sectionItemCount: 1, selectedSectionKey: 'overview', sectionKeys: sections }).contextScope,
     '1 indicador',
   )
+})
+
+test('indicadores de infraestrutura expõem recortes por rede e localização', () => {
+  const rede = {
+    infraestrutura: {
+      por_rede: [
+        { ano: 2025, dependencia: 'municipal', perc_tablet_aluno: 38.2 },
+        { ano: 2025, dependencia: 'estadual', perc_tablet_aluno: 51.4 },
+      ],
+      por_localizacao: [
+        { ano: 2025, localizacao: 'urbana', perc_tablet_aluno: 40.1 },
+        { ano: 2025, localizacao: 'rural', perc_tablet_aluno: 87.5 },
+      ],
+    },
+  }
+  const theme = viewModels.buildPneComplementaryTheme({
+    indicadores: null,
+    results: {
+      tablet_aluno: {
+        end_value: 42.5,
+        end_year: 2025,
+        series: [{ ano: 2019, valor: 16 }, { ano: 2025, valor: 42.5 }],
+        value_mode: 'percent',
+      },
+    },
+    rede,
+  })
+  const tablet = theme?.items.find((item) => item.key === 'tablet_aluno')
+
+  assert.deepEqual(tablet?.explore.map((item) => item.key), [
+    'tablet_aluno-por-rede',
+    'tablet_aluno-por-localizacao',
+  ])
+  assert.deepEqual(tablet?.explore.map((item) => item.chartSize), ['large', 'large'])
+  assert.equal(tablet?.statusLabel, 'Crescimento')
+  assert.equal(tablet?.statusDetail, 'Aumento entre 2019 e 2025')
+  assert.deepEqual(tablet?.explore[0].data, [
+    { label: 'Municipal', value: 38.2, year: 2025 },
+    { label: 'Estadual', value: 51.4, year: 2025 },
+  ])
+  assert.deepEqual(tablet?.explore[1].data, [
+    { label: 'Urbana', value: 40.1, year: 2025 },
+    { label: 'Rural', value: 87.5, year: 2025 },
+  ])
+})
+
+test('indicadores contextuais descrevem o movimento observado da série', () => {
+  const theme = viewModels.buildPneComplementaryTheme({
+    indicadores: null,
+    results: {
+      internet: { end_value: 98.8, end_year: 2025, series: [{ ano: 2015, valor: 91.4 }, { ano: 2025, valor: 98.8 }], value_mode: 'percent' },
+      rede_local: { end_value: 80, end_year: 2025, series: [{ ano: 2019, valor: 90 }, { ano: 2025, valor: 80 }], value_mode: 'percent' },
+      rede_wireless: { end_value: 60, end_year: 2025, series: [{ ano: 2019, valor: 60 }, { ano: 2025, valor: 60 }], value_mode: 'percent' },
+      tablet_aluno: { end_value: 42.5, end_year: 2025, series: [{ ano: 2025, valor: 42.5 }], value_mode: 'percent' },
+    },
+  })
+  const statusByKey = Object.fromEntries(theme?.items.map((item) => [item.key, item.statusLabel]) ?? [])
+
+  assert.equal(statusByKey.internet, 'Crescimento')
+  assert.equal(statusByKey.rede_local, 'Redução')
+  assert.equal(statusByKey.rede_wireless, 'Estabilidade')
+  assert.equal(statusByKey.tablet_aluno, 'Série disponível')
+  assert.equal(theme?.items.some((item) => item.statusLabel === 'Contexto'), false)
 })
 
 test('navegação educacional resolve seção, detalhe e vizinhança compartilhada', () => {
@@ -134,6 +201,12 @@ test('cards principais preservam zero, ausência, percentuais e série insuficie
 })
 
 test('projeção preserva alinhamento entre ano, ausência e população', () => {
+  const incompleteProjection = {
+    historical_years: [2022, 2023, 2024],
+    historical_percent: [51.2, 103.4, null],
+    historical_population: [1000, 1010, 1020],
+  }
+
   assert.deepEqual(
     viewModels.buildProjectionHistory({
       historical_years: [2022, 2023, 2024],
@@ -145,6 +218,18 @@ test('projeção preserva alinhamento entre ano, ausência e população', () =>
       { year: 2023, value: null, population: 1010 },
       { year: 2024, value: 54.8, population: 1020 },
     ],
+  )
+  assert.deepEqual(
+    viewModels.getLatestProjectionObservation(incompleteProjection),
+    { year: 2023, value: 103.4, population: 1010 },
+  )
+  assert.equal(
+    viewModels.getLatestProjectionObservation({
+      historical_years: [2023, 2024],
+      historical_percent: [null, null],
+      historical_population: [1010, 1020],
+    }),
+    null,
   )
   assert.deepEqual(viewModels.buildProjectionHistory(null), [])
 })
@@ -165,4 +250,293 @@ test('busca considera caixa e acentuação declarada sem alterar a ordem de seç
     selectors.selectEducationSectionItems(indicators, { key: 'x', indicatorKeys: ['b', 'a'] }).map((item) => item.key),
     ['b', 'a'],
   )
+})
+
+test('cenários de planejamento publicam os quatro indicadores nos grupos aprovados', () => {
+  assert.deepEqual(
+    planningScenarios.PLANNING_SCENARIO_INDICATORS.map((indicator) => indicator.key),
+    ['basico_integral', 'escolas_integral', 'pos_graduacao', 'temporarios'],
+  )
+  assert.deepEqual(
+    planningScenarios.PLANNING_SCENARIO_GROUPS.map((group) => [...group.indicatorKeys]),
+    [
+      ['basico_integral', 'escolas_integral'],
+      ['pos_graduacao', 'temporarios'],
+    ],
+  )
+})
+
+test('adaptador público apenas transporta séries produzidas pelo pipeline', () => {
+  const contract = {
+    status: 'available_with_warning',
+    historical: [
+      { year: 2024, value: 32.5, numerator: 325, denominator: 1000 },
+    ],
+    projected: [
+      { year: 2036, displayValue: 32.5, status: 'available_with_warning' },
+    ],
+    referenceTrajectory: [
+      { year: 2024, value: 32.5 },
+      { year: 2036, value: 50 },
+    ],
+    qualityEvidence: { provisionalLevel: 'baixa' },
+    diagnostics: { warnings: ['fixture'] },
+  }
+
+  assert.deepEqual(planningScenarios.adaptPlanningScenarioContract(contract), {
+    available: true,
+    historical_percent: [32.5],
+    historical_years: [2024],
+    projected_2036: 32.5,
+    projected_percent: [32.5],
+    quality: 'baixa',
+    reference_trajectory_values: [32.5, 50],
+    reference_trajectory_years: [2024, 2036],
+    warnings: ['fixture'],
+    years: [2036],
+  })
+
+  const withoutPipelineTrajectory = planningScenarios.adaptPlanningScenarioContract({
+    ...contract,
+    referenceTrajectory: undefined,
+  })
+  assert.deepEqual(withoutPipelineTrajectory.reference_trajectory_years, [])
+  assert.deepEqual(withoutPipelineTrajectory.reference_trajectory_values, [])
+})
+
+test('adaptador público distingue contratos inválidos de cenários disponíveis', () => {
+  const adapted = planningScenarios.adaptPlanningScenarioContract({
+    status: 'invalid_components',
+    historical: [],
+    projected: [],
+    qualityEvidence: { provisionalLevel: 'insuficiente' },
+    diagnostics: { warnings: ['componentes inválidos'] },
+  })
+  assert.equal(adapted.available, false)
+  assert.equal(adapted.quality, 'insuficiente')
+  assert.deepEqual(adapted.warnings, ['componentes inválidos'])
+})
+
+test('regra de publicação usa valores brutos e exclui manutenção, constância e histórico isolado', () => {
+  const indicator = {
+    kind: 'age_coverage',
+    observed: { year: 2025, numerator: 120, denominator: 100, rawValue: 120 },
+    historical: [
+      { year: 2024, numerator: 110, denominator: 100, rawValue: 110 },
+      { year: 2025, numerator: 120, denominator: 100, rawValue: 120 },
+    ],
+    scenario: {
+      type: 'trend_scenario',
+      method: 'municipal_base_times_rs_age_factor',
+      status: 'available',
+      projected: [
+        { year: 2026, numerator: 121, denominator: 100, rawValue: 121 },
+        { year: 2036, numerator: 130, denominator: 100, rawValue: 130 },
+      ],
+    },
+    reference: { value: 100, year: 2036 },
+    diagnostics: { warnings: ['bases distintas'] },
+  }
+
+  assert.equal(attendancePresentation.isDisplayableProjection(indicator), true)
+  assert.deepEqual(attendancePresentation.toProjectionView(indicator).projected_percent, [100, 100])
+  assert.deepEqual(attendancePresentation.toProjectionView(indicator).raw_projected_percent, [121, 130])
+
+  const constant = {
+    ...indicator,
+    scenario: {
+      ...indicator.scenario,
+      projected: [
+        { year: 2026, rawValue: 120 },
+        { year: 2036, rawValue: 120 },
+      ],
+    },
+  }
+  assert.equal(attendancePresentation.isDisplayableProjection(constant), false)
+  assert.equal(attendancePresentation.isDisplayableProjection({
+    ...indicator,
+    scenario: { ...indicator.scenario, model: 'last_value' },
+  }), false)
+  assert.equal(attendancePresentation.isDisplayableProjection({
+    ...indicator,
+    scenario: { ...indicator.scenario, type: 'maintenance' },
+  }), false)
+  assert.equal(attendancePresentation.isDisplayableProjection({
+    ...indicator,
+    scenario: { ...indicator.scenario, projected: [] },
+  }), false)
+})
+
+test('adaptador preserva projeção, meta explícita e diferença na unidade percentual', () => {
+  const view = attendancePresentation.toProjectionView({
+    kind: 'age_coverage',
+    observed: { year: 2025, rawValue: 70 },
+    historical: [{ year: 2024, rawValue: 65 }, { year: 2025, rawValue: 70 }],
+    scenario: {
+      type: 'trend_scenario',
+      method: 'fixture',
+      status: 'available',
+      projected: [{ year: 2026, rawValue: 72 }, { year: 2036, rawValue: 85 }],
+    },
+    reference: { value: 90, year: 2036 },
+    diagnostics: { warnings: [] },
+  })
+  assert.equal(view.available, true)
+  assert.equal(view.projected_end_year, 2036)
+  assert.equal(view.target_percent, 90)
+  assert.equal(view.target_year, 2036)
+  assert.equal(view.distance_to_target_2036, -5)
+})
+
+test('percentual de apresentação trata limite, piso, ausência e valor regular', () => {
+  assert.deepEqual(attendancePresentation.toDisplayPercentage(102), {
+    displayValue: 100,
+    displayWasCapped: true,
+    rawValue: 102,
+  })
+  assert.deepEqual(attendancePresentation.toDisplayPercentage(130.5), {
+    displayValue: 100,
+    displayWasCapped: true,
+    rawValue: 130.5,
+  })
+  assert.deepEqual(attendancePresentation.toDisplayPercentage(-4), {
+    displayValue: 0,
+    displayWasCapped: false,
+    rawValue: -4,
+  })
+  assert.deepEqual(attendancePresentation.toDisplayPercentage(null), {
+    displayValue: null,
+    displayWasCapped: false,
+    rawValue: null,
+  })
+  assert.deepEqual(attendancePresentation.toDisplayPercentage(68.4), {
+    displayValue: 68.4,
+    displayWasCapped: false,
+    rawValue: 68.4,
+  })
+})
+
+function projectedAttendanceIndicator(indicatorKey, overrides = {}) {
+  return {
+    indicatorKey,
+    kind: 'age_coverage',
+    observed: { year: 2025, rawValue: 70 },
+    historical: [{ year: 2024, rawValue: 68 }, { year: 2025, rawValue: 70 }],
+    scenario: {
+      type: 'trend_scenario',
+      method: 'fixture',
+      status: 'available',
+      projected: [{ year: 2026, rawValue: 71 }, { year: 2036, rawValue: 80 }],
+    },
+    reference: null,
+    diagnostics: { warnings: [] },
+    ...overrides,
+  }
+}
+
+test('tempo integral publicável mantém filtro e bloco derivados da mesma coleção', () => {
+  const integral = projectedAttendanceIndicator('basico_integral', {
+    kind: 'integral_coverage',
+    reference: {
+      targets: [{ type: 'configured_reference', value: 50, year: 2036 }],
+      trajectory: [{ year: 2031, value: 35 }, { year: 2036, value: 50 }],
+    },
+    scenario: {
+      type: 'maintenance',
+      method: 'last_components',
+      status: 'available',
+      projected: [{ year: 2036, rawValue: 70 }],
+    },
+  })
+  const payload = { ageCoverage: {}, integral: { overall: integral } }
+  const items = attendanceFilters.getDisplayableAttendanceItems(payload)
+
+  assert.equal(attendancePresentation.isDisplayableProjection(integral), true)
+  assert.deepEqual(attendancePresentation.toProjectionView(integral).raw_projected_percent, [35, 50])
+  assert.deepEqual(attendanceFilters.getAvailableIndicatorTypes(items), ['integral'])
+  assert.equal(attendanceFilters.getVisibleAttendanceItems(items, 'integral', 'overall').length, 1)
+})
+
+test('recortes usam ordem fixa e faixas combinadas substituem abrangência geral', () => {
+  const keys = [
+    'obrigatoria_4_17',
+    'basico_15_17',
+    'escolar_6_14',
+    'creche',
+    'basico_6_17',
+    'pre_escola',
+    'infantil_0_5',
+  ]
+  const payload = {
+    ageCoverage: Object.fromEntries(keys.map((key) => [key, projectedAttendanceIndicator(key)])),
+    integral: { overall: null },
+  }
+  const items = attendanceFilters.getDisplayableAttendanceItems(payload)
+
+  assert.deepEqual(attendanceFilters.getAvailableCuts(items, 'coverage'), [
+    'all',
+    'infantil',
+    'fundamental',
+    'medio',
+    'combined',
+  ])
+  assert.equal(attendanceFilters.CUT_LABELS.combined, 'Faixas combinadas')
+  assert.deepEqual(
+    attendanceFilters.getVisibleAttendanceItems(items, 'coverage', 'combined').map((item) => item.indicator.indicatorKey),
+    ['obrigatoria_4_17', 'basico_6_17'],
+  )
+})
+
+test('grade de métricas acompanha uma, duas, três e quatro células reais', () => {
+  assert.equal(attendanceFilters.getMetricGridClass(1), 'metric-grid--one')
+  assert.equal(attendanceFilters.getMetricGridClass(2), 'metric-grid--two')
+  assert.equal(attendanceFilters.getMetricGridClass(3), 'metric-grid--three')
+  assert.equal(attendanceFilters.getMetricGridClass(4), 'metric-grid--four')
+})
+
+test('rótulos finais combinam somente pontos brutos coincidentes e afastam os demais', () => {
+  const base = {
+    chartHeight: 264,
+    chartWidth: 640,
+    lastProjectedPoint: { value: 100, x: 572, y: 38, year: 2036 },
+    metaLine: { labelY: 52, value: 100, y: 38 },
+    padding: { bottom: 44, left: 64, right: 68, top: 38 },
+  }
+  const combined = projectionEndLabels.buildProjectionEndLabelLayout({
+    ...base,
+    projectedRawValue: 100,
+    targetRawValue: 100,
+    targetYear: 2036,
+  })
+  assert.equal(combined.combined, true)
+  assert.equal(combined.meta.hidden, true)
+
+  const sameValueDifferentYear = projectionEndLabels.buildProjectionEndLabelLayout({
+    ...base,
+    projectedRawValue: 100,
+    targetRawValue: 100,
+    targetYear: 2035,
+  })
+  assert.equal(sameValueDifferentYear.combined, false)
+  assert.ok(Math.abs(sameValueDifferentYear.projected.y - sameValueDifferentYear.meta.y) >= 22)
+
+  const differentValueSameYear = projectionEndLabels.buildProjectionEndLabelLayout({
+    ...base,
+    projectedRawValue: 100.000001,
+    targetRawValue: 100,
+    targetYear: 2036,
+  })
+  assert.equal(differentValueSameYear.combined, false)
+  assert.ok(Math.abs(differentValueSameYear.projected.y - differentValueSameYear.meta.y) >= 22)
+
+  const withoutTarget = projectionEndLabels.buildProjectionEndLabelLayout({
+    ...base,
+    metaLine: null,
+    projectedRawValue: 80,
+    targetRawValue: null,
+    targetYear: null,
+  })
+  assert.equal(withoutTarget.combined, false)
+  assert.equal(withoutTarget.meta, null)
+  assert.ok(withoutTarget.projected.x <= base.chartWidth - base.padding.right)
 })

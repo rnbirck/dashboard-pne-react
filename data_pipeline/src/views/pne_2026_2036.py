@@ -1497,9 +1497,9 @@ INDICADORES = {
             },
             {
                 "key": "basico_15_17",
-                "label": "População de 15 a 17 anos que frequenta a escola ou já concluiu a educação básica",
+                "label": "Matrículas da educação básica de estudantes de 15 a 17 anos em relação à população da faixa",
                 "sub": "",
-                "desc": "Percentual da população de 15 a 17 anos que frequenta a escola ou já concluiu a educação básica.",
+                "desc": "Matrículas da educação básica associadas à faixa de 15 a 17 anos, no município da escola, divididas pela população residente da faixa.",
                 "meta_label": "Meta PNE 2036",
                 "compute": _calc_basico_15_17,
             },

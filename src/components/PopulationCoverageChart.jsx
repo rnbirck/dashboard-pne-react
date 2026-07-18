@@ -1,5 +1,6 @@
 import { useId, useMemo, useState } from 'react'
 import { closeChartTooltipOnEscape } from '../utils/chartVisuals'
+import { selectPneYearTicks } from '../utils/pneChartSystem'
 import { ChartLegend, ChartTooltip } from './ChartPrimitives'
 
 const CHART_WIDTH = 980
@@ -289,13 +290,8 @@ function buildChartModel(series, meta) {
     percentTicks: [0, 50, 100].map((value) => ({ value, y: percentScale(value) })),
     plotHeight,
     points,
-    yearTicks: selectYearTicks(points),
+    yearTicks: selectPneYearTicks(points, 6),
   }
-}
-
-function selectYearTicks(points) {
-  if (points.length <= 8) return points
-  return points.filter((point, index) => index % 2 === 0 || index === points.length - 1)
 }
 
 function niceMaximum(value) {
@@ -330,4 +326,3 @@ function formatCount(value) {
 function formatPercent(value) {
   return `${percentFormatter.format(value)}%`
 }
-

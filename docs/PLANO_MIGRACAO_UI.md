@@ -93,6 +93,38 @@ Evidência registrada: smoke das oito rotas em 1366×768, 1024×768 e 390×844 (
 
 Acabamento final (2026-07-12): o topo das seções internas passou a reunir identificação, quantidade e busca em uma única superfície, mantendo o hero institucional separado. Rodapés dos cards agora eliminam a categoria repetida pelo contexto ou agrupamento, limitam-se a dois chips sem quebra e reservam uma coluna fixa para a seta; títulos completos permanecem no nome acessível do card e chips truncados expõem `title`. A grade interna estabiliza títulos, descrições, métricas, sparklines e rodapés; grupos de um card deixam de exibir divisor longo. Em Demanda, metadados e caixas numéricas foram compactados, observado/projetado ganharam superfícies distintas, gráficos receberam limite visual moderado no desktop e a nota metodológica virou disclosure nativo fechado por padrão. Smoke responsivo em 1366×768, 1280×720, 1024×768 e 390×844 confirmou zero overflow horizontal, chips quebrados, textos abaixo de 12 px, títulos cortados ou rodapés fora da base. Lint, build e `git diff --check` passaram. O E2E integral permanece temporariamente defasado: ainda procura o grupo legado `Temas da educação / Escolas` e interrompe a primeira resolução antes das demais; a falha é de contrato do teste, não da interface atual.
 
+### Redesenho de Demanda e projeções (2026-07-17)
+
+A seção passou a usar cabeçalho institucional próprio, quatro indicadores em grade 2×2 no desktop/notebook/tablet legível, cards compactos com valor observado e cenário 2036, linha observada/projetada acessível, alerta dinâmico de redução e um bloco único de leitura rápida com metodologia em accordions. A variante compacta reutiliza `IndicatorProjectionPanel` e mantém a seleção obrigatória do primeiro ano, último observado e 2036 restrita a esta página; dados, projeções, fontes, filtros, rotas, shell e regras de negócio permanecem inalterados. Em até 720 px, indicadores e apoio empilham sem overflow.
+
+Evidência: Agudo preservou 38,0%/46,5%, 100,0%/100,0%, 94,7%/100,0% e 88,3%/82,0%, com alerta de 6,3 p.p. no último indicador. Typecheck, lint, build, testes de Educação (11/11), escalas (7/7), roteamento (7/7), arquitetura, regressão pública (23/23) e o cenário visual específico de Demanda passaram; inspeções em 1366×768, 1024×768, 768×1024 e 390×844 confirmaram responsividade, ausência de overflow e console limpo. A suíte E2E integral validou a nova seção e depois parou em uma asserção preexistente de `aria-pressed` dos cards exploráveis, fora deste redesenho; os baselines alheios à seção não foram atualizados.
+
+### Consolidação dos cenários de atendimento escolar (2026-07-18)
+
+A seção `demanda` passou a se chamar **Cenários de atendimento escolar** e preserva rota, aliases, shell e retorno aos indicadores. A composição definitiva publica somente indicadores com histórico e trajetória futura válida. Filtros de tipo e recorte são derivados da mesma coleção de resultados publicáveis e seguem a ordem canônica Todos, Educação Infantil, Ensino Fundamental, Ensino Médio e Faixas combinadas. Cada indicador reúne título, descrição, valor atual, cenário final, meta do PNE vinculada por metadata quando existente, distância comparável, gráfico de histórico/projeção e leitura rápida contextual. Tabela comparativa, recortes apenas históricos e mensagens individuais de ausência permanecem removidos; metodologia e fontes encerram a página.
+
+O contrato `education-attendance-v2` não emite cenários de matrículas, backtesting, `last_value`, detalhamentos de tempo integral por etapa ou manutenção horizontal. O indicador geral de tempo integral usa exclusivamente a trajetória normativa já produzida para as referências do PNE; o motor compartilhado de cenários de planejamento permanece para seus demais consumidores. A função `isDisplayableProjection` rejeita identificadores semânticos de manutenção/persistência e, como proteção, compara todos os valores futuros brutos ao último valor observado, sem arredondamento. A exceção deliberada é a trajetória de planejamento do PNE: quando `integral.overall.reference.trajectory` é válida, ou o cenário possui o tipo semântico `pne_reference_trajectory`, ela permanece publicável mesmo que um payload legado ainda carregue classificação de manutenção.
+
+Na rodada final de refinamento, os KPIs passaram a ocupar 1, 2, 3 ou 4 colunas conforme a quantidade real de cartões; em celular permanecem em uma coluna. Cenário final e meta com o mesmo ano e valor brutos usam um único rótulo direto; nos demais casos, os rótulos são separados automaticamente. A composição permanece em uma coluna de indicadores em 1024 px e abaixo, reduzindo altura por espaçamento e gráfico sem diminuir a tipografia.
+
+O refinamento editorial posterior manteve as linhas Tipo de indicador e Recorte sempre presentes. Em Tempo integral, Recorte usa um chip informativo não interativo de Educação básica e explica que somente o recorte geral possui trajetória futura; o bloco preserva altura e foco na troca de tipo. Os painéis reutilizam `MetricCard`, ícones e a anatomia compartilhada de análise principal: gráfico e leitura rápida em aproximadamente 70/30 no desktop, empilhados a partir de notebook/tablet, com KPIs 2×2 no tablet e uma coluna no celular. Cobertura e Tempo integral usam a mesma estrutura, sem reintroduzir matrículas, manutenção ou tabela comparativa.
+
+Evidência desta substituição deve ser lida nos testes do contrato, da apresentação e no E2E vigente; registros anteriores de cenários absolutos de matrículas nesta seção foram substituídos por esta decisão.
+
+### Validação controlada do motor de projeções v2 (2026-07-17)
+
+Antes da publicação, os quatro contratos sombra foram avaliados em uma experiência local isolada. A validação confirmou a diferenciação entre histórico observado, patamar mantido, trajetória necessária e referência configurada, preservou `configured_unvalidated`, expôs qualidade e estados inválidos e reutilizou o painel compartilhado sem recalcular séries no navegador.
+
+Evidência: exportação idempotente dos 497 municípios; testes do motor e do exportador (27/27), Educação (14/14), ciclo PNE (15/15), roteamento (7/7), typecheck, lint, build, arquitetura e `git diff --check` passaram. Agudo exibiu quatro cards e quatro trajetórias em 1366×768, 1024×768, 768×1024 e 390×844, em grades 2→1, com fonte mínima de 12 px, foco visível de 44 px, zero overflow, terminologia obrigatória e console limpo. A infraestrutura temporária dessa validação foi removida na promoção para o fluxo público canônico.
+
+### Publicação dos cenários de planejamento (2026-07-17)
+
+Após a aprovação da prévia, `basico_integral`, `escolas_integral`, `pos_graduacao` e `temporarios` foram promovidos para `pne_2026_2036.cenarios_planejamento` nos 497 payloads municipais canônicos. A experiência pública não depende de feature flag, diretório experimental ou carregamento separado. A página preserva os quatro indicadores de Atendimento e cobertura e acrescenta os grupos Educação em tempo integral e Profissionais da educação sob a categoria Cenários de planejamento, com cenário de manutenção, patamar mantido, trajetória necessária, referência configurada, ritmo anual necessário e qualidade do cenário.
+
+O frontend apenas adapta e apresenta séries, trajetórias, ritmos, qualidade e estados produzidos pelo pipeline. A referência continua marcada como `configured_unvalidated` e recebe a ressalva institucional de que é um parâmetro de planejamento, sem obrigação legal municipal validada nesta aplicação.
+
+Evidência: os 497 payloads municipais foram validados com os quatro contratos e sem alteração do bloco preexistente `projecoes`; 73 testes do pipeline, 14 de Educação, 15 do ciclo PNE, 7 de roteamento, typecheck, lint, build e arquitetura passaram. Em Agudo, 1366×768, 1024×768, 768×1024 e 390×844 exibiram quatro cards, duas categorias, seis ritmos anuais, fonte mínima de 12 px, foco de teclado visível, console limpo e zero overflow; as grades responderam em 2→1 colunas. Camargo confirmou o estado **Com ressalvas** e a violação de domínio de `pos_graduacao` no fluxo público.
+
 ### Nova iniciativa — identidade SESI-RS, navegação lateral e Home (2026-07-12)
 
 Esta iniciativa não reabre UI-01 a UI-18 nem altera dados, JSONs, cálculos, indicadores, regras de negócio, rotas ou aliases. O escopo cobre a identidade institucional do shell, a navegação global e a hierarquia da Home.
@@ -1106,3 +1138,43 @@ reutilizam exclusivamente os anos e matrículas já carregados; a fórmula da me
 foi preservada. A inspeção em 1366×768 e 1024×768 confirmou o grid com gap de
 20 px; em 768×1024 e 390×844, o empilhamento e a rolagem local da tabela foram
 mantidos, sem overflow global ou erro de console.
+
+## Cadência compartilhada dos eixos temporais (2026-07-18)
+
+Os gráficos temporais compartilhados de Educação, PNE e Financeiros passaram a
+selecionar anos por cadência de calendário, priorizando intervalos regulares de
+2, 3 ou 4 anos e preservando os extremos do período. A projeção de atendimento
+deixou de forçar o último ano observado no eixo quando ele não pertence à
+cadência. Em telas estreitas, a densidade continua reduzida para preservar a
+legibilidade.
+
+Evidência: a página de atendimento foi inspecionada em 1473×912 e 390×844, sem
+overflow; no desktop, o eixo exibiu 2014–2018–2022–2026–2030–2036, e no
+celular preservou 2014 e 2036 com fonte de 12 px. Passaram typecheck, lint,
+build, testes de escalas, Educação, roteamento, ciclo PNE, arquitetura e os
+baselines direcionados de atendimento, filtros e séries lineares. O E2E
+integral validou esta seção e interrompeu depois em uma asserção preexistente
+de quatro recortes de infraestrutura (resultado atual: zero), fora deste
+refinamento.
+
+## Cabeçalho compacto compartilhado de Educação (2026-07-18)
+
+As oito páginas de Indicadores de Educação e os detalhes passaram a reutilizar
+`EducationCompactHeader`, `EducationContextChip` e `EducationSectionBar`. O
+hero alto, o card lateral “Contexto desta página” e os cards introdutórios de
+seção foram substituídos por título editorial, chips de contexto e faixa clara
+de seção/filtros. Cenários preserva retorno, ressalva normativa e todos os
+filtros; detalhes preservam sequência, KPIs, gráficos, apoios e retorno final.
+Dados, cálculos, séries, filtros, hashes, aliases e regras de negócio não foram
+alterados.
+
+Em 1366×768, a Visão geral inicia os dados a 302 px do topo do cabeçalho e as
+seções regulares a 303–319 px; Metodologia fica em 227 px. Cenários (402 px) e
+detalhes (326 px) são as exceções necessárias por preservarem, respectivamente,
+quatro contextos com filtros duplos e a navegação sequencial. As 27 combinações
+de nove páginas em 1366×768, 1024×768 e 390×844 mantiveram um único `h1`, zero
+overflow global e console limpo. Typecheck, lint, build, 21 testes de Educação,
+7 de roteamento, arquitetura e os três baselines direcionados de Educação
+passaram. O E2E integral alcançou a asserção preexistente dos quatro recortes de
+infraestrutura (resultado atual: zero); a regressão visual global também mantém
+diferenças anteriores em PNE/SIOPE, fora deste cabeçalho.

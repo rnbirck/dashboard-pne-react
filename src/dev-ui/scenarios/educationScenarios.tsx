@@ -8,7 +8,11 @@ import { EducationMethodologySection } from '../../features/education/components
 import type { EducationMunicipioData } from '../../features/education/educationTypes'
 import '../../styles/education-pages.css'
 import { ScenarioGrid, ScenarioItem } from '../components/ScenarioPrimitives'
-import { educationIndicators, educationMunicipioFixture } from '../fixtures/catalogFixtures'
+import {
+  educationIndicators,
+  educationMunicipioFixture,
+  educationMunicipioWithoutProjectionsFixture,
+} from '../fixtures/catalogFixtures'
 import type { EducationIndicatorFixture } from '../fixtures/catalogFixtures'
 import type { CatalogScenario } from '../types'
 
@@ -133,7 +137,7 @@ export const educationScenarios: readonly CatalogScenario[] = [
     visual: { enabled: true, viewports: ['mobile'] },
     render: () => (
       <ScenarioGrid columns="single">
-        <ScenarioItem label="Demanda e projeções">
+        <ScenarioItem label="Cenários de atendimento escolar">
           <EducationDemandSection municipioData={educationMunicipioFixture as unknown as EducationMunicipioData} />
         </ScenarioItem>
         <ScenarioItem label="Metodologia e fontes">
@@ -143,6 +147,21 @@ export const educationScenarios: readonly CatalogScenario[] = [
           <div className="dev-ui-method-note">
             <MethodNote>Os valores deste cenário são fixtures determinísticas. Eles verificam a apresentação de uma nota metodológica longa, com fonte extensa, limitações de cobertura e ressalva explícita de que ausência de dado não representa valor zero.</MethodNote>
           </div>
+        </ScenarioItem>
+      </ScenarioGrid>
+    ),
+  },
+  {
+    id: 'education-demand-empty',
+    category: 'Educação',
+    title: 'Atendimento escolar sem projeção',
+    description: 'Estado compacto da página quando nenhum indicador possui trajetória futura publicável.',
+    objective: 'Validar a ausência de filtros, cards e gráficos quando não há projeções.',
+    states: ['sem projeção'],
+    render: () => (
+      <ScenarioGrid columns="single">
+        <ScenarioItem label="Município sem projeções publicáveis">
+          <EducationDemandSection municipioData={educationMunicipioWithoutProjectionsFixture as unknown as EducationMunicipioData} />
         </ScenarioItem>
       </ScenarioGrid>
     ),

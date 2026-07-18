@@ -16,6 +16,8 @@ export const PNE_CHART_GEOMETRY = Object.freeze({
   }),
 })
 
+const MIN_TERMINAL_TICK_SPAN_RATIO = 0.12
+
 export function buildPnePercentScale(values) {
   const numericValues = (values ?? []).map(Number).filter(Number.isFinite)
   const maxValue = numericValues.length ? Math.max(...numericValues, 0) : 0
@@ -99,43 +101,24 @@ export function selectPneYearTicks(points, maxTicks = 6) {
   ))
 
   const limit = Math.max(1, Math.floor(Number(maxTicks) || 1))
-  if (unique.length <= limit) return unique
+  if (unique.length <= 2) return unique
   if (limit === 1) return [unique[0]]
+  if (limit === 2) return [unique[0], unique.at(-1)]
 
   const firstYear = Number(unique[0]?.year ?? unique[0]?.ano)
   const lastYear = Number(unique.at(-1)?.year ?? unique.at(-1)?.ano)
-  const span = lastYear - firstYear
-  const preferredStep = limit >= 8 && span >= 18
-    ? 3
-    : limit >= 6 && span >= 8
-      ? 2
-      : null
+  const preferredStep = [2, 3, 4].find((step) => (
+    Math.ceil((lastYear - firstYear) / step) + 1 <= limit
+  ))
 
   if (preferredStep) {
-    const targetYears = [firstYear]
-    for (let year = firstYear + preferredStep; year < lastYear; year += preferredStep) {
-      targetYears.push(year)
-    }
-    targetYears.push(lastYear)
-
-    if (targetYears.length <= limit) {
-      const selected = []
-      for (const targetYear of targetYears) {
-        const candidate = unique
-          .filter((point) => !selected.includes(point))
-          .sort((a, b) => (
-            Math.abs(Number(a?.year ?? a?.ano) - targetYear) -
-            Math.abs(Number(b?.year ?? b?.ano) - targetYear)
-          ))[0]
-        if (candidate && !selected.includes(candidate)) selected.push(candidate)
-      }
-      if (selected.length === targetYears.length && selected.includes(unique[0]) && selected.includes(unique.at(-1))) {
-        return selected.sort((a, b) => (
-          Number(a?.year ?? a?.ano) - Number(b?.year ?? b?.ano)
-        ))
-      }
-    }
+    return selectClosestAvailableYears(
+      unique,
+      buildCalendarYears(firstYear, lastYear, preferredStep),
+    )
   }
+
+  if (unique.length <= limit) return unique
 
   const selected = []
   const lastIndex = unique.length - 1
@@ -145,6 +128,36 @@ export function selectPneYearTicks(points, maxTicks = 6) {
     if (selected.at(-1) !== point) selected.push(point)
   }
   return selected
+}
+
+function buildCalendarYears(firstYear, lastYear, step) {
+  const years = [firstYear]
+  for (let year = firstYear + step; year < lastYear; year += step) years.push(year)
+  const span = lastYear - firstYear
+  const terminalGap = lastYear - years.at(-1)
+  if (years.length > 1 && span > 0 && terminalGap / span < MIN_TERMINAL_TICK_SPAN_RATIO) years.pop()
+  if (years.at(-1) !== lastYear) years.push(lastYear)
+  return years
+}
+
+function selectClosestAvailableYears(points, targetYears) {
+  const selected = []
+
+  for (const targetYear of targetYears) {
+    const candidate = points
+      .filter((point) => !selected.includes(point))
+      .sort((left, right) => {
+        const leftYear = Number(left?.year ?? left?.ano)
+        const rightYear = Number(right?.year ?? right?.ano)
+        return Math.abs(leftYear - targetYear) - Math.abs(rightYear - targetYear)
+          || leftYear - rightYear
+      })[0]
+    if (candidate) selected.push(candidate)
+  }
+
+  return selected.sort((left, right) => (
+    Number(left?.year ?? left?.ano) - Number(right?.year ?? right?.ano)
+  ))
 }
 
 export function resolvePneAuxiliaryYearTickLimit(chartWidth, maxTicks = 6) {

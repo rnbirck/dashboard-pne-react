@@ -185,6 +185,8 @@ Nos detalhes do PNE, o progresso exibe o valor municipal atual em superfície ne
 
 Eixos usam `--chart-axis-text` e texto final mínimo de 12 px. Legendas não dependem somente de cor. Tooltip nunca é a única forma de obter valor.
 
+Eixos temporais compartilham uma cadência de calendário previsível. No desktop e no notebook, as marcas priorizam intervalos regulares de 2, 3 ou 4 anos e preservam o primeiro e o último ano do período; em larguras reduzidas, a quantidade pode ser menor para evitar colisões, mantendo obrigatoriamente os extremos. Anos intermediários não devem ser escolhidos apenas pela posição do ponto na série.
+
 Tabelas devem ter `caption`, cabeçalhos associados, números tabulares e alinhamento numérico consistente. Em largura reduzida, a rolagem horizontal deve ser explícita; não ocultar colunas silenciosamente.
 
 ### 5.4 Estados do sistema
@@ -247,9 +249,14 @@ neutras e próximas da evidência. Ocre e terracota são sinais editoriais, não
 classificações de desempenho. A direção preserva todos os requisitos deste
 guia para foco, teclado, contraste, zoom, movimento reduzido e responsividade.
 
-No hero de Educação, o bloco lateral organiza contexto, município em destaque,
-seção atual e escopo disponível. Leituras rápidas usam título e texto sobre
-superfície neutra, sem ponto decorativo de status competindo com o conteúdo.
+Nas páginas de Indicadores de Educação, o início usa cabeçalho editorial
+compacto integrado ao conteúdo: identificação superior, `h1` serifado,
+subtítulo curto e chips horizontais de contexto com ícone, rótulo e valor. A
+faixa clara de seção e seus filtros vêm imediatamente abaixo; não há hero alto,
+card lateral de contexto nem card introdutório intermediário. Seções, detalhes,
+cenários e metodologia reutilizam a mesma anatomia com apenas os contextos
+necessários. Leituras rápidas usam título e texto sobre superfície neutra, sem
+ponto decorativo de status competindo com o conteúdo.
 
 ## Indicadores de participação acumulada na expansão
 

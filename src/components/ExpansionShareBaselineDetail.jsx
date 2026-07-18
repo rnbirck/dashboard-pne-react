@@ -1,4 +1,5 @@
 import { QuickReadingHeading } from './QuickReadingHeading'
+import { selectPneYearTicks } from '../utils/pneChartSystem'
 
 const countFormatter = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 })
 const percentFormatter = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 })
@@ -145,7 +146,10 @@ export function IndexedEnrollmentComparison({ series }) {
   const max = Math.ceil((rawMax + padding) / 5) * 5
   const x = (index) => 58 + (index / (points.length - 1)) * 586
   const y = (value) => 214 - ((value - min) / Math.max(1, max - min)) * 172
-  const tickIndexes = getTickIndexes(points.length)
+  const yearTicks = selectPneYearTicks(
+    points.map((point, index) => ({ ...point, x: x(index) })),
+    6,
+  )
 
   return (
     <div className="expansion-index-chart">
@@ -155,7 +159,7 @@ export function IndexedEnrollmentComparison({ series }) {
         <text className="expansion-index-chart__axis-label" x="50" y={y(100) + 4} textAnchor="end">100</text>
         <path className="expansion-index-chart__line expansion-index-chart__line--public" d={buildPath(points, (point) => point.publicIndex, x, y)} />
         <path className="expansion-index-chart__line expansion-index-chart__line--total" d={buildPath(points, (point) => point.totalIndex, x, y)} />
-        {tickIndexes.map((index) => <text className="expansion-index-chart__axis-label" key={points[index].year} x={x(index)} y="240" textAnchor="middle">{points[index].year}</text>)}
+        {yearTicks.map((point) => <text className="expansion-index-chart__axis-label" key={point.year} x={point.x} y="240" textAnchor="middle">{point.year}</text>)}
         {points.map((point, index) => <g key={point.year}><circle className="expansion-index-chart__point expansion-index-chart__point--public" cx={x(index)} cy={y(point.publicIndex)} r="4" tabIndex="0"><title>{`${point.year}: Público, índice ${formatNumber(point.publicIndex)}.`}</title></circle><circle className="expansion-index-chart__point expansion-index-chart__point--total" cx={x(index)} cy={y(point.totalIndex)} r="4" tabIndex="0"><title>{`${point.year}: Total da EPT, índice ${formatNumber(point.totalIndex)}.`}</title></circle></g>)}
       </svg>
     </div>
@@ -170,7 +174,6 @@ function normalizeIndexedSeries(series) {
 }
 
 function buildPath(points, getValue, x, y) { return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${x(index)} ${y(getValue(point))}`).join(' ') }
-function getTickIndexes(length) { const desired = Math.min(6, length); return [...new Set(Array.from({ length: desired }, (_, index) => Math.round((index * (length - 1)) / (desired - 1))))] }
 function getShortMeaning(data) { return !isFiniteMetric(data.currentValue) ? data.interpretation : Number(data.currentValue) < 0 ? 'A rede pública não acompanhou o crescimento total no período.' : Number(data.currentValue) > 100 ? 'O crescimento público superou a expansão líquida total.' : Number(data.currentValue) >= 50 ? 'A participação pública ficou no patamar de referência ou acima.' : 'A participação pública ficou abaixo do patamar de referência.' }
 function getExplanationTitle(data) { if (!isFiniteMetric(data.currentValue)) return 'Não há base suficiente para calcular o resultado'; if (Number(data.currentValue) < 0) return 'O total cresceu, mas a rede pública encolheu'; if (Number(data.currentValue) > 100) return 'O crescimento público superou a expansão líquida total'; if (Number(data.currentValue) >= 50) return 'A rede pública respondeu por pelo menos metade da expansão'; return 'A rede pública participou de menos da metade da expansão' }
 function getResultState(value) { if (!isFiniteMetric(value)) return 'unavailable'; if (Number(value) < 0) return 'negative'; if (Number(value) > 100) return 'above-maximum'; if (Number(value) >= 50) return 'reached'; return 'below' }

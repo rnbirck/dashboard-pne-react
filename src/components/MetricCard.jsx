@@ -1,4 +1,4 @@
-export function MetricCard({ label, value, detail, icon = null, tone = 'default', size = 'normal' }) {
+export function MetricCard({ label, value, detail, icon = /** @type {string | null} */ (null), tone = 'default', size = 'normal' }) {
   const toneClass = tone !== 'default' ? `metric-card--${tone}` : ''
   const sizeClass = size === 'large' ? 'metric-card--large' : ''
   return (

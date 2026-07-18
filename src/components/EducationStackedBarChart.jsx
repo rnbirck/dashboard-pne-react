@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { isMissing } from '../utils/educationFormatters'
 import { chartSeriesColor, closeChartTooltipOnEscape } from '../utils/chartVisuals'
+import { selectPneYearTicks } from '../utils/pneChartSystem'
 import { ChartEmptyState, ChartLegend, ChartTooltip } from './ChartPrimitives'
 
 const CHART_WIDTH = 820
@@ -66,7 +67,9 @@ export function EducationStackedBarChart({
                   <title>{`${segment.label}, ${row.year}: ${formatLabel(segment.value)}`}</title>
                 </rect>
               ))}
-              <text x={row.x + row.width / 2} y={CHART_HEIGHT - 18} textAnchor="middle" className="chart-x-label">{row.year}</text>
+              {chart.visibleYearSet.has(row.year) ? (
+                <text x={row.x + row.width / 2} y={CHART_HEIGHT - 18} textAnchor="middle" className="chart-x-label">{row.year}</text>
+              ) : null}
             </g>
           ))}
         </svg>
@@ -165,7 +168,12 @@ function buildStackedChart(data, categories) {
     y: yScale(value),
   }))
 
-  return { categories: visibleCategories, rows, yTicks }
+  return {
+    categories: visibleCategories,
+    rows,
+    visibleYearSet: new Set(selectPneYearTicks(rows, 6).map((row) => row.year)),
+    yTicks,
+  }
 }
 
 function niceMax(value) {

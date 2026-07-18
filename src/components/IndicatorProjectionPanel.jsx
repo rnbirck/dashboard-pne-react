@@ -8,6 +8,7 @@ import {
   selectPneYearTicks,
 } from '../utils/pneChartSystem'
 import { useChartViewport } from '../hooks/useChartViewport'
+import { buildProjectionEndLabelLayout } from '../utils/projectionEndLabels'
 
 const DEFAULT_CHART_WIDTH = 980
 const DEFAULT_CHART_HEIGHT = 260
@@ -17,23 +18,34 @@ const percentFormatter = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 1,
   minimumFractionDigits: 1,
 })
+const countFormatter = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 })
 
 export function IndicatorProjectionPanel({
   chartHeight = DEFAULT_CHART_HEIGHT,
   chartLabel,
+  chartMaxYear = /** @type {number | null} */ (null),
   chartWidth = DEFAULT_CHART_WIDTH,
-  domainOverride = null,
+  compact = false,
+  contentLabels = {},
+  domainOverride = /** @type {{ max: number, min: number } | null} */ (null),
+  maxXTicks = /** @type {number | null} */ (null),
   pneLayout = false,
   projection,
+  showContextAlerts = true,
+  showGoalReferenceLabel = true,
+  showProjectedLegend = true,
+  showSummaryCards = true,
   showTitle = true,
   contextOnly = false,
+  showGoalReference = false,
+  valueType = 'percent',
 }) {
   const [activePoint, setActivePoint] = useState(null)
   const [tabStopYear, setTabStopYear] = useState(null)
   const pointRefs = useRef([])
   const chartId = useId().replace(/:/g, '')
   const { containerRef, width: measuredWidth } = useChartViewport(chartWidth)
-  const responsiveChartWidth = pneLayout ? measuredWidth : chartWidth
+  const responsiveChartWidth = pneLayout || compact ? measuredWidth : chartWidth
   const responsiveChartHeight = pneLayout
     ? measuredWidth < 300
       ? PNE_CHART_GEOMETRY.projection.mobileHeight
@@ -43,20 +55,26 @@ export function IndicatorProjectionPanel({
   const chart = useMemo(
     () => buildProjectionChart(projection, {
       chartHeight: responsiveChartHeight,
+      chartMaxYear,
       chartMinYear: contextOnly ? projection?.historical_years?.[0] : undefined,
       chartWidth: responsiveChartWidth,
+      compact,
       domainOverride,
+      maxXTicks,
       padding: pneLayout ? PNE_CHART_GEOMETRY.projection.padding : LEGACY_PADDING,
-      showGoalContext: !contextOnly,
+      showGoalContext: !contextOnly || showGoalReference,
+      valueType,
     }),
-    [contextOnly, domainOverride, pneLayout, projection, responsiveChartHeight, responsiveChartWidth],
+    [chartMaxYear, compact, contextOnly, domainOverride, maxXTicks, pneLayout, projection, responsiveChartHeight, responsiveChartWidth, showGoalReference, valueType],
   )
   const lastChartPointYear = chart.points.filter((point) => point.valid !== false).slice(-1)[0]?.year
   const transitionYear = chart.points.filter((point) => point.valid !== false && !point.isProjected).slice(-1)[0]?.year
   const latestHistoricalPoint = chart.points.filter((point) => point.valid !== false && !point.isProjected).slice(-1)[0]
+  const projectedPointLabel = contentLabels.projectedPoint ?? 'Projetado'
+  const formatValue = (value) => formatProjectionValue(value, valueType)
   const accessibleChartLabel = chartLabel
-    ? `${contextOnly ? 'Gráfico de cenário estimado' : 'Gráfico de projeção tendencial'}: ${chartLabel}`
-    : contextOnly ? 'Gráfico de cenário estimado' : 'Gráfico de projeção tendencial'
+    ? `${contentLabels.accessibleChartPrefix ?? (contextOnly ? 'Gráfico de cenário estimado' : 'Gráfico de projeção tendencial')}: ${chartLabel}`
+    : contentLabels.accessibleChartPrefix ?? (contextOnly ? 'Gráfico de cenário estimado' : 'Gráfico de projeção tendencial')
   const focusablePoints = chart.points.filter((point) => point.valid !== false)
   const resolvedTabStopYear = focusablePoints.some((point) => point.year === tabStopYear)
     ? tabStopYear
@@ -89,22 +107,22 @@ export function IndicatorProjectionPanel({
   if (!projection?.available) {
     return (
       <div className="complementary-projection">
-        <ChartEmptyState message="Não há valores para o período selecionado." />
+        <ChartEmptyState message={contentLabels.emptyMessage ?? 'Não há valores para o período selecionado.'} />
       </div>
     )
   }
 
   const projected2036 = projection.projected_2036
-  const target = contextOnly ? null : projection.target_percent
-  const distance = contextOnly ? null : projection.distance_to_target_2036
+  const target = contextOnly && !showGoalReference ? null : projection.target_percent
+  const distance = contextOnly && !showGoalReference ? null : projection.distance_to_target_2036
   const lastHistoricalPct = latestHistoricalPoint?.value ?? null
   const status = projection.status_2036
   const tendeAtingir = status === 'tende_a_atingir'
 
   return (
-    <div className={`complementary-projection${contextOnly ? ' complementary-projection--context' : ''}`}>
+    <div className={`complementary-projection${contextOnly ? ' complementary-projection--context' : ''}${compact ? ' complementary-projection--compact' : ''}${contentLabels.variant ? ` complementary-projection--${contentLabels.variant}` : ''}`}>
       <div className="complementary-projection__header">
-        {showTitle ? <h5>{contextOnly ? 'Cenário estimado até 2036' : 'Projeção tendencial até 2036'}</h5> : null}
+        {showTitle ? <h5>{contentLabels.title ?? (contextOnly ? 'Cenário estimado até 2036' : 'Projeção tendencial até 2036')}</h5> : null}
         {!contextOnly ? (
           <p className="complementary-projection__method">
             Este cenário estima como o indicador pode evoluir até 2036, considerando o
@@ -115,19 +133,19 @@ export function IndicatorProjectionPanel({
         ) : null}
       </div>
 
-      <div className="complementary-projection__cards">
+      {showSummaryCards ? <div className="complementary-projection__cards">
         <div className="complementary-projection__card">
-          <span className="complementary-projection__card-label">{contextOnly ? 'Último valor observado' : 'Valor atual'}</span>
+          <span className="complementary-projection__card-label">{contentLabels.observedValue ?? (compact && latestHistoricalPoint?.year ? `Valor atual (${latestHistoricalPoint.year})` : contextOnly ? 'Último valor observado' : 'Valor atual')}</span>
           <span className="complementary-projection__card-value">
             {lastHistoricalPct != null
-              ? `${percentFormatter.format(lastHistoricalPct)}%${contextOnly && latestHistoricalPoint?.year ? ` (${latestHistoricalPoint.year})` : ''}`
+              ? `${formatValue(lastHistoricalPct)}${contextOnly && !compact && latestHistoricalPoint?.year ? ` (${latestHistoricalPoint.year})` : ''}`
               : '—'}
           </span>
         </div>
         <div className="complementary-projection__card">
-          <span className="complementary-projection__card-label">{contextOnly ? 'Cenário estimado em 2036' : 'Projetado em 2036'}</span>
+          <span className="complementary-projection__card-label">{contentLabels.projectedValue ?? (compact ? 'Cenário estimado 2036' : contextOnly ? 'Cenário estimado em 2036' : 'Projetado em 2036')}</span>
           <span className="complementary-projection__card-value">
-            {projected2036 != null ? `${percentFormatter.format(projected2036)}%` : '—'}
+            {projected2036 != null ? formatValue(projected2036) : '—'}
           </span>
         </div>
         {!contextOnly ? (
@@ -146,15 +164,16 @@ export function IndicatorProjectionPanel({
             </div>
           </>
         ) : null}
-      </div>
+      </div> : null}
 
       {chart.points.length > 0 ? (
         <>
           <ChartLegend
             className="complementary-projection__legend"
             items={[
-              { key: 'observed', label: transitionYear ? `Observado até ${transitionYear}` : 'Observado', color: 'var(--chart-primary)' },
-              { key: 'projected', label: 'Projetado até 2036', color: contextOnly ? 'var(--chart-series-2)' : 'var(--chart-primary)', dashed: true },
+              { key: 'observed', label: contentLabels.observedLegend ?? (transitionYear ? `Observado até ${transitionYear}` : 'Observado'), color: 'var(--chart-primary)' },
+              ...(showProjectedLegend ? [{ key: 'projected', label: contentLabels.projectedLegend ?? 'Projetado até 2036', color: contentLabels.projectedColor ?? (compact || !contextOnly ? 'var(--chart-primary)' : 'var(--chart-series-2)'), dashed: true }] : []),
+              ...(chart.referencePaths.length ? [{ key: 'reference-trajectory', label: contentLabels.referenceLegend ?? 'Trajetória necessária para a referência', color: 'var(--chart-series-3)', dashed: true }] : []),
               ...(target != null ? [{ key: 'target', label: 'Meta PNE 2036', color: 'var(--chart-series-3)', dashed: true }] : []),
             ]}
           />
@@ -162,7 +181,7 @@ export function IndicatorProjectionPanel({
             className="history-chart__canvas complementary-projection__chart"
             ref={containerRef}
             role="region"
-            aria-label={chartLabel ? `Área rolável do gráfico: ${chartLabel}` : 'Área rolável do gráfico'}
+            aria-label={chartLabel ? `${compact ? 'Área interativa' : 'Área rolável'} do gráfico: ${chartLabel}` : `${compact ? 'Área interativa' : 'Área rolável'} do gráfico`}
             tabIndex={0}
           >
           <svg
@@ -201,12 +220,16 @@ export function IndicatorProjectionPanel({
                   x1={chart.padding.left} x2={chart.width - chart.padding.right}
                   y1={chart.metaLine.y} y2={chart.metaLine.y}
                 />
-                <text
-                  x={chart.width - chart.padding.right - 6} y={chart.metaLine.labelY}
-                  textAnchor="end" className="chart-meta-label"
-                >
-                  Meta {percentFormatter.format(target)}%
-                </text>
+                {showGoalReferenceLabel && !chart.endLabels.meta?.hidden ? (
+                  <text
+                    x={chart.endLabels.meta?.x ?? chart.width - chart.padding.right - 6}
+                    y={chart.endLabels.meta?.y ?? chart.metaLine.labelY}
+                    textAnchor="end"
+                    className="chart-meta-label"
+                  >
+                    {projection.target_label ?? 'Meta do PNE'}{projection.target_year ? ` · ${projection.target_year}` : ''} · {formatValue(target)}
+                  </text>
+                ) : null}
               </g>
             )}
 
@@ -223,6 +246,9 @@ export function IndicatorProjectionPanel({
               {chart.projectionPaths.map((path, index) => (
                 <path className="chart-line projection-line--dashed" d={path} key={`projection-${index}`} />
               ))}
+              {chart.referencePaths.map((path, index) => (
+                <path className="chart-line projection-reference-trajectory" d={path} key={`reference-${index}`} />
+              ))}
             </g>
 
             <g className="chart-points">
@@ -231,9 +257,9 @@ export function IndicatorProjectionPanel({
                   ref={(element) => { pointRefs.current[index] = element }}
                   key={point.year}
                   role="img"
-                  aria-label={`${point.isProjected ? 'Projetado' : 'Observado'} ${point.year}: ${percentFormatter.format(point.value)}%`}
+                  aria-label={`${point.isProjected ? projectedPointLabel : 'Observado'} ${point.year}: ${formatValue(point.value)}`}
                   aria-keyshortcuts="ArrowLeft ArrowRight Home End"
-                  className={`chart-mark${point.year === transitionYear ? ' is-transition' : ''}${point.year === lastChartPointYear ? ' is-last' : ''}`}
+                  className={`chart-mark${point.isProjected ? ' is-projected' : ''}${point.year === transitionYear ? ' is-transition' : ''}${point.year === lastChartPointYear ? ' is-last' : ''}`}
                   cx={point.x} cy={point.y}
                   r={activePoint?.year === point.year ? 5.5 : point.year === transitionYear ? 5 : point.year === lastChartPointYear ? 4.5 : 3.5}
                   onMouseEnter={() => setActivePoint(point)}
@@ -246,7 +272,7 @@ export function IndicatorProjectionPanel({
                   onKeyDown={(event) => handlePointKeyDown(event, index)}
                   tabIndex={point.year === resolvedTabStopYear ? 0 : -1}
                 >
-                  <title>{`${point.year}: ${percentFormatter.format(point.value)}%`}</title>
+                  <title>{`${point.year}: ${formatValue(point.value)}`}</title>
                 </circle>
               ))}
             </g>
@@ -263,14 +289,28 @@ export function IndicatorProjectionPanel({
                 </text>
               ))}
             </g>
+
+            {chart.lastProjectedPoint && chart.endLabels.projected ? (
+              <g className={`projection-direct-label${chart.endLabels.combined ? ' is-combined' : ''}`} aria-hidden="true">
+                <text
+                  x={chart.endLabels.projected.x}
+                  y={chart.endLabels.projected.y}
+                  textAnchor="end"
+                >
+                  {chart.endLabels.combined
+                    ? `${chart.lastProjectedPoint.year} · Cenário e meta PNE: ${formatValue(chart.lastProjectedPoint.value)}`
+                    : `${chart.lastProjectedPoint.year} · ${formatValue(chart.lastProjectedPoint.value)}`}
+                </text>
+              </g>
+            ) : null}
           </svg>
 
           {activePoint && (
             <ChartTooltip
               className="history-chart__tooltip"
               label={activePoint.year}
-              series={activePoint.isProjected ? 'Projetado' : 'Observado'}
-              value={activePoint.valid === false ? '—' : `${percentFormatter.format(activePoint.value)}%`}
+              series={activePoint.isProjected ? projectedPointLabel : 'Observado'}
+              value={activePoint.valid === false ? '—' : formatValue(activePoint.value)}
               style={{
                 left: `${Math.min(92, Math.max(10, (activePoint.x / chart.width) * 100))}%`,
                 top: `${(activePoint.y / chart.height) * 100}%`,
@@ -287,7 +327,7 @@ export function IndicatorProjectionPanel({
       )}
 
       {contextOnly ? (
-        projection.quality || projection.warnings?.length ? (
+        showContextAlerts && (projection.quality || projection.warnings?.length) ? (
           <div className="education-projection-alerts platform-coverage-note" role="note">
             {projection.quality ? <p><strong>Qualidade do cenário:</strong> {formatProjectionQuality(projection.quality)}.</p> : null}
             {projection.warnings?.length ? (
@@ -320,14 +360,18 @@ function formatProjectionQuality(quality) {
 
 function buildProjectionChart(projection, {
   chartHeight,
+  chartMaxYear,
   chartMinYear,
   chartWidth,
+  compact = false,
   domainOverride,
+  maxXTicks,
   padding = LEGACY_PADDING,
   showGoalContext = true,
+  valueType = 'percent',
 } = {}) {
   const width = Math.max(180, Number(chartWidth) || DEFAULT_CHART_WIDTH)
-  const height = Math.max(240, Number(chartHeight) || DEFAULT_CHART_HEIGHT)
+  const height = Math.max(compact ? 180 : 240, Number(chartHeight) || DEFAULT_CHART_HEIGHT)
   const emptyChart = {
     areaPath: null,
     height,
@@ -335,10 +379,13 @@ function buildProjectionChart(projection, {
     metaLine: null,
     points: [],
     projectionPaths: [],
+    referencePaths: [],
     padding,
     width,
     xTicks: [],
     yTicks: [],
+    lastProjectedPoint: null,
+    endLabels: { combined: false, meta: null, projected: null },
   }
 
   if (!projection?.available) {
@@ -352,7 +399,7 @@ function buildProjectionChart(projection, {
     .filter(Number.isFinite)
     .sort((a, b) => a - b)[0]
   const CHART_MIN_YEAR = chartMinYear ?? Math.max(firstHistoricalYear ?? 2015, 2015)
-  const CHART_MAX_YEAR = 2036
+  const CHART_MAX_YEAR = chartMaxYear ?? 2036
   const histPoints = historicalYears
     .map((y, i) => ({
       year: y,
@@ -372,6 +419,14 @@ function buildProjectionChart(projection, {
       isProjected: true,
     }))
 
+  const referenceValues = projection.reference_trajectory_values || []
+  const referenceYears = projection.reference_trajectory_years || []
+  const referencePoints = referenceYears.map((year, index) => ({
+    year,
+    value: referenceValues[index],
+    valid: referenceValues[index] != null && isFinite(referenceValues[index]),
+  }))
+
   const validPoints = [...histPoints, ...projPoints].filter((point) => point.valid)
   if (validPoints.length < 1) {
     return emptyChart
@@ -381,8 +436,11 @@ function buildProjectionChart(projection, {
 
   const target = showGoalContext ? projection.target_percent : null
   const values = validPoints.map(p => p.value)
+  values.push(...referencePoints.filter((point) => point.valid).map((point) => point.value))
   if (target != null) values.push(target)
-  const domain = domainOverride ?? buildPnePercentScale(values).domain
+  const domain = domainOverride ?? (valueType === 'count'
+    ? buildCountScale(values).domain
+    : buildPnePercentScale(values).domain)
   const domainMin = domain.min
   const domainMax = domain.max
 
@@ -406,11 +464,17 @@ function buildProjectionChart(projection, {
   const historicalSegments = buildProjectionSegments(histScaled)
   const projectionSegments = buildProjectionSegments(projScaled)
   const lastHist = histScaled.filter((point) => point.valid).slice(-1)[0]
-  if (lastHist && projectionSegments[0]?.[0]?.year === projScaled[0]?.year) {
+  if (lastHist && projectionSegments.length > 0 && projectionSegments[0]?.[0]?.year === projScaled[0]?.year) {
     projectionSegments[0] = [lastHist, ...projectionSegments[0]]
   }
   const historicalPaths = historicalSegments.map(buildProjectionPath)
   const projectionPaths = projectionSegments.map(buildProjectionPath)
+  const referenceScaled = referencePoints.map((point) => ({
+    ...point,
+    x: xScale(point.year),
+    y: point.valid ? yScale(point.value) : padding.top + plotHeight / 2,
+  }))
+  const referencePaths = buildProjectionSegments(referenceScaled).map(buildProjectionPath)
 
   const allScaledValid = scaledPoints.filter(p => p.valid)
   const firstPt = allScaledValid[0]
@@ -422,8 +486,11 @@ function buildProjectionChart(projection, {
     ? `${fullLinePath} L${lastPt.x.toFixed(1)} ${zeroY.toFixed(1)} L${firstPt.x.toFixed(1)} ${zeroY.toFixed(1)} Z`
     : ''
 
-  const yTicks = buildPnePercentTicks(domain).map((value) => ({
-    label: `${value}%`,
+  const yTickValues = valueType === 'count'
+    ? buildCountScale(values, domain).ticks
+    : buildPnePercentTicks(domain)
+  const yTicks = yTickValues.map((value) => ({
+    label: formatProjectionValue(value, valueType),
     value,
     y: yScale(value),
   }))
@@ -438,11 +505,25 @@ function buildProjectionChart(projection, {
         y: Math.max(padding.top, Math.min(yScale(target), height - padding.bottom)),
       })
     : null
+  const lastProjectedPoint = projScaled.filter((point) => point.valid).slice(-1)[0] ?? null
+  const endLabels = buildProjectionEndLabelLayout({
+    chartHeight: height,
+    chartWidth: width,
+    lastProjectedPoint,
+    metaLine,
+    padding,
+    projectedRawValue: Number(projection.raw_projected_2036),
+    targetRawValue: Number(target),
+    targetYear: Number(projection.target_year),
+  })
 
-  const xTicks = selectPneYearTicks(
-    allScaledValid,
-    width < 320 ? 3 : width < 420 ? 5 : width < 520 ? 6 : 8,
-  )
+  const responsiveXTickLimit = width < 320 ? 3 : width < 420 ? 5 : width < 520 ? 6 : 8
+  const xTickLimit = maxXTicks == null ? responsiveXTickLimit : Math.min(maxXTicks, responsiveXTickLimit)
+  const targetYear = Number(projection.target_year)
+  const tickCandidates = Number.isFinite(targetYear) && targetYear >= minYear && targetYear <= maxYear
+    ? [...allScaledValid, { year: targetYear, x: xScale(targetYear), valid: true }]
+    : allScaledValid
+  const xTicks = selectPneYearTicks(tickCandidates, xTickLimit)
 
   return {
     points: scaledPoints,
@@ -453,10 +534,36 @@ function buildProjectionChart(projection, {
     historicalPaths,
     padding,
     projectionPaths,
+    referencePaths,
     width,
     xTicks,
+    endLabels,
+    lastProjectedPoint,
   }
 }
+
+function buildCountScale(values, suppliedDomain) {
+  const finite = values.map(Number).filter(Number.isFinite)
+  const maxValue = finite.length ? Math.max(...finite, 0) : 1
+  const roughStep = maxValue > 0 ? maxValue / 4 : 1
+  const magnitude = 10 ** Math.floor(Math.log10(roughStep))
+  const normalized = roughStep / magnitude
+  const step = (normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10) * magnitude
+  const domain = suppliedDomain ?? { min: 0, max: Math.max(step, Math.ceil(maxValue / step) * step) }
+  const span = domain.max - domain.min
+  return {
+    domain,
+    ticks: Array.from({ length: 5 }, (_item, index) => domain.min + (span * index) / 4),
+  }
+}
+
+function formatProjectionValue(value, valueType) {
+  if (value == null || !Number.isFinite(Number(value))) return '—'
+  return valueType === 'count'
+    ? countFormatter.format(Number(value))
+    : `${percentFormatter.format(Number(value))}%`
+}
+
 
 function buildProjectionSegments(points) {
   const segments = []

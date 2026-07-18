@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { ContentState } from '../../components/ContentState.jsx'
 import { ErrorState } from '../../components/ErrorState.jsx'
-import { PageHeadingText } from '../../components/HeadingText.jsx'
 import { loadEducationMunicipio, loadEducationMunicipiosIndex } from '../../data/educationData.js'
 import {
   EDUCATION_INDICATOR_CATALOG,
@@ -13,6 +12,7 @@ import {
 import { setHashContext } from '../../utils/hashNavigation'
 import { useAsyncData } from '../../utils/useAsyncData.js'
 import '../../styles/education-pages.css'
+import { EducationCompactHeader } from './components/EducationCompactHeader'
 import { EducationDemandSection } from './components/EducationDemandSection'
 import { EducationIndicatorsSection } from './components/EducationIndicatorsSection'
 import { EducationMethodologySection } from './components/EducationMethodologySection'
@@ -30,6 +30,7 @@ import {
   buildPneComplementaryTheme,
 } from './educationViewModels'
 import { useEducationPageState } from './hooks/useEducationPageState'
+import { normalizeEducationIndicatorLabel } from './educationFormatters'
 import type { EducationIndicatorKey, EducationPageProps } from './educationTypes'
 
 const PANORAMA_THEME_KEYS = {
@@ -42,6 +43,13 @@ const EDUCATION_PAGE_COPY = {
   emptyDescription: 'Os indicadores educacionais são carregados após a seleção do município. Use o seletor no topo da página.',
   eyebrow: 'Indicadores de Educação',
   title: 'Indicadores de Educação',
+}
+
+function latestEducationYear(items: ReadonlyArray<Record<string, unknown>>) {
+  const years = items
+    .map((item) => Number(item.currentYear ?? item.year))
+    .filter((year) => Number.isFinite(year) && year > 0)
+  return years.length ? Math.max(...years) : null
 }
 
 export function EducationPage({ indicadores, municipioData, navigationContext, selectedMunicipio }: EducationPageProps) {
@@ -74,7 +82,6 @@ export function EducationPage({ indicadores, municipioData, navigationContext, s
     setSelectedIndicatorKey,
     setSelectedThemeKey,
   } = useEducationPageState(currentNavigation)
-
   const dados = munDataState.data
   const sistemaS = dados?.blocos?.sistema_s ?? {}
   const hasSistemaS =
@@ -102,11 +109,11 @@ export function EducationPage({ indicadores, municipioData, navigationContext, s
   if (!selectedMunicipio) {
     return (
       <div className="page-stack educacao-page">
-        <section className="page-card educacao-hero">
-          <div>
-            <PageHeadingText eyebrow={pageCopy.eyebrow} title={pageCopy.title} description={pageCopy.description} />
-          </div>
-        </section>
+        <EducationCompactHeader
+          description={pageCopy.description}
+          eyebrow={pageCopy.eyebrow}
+          title={pageCopy.title}
+        />
         <section className="empty-state">
           <div className="empty-state__icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -157,6 +164,7 @@ export function EducationPage({ indicadores, municipioData, navigationContext, s
   const model = buildEducationModel(dados.blocos ?? {})
   const pneComplementaryTheme = buildPneComplementaryTheme({
     indicadores,
+    rede: dados.blocos?.rede_escolar,
     results: municipioData?.pne_2026_2036?.indicadores,
   })
   const allEducationItems = [
@@ -180,6 +188,50 @@ export function EducationPage({ indicadores, municipioData, navigationContext, s
     selectedSectionKey,
     sectionKeys: EDUCATION_SECTION_KEYS,
   })
+  const isShowingCompactEducationPage = isShowingIndicatorDetail || isDemandSection
+  const sectionLatestYear = latestEducationYear(sectionItems)
+  const overviewLatestYear = latestEducationYear(model.overview)
+
+  const standardHeader = isShowingIndicatorDetail && activeIndicator ? (
+    <EducationCompactHeader
+      backLink={{ onClick: handleBackToIndicators }}
+      contextItems={[
+        { icon: 'municipality', label: 'Município', value: selectedMunicipio },
+        { icon: 'cut', label: 'Recorte', value: String(activeIndicator.mainCutLabel ?? activeIndicator.themeLabel ?? section?.label ?? 'Municipal') },
+        { icon: 'period', label: 'Período', value: activeIndicator.currentYear ? String(activeIndicator.currentYear) : 'Último disponível' },
+      ]}
+      description={activeIndicator.description}
+      eyebrow="Indicador educacional"
+      title={normalizeEducationIndicatorLabel(activeIndicator.label)}
+      variant="detail"
+    />
+  ) : isMethodologySection ? (
+    <EducationCompactHeader
+      contextItems={[
+        { icon: 'municipality', label: 'Município', value: selectedMunicipio },
+        { icon: 'scope', label: 'Escopo', value: `${EDUCATION_INDICATOR_CATALOG.length} indicadores` },
+        { icon: 'source', label: 'Referência', value: 'Fontes oficiais' },
+      ]}
+      description={section?.description}
+      title={section?.label ?? 'Metodologia e fontes'}
+      variant="methodology"
+    />
+  ) : (
+    <EducationCompactHeader
+      contextItems={[
+        { icon: 'municipality', label: 'Município', value: selectedMunicipio },
+        { icon: 'section', label: 'Seção', value: section?.label ?? 'Visão geral' },
+        { icon: 'scope', label: 'Escopo', value: isOverviewSection ? '7 destaques' : contextScope },
+        ...((isOverviewSection ? overviewLatestYear : sectionLatestYear)
+          ? [{ icon: 'period' as const, label: 'Atualização', value: String(isOverviewSection ? overviewLatestYear : sectionLatestYear) }]
+          : []),
+      ]}
+      description={pageCopy.description}
+      eyebrow={pageCopy.eyebrow}
+      title={pageCopy.title}
+      variant="section"
+    />
+  )
 
   function handleIndicatorCardSelect(indicatorKey: EducationIndicatorKey) {
     detailNavigation.prepareDetail(indicatorKey, { captureGridPosition: true })
@@ -220,34 +272,26 @@ export function EducationPage({ indicadores, municipioData, navigationContext, s
     })
   }
 
-  return (
-    <div className={`page-stack educacao-page educacao-page--${selectedSectionKey}${isShowingIndicatorDetail ? ' educacao-page--detail' : ''}`}>
-      {isShowingIndicatorDetail ? <h1 className="u-sr-only">{pageCopy.title}</h1> : null}
-      {!isShowingIndicatorDetail ? <section className="page-card educacao-hero">
-        <div className="educacao-hero__intro">
-          <PageHeadingText eyebrow={pageCopy.eyebrow} title={pageCopy.title} description={pageCopy.description} />
-          <aside className="educacao-hero__meta" aria-label="Contexto desta página">
-            <span className="educacao-hero__meta-label">Contexto desta página</span>
-            <strong className="educacao-hero__municipality">{selectedMunicipio}</strong>
-            <dl className="educacao-hero__meta-details">
-              <div>
-                <dt>Seção atual</dt>
-                <dd>{section?.label ?? 'Visão geral'}</dd>
-              </div>
-              <div>
-                <dt>Escopo</dt>
-                <dd>{contextScope}</dd>
-              </div>
-            </dl>
-          </aside>
-        </div>
+  function handleDemandBackToIndicators() {
+    setSelectedIndicatorKey('')
+    setIsDetailOpen(false)
+    setHashContext(navigationContext?.rawRoute || 'educacao', {
+      secao: EDUCATION_SECTION_KEYS.overview,
+    })
+  }
 
-      </section> : null}
+  return (
+    <div className={`page-stack educacao-page educacao-page--${selectedSectionKey}${isShowingCompactEducationPage ? ' educacao-page--detail' : ''}`}>
+      {!isDemandSection ? standardHeader : null}
 
       {isOverviewSection && !isSistemaSTheme ? (
         <EducationOverviewSection overview={model.overview} sections={EDUCATION_SECTION_CATALOG} />
       ) : isDemandSection && !isSistemaSTheme ? (
-        <EducationDemandSection municipioData={municipioData} />
+        <EducationDemandSection
+          municipioData={municipioData}
+          onBackToIndicators={handleDemandBackToIndicators}
+          selectedMunicipio={selectedMunicipio}
+        />
       ) : isMethodologySection && !isSistemaSTheme ? (
         <EducationMethodologySection catalog={EDUCATION_INDICATOR_CATALOG} items={allEducationItems} />
       ) : (

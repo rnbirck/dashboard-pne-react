@@ -41,12 +41,6 @@ export function EducationMethodologySection({ catalog, items }: EducationMethodo
 
   return (
     <div className="education-methodology-page">
-      <section className="page-card education-thematic-heading" aria-labelledby="education-methodology-title">
-        <span className="eyebrow">Seção de indicadores</span>
-        <h2 id="education-methodology-title">Metodologia e fontes</h2>
-        <p>Como os indicadores são organizados, quais fontes os sustentam e quais cuidados orientam sua leitura no diagnóstico municipal.</p>
-      </section>
-
       <MethodologyTextSection title="Escopo do diagnóstico" variant="scope">
         <p>O diagnóstico considera instituições de ensino localizadas no município. Quando disponíveis, os dados distinguem diferentes dependências administrativas e recortes da oferta educacional.</p>
         <p>Os indicadores apoiam a leitura do território, mas não substituem levantamentos complementares realizados pelo município.</p>

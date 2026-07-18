@@ -319,12 +319,64 @@ const completeProjection: ProjectionFixture = {
 }
 
 export const educationMunicipioFixture = {
+  educacao: {
+    atendimento_cenarios: {
+      contractVersion: 'education-attendance-v2',
+      municipality: 'Município de referência',
+      ageCoverage: Object.fromEntries([
+        ['creche', 'Atendimento em creche', '0 a 3 anos', 78.4],
+        ['pre_escola', 'Atendimento na pré-escola', '4 a 5 anos', 104.2],
+        ['basico_6_17', 'Atendimento na educação básica', '6 a 17 anos', 97.2],
+        ['basico_15_17', 'Atendimento de adolescentes', '15 a 17 anos', 89.4],
+        ['infantil_0_5', 'Atendimento da educação infantil', '0 a 5 anos', 87.3],
+        ['obrigatoria_4_17', 'Atendimento na escolaridade obrigatória', '4 a 17 anos', 98.1],
+        ['escolar_6_14', 'Atendimento escolar', '6 a 14 anos', 99.5],
+      ].map(([key, title, ageRange, value]) => [key, {
+        contractVersion: 'education-attendance-v2',
+        indicatorKey: key,
+        kind: 'age_coverage',
+        title,
+        ageRange,
+        territorialBasis: { numerator: 'município da escola', denominator: 'população residente municipal' },
+        fields: { numerator: `mat_${key}`, denominator: `pop_${key}` },
+        observed: { year: 2025, numerator: 3210, denominator: 4090, rawValue: value },
+        historical: [
+          { year: 2022, numerator: 3100, denominator: 4180, rawValue: Number(value) - 3 },
+          { year: 2023, numerator: 3160, denominator: 4130, rawValue: Number(value) - 1.5 },
+          { year: 2025, numerator: 3210, denominator: 4090, rawValue: value },
+        ],
+        reference: ['creche', 'pre_escola', 'basico_6_17', 'basico_15_17'].includes(String(key))
+          ? { value: key === 'creche' ? 60 : key === 'basico_15_17' ? 85 : 100, unit: 'percent', validationStatus: 'configured_unvalidated', year: 2036, direction: 'at_least' }
+          : null,
+        populationModel: { status: 'modeled', baseYear: 2025, horizonYear: 2036, baseValue: 4090, modeledValue: 3680, changeAbsolute: -410, changePercent: -10, method: 'municipal_base_scaled_by_rs_age_group_change', label: 'População municipal modelada para 2036' },
+        scenario: { type: 'trend_scenario', method: 'fixture', status: 'available', projected: [{ year: 2026, numerator: 3220, denominator: 4050, rawValue: Number(value) + 1 }, { year: 2036, numerator: 3300, denominator: 3680, rawValue: Number(value) + 8 }] },
+        diagnostics: { invalidDenominator: false, smallDenominator: false, smallDenominatorThreshold: 500, above100: Number(value) > 100, warnings: Number(value) > 100 ? ['O valor acima de 100% é preservado: matrículas e população usam bases territoriais distintas.'] : [] },
+        presentation: { headline: `${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 1 })}%`, statusLabel: Number(value) > 100 ? 'Acima de 100% — bases territoriais distintas' : 'Dado disponível', insightLines: [`O indicador compara matrículas com a população residente de ${ageRange}.`] },
+      }])),
+      integral: {
+        overall: {
+          contractVersion: 'education-attendance-v2', indicatorKey: 'basico_integral', kind: 'integral_coverage', title: 'Participação da educação básica em tempo integral', territorialBasis: { numerator: 'município da escola', denominator: 'município da escola' }, fields: { numerator: 'mat_basico_integral', denominator: 'mat_basico' }, observed: { year: 2025, numerator: 2300, denominator: 9000, rawValue: 25.6 }, historical: [{ year: 2022, numerator: 1800, denominator: 9200, rawValue: 19.6 }, { year: 2025, numerator: 2300, denominator: 9000, rawValue: 25.6 }], reference: { targets: [{ year: 2031, value: 35, type: 'configured_reference' }, { year: 2036, value: 50, type: 'configured_reference' }], validationStatus: 'configured_unvalidated' }, scenario: { type: 'pne_reference_trajectory', method: 'configured_pne_reference_trajectory', status: 'available', projected: [{ year: 2031, numerator: null, denominator: null, rawValue: 35, displayValue: 35 }, { year: 2036, numerator: null, denominator: null, rawValue: 50, displayValue: 50 }] }, diagnostics: { invalidDenominator: false, smallDenominator: false, smallDenominatorThreshold: 1000, above100: false, warnings: [] }, presentation: { headline: '25,6%', statusLabel: 'Dado disponível', insightLines: ['Rede pública.'] },
+        },
+      },
+    },
+  },
   pne_2026_2036: {
     projecoes: {
       creche: completeProjection,
       pre_escola: { ...completeProjection, projected_2036: 96.4, warnings: [] },
       basico_6_17: { ...completeProjection, historical_percent: [96.1, 96.8, 97.2], historical_population: [11800, 11690, 11580], historical_years: [2022, 2023, 2024] },
       basico_15_17: { ...completeProjection, historical_percent: [], historical_population: [], historical_years: [], projected_percent: [], years: [], available: false },
+    },
+  },
+}
+
+export const educationMunicipioWithoutProjectionsFixture = {
+  educacao: {
+    atendimento_cenarios: {
+      ageCoverage: {},
+      contractVersion: 'education-attendance-v2',
+      integral: { overall: null },
+      municipality: 'Município sem projeções publicáveis',
     },
   },
 }

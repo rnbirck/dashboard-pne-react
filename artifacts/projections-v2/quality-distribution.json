@@ -1,0 +1,95 @@
+{
+  "experimentVersion": "projection-engine-v2-shadow-1",
+  "provisionalOnly": true,
+  "method": "Indicator-specific empirical quartiles from 497 municipal histories and origin-based backtests.",
+  "indicators": [
+    {
+      "indicatorKey": "basico_integral",
+      "selectedShadowModel": "last_components",
+      "thresholdsDerivedFromMunicipalDistribution": {
+        "maeP50": 4.683015,
+        "maeP75": 7.787092,
+        "denominatorP25": 537.0,
+        "volatilityP75": 3.32086,
+        "modelSpreadP75": 7.218394
+      },
+      "rules": {
+        "alta": "MAE até P50, sem lacuna/recência/porte/volatilidade/divergência adversos",
+        "media": "MAE até P75 e no máximo dois sinais adversos",
+        "baixa": "demais séries avaliáveis",
+        "insuficiente": "menos de cinco pontos válidos ou sem erro retroativo avaliável"
+      },
+      "distribution": {
+        "alta": 23,
+        "baixa": 160,
+        "media": 314
+      }
+    },
+    {
+      "indicatorKey": "escolas_integral",
+      "selectedShadowModel": "last_components",
+      "thresholdsDerivedFromMunicipalDistribution": {
+        "maeP50": 7.142857,
+        "maeP75": 12.5,
+        "denominatorP25": 4.0,
+        "volatilityP75": 5.0,
+        "modelSpreadP75": 12.103217
+      },
+      "rules": {
+        "alta": "MAE até P50, sem lacuna/recência/porte/volatilidade/divergência adversos",
+        "media": "MAE até P75 e no máximo dois sinais adversos",
+        "baixa": "demais séries avaliáveis",
+        "insuficiente": "menos de cinco pontos válidos ou sem erro retroativo avaliável"
+      },
+      "distribution": {
+        "alta": 23,
+        "baixa": 145,
+        "media": 329
+      }
+    },
+    {
+      "indicatorKey": "pos_graduacao",
+      "selectedShadowModel": "last_components",
+      "thresholdsDerivedFromMunicipalDistribution": {
+        "maeP50": 5.976614,
+        "maeP75": 8.429676,
+        "denominatorP25": 45.0,
+        "volatilityP75": 4.554807,
+        "modelSpreadP75": 12.961138
+      },
+      "rules": {
+        "alta": "MAE até P50, sem lacuna/recência/porte/volatilidade/divergência adversos",
+        "media": "MAE até P75 e no máximo dois sinais adversos",
+        "baixa": "demais séries avaliáveis",
+        "insuficiente": "menos de cinco pontos válidos ou sem erro retroativo avaliável"
+      },
+      "distribution": {
+        "alta": 55,
+        "baixa": 154,
+        "media": 288
+      }
+    },
+    {
+      "indicatorKey": "temporarios",
+      "selectedShadowModel": "last_components",
+      "thresholdsDerivedFromMunicipalDistribution": {
+        "maeP50": 8.796305,
+        "maeP75": 12.166019,
+        "denominatorP25": 45.0,
+        "volatilityP75": 5.302148,
+        "modelSpreadP75": 11.308987
+      },
+      "rules": {
+        "alta": "MAE até P50, sem lacuna/recência/porte/volatilidade/divergência adversos",
+        "media": "MAE até P75 e no máximo dois sinais adversos",
+        "baixa": "demais séries avaliáveis",
+        "insuficiente": "menos de cinco pontos válidos ou sem erro retroativo avaliável"
+      },
+      "distribution": {
+        "alta": 50,
+        "baixa": 163,
+        "media": 284
+      }
+    }
+  ]
+}

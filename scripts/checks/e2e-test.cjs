@@ -7,13 +7,14 @@ const SISTEMA_S_MUNICIPALITY = 'Alegrete';
 const PNE_2014 = 'PNE 2014\u20132024';
 const PNE_2026 = 'PNE 2026\u20132036';
 const EDUCATION = 'Indicadores de Educa\u00e7\u00e3o';
+const EDUCATION_DEMAND_TITLE = 'Cenários de atendimento escolar';
 const FINANCE = 'Indicadores Financeiros da Educa\u00e7\u00e3o';
 const FINANCE_TITLE = 'Como a educa\u00e7\u00e3o municipal \u00e9 financiada';
 const LEGAL_GOALS = 'Metas legais';
 const LEGAL_GOALS_TITLE = 'Metas legais do PNE 2026\u20132036';
 const DIAGNOSIS = 'Diagn\u00f3stico municipal';
 const EDUCATION_EMPTY = 'Nenhum indicador encontrado para \u201cconsulta sem resultado\u201d nesta se\u00e7\u00e3o.';
-const EDUCATION_DEMAND_NOTE = 'Os indicadores consideram os dados dispon\u00edveis para o munic\u00edpio. Matr\u00edculas localizadas no territ\u00f3rio n\u00e3o representam necessariamente a resid\u00eancia dos estudantes. As proje\u00e7\u00f5es s\u00e3o cen\u00e1rios estimados e n\u00e3o constituem previs\u00e3o oficial nem c\u00e1lculo direto de d\u00e9ficit de vagas.';
+const EDUCATION_DEMAND_NOTE = 'Matr\u00edculas: Censo Escolar da Educa\u00e7\u00e3o B\u00e1sica, INEP. Popula\u00e7\u00e3o hist\u00f3rica: base municipal por idade simples utilizada pelo painel. A p\u00e1gina n\u00e3o mede fila, procura manifesta, vagas ociosas ou d\u00e9ficit de atendimento.';
 const EDUCATION_NO_COMPARISON_CARD = /^Abrir detalhe do indicador Matr\u00edculas na rede privada\./;
 const EDUCATION_SCHOOL_STAGE_METHOD = 'Uma mesma escola pode ofertar mais de uma etapa; por isso, a soma por etapa pode ser maior que o total de escolas.';
 const LEGAL_GOALS_EMPTY = 'Nenhuma meta com acompanhamento municipal compar\u00e1vel encontrada para os filtros selecionados.';
@@ -59,14 +60,14 @@ const RESPONSIVE_VIEWPORTS = [
 const MOBILE_DATA_SOURCE_VIEWPORT = { width: 390, height: 844 };
 const SIDEBAR_GROUP_IDS = Object.freeze(['pne', 'educacao', 'financeiros']);
 const EDUCATION_SIDEBAR_ROUTES = Object.freeze([
-  { key: 'visao-geral', href: '#educacao?secao=visao-geral' },
-  { key: 'atendimento', href: '#educacao?secao=atendimento' },
-  { key: 'trajetoria', href: '#educacao?secao=trajetoria' },
-  { key: 'profissionais', href: '#educacao?secao=profissionais' },
-  { key: 'infraestrutura', href: '#educacao?secao=infraestrutura' },
-  { key: 'modalidades', href: '#educacao?secao=modalidades' },
-  { key: 'demanda', href: '#educacao?secao=demanda' },
-  { key: 'metodologia', href: '#educacao?secao=metodologia' },
+  { key: 'visao-geral', href: '#educacao?secao=visao-geral', title: EDUCATION },
+  { key: 'atendimento', href: '#educacao?secao=atendimento', title: EDUCATION },
+  { key: 'trajetoria', href: '#educacao?secao=trajetoria', title: EDUCATION },
+  { key: 'profissionais', href: '#educacao?secao=profissionais', title: EDUCATION },
+  { key: 'infraestrutura', href: '#educacao?secao=infraestrutura', title: EDUCATION },
+  { key: 'modalidades', href: '#educacao?secao=modalidades', title: EDUCATION },
+  { key: 'demanda', href: '#educacao?secao=demanda', title: EDUCATION_DEMAND_TITLE },
+  { key: 'metodologia', href: '#educacao?secao=metodologia', title: 'Metodologia e fontes' },
 ]);
 const MOBILE_PRIMARY_PAGE_ROUTES = Object.freeze([
   { href: '#home', label: 'Home' },
@@ -578,14 +579,14 @@ async function verifySidebarDesktopFlow(page, viewport) {
   await assertSidebarState(page, 'educacao', `${context}: Espaço reabre educação`);
 
   for (const route of EDUCATION_SIDEBAR_ROUTES) {
-    await clickSidebarLink(page, route.href, EDUCATION, `${context}: rota ${route.key}`);
+    await clickSidebarLink(page, route.href, route.title, `${context}: rota ${route.key}`);
     await assertSidebarState(page, 'educacao', `${context}: rota ${route.key}`);
     await assertSidebarCurrentLink(page, 'educacao', route.href, `${context}: rota ${route.key}`);
   }
 
   const reloadRoute = EDUCATION_SIDEBAR_ROUTES.at(-1);
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await waitForPageTitle(page, EDUCATION);
+  await waitForPageTitle(page, reloadRoute.title);
   await assertSidebarState(page, 'educacao', `${context}: reload ${reloadRoute.key}`);
   await assertSidebarCurrentLink(page, 'educacao', reloadRoute.href, `${context}: reload ${reloadRoute.key}`);
 
@@ -653,7 +654,7 @@ async function verifySidebarMobileDrawerFlow(page, viewport) {
   await assertSidebarState(page, 'educacao', `${context}: abertura do grupo`);
   await assertSidebarVerticalLayout(page, 'educacao', `${context}: abertura do grupo`);
   const selectedRoute = EDUCATION_SIDEBAR_ROUTES[1];
-  await clickSidebarLink(page, selectedRoute.href, EDUCATION, `${context}: item do submenu`);
+  await clickSidebarLink(page, selectedRoute.href, selectedRoute.title, `${context}: item do submenu`);
   state = await readSidebarState(page);
   assert.equal(state.menuExpanded, 'false', `${context}: navegação fecha o drawer`);
   assert.equal(state.drawer.ariaHidden, 'true', `${context}: drawer fechado após navegação`);
@@ -678,7 +679,7 @@ async function verifySidebarMobileDrawerFlow(page, viewport) {
 
   const directRoute = EDUCATION_SIDEBAR_ROUTES.at(-1);
   await page.goto(`${BASE_URL}/${directRoute.href}`, { waitUntil: 'domcontentloaded' });
-  await waitForPageTitle(page, EDUCATION);
+  await waitForPageTitle(page, directRoute.title);
   await assertSidebarState(page, 'educacao', `${context}: URL direta/reload`);
   await assertSidebarCurrentLink(page, 'educacao', directRoute.href, `${context}: URL direta/reload`);
 
@@ -721,7 +722,7 @@ async function assertCardActivationAndFocusRestoration(page, card, cardName, key
   assert.equal(await card.getAttribute('aria-pressed'), 'false', `${context}: card inicia sem seleção`);
   await card.focus();
   await page.keyboard.press(key);
-  await page.getByRole('heading', { level: 2, name: indicatorName, exact: true }).waitFor({ state: 'visible' });
+  await page.getByRole('heading', { level: 1, name: indicatorName, exact: true }).waitFor({ state: 'visible' });
 
   const backToCards = page.getByRole('button', { name: 'Voltar aos indicadores', exact: true }).first();
   await backToCards.waitFor({ state: 'visible' });
@@ -745,9 +746,7 @@ async function assertControlledAriaPressedTransition(page) {
     const root = createRoot(host);
     const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve));
 
-    function ControlledCard() {
-      const [isSelected, setIsSelected] = React.useState(false);
-      return React.createElement(EducationIndicatorCard, {
+    const renderCard = (isSelected) => React.createElement(EducationIndicatorCard, {
         indicator: {
           categoryLabel: 'Teste E2E',
           currentDisplay: '1',
@@ -760,17 +759,18 @@ async function assertControlledAriaPressedTransition(page) {
           variationDisplay: '—',
         },
         isSelected,
-        onSelect: () => setIsSelected(true),
+        onSelect: () => {},
       });
-    }
 
     try {
-      root.render(React.createElement(ControlledCard));
-      await nextFrame();
-      await nextFrame();
-      const card = host.querySelector('.education-indicator-card');
+      root.render(renderCard(false));
+      let card = null;
+      for (let attempt = 0; attempt < 20 && !card; attempt += 1) {
+        await nextFrame();
+        card = host.querySelector('.education-indicator-card');
+      }
       const initial = card?.getAttribute('aria-pressed');
-      card?.click();
+      root.render(renderCard(true));
       await nextFrame();
       return {
         initial,
@@ -1369,28 +1369,173 @@ async function verifyEducationFlow(page, viewport) {
   }
   assert.equal(await page.locator('.education-section-link-grid .education-section-link').count(), 6, 'EducaÃ§Ã£o: visÃ£o geral possui seis acessos temÃ¡ticos');
   assert.equal(await page.locator('.education-section-link--secondary').count(), 1, 'EducaÃ§Ã£o: metodologia aparece como acesso secundÃ¡rio');
-
   await page.goto(BASE_URL + '/#educacao?secao=demanda', { waitUntil: 'domcontentloaded' });
-  await page.getByRole('heading', { level: 2, name: 'Demanda e projeções', exact: true }).waitFor({ state: 'visible' });
-  assert.equal(await page.locator('.education-demand-indicator').count(), 4, 'Educação: Demanda exibe as quatro projeções disponíveis');
-  assert.equal(await page.locator('.education-demand-group').count(), 2, 'Educação: Demanda possui dois grupos');
-  assert.equal(await page.locator('.education-demand-indicator svg[role="group"][aria-label^="Gráfico de cenário estimado:"]').count(), 4, 'Educação: cada projeção possui gráfico contextual');
-  assert.equal(await page.getByText(EDUCATION_DEMAND_NOTE, { exact: true }).count(), 1, 'Educação: nota metodológica das projeções');
-  const demandText = await page.locator('.education-demand-page').innerText();
-  const projectionPoints = page.locator('.education-demand-indicator').first().locator('.chart-mark');
-  const projectionPointCount = await projectionPoints.count();
-  assert.ok(projectionPointCount > 1, 'Educacao: grafico de demanda possui serie navegavel');
-  assert.equal(await page.locator('.education-demand-indicator').first().locator('.chart-mark[tabindex="0"]').count(), 1, 'Educacao: cada grafico oferece uma unica parada de Tab');
-  assert.equal(await page.locator('.education-demand-indicator').first().locator('.chart-mark[tabindex="-1"]').count(), projectionPointCount - 1, 'Educacao: demais pontos usam navegacao por setas');
-  await projectionPoints.first().focus();
-  await page.keyboard.press('ArrowRight');
-  assert.equal(await projectionPoints.nth(1).evaluate((element) => document.activeElement === element), true, 'Educacao: seta direita percorre os anos da projecao');
-  assert.equal(await projectionPoints.nth(1).getAttribute('tabindex'), '0', 'Educacao: roving tabindex acompanha o ponto focado');
-  assert.doesNotMatch(demandText, /Meta PNE|Distância estimada da meta|Meta atingida|déficit de vagas calculado/i, 'Educação: Demanda não exibe status legal nem déficit calculado');
-  assert.match(demandText, /2014–2025 · 12 anos/, 'Educação: histórico disponível preservado');
+  await page.getByRole('heading', { level: 1, name: EDUCATION_DEMAND_TITLE, exact: true }).waitFor({ state: 'visible' });
+  await selectMunicipality(page, 'Nova Santa Rita', false);
+  await page.getByRole('heading', { level: 1, name: EDUCATION_DEMAND_TITLE, exact: true }).waitFor({ state: 'visible' });
+  assert.equal(await page.getByRole('heading', { level: 1, name: EDUCATION_DEMAND_TITLE, exact: true }).count(), 1, 'Educação: página unificada possui um único h1 visível');
+  assert.equal(await page.getByText('Evolução observada e trajetórias futuras calculadas para indicadores de cobertura e tempo integral.', { exact: true }).count(), 1, 'Educação: descrição geral fica visível');
+  assert.equal(await page.getByText('Metas do PNE são referências normativas e não previsões observacionais.', { exact: true }).count(), 1, 'Educação: ressalva geral fica visível');
+  assert.equal(await page.getByRole('tablist').count(), 0, 'Educação: filtros usam grupos de botões, sem abas');
+  assert.equal(await page.getByRole('group', { name: 'Tipo de indicador', exact: true }).count(), 1, 'Educação: filtro por tipo fica visível');
+  const attendanceCutControl = page.getByRole('group', { name: 'Recorte', exact: true });
+  assert.equal(await attendanceCutControl.count(), 1, 'Educação: filtro por recorte fica visível');
+  assert.deepEqual(
+    await attendanceCutControl.getByRole('button').allTextContents(),
+    ['Todos', 'Educação Infantil', 'Ensino Fundamental', 'Ensino Médio', 'Faixas combinadas'],
+    'Educação: recortes seguem a ordem canônica, sem depender da chegada dos dados',
+  );
+  assert.equal(await page.locator('.educacao-hero').count(), 0, 'Educação: card institucional de contexto não aparece');
+  assert.equal(await page.getByRole('button', { name: 'Voltar aos indicadores', exact: true }).count(), 1, 'Educação: existe somente a ação de voltar no topo');
+  assert.equal(await page.locator('.education-attendance-sequence-item').count(), 7, 'Educação: cobertura geral exibe somente os sete indicadores projetados');
+
+  for (const expectedTitle of [
+    'Atendimento em creche',
+    'Atendimento na pré-escola',
+    'Educação básica — 6 a 17 anos',
+    'Atendimento de adolescentes',
+  ]) {
+    assert.equal(await page.getByRole('heading', { level: 2, name: expectedTitle, exact: true }).count(), 1, `Educação: seção ${expectedTitle} está presente`);
+  }
+  assert.equal(await page.locator('.education-attendance-main-chart').count(), 7, 'Educação: cada cobertura possui um gráfico principal');
+  assert.equal(await page.locator('.projection-direct-label').count(), 7, 'Educação: cada projeção possui rótulo direto no ponto final');
+  assert.equal(await page.locator('.education-attendance-reading').count(), 7, 'Educação: cada cobertura possui leitura rápida editorial');
+  assert.equal(await page.locator('.education-attendance-analysis').count(), 7, 'Educação: coberturas compartilham a estrutura de gráfico e leitura rápida');
+  const firstAttendanceCards = page.locator('.education-attendance-kpis').first().locator('.metric-card');
+  assert.equal(
+    await firstAttendanceCards.locator('.metric-card__icon').count(),
+    await firstAttendanceCards.count(),
+    'Educação: todos os cards principais possuem ícones semânticos',
+  );
+  assert.equal(
+    await firstAttendanceCards.locator('.metric-card__icon').evaluateAll((icons) => icons.every((icon) => getComputedStyle(icon).display !== 'none')),
+    true,
+    'Educação: ícones dos cards são visíveis',
+  );
+  if (viewport.width > 1100) {
+    const desktopAnalysis = await page.locator('.education-attendance-analysis').first().evaluate((element) => {
+      const chart = element.querySelector('.education-attendance-main-chart').getBoundingClientRect();
+      const reading = element.querySelector('.education-attendance-reading').getBoundingClientRect();
+      return { chartRight: chart.right, chartTop: chart.top, readingLeft: reading.left, readingTop: reading.top };
+    });
+    assert.ok(desktopAnalysis.chartRight < desktopAnalysis.readingLeft, 'Educação: leitura rápida fica ao lado do gráfico no desktop');
+    assert.ok(Math.abs(desktopAnalysis.chartTop - desktopAnalysis.readingTop) <= 2, 'Educação: gráfico e leitura rápida iniciam alinhados no desktop');
+  } else {
+    const notebookAnalysis = await page.locator('.education-attendance-analysis').first().evaluate((element) => {
+      const chart = element.querySelector('.education-attendance-main-chart').getBoundingClientRect();
+      const reading = element.querySelector('.education-attendance-reading').getBoundingClientRect();
+      return { chartBottom: chart.bottom, readingTop: reading.top };
+    });
+    assert.ok(notebookAnalysis.readingTop > notebookAnalysis.chartBottom, 'Educação: leitura rápida empilha abaixo do gráfico no notebook');
+  }
+  assert.equal(await page.locator('.education-attendance-comparison-table').count(), 0, 'Educação: tabela comparativa foi removida');
+  assert.equal(await page.getByRole('button', { name: /Matrículas/ }).count(), 0, 'Educação: Matrículas não aparece no filtro');
+  assert.doesNotMatch(await page.locator('.education-attendance-filters').innerText(), /Abrangência geral/i, 'Educação: Faixas combinadas substitui Abrangência geral');
+  assert.doesNotMatch(await page.locator('.education-attendance-indicator-list').innerText(), /patamar mantido|cenário de manutenção|último valor constante/i, 'Educação: séries de manutenção não aparecem');
+
+  await page.getByRole('button', { name: 'Ensino Fundamental', exact: true }).click();
+  await page.getByRole('heading', { level: 2, name: 'Atendimento escolar — 6 a 14 anos', exact: true }).waitFor({ state: 'visible' });
+  assert.equal(await page.locator('.education-attendance-sequence-item').count(), 1, 'Educação: etapa restringe a cobertura a resultados projetados');
+
+  const attendanceFilterHeight = await page.locator('.education-attendance-filters').evaluate((element) => element.getBoundingClientRect().height);
+  const integralTypeButton = page.getByRole('button', { name: /Tempo integral\s+1/ });
+  await integralTypeButton.click();
+  await page.getByRole('heading', { level: 2, name: 'Participação da educação básica em tempo integral', exact: true }).waitFor({ state: 'visible' });
+  assert.equal(await page.locator('.education-attendance-sequence-item').count(), 1, 'Educação: tempo integral exibe somente a trajetória geral válida');
+  assert.equal(await integralTypeButton.evaluate((element) => document.activeElement === element), true, 'Educação: troca de tipo preserva o foco no controle acionado');
+  const integralCutState = page.getByRole('group', { name: 'Recorte', exact: true });
+  assert.equal(await integralCutState.count(), 1, 'Educação: linha de recorte permanece visível em Tempo integral');
+  assert.equal(await integralCutState.getByRole('button').count(), 0, 'Educação: recorte geral de Tempo integral é informativo e não interativo');
+  assert.equal(await integralCutState.getByText('Educação básica', { exact: true }).count(), 1, 'Educação: estado informativo identifica o recorte geral');
+  assert.equal(
+    await integralCutState.getByText('Tempo integral possui trajetória futura apenas no recorte geral da educação básica.', { exact: true }).count(),
+    1,
+    'Educação: microcopy explica por que há somente um recorte de Tempo integral',
+  );
+  const integralFilterHeight = await page.locator('.education-attendance-filters').evaluate((element) => element.getBoundingClientRect().height);
+  assert.ok(Math.abs(attendanceFilterHeight - integralFilterHeight) <= 1, 'Educação: área de filtros mantém altura estável ao trocar o tipo');
+  assert.equal(await page.locator('.education-attendance-analysis').count(), 1, 'Educação: Tempo integral usa a mesma estrutura geral das coberturas');
+  assert.equal(await page.locator('.education-attendance-reading').count(), 1, 'Educação: Tempo integral possui leitura rápida ao lado do gráfico');
+  assert.match(await page.locator('.education-attendance-indicator-list').innerText(), /Meta do PNE em 2036|Distância para a meta/, 'Educação: tempo integral explicita meta e distância');
+  assert.equal(
+    await page.locator('.projection-direct-label text').getByText('2036 · Cenário e meta PNE: 50,0%', { exact: true }).count(),
+    1,
+    'Educação: trajetória de planejamento coincidente usa um único rótulo final',
+  );
+
+  await page.getByRole('button', { name: /Cobertura\s+7/ }).click();
+  await page.getByRole('heading', { level: 2, name: 'Atendimento em creche', exact: true }).waitFor({ state: 'visible' });
+  const selectedCoverageCount = page.getByRole('button', { name: /Cobertura\s+7/ }).locator('.category-tab__count');
+  const selectedCoverageCountStyle = await selectedCoverageCount.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      backgroundColor: style.backgroundColor,
+      color: style.color,
+      visibility: style.visibility,
+    };
+  });
+  assert.equal(selectedCoverageCountStyle.visibility, 'visible', 'Educação: contador do filtro selecionado permanece visível');
+  assert.notEqual(selectedCoverageCountStyle.color, selectedCoverageCountStyle.backgroundColor, 'Educação: contador selecionado preserva contraste entre texto e fundo');
+  const attendanceHeaderDescription = await page.locator('.education-compact-header__description > span').first().evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      height: element.getBoundingClientRect().height,
+      lineHeight: Number.parseFloat(style.lineHeight),
+    };
+  });
+  assert.ok(
+    attendanceHeaderDescription.height <= attendanceHeaderDescription.lineHeight * 2 + 1,
+    'Educação: subtítulo principal do cabeçalho ocupa no máximo duas linhas no desktop',
+  );
+  await page.getByRole('button', { name: 'Faixas combinadas', exact: true }).click();
+  assert.equal(await page.locator('.education-attendance-sequence-item').count(), 2, 'Educação: Faixas combinadas reúne somente recortes que atravessam etapas');
+  assert.equal(await page.getByRole('heading', { level: 2, name: 'Educação básica — 6 a 17 anos', exact: true }).count(), 1, 'Educação: título explicita a faixa de 6 a 17 anos');
+  assert.equal(await page.getByRole('heading', { level: 2, name: 'Escolaridade obrigatória — 4 a 17 anos', exact: true }).count(), 1, 'Educação: título explicita a faixa de 4 a 17 anos');
+  await page.getByRole('button', { name: 'Todos', exact: true }).click();
+  const attendanceLabelsDoNotOverlap = await page.locator('.education-attendance-main-chart').evaluateAll((charts) => charts.every((chart) => {
+    const labels = [...chart.querySelectorAll('.chart-meta-label, .projection-direct-label text')];
+    return labels.every((label, index) => labels.slice(index + 1).every((other) => {
+      const left = label.getBoundingClientRect();
+      const right = other.getBoundingClientRect();
+      return left.right <= right.left + 1 || right.right <= left.left + 1 || left.bottom <= right.top + 1 || right.bottom <= left.top + 1;
+    }));
+  }));
+  assert.equal(attendanceLabelsDoNotOverlap, true, 'Educação: rótulos finais distintos não colidem');
+  assert.equal(await page.locator('.education-attendance-main-chart .chart-meta-label').count(), 0, 'Educação: meta permanece na legenda sem repetir texto dentro do gráfico');
+  assert.doesNotMatch(page.url(), /detalhe=/, 'Educação: filtros não gravam indicador individual no hash');
+  const methodologyDisclosure = page.locator('.education-attendance-methodology');
+  assert.equal(await methodologyDisclosure.count(), 1, 'Educação: existe uma única metodologia e fontes');
+  assert.equal(await page.locator('.education-attendance-page').evaluate((node) => node.lastElementChild?.classList.contains('education-attendance-methodology')), true, 'Educação: metodologia é o último conteúdo');
+  assert.doesNotMatch(await page.locator('.education-attendance-detail-view').innerText(), /escolas em tempo integral|pós-graduação|contratos temporários/i, 'Educação: recortes fora do escopo não aparecem como seções principais');
+  const attendanceMethodologyText = await methodologyDisclosure.innerText();
+  assert.match(attendanceMethodologyText, /Como as projeções são construídas|Cobertura escolar|Tempo integral|Fontes e recorte/i, 'Educação: metodologia explica o cálculo em linguagem pública');
+  assert.doesNotMatch(attendanceMethodologyText, /contrato de cada indicador|Critério de publicação|Indicadores de matrículas|Metas do PNE/i, 'Educação: metodologia remove critérios internos e mensagens redundantes');
+  assert.doesNotMatch(page.url(), /detalhe=/, 'Educação: a página unificada não grava indicador individual no hash');
+
+  await selectMunicipality(page, 'Aceguá', false);
+  await page.getByRole('heading', { level: 1, name: EDUCATION_DEMAND_TITLE, exact: true }).waitFor({ state: 'visible' });
+  assert.match(page.url(), /secao=demanda/, 'Educação: troca municipal preserva a página unificada');
+  assert.ok(await page.locator('.education-attendance-sequence-item').count() > 0, 'Educação: troca municipal recalcula os indicadores projetados');
+  await page.goto(BASE_URL + '/#educacao?secao=demanda&detalhe=pre_escola', { waitUntil: 'domcontentloaded' });
+  await page.getByRole('heading', { level: 1, name: EDUCATION_DEMAND_TITLE, exact: true }).waitFor({ state: 'visible' });
+  assert.ok(await page.locator('.education-attendance-sequence-item').count() > 0, 'Educação: URL antiga continua abrindo a página completa');
+  const cappedPanel = page.locator('[aria-labelledby="education-attendance-pre_escola-title"]');
+  const cappedPanelText = await cappedPanel.innerText();
+  assert.match(cappedPanelText, /100,0%/, 'Educação: valor superior ao limite é apresentado como 100%');
+  assert.doesNotMatch(cappedPanelText, /122[,.]2%|114[,.]9%|Acima de 100%|cobertura universal/i, 'Educação: bruto superior a 100% não aparece no painel');
+  assert.equal(
+    await page.locator('.education-attendance-main-chart .chart-mark').evaluateAll((points) => points.every((point) => {
+      const match = (point.getAttribute('aria-label') ?? '').match(/(\d+(?:[,.]\d+)?)%/);
+      return !match || Number(match[1].replace(',', '.')) <= 100;
+    })),
+    true,
+    'Educação: labels acessíveis do gráfico respeitam o limite',
+  );
+  await page.getByRole('heading', { level: 2, name: 'Como as projeções são construídas', exact: true }).waitFor({ state: 'visible' });
+
 
   await page.goto(BASE_URL + '/#educacao?secao=metodologia', { waitUntil: 'domcontentloaded' });
-  await page.getByRole('heading', { level: 2, name: 'Metodologia e fontes', exact: true }).waitFor({ state: 'visible' });
+  await page.getByRole('heading', { level: 1, name: 'Metodologia e fontes', exact: true }).waitFor({ state: 'visible' });
   assert.equal(await page.locator('.education-methodology-source').count(), 9, 'Educação: Metodologia deriva nove fontes do catálogo');
   assert.equal(await page.getByText('52 indicadores catalogados', { exact: false }).count(), 1, 'Educação: Metodologia deriva o total do catálogo');
   for (const title of ['Escopo do diagnóstico', 'Fontes e periodicidade', 'Como interpretar', 'Limitações', 'Consulte também']) {
@@ -1400,9 +1545,9 @@ async function verifyEducationFlow(page, viewport) {
   assert.equal(await page.locator('.educacao-page a[href="#financeiros"]').count(), 1, 'Educação: link para Financeiros');
 
   await page.goBack({ waitUntil: 'domcontentloaded' });
-  await page.getByRole('heading', { level: 2, name: 'Demanda e projeções', exact: true }).waitFor({ state: 'visible' });
+  await page.getByRole('heading', { level: 2, name: 'Atendimento na pré-escola', exact: true }).waitFor({ state: 'visible' });
   await page.goForward({ waitUntil: 'domcontentloaded' });
-  await page.getByRole('heading', { level: 2, name: 'Metodologia e fontes', exact: true }).waitFor({ state: 'visible' });
+  await page.getByRole('heading', { level: 1, name: 'Metodologia e fontes', exact: true }).waitFor({ state: 'visible' });
   await page.goto(BASE_URL + '/#educacao', { waitUntil: 'domcontentloaded' });
   await page.locator('.education-section-link-grid').waitFor({ state: 'visible' });
 
@@ -1526,7 +1671,7 @@ async function verifyEducationFlow(page, viewport) {
   await page.getByRole('button', { name: 'Voltar aos indicadores', exact: true }).first().click();
   await totalSchoolsCard.waitFor({ state: 'visible' });
   await page.goto(BASE_URL + '/#educacao?secao=infraestrutura&detalhe=rede-infraestrutura', { waitUntil: 'domcontentloaded' });
-  await page.getByRole('heading', { level: 2, name: 'Infraestrutura', exact: true }).waitFor({ state: 'visible' });
+  await page.getByRole('heading', { level: 1, name: 'Infraestrutura', exact: true }).waitFor({ state: 'visible' });
   const infrastructureNetworkControl = page.getByRole('group', { name: 'Rede exibida', exact: true });
   const infrastructureNetworkOptions = infrastructureNetworkControl.getByRole('button');
   assert.equal(await infrastructureNetworkOptions.count(), 4, 'Educa\u00e7\u00e3o: infraestrutura preserva quatro recortes de rede');
@@ -2290,6 +2435,35 @@ async function runResponsiveViewport(browser, viewport, errors) {
     ));
     const expectedColumns = viewport.width > 620 ? 2 : 1;
     assert.equal(columns, expectedColumns, `Educação: ${expectedColumns} coluna(s) na grade em ${viewportLabel}`);
+
+    await page.goto(`${BASE_URL}/#educacao?secao=demanda`, { waitUntil: 'domcontentloaded' });
+    await page.getByRole('heading', { level: 1, name: EDUCATION_DEMAND_TITLE, exact: true }).waitFor({ state: 'visible' });
+    await assertNoHorizontalOverflow(page, `Educação — Demanda em ${viewportLabel}`);
+    const demandGrid = page.locator('.education-attendance-kpis').first();
+    const demandColumns = await demandGrid.evaluate((element) => (
+      getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length
+    ));
+    const expectedDemandColumns = viewport.width > 820 ? 4 : viewport.width > 460 ? 2 : 1;
+    assert.equal(demandColumns, expectedDemandColumns, `Educação — Demanda: KPIs usam ${expectedDemandColumns} coluna(s) em ${viewportLabel}`);
+    const responsiveAttendanceAnalysis = await page.locator('.education-attendance-analysis').first().evaluate((element) => {
+      const chart = element.querySelector('.education-attendance-main-chart').getBoundingClientRect();
+      const reading = element.querySelector('.education-attendance-reading').getBoundingClientRect();
+      return { chartBottom: chart.bottom, readingTop: reading.top };
+    });
+    assert.ok(
+      responsiveAttendanceAnalysis.readingTop > responsiveAttendanceAnalysis.chartBottom,
+      `Educação — Demanda: leitura rápida fica abaixo do gráfico em ${viewportLabel}`,
+    );
+    const demandAxisLabels = page.locator('.education-attendance-main-chart').first().locator('.chart-x-labels text');
+    const demandAxisYears = await demandAxisLabels.allTextContents();
+    assert.ok(demandAxisYears.includes('2014'), `Educação — Demanda: primeiro ano visível em ${viewportLabel}`);
+    assert.ok(demandAxisYears.includes('2036'), `Educação — Demanda: 2036 visível em ${viewportLabel}`);
+    assert.equal(
+      await demandAxisLabels.evaluateAll((labels) => labels.every((label) => Number.parseFloat(getComputedStyle(label).fontSize) >= 12)),
+      true,
+      `Educação — Demanda: eixos preservam fonte mínima de 12 px em ${viewportLabel}`,
+    );
+
     await navigateTo(page, PNE_2026, PNE_2026);
     await assertNoHorizontalOverflow(page, `${PNE_2026} em ${viewportLabel}`);
     const trendCard = page.locator('.meta-card--next-cycle.meta-card--has-trend').first();

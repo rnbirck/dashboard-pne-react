@@ -1,6 +1,7 @@
 import { EducationSummaryCard } from '../../../components/EducationSummaryCard.jsx'
 import { EDUCATION_SECTION_KEYS } from '../../../data/educationIndicatorCatalog.js'
 import { formatIndicatorCount } from '../educationFormatters'
+import { EducationSectionBar } from './EducationSectionBar'
 
 interface EducationOverviewCardModel {
   label: string
@@ -24,10 +25,6 @@ interface EducationOverviewSectionProps {
 function EducationOverviewCards({ overview }: Pick<EducationOverviewSectionProps, 'overview'>) {
   return (
     <section className="page-card education-summary-section educacao-overview">
-      <div className="education-summary-header educacao-overview__heading">
-        <h2 className="education-summary-title">Visão geral</h2>
-        <p className="education-summary-note">Últimos dados disponíveis por bloco, com o ano de referência em cada indicador.</p>
-      </div>
       <div className="education-summary-grid educacao-overview-grid">
         {overview.map((card) => (
           <EducationSummaryCard accessibleValue={undefined} detail={undefined} key={card.label} label={card.label} value={card.value} year={card.year} tone={card.tone} />
@@ -47,6 +44,11 @@ export function EducationOverviewSection({ overview, sections }: EducationOvervi
 
   return (
     <div className="education-overview-page">
+      <EducationSectionBar
+        description="Últimos dados disponíveis por bloco, com o ano de referência em cada indicador."
+        id="education-overview-title"
+        title="Visão geral"
+      />
       <EducationOverviewCards overview={overview} />
 
       <section className="page-card education-section-navigation" aria-labelledby="education-section-navigation-title">

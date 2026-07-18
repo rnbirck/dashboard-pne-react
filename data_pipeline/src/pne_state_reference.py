@@ -137,17 +137,13 @@ RATIO_CONFIGS: dict[str, dict[str, Any]] = {
         numerator_column="mat_basico_15_17",
         denominator_column="pop_15_17",
         numerator_definition=(
-            "Pessoas de 15 a 17 anos que frequentam a escola ou já concluíram "
-            "a educação básica."
+            "Matrículas da educação básica associadas à faixa de 15 a 17 anos, "
+            "agregadas pelo município da escola."
         ),
         denominator_definition="População de 15 a 17 anos do município.",
         denominator_aggregation="max",
         source="INEP Censo Escolar + estimativas populacionais oficiais",
-        notes=(
-            "O numerador exclui pessoas que já concluíram a educação básica "
-            "quando o indicador municipal assim define; não substituir por "
-            "média de percentuais."
-        ),
+        notes="Somar numeradores e denominadores; não substituir por média de percentuais.",
     ),
     "basico_integral": _ratio_config(
         "basico_integral",

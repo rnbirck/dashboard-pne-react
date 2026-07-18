@@ -11,6 +11,7 @@ import {
 import { selectEducationVisibleGroups } from '../educationSelectors'
 import { formatIndicatorCount } from '../educationFormatters'
 import { EducationIndicatorDetailView } from './EducationIndicatorDetailView'
+import { EducationSectionBar } from './EducationSectionBar'
 import type {
   EducationIndicatorKey,
   EducationIndicatorResult,
@@ -100,11 +101,11 @@ export function EducationIndicatorsSection({ actions, viewModel }: EducationIndi
   if (isSistemaSTheme) {
     return (
       <>
-        <section className="page-card education-thematic-heading" aria-labelledby="education-thematic-title">
-          <span className="eyebrow">{'Seção de indicadores'}</span>
-          <h2 id="education-thematic-title">{section?.label}</h2>
-          <p>{section?.description}</p>
-        </section>
+        <EducationSectionBar
+          description={section?.description}
+          id="education-thematic-title"
+          title={section?.label}
+        />
         <section className="education-special-group" aria-labelledby="education-special-group-title">
           <div className="education-indicator-group__heading">
             <div>
@@ -149,13 +150,11 @@ export function EducationIndicatorsSection({ actions, viewModel }: EducationIndi
 
   return (
     <>
-      <section className="cycle-filter-panel educacao-filter-panel platform-filter-panel education-section-filter-panel" aria-labelledby="education-thematic-title">
-        <div className="education-section-filter-panel__identity">
-          <span className="eyebrow">{'Seção de indicadores'}</span>
-          <h2 id="education-thematic-title">{section?.label}</h2>
-          <p>{section?.description}</p>
-        </div>
-        <div className="cycle-filter-panel__heading platform-exploration-toolbar">
+      <EducationSectionBar
+        description={section?.description}
+        id="education-thematic-title"
+        search={(
+          <div className="education-section-bar__search">
           <div>
             <span className="eyebrow">{'Indicadores da seção'}</span>
             <strong className="education-section-filter-count">{formatIndicatorCount(filteredItems.length)}</strong>
@@ -168,8 +167,10 @@ export function EducationIndicatorsSection({ actions, viewModel }: EducationIndi
             placeholder="Buscar indicador..."
             value={searchQuery}
           />
-        </div>
-      </section>
+          </div>
+        )}
+        title={section?.label}
+      />
 
       {filteredItems.length === 0 && !showSistemaSGroup ? (
         <div className="meta-grid-empty education-indicator-grid-empty">
@@ -244,6 +245,7 @@ function EducationDetailNavigation({
       onNext={onNext}
       onPrevious={onPrevious}
       previousItem={previousIndicator}
+      showBack={isBottom}
       total={total}
     />
   )

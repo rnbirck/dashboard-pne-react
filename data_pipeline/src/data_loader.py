@@ -30,6 +30,18 @@ def load_basico_15_17_data():
     return load_dataset("basico_15_17_data")
 
 
+def load_basico_0_5_data():
+    return load_dataset("basico_0_5_data")
+
+
+def load_basico_4_17_data():
+    return load_dataset("basico_4_17_data")
+
+
+def load_basico_6_14_data():
+    return load_dataset("basico_6_14_data")
+
+
 def load_basico_integral_data():
     return load_dataset("basico_integral_data")
 
@@ -204,6 +216,9 @@ __all__ = [
     "load_pnate_data",
     "load_municipios",
     "load_basico_15_17_data",
+    "load_basico_0_5_data",
+    "load_basico_4_17_data",
+    "load_basico_6_14_data",
     "load_basico_6_17_data",
     "load_basico_integral_data",
     "load_escolas_integral_data",
