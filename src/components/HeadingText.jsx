@@ -1,5 +1,5 @@
 export function DetailHeadingText({ description, eyebrow, level = 3, title }) {
-  const Heading = level === 2 ? 'h2' : 'h3'
+  const Heading = level === 1 ? 'h1' : level === 2 ? 'h2' : 'h3'
 
   return (
     <div className="detail-heading__copy">

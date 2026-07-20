@@ -8,6 +8,10 @@ O catálogo não é uma página pública, uma biblioteca visual paralela nem um 
 
 ## Como executar
 
+Os comandos desta documentação são referências disponíveis sob demanda. A
+execução pelo Codex segue os modos do `AGENTS.md` da raiz e não ocorre
+automaticamente durante alterações comuns.
+
 ```powershell
 npm run dev:ui
 ```
@@ -109,7 +113,9 @@ Não use `Math.random()`, relógio do sistema, rede ou arquivos de dados reais.
 4. Renderize o componente real dentro da moldura e forneça uma fixture tipada.
 5. Adicione o conjunto de cenários ao registro em `scenarios/index.ts` se criar um novo arquivo.
 6. Se o cenário agregar cobertura visual, configure `visual.enabled` e somente os viewports relevantes.
-7. Execute `npm run test:dev-ui` e o cenário isolado com `npm run test:dev-ui:visual -- --scenario <id>`.
+7. Se houver pedido explícito de validação, aplique somente a cobertura ativada:
+   no modo rápido de validação, prefira o cenário isolado; na validação completa,
+   inclua `npm run test:dev-ui` conforme a suíte do projeto.
 
 Wrappers locais são adequados para estado interativo, providers mínimos ou adaptação de props. Não copie o JSX original para simular o componente.
 
@@ -152,7 +158,11 @@ A regressão isolada abre o modo sem shell em viewports reais. Ela complementa, 
 
 Use o catálogo para alterações em tokens, tipografia, cards, badges, valores grandes, textos longos, controles, foco, tabelas, gráficos, loading, erro, vazio, ausência, seleção, desabilitação e expansão.
 
-Continue usando E2E e regressão visual para shell completo, seleção de município, rotas e hashes, restauração de foco entre páginas, carregamento real, integração entre domínios, viewport real, overflow do documento, impressão, fontes, diferenças pixel a pixel e contratos de dados.
+Quando a validação explicitamente solicitada incluir esses riscos, use E2E e
+regressão visual para shell completo, seleção de município, rotas e hashes,
+restauração de foco entre páginas, carregamento real, integração entre domínios,
+viewport real, overflow do documento, impressão, fontes, diferenças pixel a
+pixel e contratos de dados.
 
 Decisão rápida:
 
@@ -165,4 +175,9 @@ Cálculo/indicador → verify:indicator + testes de domínio.
 
 ## Orientação para futuros agentes do Codex
 
-Leia primeiro `AGENTS.md`, `docs/GUIA_DE_DESIGN.md`, `docs/DESIGN_SYSTEM.md`, `docs/PLANO_MIGRACAO_UI.md`, `src/dev-ui/AGENTS.md` e `docs/REGRESSAO_VISUAL_DEV_UI.md`. Procure um componente ou cenário equivalente antes de criar outro. Preserve a direção de dependência e confirme o isolamento com `npm run test:dev-ui`, `npm run test:dev-ui:visual`, `npm run test:ui-architecture` e `npm run build` antes de concluir qualquer mudança visual.
+Leia primeiro `AGENTS.md`, `docs/GUIA_DE_DESIGN.md`, `docs/DESIGN_SYSTEM.md`,
+`docs/PLANO_MIGRACAO_UI.md`, `src/dev-ui/AGENTS.md` e
+`docs/REGRESSAO_VISUAL_DEV_UI.md`. Procure um componente ou cenário equivalente
+antes de criar outro e preserve a direção de dependência. Comandos de isolamento,
+regressão, arquitetura e build só são executados quando o usuário ativar o modo
+de validação correspondente.

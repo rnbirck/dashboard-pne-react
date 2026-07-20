@@ -118,10 +118,7 @@ export function EducationDemandSection({
           ...(lastProjectionYear ? [{ icon: 'projection' as const, label: 'Projeções', value: `Até ${lastProjectionYear}` }] : []),
         ]}
         description={(
-          <>
-            <span>Evolução observada e trajetórias futuras calculadas para indicadores de cobertura e tempo integral.</span>
-            <span className="education-attendance-page-header__note">Metas do PNE são referências normativas e não previsões observacionais.</span>
-          </>
+          <span>Evolução observada e trajetórias futuras calculadas para indicadores de cobertura e tempo integral.</span>
         )}
         headingRef={pageTitleRef}
         title="Cenários de atendimento escolar"

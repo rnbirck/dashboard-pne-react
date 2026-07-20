@@ -28,11 +28,21 @@ export function ExplorableIndicatorCardFrame({
     variant,
   } = viewModel
   const isEditorialCard = anatomy === 'education' || anatomy === 'financial'
+  const usesEducationReference = isEditorialCard
   const statusTone = status?.tone ?? 'default'
+  const valueLength = Array.from(String(value?.display ?? '')).length
+  const valueScaleClass = isEditorialCard
+    ? valueLength >= 9
+      ? ' indicator-card-shell__value-row--dense'
+      : valueLength >= 6
+        ? ' indicator-card-shell__value-row--compact'
+        : ''
+    : ''
   const variantClass = variant ? ` ${classContract.root}--${variant}` : ''
   const anatomyClass = anatomy ? ` indicator-card-shell--${anatomy}` : ''
+  const referenceClass = usesEducationReference ? ' indicator-card-shell--education-reference' : ''
   const directionClass = isEditorialCard && status?.direction ? ` indicator-card-shell--direction-${status.direction}` : ''
-  const className = `${classContract.root} indicator-card-shell${anatomyClass} indicator-card-shell--${statusTone}${directionClass} interaction-card--explorable ${classContract.statusModifier(statusTone)}${variantClass}${isSelected ? ' is-selected' : ''}`
+  const className = `${classContract.root} indicator-card-shell${anatomyClass}${referenceClass} indicator-card-shell--${statusTone}${directionClass} interaction-card--explorable ${classContract.statusModifier(statusTone)}${variantClass}${isSelected ? ' is-selected' : ''}`
 
   return (
     <button
@@ -60,7 +70,7 @@ export function ExplorableIndicatorCardFrame({
 
       {isEditorialCard ? (
         <>
-          <span className={`${classContract.valueRow} indicator-card-shell__value-row`}>
+          <span className={`${classContract.valueRow} indicator-card-shell__value-row${valueScaleClass}`}>
             <strong>{value.display}</strong>
             {value.metaLabel ? <span>{value.metaLabel}</span> : null}
           </span>
@@ -82,8 +92,39 @@ export function ExplorableIndicatorCardFrame({
 
           <span className={`${classContract.insight} indicator-card-shell__insight`}>
             <span className={`${classContract.insightItem} indicator-card-shell__insight-item`}>
-              <span className={`${classContract.insightLabel} indicator-card-shell__insight-label`}>Leitura</span>
-              <strong className={`${classContract.insightValue} indicator-card-shell__insight-value`}>{insight.reading}</strong>
+              {usesEducationReference ? (
+                <>
+                  {insight.marker ? (
+                    <span className="indicator-card-shell__insight-marker" aria-hidden="true">
+                      {insight.direction === 'up' ? (
+                        <svg viewBox="0 0 24 24" focusable="false">
+                          <path d="m4 16 5-5 4 4 7-7M15 8h5v5" />
+                        </svg>
+                      ) : insight.direction === 'down' ? (
+                        <svg viewBox="0 0 24 24" focusable="false">
+                          <path d="m4 8 5 5 4-4 7 7M15 16h5v-5" />
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" focusable="false">
+                          <path d="M4 12h16M16 8l4 4-4 4" />
+                        </svg>
+                      )}
+                    </span>
+                  ) : null}
+                  <span className="indicator-card-shell__insight-copy">
+                    {isEditorialCard ? (
+                      <span className={`${classContract.insightLabel} indicator-card-shell__insight-label`}>Leitura</span>
+                    ) : null}
+                    <strong className={`${classContract.insightValue} indicator-card-shell__insight-value`}>{insight.emphasis ?? insight.reading}</strong>
+                    {insight.context ? <span>{insight.context}</span> : null}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className={`${classContract.insightLabel} indicator-card-shell__insight-label`}>Leitura</span>
+                  <strong className={`${classContract.insightValue} indicator-card-shell__insight-value`}>{insight.reading}</strong>
+                </>
+              )}
             </span>
             {insight.period ? (
               <span className={`${classContract.insightItem} indicator-card-shell__insight-item`}>
@@ -112,7 +153,16 @@ export function ExplorableIndicatorCardFrame({
       )}
 
       <span className={`${classContract.footer} indicator-card-shell__footer`}>
-        {footer.primary ? <span title={footer.primary}>{footer.primary}</span> : null}
+        {footer.primary ? (
+          <span title={footer.primary}>
+            {footer.icon === 'history' ? (
+              <svg className="indicator-card-shell__footer-icon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path d="M5 19V12M12 19V5M19 19V9" />
+              </svg>
+            ) : null}
+            {footer.primary}
+          </span>
+        ) : null}
         {footer.secondary ? <span title={footer.secondary}>{footer.secondary}</span> : null}
         {footer.actionLabel ? (
           <span

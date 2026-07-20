@@ -21,6 +21,7 @@ function MetricIcon({ name }) {
 
   const paths = {
     current: <><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M8 3v4M16 3v4M4 10h16" /><path d="M9 14h6" /></>,
+    comparison: <><path d="M5 8h14M5 16h14" /><path d="m8 5-3 3 3 3M16 13l3 3-3 3" /></>,
     distance: <><path d="M4 18 18 4" /><path d="M5 7v11h11" /><path d="M14 4h4v4" /><path d="M9 16h.01M13 12h.01" /></>,
     start: <><path d="M5 21V4" /><path d="m6 5 12 3-12 3" /></>,
     status: <><circle cx="12" cy="12" r="8" /><path d="m8.5 12 2.2 2.2 4.8-5" /></>,

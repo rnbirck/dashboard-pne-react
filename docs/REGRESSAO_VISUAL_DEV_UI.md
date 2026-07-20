@@ -2,6 +2,11 @@
 
 ## Finalidade e limites
 
+Os comandos deste documento permanecem disponíveis sob demanda. O Codex só os
+executa quando o usuário ativa explicitamente um modo de validação conforme o
+`AGENTS.md` da raiz; uma alteração visual comum não dispara capturas, Playwright
+ou regressão.
+
 `test:dev-ui:visual` compara componentes e cenários do catálogo sem iniciar a aplicação pública, navegar por municípios ou disponibilizar `public/data`. A suíte usa um único servidor Vite controlado, um navegador reutilizado e fixtures determinísticas do registro de `src/dev-ui/scenarios`.
 
 | Camada | Responsabilidade | Não substitui |
@@ -145,14 +150,18 @@ parciais, nulos e sem dados; loading, erro, vazio, tooltip multissérie e Escape
 
 Viewports: Desktop 1366 px, Notebook 1024 px e Mobile 390 px. `finance-summary-states` e `states-interaction` continuam no catálogo manual, sem baseline por sobreporem estados já cobertos.
 
-## Fluxo recomendado
+## Fluxo quando a validação visual for solicitada
 
-1. Execute o cenário isolado.
-2. Altere o componente.
-3. Execute o cenário novamente.
-4. Revise o diff.
-5. Atualize o baseline somente se a mudança for intencional.
-6. Execute o E2E relevante.
-7. Execute a regressão visual completa antes do commit.
+1. Na validação rápida, execute somente o cenário, viewport ou captura pedido.
+2. Revise apenas a diferença diretamente relacionada.
+3. Atualize o baseline somente se a mudança for intencional e a atualização
+   fizer parte do pedido.
+4. Execute E2E ou regressão completa apenas na validação completa explicitamente
+   solicitada, uma vez ao final do lote.
 
-Futuros agentes do Codex devem ler `AGENTS.md`, `docs/GUIA_DE_DESIGN.md`, `docs/DESIGN_SYSTEM.md`, `docs/PLANO_MIGRACAO_UI.md`, `src/dev-ui/AGENTS.md` e este documento antes de mudar catálogo, metadados ou baselines. Execute também `npm run test:ui-architecture` quando a mudança tocar cascata, imports, CSS canônico ou limites do legado.
+Futuros agentes do Codex devem ler `AGENTS.md`, `docs/GUIA_DE_DESIGN.md`,
+`docs/DESIGN_SYSTEM.md`, `docs/PLANO_MIGRACAO_UI.md`, `src/dev-ui/AGENTS.md` e
+este documento antes de mudar catálogo, metadados ou baselines. Mudanças em
+cascata, imports, CSS canônico ou limites do legado recomendam validação completa
+ao encerrar o lote, mas não autorizam `npm run test:ui-architecture` sem pedido
+explícito.

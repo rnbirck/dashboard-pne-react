@@ -4,6 +4,7 @@ import type {
   MunicipiosIndexPayload,
   MunicipiosPayload,
 } from '../types/data'
+import type { MunicipalDiagnosticContractV2 } from '../features/diagnostic/diagnosticTypes'
 
 type JsonObject = Record<string, unknown>
 
@@ -58,6 +59,10 @@ export function loadMunicipiosIndex(): Promise<MunicipiosIndexPayload> {
 
 export function loadMunicipioData(slug: string): Promise<MunicipioData> {
   return loadJson<MunicipioData>(`/data/municipios/${slug}/index.json`)
+}
+
+export function loadMunicipioDiagnostic(slug: string): Promise<MunicipalDiagnosticContractV2> {
+  return loadJson<MunicipalDiagnosticContractV2>(`/data/municipios/${slug}/diagnostico.json`)
 }
 
 export function loadMunicipioDetails(slug: string): Promise<JsonObject> {

@@ -80,7 +80,10 @@ Somente a chave percentual terá `tracks_goal: true`, direção `at_least`, meta
 3. Implementar uma função compartilhada de cálculo/validação e testes para ausência, denominador zero, zero válido, integração positiva e numerador inválido.
 4. Substituir o consumidor percentual do ciclo 2014 e o consumidor absoluto do ciclo 2026 pela chave percentual, preservando o catálogo absoluto de Educação.
 5. Atualizar grupo temático, mapas legais, fonte/metodologia, detalhes, busca, navegação e estatísticas dos ciclos.
-6. Regenerar os JSONs pelo pipeline e executar auditoria anual dos 497 municípios, comparação com campos armazenados, testes, lint, build e E2E.
+6. Quando a validação completa for explicitamente solicitada, regenerar os JSONs
+   pelo pipeline e executar uma vez a auditoria anual dos 497 municípios,
+   comparação com campos armazenados, testes, lint, build e E2E. No modo rápido
+   do `AGENTS.md`, nenhuma dessas validações é executada automaticamente.
 
 ## Critérios de aceite
 

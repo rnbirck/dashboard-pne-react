@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { EditorialExpandableGrid } from '../components/EditorialExpandableGrid'
 import { ErrorState } from '../components/ErrorState'
 import { FinancialSectionHeader } from '../components/FinancialIndicatorPrimitives'
+import { FinancialCompactModuleSelector } from '../components/FinancialCompactModuleSelector'
 import { NavigationEntryCard } from '../components/NavigationEntryCard'
 import { FundebPanel } from '../components/FundebPanel'
 import { LoadingState } from '../components/LoadingState'
@@ -9,10 +10,10 @@ import { PageHeadingText } from '../components/HeadingText'
 import { PnatePanel } from '../components/PnatePanel'
 import { SiopeIndicatorsPanel } from '../components/SiopeIndicatorsPanel'
 import { VaarPanel } from '../components/VaarPanel'
+import { EducationCompactHeader } from '../features/education/components/EducationCompactHeader'
 import { loadEducationMunicipio, loadEducationMunicipiosIndex } from '../data/educationData'
 import {
   FINANCIAL_MODULES,
-  FINANCIAL_NAV_ITEMS,
   FINANCIAL_OVERVIEW_COPY,
   FINANCIAL_PAGE_COPY,
   FINANCIAL_PAGE_KEYS,
@@ -20,6 +21,7 @@ import {
 } from '../data/financialModules'
 import { useAsyncData } from '../utils/useAsyncData'
 import { getHashContext, setHashContext } from '../utils/hashNavigation'
+import '../styles/education-pages.css'
 
 export function FinancialPage({
   municipioData,
@@ -30,6 +32,7 @@ export function FinancialPage({
 }) {
   const module = getFinancialModuleByPageKey(pageKey)
   const isOverview = pageKey === FINANCIAL_PAGE_KEYS.overview
+  const usesEducationCatalogLayout = ['siope', 'fundeb', 'pnate'].includes(module?.panel)
   const [detailKey, setDetailKey] = useState(() => getHashContext().params.get('detalhe') ?? '')
 
   const educationIndexState = useAsyncData(
@@ -61,10 +64,13 @@ export function FinancialPage({
   if (!module) return null
 
   return (
-    <div className={`page-stack financial-page financial-module-page${detailKey ? ' financial-page--detail' : ''}`}>
-      {detailKey ? <h1 className="u-sr-only">{module.title}</h1> : null}
-      {!detailKey ? <FinancialPageHeader module={module} selectedMunicipio={selectedMunicipio} /> : null}
-      {!detailKey ? <FinancialCompactModuleSelector activePageKey={pageKey} /> : null}
+    <div className={`page-stack financial-page financial-module-page${usesEducationCatalogLayout ? ' financial-page--education-catalog' : ''}${detailKey ? ' financial-page--detail' : ''}`}>
+      {!detailKey ? (
+        usesEducationCatalogLayout
+          ? <FinancialCatalogHeader module={module} selectedMunicipio={selectedMunicipio} />
+          : <FinancialPageHeader module={module} selectedMunicipio={selectedMunicipio} />
+      ) : null}
+      {!detailKey && !usesEducationCatalogLayout ? <FinancialCompactModuleSelector activePageKey={pageKey} /> : null}
 
       {!selectedMunicipio ? (
         <FinancialModuleEmpty module={module} />
@@ -88,6 +94,24 @@ export function FinancialPage({
         />
       )}
     </div>
+  )
+}
+
+function FinancialCatalogHeader({ module, selectedMunicipio }) {
+  return (
+    <EducationCompactHeader
+      backLink={{ href: `#${FINANCIAL_PAGE_KEYS.overview}`, label: 'Voltar aos indicadores' }}
+      className="financial-catalog-header"
+      contextItems={[
+        { icon: 'municipality', label: 'Município', value: selectedMunicipio ?? 'Não selecionado' },
+        { icon: 'section', label: 'Seção', value: module.navLabel ?? module.title },
+        { icon: 'scope', label: 'Escopo', value: module.count },
+        { icon: 'source', label: 'Fonte', value: module.source },
+      ]}
+      description="Indicadores de receitas, aplicação, execução e programas de financiamento da educação municipal."
+      eyebrow="Indicadores de financiamento"
+      title="Indicadores Financeiros da Educação"
+    />
   )
 }
 
@@ -176,25 +200,6 @@ function FinancialPageHeader({ module, selectedMunicipio }) {
         <p>{FINANCIAL_PAGE_COPY.module.sourceLabel}: {module.source}</p>
       </aside>
     </section>
-  )
-}
-
-function FinancialCompactModuleSelector({ activePageKey }) {
-  return (
-    <div className="financial-compact-module">
-      <label htmlFor="financial-module-selector">{FINANCIAL_PAGE_COPY.module.compactSelectorLabel}</label>
-      <select
-        aria-label={FINANCIAL_PAGE_COPY.module.compactSelectorLabel}
-        id="financial-module-selector"
-        value={activePageKey}
-        onChange={(event) => {
-          setHashContext(event.target.value)
-        }}
-      >
-        <option disabled value="">{FINANCIAL_PAGE_COPY.module.compactSelectorPrompt}</option>
-        {FINANCIAL_NAV_ITEMS.map((item) => <option key={item.pageKey} value={item.pageKey}>{item.label}</option>)}
-      </select>
-    </div>
   )
 }
 

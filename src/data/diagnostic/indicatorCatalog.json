@@ -1,0 +1,3055 @@
+{
+  "catalogVersion": "municipal-diagnostic-indicators-v2",
+  "caveat": "Catálogo canônico P0/P1. Não substitui os indicadores e projeções por ente que o Inep deve estabelecer nos 180 dias da Lei 15.388/2026.",
+  "generatedAt": "2026-07-19",
+  "generatedFrom": "public/data/indicadores.json + regras P0/P1 do pipeline + Lei 15.388/2026",
+  "indicatorCount": 49,
+  "legalTextValidation": {
+    "validatedGoalTexts": 73,
+    "totalGoalTexts": 73,
+    "validatedAt": "2026-07-19",
+    "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+    "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+    "validationId": "pne-law-15388-2026-validation-v1"
+  },
+  "indicators": [
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "atendimento",
+      "correspondence": "partial",
+      "legalCorrespondence": "partial",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "partial",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "pop_0_3",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "100 * sum(mat_basico_0_3) / denominator_aggregate(pop_0_3)",
+      "indicatorId": "creche",
+      "legalGoalRefs": [
+        "1.a"
+      ],
+      "limits": [
+        "Acompanha a cobertura da população de 0 a 3 anos que frequenta escola/creche; não mede demanda manifesta por vaga em creche.",
+        "Indicador estimado com todas as matrículas localizadas no município e a população residente da faixa etária. Por mobilidade escolar e oferta regional, o resultado pode superar 100%.",
+        "Não mede demanda manifesta por vaga em creche."
+      ],
+      "name": "População de 0 a 3 anos que frequenta a escola/creche",
+      "numerator": "mat_basico_0_3",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar",
+        "municipal_age_population_panel"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "1.a",
+          "validationStatus": "official_law",
+          "value": 60,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "população residente municipal",
+        "numerator": "município da escola"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "allow_above_max_known_mixed_territorial_basis",
+      "displayPolicy": "preserve_raw_value",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "atendimento",
+      "correspondence": "direct",
+      "legalCorrespondence": "direct",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "direct",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "pop_4_5",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "100 * sum(mat_infantil_pre) / denominator_aggregate(pop_4_5)",
+      "indicatorId": "pre_escola",
+      "legalGoalRefs": [
+        "1.c"
+      ],
+      "limits": [
+        "Acompanha a população de 4 a 5 anos que frequenta escola/creche, alinhada à universalização da pré-escola.",
+        "Indicador estimado com todas as matrículas localizadas no município e a população residente da faixa etária. Por mobilidade escolar e oferta regional, o resultado pode superar 100%."
+      ],
+      "name": "População de 4 a 5 anos que frequenta a escola/creche",
+      "numerator": "mat_infantil_pre",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar",
+        "municipal_age_population_panel"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "1.c",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2028
+        }
+      ],
+      "territorialCut": {
+        "denominator": "população residente municipal",
+        "numerator": "município da escola"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "allow_above_max_known_mixed_territorial_basis",
+      "displayPolicy": "preserve_raw_value",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "atendimento",
+      "correspondence": "direct",
+      "legalCorrespondence": "direct",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "direct",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "pop_6_17",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "100 * sum(mat_basico_6_17) / denominator_aggregate(pop_6_17)",
+      "indicatorId": "basico_6_17",
+      "legalGoalRefs": [
+        "4.a"
+      ],
+      "limits": [
+        "Acompanha a frequência à educação básica da população de 6 a 17 anos.",
+        "Indicador estimado com todas as matrículas localizadas no município e a população residente da faixa etária. Por mobilidade escolar e oferta regional, o resultado pode superar 100%."
+      ],
+      "name": "População de 6 a 17 anos que frequenta a educação básica",
+      "numerator": "mat_basico_6_17",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar",
+        "municipal_age_population_panel"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "4.a",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2029
+        }
+      ],
+      "territorialCut": {
+        "denominator": "população residente municipal",
+        "numerator": "município da escola"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "allow_above_max_known_mixed_territorial_basis",
+      "displayPolicy": "preserve_raw_value",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "atendimento",
+      "correspondence": "partial",
+      "legalCorrespondence": "partial",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "methodologically_incompatible",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "pop_15_17",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "100 * sum(mat_basico_15_17) / denominator_aggregate(pop_15_17)",
+      "indicatorId": "basico_15_17",
+      "legalGoalRefs": [
+        "4.a"
+      ],
+      "limits": [
+        "Acompanha matrículas da educação básica associadas à faixa de 15 a 17 anos em relação à população residente da faixa.",
+        "Indicador estimado com todas as matrículas localizadas no município e a população residente da faixa etária. Por mobilidade escolar e oferta regional, o resultado pode superar 100%.",
+        "A implementação usa meta configurada de 85%, incompatível com a Meta 4.a vigente de universalização até o terceiro ano."
+      ],
+      "name": "Matrículas da educação básica de estudantes de 15 a 17 anos em relação à população da faixa",
+      "numerator": "mat_basico_15_17",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar",
+        "municipal_age_population_panel"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "4.a",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2029
+        }
+      ],
+      "territorialCut": {
+        "denominator": "população residente municipal",
+        "numerator": "município da escola"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "allow_above_max_known_mixed_territorial_basis",
+      "displayPolicy": "preserve_raw_value",
+      "configuredReferenceRole": "legacy_reference_not_legal_target"
+    },
+    {
+      "administrativeDependence": [
+        "public"
+      ],
+      "category": "atendimento",
+      "correspondence": "partial",
+      "legalCorrespondence": "partial",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "partial",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "mat_basico",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "100 * sum(mat_basico_integral) / denominator_aggregate(mat_basico)",
+      "indicatorId": "basico_integral",
+      "legalGoalRefs": [
+        "6.a"
+      ],
+      "limits": [
+        "Acompanha a parcela de estudantes da educação básica pública em jornada integral."
+      ],
+      "name": "Alunos do público-alvo da ETI em jornada integral na rede pública",
+      "numerator": "mat_basico_integral",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "6.a",
+          "validationStatus": "official_law",
+          "value": 35,
+          "year": 2031
+        },
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "6.a",
+          "validationStatus": "official_law",
+          "value": 50,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "public"
+      ],
+      "category": "atendimento",
+      "correspondence": "partial",
+      "legalCorrespondence": "partial",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "partial",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "escolas_publicas_total",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "100 * sum(escolas_publicas_com_integral) / denominator_aggregate(escolas_publicas_total)",
+      "indicatorId": "escolas_integral",
+      "legalGoalRefs": [
+        "6.a"
+      ],
+      "limits": [
+        "Acompanha a parcela de escolas públicas com alunos em jornada de tempo integral."
+      ],
+      "name": "Escolas públicas com alunos em jornada de tempo integral",
+      "numerator": "escolas_publicas_com_integral",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "6.a",
+          "validationStatus": "official_law",
+          "value": 50,
+          "year": 2031
+        },
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "6.a",
+          "validationStatus": "official_law",
+          "value": 65,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "atendimento",
+      "correspondence": "proxy",
+      "legalCorrespondence": "proxy",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "proxy",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": false
+      },
+      "denominator": "total_turmas_educacao_especial",
+      "direction": "at_least",
+      "finality": "context",
+      "formula": "100 * sum(quantidade_aee) / denominator_aggregate(total_turmas_educacao_especial)",
+      "indicatorId": "aee",
+      "legalGoalRefs": [
+        "10.b"
+      ],
+      "limits": [
+        "Indicador de contexto/proxy; a fonte aberta atual não oferece denominador municipal seguro para medir diretamente todo o público do AEE.",
+        "O denominador é total de turmas de educação especial, não o público do AEE; distância à meta está desabilitada."
+      ],
+      "name": "Oferta de AEE e salas de recursos na educação especial",
+      "numerator": "quantidade_aee",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "10.b",
+          "validationStatus": "official_law",
+          "value": 80,
+          "year": 2031
+        },
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "10.b",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "atendimento",
+      "correspondence": "direct",
+      "legalCorrespondence": "direct",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "direct",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "matrículas EJA elegíveis",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "100 * sum(matrículas EJA articuladas à educação profissional) / denominator_aggregate(matrículas EJA elegíveis)",
+      "indicatorId": "eja_integrada_educacao_profissional_percentual",
+      "legalGoalRefs": [
+        "12.c"
+      ],
+      "limits": [
+        "Calcula a proporção das matrículas da EJA articuladas à educação profissional a partir dos componentes brutos da Sinopse Estatística."
+      ],
+      "name": "Percentual das matrículas da EJA articuladas à educação profissional",
+      "numerator": "matrículas EJA articuladas à educação profissional",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "12.c",
+          "validationStatus": "official_law",
+          "value": 25,
+          "year": 2031
+        },
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "12.c",
+          "validationStatus": "official_law",
+          "value": 50,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "atendimento",
+      "correspondence": "partial",
+      "legalCorrespondence": "partial",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "partial",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "mat_medio",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "100 * sum(mat_integrado_total) / denominator_aggregate(mat_medio)",
+      "indicatorId": "medio_tecnico_articulado_percentual",
+      "legalGoalRefs": [
+        "12.a"
+      ],
+      "limits": [
+        "Acompanha as matrículas em cursos técnicos integrados sobre o total de matrículas do ensino médio. Matrículas concomitantes permanecem disponíveis apenas como informação complementar.",
+        "O numerador principal contém somente matrículas integradas; concomitantes ficam como apoio, embora a Meta 12.a exija integrada ou concomitante."
+      ],
+      "name": "Ensino médio articulado à educação profissional técnica",
+      "numerator": "mat_integrado_total",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "12.a",
+          "validationStatus": "official_law",
+          "value": 50,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": null,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "atendimento",
+      "correspondence": "partial",
+      "legalCorrespondence": "partial",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "partial",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "expansões anuais públicas e privadas positivas acumuladas",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "100 * expansão_pública_positiva_acumulada / expansão_total_positiva_acumulada",
+      "indicatorId": "medio_tecnico_participacao_publica",
+      "legalGoalRefs": [
+        "12.a"
+      ],
+      "limits": [
+        "Acompanha a participação pública na expansão da EPT de nível médio, uma parte da meta legal."
+      ],
+      "name": "Participação acumulada do segmento público na expansão da EPT de nível médio",
+      "numerator": "expansões anuais públicas positivas acumuladas",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "12.a",
+          "validationStatus": "official_law",
+          "value": 50,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "atendimento",
+      "correspondence": "partial",
+      "legalCorrespondence": "partial",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "partial",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "matrículas subsequentes em 2015",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "100 * (matrículas_ano / matrículas_2015 - 1)",
+      "indicatorId": "subsequente_expansao",
+      "legalGoalRefs": [
+        "12.b"
+      ],
+      "limits": [
+        "Acompanha expansão acumulada dos cursos técnicos subsequentes; não mede qualidade nem permanência."
+      ],
+      "name": "Expansão acumulada das matrículas em cursos técnicos subsequentes",
+      "numerator": "matrículas subsequentes no ano - matrículas no ano-base 2015",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "12.b",
+          "validationStatus": "official_law",
+          "value": 60,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "public"
+      ],
+      "category": "rendimento",
+      "correspondence": "direct",
+      "legalCorrespondence": "direct",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "pending_official_definition",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": null,
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "média municipal de taxa_alfabetizacao da rede pública",
+      "indicatorId": "alfabetizacao",
+      "legalGoalRefs": [
+        "3.a"
+      ],
+      "limits": [
+        "Acompanha estudantes alfabetizados na rede pública, usado como referência municipal para alfabetização.",
+        "A implementação compara diretamente com 100% e omite o marco legal de 80% no quinto ano."
+      ],
+      "name": "Estudantes alfabetizados na rede pública",
+      "numerator": null,
+      "periodicity": "anual",
+      "sourceIds": [
+        "pipeline_alfabetizacao_provenance_pending"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "3.a",
+          "validationStatus": "official_law",
+          "value": 80,
+          "year": 2031
+        },
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "3.a",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "rendimento",
+      "correspondence": "partial",
+      "legalCorrespondence": "partial",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "partial",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "estudantes participantes do SAEB no recorte",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "soma das parcelas de proficiência classificadas no nível adequado ou superior",
+      "indicatorId": "saeb_matematica_anos_iniciais",
+      "legalGoalRefs": [
+        "5.a"
+      ],
+      "limits": [
+        "Acompanha aprendizagem em Matemática nos anos iniciais; não cobre sozinho todas as dimensões da meta.",
+        "A priorização usa apenas nível adequado e o marco intermediário; o nível básico e a meta final ficam fora do card principal."
+      ],
+      "name": "Desempenho em Matemática - anos iniciais",
+      "numerator": "estudantes nos níveis adequado ou superior",
+      "periodicity": "bienal",
+      "sourceIds": [
+        "inep_saeb"
+      ],
+      "targets": [
+        {
+          "dimension": "basic_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.a",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2031
+        },
+        {
+          "dimension": "adequate_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.a",
+          "validationStatus": "official_law",
+          "value": 70,
+          "year": 2031
+        },
+        {
+          "dimension": "basic_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.a",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2036
+        },
+        {
+          "dimension": "adequate_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.a",
+          "validationStatus": "official_law",
+          "value": 90,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "rendimento",
+      "correspondence": "partial",
+      "legalCorrespondence": "partial",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "partial",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "estudantes participantes do SAEB no recorte",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "soma das parcelas de proficiência classificadas no nível adequado ou superior",
+      "indicatorId": "saeb_matematica_anos_finais",
+      "legalGoalRefs": [
+        "5.b"
+      ],
+      "limits": [
+        "Acompanha aprendizagem em Matemática nos anos finais; não cobre sozinho todas as dimensões da meta.",
+        "A priorização usa apenas nível adequado e o marco intermediário; o nível básico e a meta final ficam fora do card principal."
+      ],
+      "name": "Desempenho em Matemática - anos finais",
+      "numerator": "estudantes nos níveis adequado ou superior",
+      "periodicity": "bienal",
+      "sourceIds": [
+        "inep_saeb"
+      ],
+      "targets": [
+        {
+          "dimension": "basic_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.b",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2031
+        },
+        {
+          "dimension": "adequate_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.b",
+          "validationStatus": "official_law",
+          "value": 60,
+          "year": 2031
+        },
+        {
+          "dimension": "basic_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.b",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2036
+        },
+        {
+          "dimension": "adequate_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.b",
+          "validationStatus": "official_law",
+          "value": 85,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "rendimento",
+      "correspondence": "partial",
+      "legalCorrespondence": "partial",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "partial",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "estudantes participantes do SAEB no recorte",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "soma das parcelas de proficiência classificadas no nível adequado ou superior",
+      "indicatorId": "saeb_matematica_ensino_medio",
+      "legalGoalRefs": [
+        "5.d"
+      ],
+      "limits": [
+        "Acompanha aprendizagem em Matemática no ensino médio; não cobre sozinho todas as dimensões da meta.",
+        "A priorização usa apenas nível adequado e o marco intermediário; o nível básico e a meta final ficam fora do card principal."
+      ],
+      "name": "Desempenho em Matemática - ensino médio",
+      "numerator": "estudantes nos níveis adequado ou superior",
+      "periodicity": "bienal",
+      "sourceIds": [
+        "inep_saeb"
+      ],
+      "targets": [
+        {
+          "dimension": "basic_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.d",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2031
+        },
+        {
+          "dimension": "adequate_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.d",
+          "validationStatus": "official_law",
+          "value": 50,
+          "year": 2031
+        },
+        {
+          "dimension": "basic_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.d",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2036
+        },
+        {
+          "dimension": "adequate_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.d",
+          "validationStatus": "official_law",
+          "value": 80,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "rendimento",
+      "correspondence": "partial",
+      "legalCorrespondence": "partial",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "partial",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "estudantes participantes do SAEB no recorte",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "soma das parcelas de proficiência classificadas no nível adequado ou superior",
+      "indicatorId": "saeb_portugues_anos_iniciais",
+      "legalGoalRefs": [
+        "5.a"
+      ],
+      "limits": [
+        "Acompanha aprendizagem em Português nos anos iniciais; não cobre sozinho todas as dimensões da meta.",
+        "A priorização usa apenas nível adequado e o marco intermediário; o nível básico e a meta final ficam fora do card principal."
+      ],
+      "name": "Desempenho em Português - anos iniciais",
+      "numerator": "estudantes nos níveis adequado ou superior",
+      "periodicity": "bienal",
+      "sourceIds": [
+        "inep_saeb"
+      ],
+      "targets": [
+        {
+          "dimension": "basic_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.a",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2031
+        },
+        {
+          "dimension": "adequate_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.a",
+          "validationStatus": "official_law",
+          "value": 70,
+          "year": 2031
+        },
+        {
+          "dimension": "basic_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.a",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2036
+        },
+        {
+          "dimension": "adequate_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.a",
+          "validationStatus": "official_law",
+          "value": 90,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "rendimento",
+      "correspondence": "partial",
+      "legalCorrespondence": "partial",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "partial",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "estudantes participantes do SAEB no recorte",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "soma das parcelas de proficiência classificadas no nível adequado ou superior",
+      "indicatorId": "saeb_portugues_anos_finais",
+      "legalGoalRefs": [
+        "5.b"
+      ],
+      "limits": [
+        "Acompanha aprendizagem em Português nos anos finais; não cobre sozinho todas as dimensões da meta.",
+        "A priorização usa apenas nível adequado e o marco intermediário; o nível básico e a meta final ficam fora do card principal."
+      ],
+      "name": "Desempenho em Português - anos finais",
+      "numerator": "estudantes nos níveis adequado ou superior",
+      "periodicity": "bienal",
+      "sourceIds": [
+        "inep_saeb"
+      ],
+      "targets": [
+        {
+          "dimension": "basic_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.b",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2031
+        },
+        {
+          "dimension": "adequate_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.b",
+          "validationStatus": "official_law",
+          "value": 60,
+          "year": 2031
+        },
+        {
+          "dimension": "basic_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.b",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2036
+        },
+        {
+          "dimension": "adequate_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.b",
+          "validationStatus": "official_law",
+          "value": 85,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "rendimento",
+      "correspondence": "partial",
+      "legalCorrespondence": "partial",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "partial",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "estudantes participantes do SAEB no recorte",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "soma das parcelas de proficiência classificadas no nível adequado ou superior",
+      "indicatorId": "saeb_portugues_ensino_medio",
+      "legalGoalRefs": [
+        "5.d"
+      ],
+      "limits": [
+        "Acompanha aprendizagem em Português no ensino médio; não cobre sozinho todas as dimensões da meta.",
+        "A priorização usa apenas nível adequado e o marco intermediário; o nível básico e a meta final ficam fora do card principal."
+      ],
+      "name": "Desempenho em Português - ensino médio",
+      "numerator": "estudantes nos níveis adequado ou superior",
+      "periodicity": "bienal",
+      "sourceIds": [
+        "inep_saeb"
+      ],
+      "targets": [
+        {
+          "dimension": "basic_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.d",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2031
+        },
+        {
+          "dimension": "adequate_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.d",
+          "validationStatus": "official_law",
+          "value": 50,
+          "year": 2031
+        },
+        {
+          "dimension": "basic_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.d",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2036
+        },
+        {
+          "dimension": "adequate_or_higher",
+          "direction": "at_least",
+          "legalGoalRef": "5.d",
+          "validationStatus": "official_law",
+          "value": 80,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "rendimento",
+      "correspondence": "direct",
+      "legalCorrespondence": "direct",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "direct",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": null,
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "média municipal de taxa_idade_regular para quinto_ano",
+      "indicatorId": "idade_regular_quinto",
+      "legalGoalRefs": [
+        "4.b"
+      ],
+      "limits": [
+        "Acompanha a conclusão dos anos iniciais do ensino fundamental na idade regular."
+      ],
+      "name": "Estudantes que concluem os anos iniciais na idade regular",
+      "numerator": null,
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "4.b",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "rendimento",
+      "correspondence": "direct",
+      "legalCorrespondence": "direct",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "direct",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": null,
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "média municipal de taxa_idade_regular para nono_ano",
+      "indicatorId": "idade_regular_nono",
+      "legalGoalRefs": [
+        "4.c"
+      ],
+      "limits": [
+        "Acompanha a conclusão dos anos finais do ensino fundamental na idade regular."
+      ],
+      "name": "Estudantes que concluem os anos finais na idade regular",
+      "numerator": null,
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "4.c",
+          "validationStatus": "official_law",
+          "value": 95,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "rendimento",
+      "correspondence": "direct",
+      "legalCorrespondence": "direct",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "direct",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": null,
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "média municipal de taxa_idade_regular para ensino_medio",
+      "indicatorId": "idade_regular_medio",
+      "legalGoalRefs": [
+        "4.d"
+      ],
+      "limits": [
+        "Acompanha a conclusão do ensino médio na idade regular."
+      ],
+      "name": "Estudantes que concluem o ensino médio na idade regular",
+      "numerator": null,
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "4.d",
+          "validationStatus": "official_law",
+          "value": 90,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "corpo_docente",
+      "correspondence": "partial",
+      "legalCorrespondence": "partial",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "partial",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": null,
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "média municipal de percentual_adequacao para anos_iniciais",
+      "indicatorId": "adequacao_ai",
+      "legalGoalRefs": [
+        "17.a"
+      ],
+      "limits": [
+        "Acompanha formação adequada nos anos iniciais; cobre apenas um recorte da meta de formação docente."
+      ],
+      "name": "Docentes com formação adequada nos anos iniciais",
+      "numerator": null,
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "17.a",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2031
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "corpo_docente",
+      "correspondence": "partial",
+      "legalCorrespondence": "partial",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "partial",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": null,
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "média municipal de percentual_adequacao para anos_finais",
+      "indicatorId": "adequacao_af",
+      "legalGoalRefs": [
+        "17.a"
+      ],
+      "limits": [
+        "Acompanha formação adequada nos anos finais; cobre apenas um recorte da meta de formação docente."
+      ],
+      "name": "Docentes com formação adequada nos anos finais",
+      "numerator": null,
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "17.a",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2031
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "corpo_docente",
+      "correspondence": "partial",
+      "legalCorrespondence": "partial",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "partial",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": null,
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "média municipal de percentual_adequacao para ensino_medio",
+      "indicatorId": "adequacao_em",
+      "legalGoalRefs": [
+        "17.a"
+      ],
+      "limits": [
+        "Acompanha formação adequada no ensino médio; cobre apenas um recorte da meta de formação docente."
+      ],
+      "name": "Docentes com formação adequada no ensino médio",
+      "numerator": null,
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "17.a",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2031
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "corpo_docente",
+      "correspondence": "direct",
+      "legalCorrespondence": "direct",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "direct",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "total_docentes",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "100 * sum(docentes_pos_graduacao) / denominator_aggregate(total_docentes)",
+      "indicatorId": "pos_graduacao",
+      "legalGoalRefs": [
+        "17.f"
+      ],
+      "limits": [
+        "Acompanha docentes da educação básica com pós-graduação."
+      ],
+      "name": "Docentes da educação básica com pós-graduação",
+      "numerator": "docentes_pos_graduacao",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "17.f",
+          "validationStatus": "official_law",
+          "value": 70,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "unverifiable_above_max",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "corpo_docente",
+      "correspondence": "partial",
+      "legalCorrespondence": "partial",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "partial",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "rendimento bruto médio mensal de outros assalariados com nível superior",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "100 * rendimento_magistério / rendimento_outros",
+      "indicatorId": "rendimento_magisterio",
+      "legalGoalRefs": [
+        "17.b"
+      ],
+      "limits": [
+        "Acompanha a relação remuneratória do magistério frente a outros profissionais com nível superior, sem detalhar cada etapa da educação básica."
+      ],
+      "name": "Rendimento do magistério em relação a outros profissionais com nível superior",
+      "numerator": "rendimento bruto médio mensal do magistério com nível superior",
+      "periodicity": "anual",
+      "sourceIds": [
+        "pipeline_rendimento_professores_provenance_pending"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "17.b",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "public"
+      ],
+      "category": "corpo_docente",
+      "correspondence": "direct",
+      "legalCorrespondence": "direct",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "direct",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "total_docentes",
+      "direction": "at_most",
+      "finality": "goal_monitoring",
+      "formula": "100 * sum(docentes_temporarios) / denominator_aggregate(total_docentes)",
+      "indicatorId": "temporarios",
+      "legalGoalRefs": [
+        "17.d"
+      ],
+      "limits": [
+        "Acompanha o percentual de docentes da rede publica com vinculo temporario, com meta maxima de 30%."
+      ],
+      "name": "Docentes da rede pública com contrato temporário",
+      "numerator": "docentes_temporarios",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_most",
+          "legalGoalRef": "17.d",
+          "validationStatus": "official_law",
+          "value": 30,
+          "year": 2031
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "infraestrutura",
+      "correspondence": "proxy",
+      "legalCorrespondence": "proxy",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "proxy",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": false
+      },
+      "denominator": "qntd_escolas",
+      "direction": null,
+      "finality": "context",
+      "formula": "100 * sum(escolas_com_internet) / denominator_aggregate(qntd_escolas)",
+      "indicatorId": "internet",
+      "legalGoalRefs": [
+        "7.a"
+      ],
+      "limits": [
+        "Indica acesso à internet nas escolas, mas não mede alta velocidade, uso pedagógico ou redes internas wi-fi.",
+        "Resposta declaratória do Censo Escolar; não comprova qualidade, funcionamento ou suficiência."
+      ],
+      "name": "Escolas da educação básica com acesso à internet",
+      "numerator": "escolas_com_internet",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "not_applicable"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "infraestrutura",
+      "correspondence": "proxy",
+      "legalCorrespondence": "proxy",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "proxy",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": false
+      },
+      "denominator": "qntd_escolas",
+      "direction": null,
+      "finality": "context",
+      "formula": "100 * sum(escolas_com_internet_alunos) / denominator_aggregate(qntd_escolas)",
+      "indicatorId": "internet_alunos",
+      "legalGoalRefs": [
+        "7.a"
+      ],
+      "limits": [
+        "Indica disponibilidade de internet para alunos, mas não mede alta velocidade ou adequação pedagógica.",
+        "Resposta declaratória do Censo Escolar; não comprova qualidade, funcionamento ou suficiência."
+      ],
+      "name": "Escolas com internet disponível para os alunos",
+      "numerator": "escolas_com_internet_alunos",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "not_applicable"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "infraestrutura",
+      "correspondence": "partial",
+      "legalCorrespondence": "partial",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "partial",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": false
+      },
+      "denominator": "qntd_escolas",
+      "direction": null,
+      "finality": "context",
+      "formula": "100 * sum(escolas_com_internet_aprendizagem) / denominator_aggregate(qntd_escolas)",
+      "indicatorId": "internet_aprendizagem",
+      "legalGoalRefs": [
+        "7.a"
+      ],
+      "limits": [
+        "Acompanha uso da internet em processos de ensino e aprendizagem, uma parte da meta de conectividade pedagógica.",
+        "Resposta declaratória do Censo Escolar; não comprova qualidade, funcionamento ou suficiência."
+      ],
+      "name": "Escolas com internet usada na aprendizagem",
+      "numerator": "escolas_com_internet_aprendizagem",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "not_applicable"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "infraestrutura",
+      "correspondence": "informational",
+      "legalCorrespondence": "informational",
+      "legalTextValidated": false,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "informational",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": false
+      },
+      "denominator": "qntd_escolas",
+      "direction": null,
+      "finality": "context",
+      "formula": "100 * sum(escolas_com_internet_comunidade) / denominator_aggregate(qntd_escolas)",
+      "indicatorId": "internet_comunidade",
+      "legalGoalRefs": [],
+      "limits": [
+        "Resposta declaratória do Censo Escolar; não comprova qualidade, funcionamento ou suficiência.",
+        "Sem correspondência municipal explícita no mapa legal vigente da aplicação."
+      ],
+      "name": "Escolas com internet aberta à comunidade",
+      "numerator": "escolas_com_internet_comunidade",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "not_applicable"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "infraestrutura",
+      "correspondence": "informational",
+      "legalCorrespondence": "informational",
+      "legalTextValidated": false,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "informational",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": false
+      },
+      "denominator": "qntd_escolas",
+      "direction": null,
+      "finality": "context",
+      "formula": "100 * sum(escolas_com_acesso_internet_computador) / denominator_aggregate(qntd_escolas)",
+      "indicatorId": "acesso_internet_computador",
+      "legalGoalRefs": [],
+      "limits": [
+        "Resposta declaratória do Censo Escolar; não comprova qualidade, funcionamento ou suficiência.",
+        "Sem correspondência municipal explícita no mapa legal vigente da aplicação."
+      ],
+      "name": "Escolas com acesso dos alunos à internet por computador",
+      "numerator": "escolas_com_acesso_internet_computador",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "not_applicable"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "infraestrutura",
+      "correspondence": "informational",
+      "legalCorrespondence": "informational",
+      "legalTextValidated": false,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "informational",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": false
+      },
+      "denominator": "qntd_escolas",
+      "direction": null,
+      "finality": "context",
+      "formula": "100 * sum(escolas_com_acesso_internet_disp_pessoais) / denominator_aggregate(qntd_escolas)",
+      "indicatorId": "acesso_internet_disp_pessoais",
+      "legalGoalRefs": [],
+      "limits": [
+        "Resposta declaratória do Censo Escolar; não comprova qualidade, funcionamento ou suficiência.",
+        "Sem correspondência municipal explícita no mapa legal vigente da aplicação."
+      ],
+      "name": "Escolas com acesso dos alunos à internet por dispositivos pessoais",
+      "numerator": "escolas_com_acesso_internet_disp_pessoais",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "not_applicable"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "infraestrutura",
+      "correspondence": "proxy",
+      "legalCorrespondence": "proxy",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "proxy",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": false
+      },
+      "denominator": "qntd_escolas",
+      "direction": null,
+      "finality": "context",
+      "formula": "100 * sum(escolas_com_rede_local) / denominator_aggregate(qntd_escolas)",
+      "indicatorId": "rede_local",
+      "legalGoalRefs": [
+        "7.a"
+      ],
+      "limits": [
+        "Indica existência de rede local de computadores, mas não mede rede interna wi-fi nem qualidade da conectividade.",
+        "Resposta declaratória do Censo Escolar; não comprova qualidade, funcionamento ou suficiência."
+      ],
+      "name": "Escolas com rede local de computadores",
+      "numerator": "escolas_com_rede_local",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "not_applicable"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "infraestrutura",
+      "correspondence": "proxy",
+      "legalCorrespondence": "proxy",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "proxy",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": false
+      },
+      "denominator": "qntd_escolas",
+      "direction": null,
+      "finality": "context",
+      "formula": "100 * sum(escolas_com_rede_wireless) / denominator_aggregate(qntd_escolas)",
+      "indicatorId": "rede_wireless",
+      "legalGoalRefs": [
+        "7.a"
+      ],
+      "limits": [
+        "Proxy parcial de rede local sem fio; não mede qualidade, cobertura efetiva ou suficiência da conectividade interna.",
+        "Resposta declaratória do Censo Escolar; não comprova qualidade, funcionamento ou suficiência."
+      ],
+      "name": "Escolas com rede local sem fio",
+      "numerator": "escolas_com_rede_wireless",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "not_applicable"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "infraestrutura",
+      "correspondence": "proxy",
+      "legalCorrespondence": "proxy",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "proxy",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": false
+      },
+      "denominator": "qntd_escolas",
+      "direction": null,
+      "finality": "context",
+      "formula": "100 * sum(escolas_com_banda_larga) / denominator_aggregate(qntd_escolas)",
+      "indicatorId": "banda_larga",
+      "legalGoalRefs": [
+        "7.a"
+      ],
+      "limits": [
+        "Proxy parcial de conectividade; não mede velocidade efetiva, estabilidade ou qualidade de uso pedagógico.",
+        "Resposta declaratória do Censo Escolar; não comprova qualidade, funcionamento ou suficiência."
+      ],
+      "name": "Escolas com internet banda larga",
+      "numerator": "escolas_com_banda_larga",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "not_applicable"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "infraestrutura",
+      "correspondence": "direct",
+      "legalCorrespondence": "direct",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "direct",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "qntd_escolas",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "100 * sum(escolas_com_educacao_ambiental) / denominator_aggregate(qntd_escolas)",
+      "indicatorId": "educacao_ambiental",
+      "legalGoalRefs": [
+        "8.c"
+      ],
+      "limits": [
+        "Acompanha escolas que promovem educação ambiental.",
+        "Resposta declaratória do Censo Escolar; não comprova qualidade, funcionamento ou suficiência."
+      ],
+      "name": "Escolas que promovem educação ambiental",
+      "numerator": "escolas_com_educacao_ambiental",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "8.c",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "public"
+      ],
+      "category": "infraestrutura",
+      "correspondence": "direct",
+      "legalCorrespondence": "direct",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "direct",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "escolas_publicas_total",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "100 * sum(escolas_publicas_com_orgao_conselho_escolar) / denominator_aggregate(escolas_publicas_total)",
+      "indicatorId": "conselho_escolar",
+      "legalGoalRefs": [
+        "18.b"
+      ],
+      "limits": [
+        "Acompanha escolas públicas da educação básica com conselho escolar instituído e em funcionamento.",
+        "Resposta declaratória do Censo Escolar; não comprova qualidade, funcionamento ou suficiência."
+      ],
+      "name": "Escolas públicas com conselho escolar instituído e em funcionamento",
+      "numerator": "escolas_publicas_com_orgao_conselho_escolar",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "18.b",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "infraestrutura",
+      "correspondence": "informational",
+      "legalCorrespondence": "informational",
+      "legalTextValidated": false,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "informational",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": false
+      },
+      "denominator": "escolas_publicas_total",
+      "direction": null,
+      "finality": "context",
+      "formula": "100 * sum(escolas_publicas_com_proposta_pedagogica) / denominator_aggregate(escolas_publicas_total)",
+      "indicatorId": "proposta_pedagogica",
+      "legalGoalRefs": [],
+      "limits": [
+        "Resposta declaratória do Censo Escolar; não comprova qualidade, funcionamento ou suficiência.",
+        "Sem correspondência municipal explícita no mapa legal vigente da aplicação."
+      ],
+      "name": "Escolas públicas com projeto político pedagógico",
+      "numerator": "escolas_publicas_com_proposta_pedagogica",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "not_applicable"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "infraestrutura",
+      "correspondence": "partial",
+      "legalCorrespondence": "partial",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "partial",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "qt_salas_utilizadas",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "100 * sum(qt_salas_utiliza_climatizadas) / denominator_aggregate(qt_salas_utilizadas)",
+      "indicatorId": "salas_climatizadas",
+      "legalGoalRefs": [
+        "8.b"
+      ],
+      "limits": [
+        "Proxy parcial de conforto térmico; não mede integralmente as condições mínimas de infraestrutura escolar, mas permanece com distância operacional de referência.",
+        "Resposta declaratória do Censo Escolar; não comprova qualidade, funcionamento ou suficiência."
+      ],
+      "name": "Salas de aula climatizadas",
+      "numerator": "qt_salas_utiliza_climatizadas",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "8.b",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "infraestrutura",
+      "correspondence": "partial",
+      "legalCorrespondence": "partial",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "partial",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "qt_salas_utilizadas",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "100 * sum(qt_salas_utilizadas_acessiveis) / denominator_aggregate(qt_salas_utilizadas)",
+      "indicatorId": "salas_acessiveis",
+      "legalGoalRefs": [
+        "19.c"
+      ],
+      "limits": [
+        "Proxy parcial de acessibilidade física; não mede todas as condições de inclusão e permanência previstas na meta, mas permanece com distância operacional de referência.",
+        "Resposta declaratória do Censo Escolar; não comprova qualidade, funcionamento ou suficiência."
+      ],
+      "name": "Salas de aula com acessibilidade",
+      "numerator": "qt_salas_utilizadas_acessiveis",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "19.c",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2029
+        }
+      ],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "infraestrutura",
+      "correspondence": "informational",
+      "legalCorrespondence": "informational",
+      "legalTextValidated": false,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "informational",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": false
+      },
+      "denominator": "qntd_escolas",
+      "direction": null,
+      "finality": "context",
+      "formula": "100 * sum(escolas_com_desktop_aluno) / denominator_aggregate(qntd_escolas)",
+      "indicatorId": "desktop_aluno",
+      "legalGoalRefs": [],
+      "limits": [
+        "Resposta declaratória do Censo Escolar; não comprova qualidade, funcionamento ou suficiência.",
+        "Sem correspondência municipal explícita no mapa legal vigente da aplicação."
+      ],
+      "name": "Escolas com computadores de mesa para alunos",
+      "numerator": "escolas_com_desktop_aluno",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "not_applicable"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "infraestrutura",
+      "correspondence": "informational",
+      "legalCorrespondence": "informational",
+      "legalTextValidated": false,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "informational",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": false
+      },
+      "denominator": "qntd_escolas",
+      "direction": null,
+      "finality": "context",
+      "formula": "100 * sum(escolas_com_comp_portatil_aluno) / denominator_aggregate(qntd_escolas)",
+      "indicatorId": "comp_portatil_aluno",
+      "legalGoalRefs": [],
+      "limits": [
+        "Resposta declaratória do Censo Escolar; não comprova qualidade, funcionamento ou suficiência.",
+        "Sem correspondência municipal explícita no mapa legal vigente da aplicação."
+      ],
+      "name": "Escolas com computadores portáteis para alunos",
+      "numerator": "escolas_com_comp_portatil_aluno",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "not_applicable"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "infraestrutura",
+      "correspondence": "informational",
+      "legalCorrespondence": "informational",
+      "legalTextValidated": false,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "informational",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": false
+      },
+      "denominator": "qntd_escolas",
+      "direction": null,
+      "finality": "context",
+      "formula": "100 * sum(escolas_com_tablet_aluno) / denominator_aggregate(qntd_escolas)",
+      "indicatorId": "tablet_aluno",
+      "legalGoalRefs": [],
+      "limits": [
+        "Resposta declaratória do Censo Escolar; não comprova qualidade, funcionamento ou suficiência.",
+        "Sem correspondência municipal explícita no mapa legal vigente da aplicação."
+      ],
+      "name": "Escolas com tablets para alunos",
+      "numerator": "escolas_com_tablet_aluno",
+      "periodicity": "anual",
+      "sourceIds": [
+        "inep_censo_escolar"
+      ],
+      "targets": [],
+      "territorialCut": {
+        "denominator": "mesmo recorte declarado, salvo indicadores de atendimento",
+        "numerator": "município da escola ou recorte municipal da fonte"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "not_applicable"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "escolaridade_populacao",
+      "correspondence": "direct",
+      "legalCorrespondence": "direct",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "direct",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "total_15_mais",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "100 * sum(alfabetizadas_15_mais) / denominator_aggregate(total_15_mais)",
+      "indicatorId": "alfabetizacao_pop_15_mais",
+      "legalGoalRefs": [
+        "11.a"
+      ],
+      "limits": [
+        "Acompanha a taxa de alfabetização da população de 15 anos ou mais."
+      ],
+      "name": "Taxa de alfabetização da população de 15 anos ou mais",
+      "numerator": "alfabetizadas_15_mais",
+      "periodicity": "decenal/irregular",
+      "sourceIds": [
+        "ibge_censo_demografico_2010_2022"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "11.a",
+          "validationStatus": "official_law",
+          "value": 97,
+          "year": 2031
+        },
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "11.a",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "população residente",
+        "numerator": "população residente"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "escolaridade_populacao",
+      "correspondence": "partial",
+      "legalCorrespondence": "partial",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "proxy",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "populacao_18_mais_total",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "100 * sum(populacao_18_mais_ensino_fundamental_concluido) / denominator_aggregate(populacao_18_mais_total)",
+      "indicatorId": "fundamental_concluido_18_mais",
+      "legalGoalRefs": [
+        "11.b"
+      ],
+      "limits": [
+        "Acompanha população de 18 anos ou mais com ensino fundamental concluído; a meta legal usa população de 15 anos ou mais.",
+        "Usa população de 18 anos ou mais; a Meta 11.b exige população de 15 anos ou mais."
+      ],
+      "name": "População de 18 anos ou mais com ensino fundamental concluído",
+      "numerator": "populacao_18_mais_ensino_fundamental_concluido",
+      "periodicity": "decenal/irregular",
+      "sourceIds": [
+        "ibge_censo_demografico_2010_2022"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "11.b",
+          "validationStatus": "official_law",
+          "value": 85,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "população residente",
+        "numerator": "população residente"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "escolaridade_populacao",
+      "correspondence": "direct",
+      "legalCorrespondence": "direct",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "direct",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "populacao_15_29_total",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "100 * sum(populacao_15_29_ensino_fundamental_concluido) / denominator_aggregate(populacao_15_29_total)",
+      "indicatorId": "fundamental_concluido_15_29",
+      "legalGoalRefs": [
+        "11.b"
+      ],
+      "limits": [
+        "Acompanha a conclusão do ensino fundamental na população de 15 a 29 anos."
+      ],
+      "name": "População de 15 a 29 anos com ensino fundamental concluído",
+      "numerator": "populacao_15_29_ensino_fundamental_concluido",
+      "periodicity": "decenal/irregular",
+      "sourceIds": [
+        "ibge_censo_demografico_2010_2022"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "11.b",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "população residente",
+        "numerator": "população residente"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "escolaridade_populacao",
+      "correspondence": "direct",
+      "legalCorrespondence": "direct",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "direct",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "populacao_18_mais_total",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "100 * sum(populacao_18_mais_ensino_medio_concluido) / denominator_aggregate(populacao_18_mais_total)",
+      "indicatorId": "medio_concluido_18_mais",
+      "legalGoalRefs": [
+        "11.c"
+      ],
+      "limits": [
+        "Acompanha a população de 18 anos ou mais com ensino médio concluído."
+      ],
+      "name": "População de 18 anos ou mais com ensino médio concluído",
+      "numerator": "populacao_18_mais_ensino_medio_concluido",
+      "periodicity": "decenal/irregular",
+      "sourceIds": [
+        "ibge_censo_demografico_2010_2022"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "11.c",
+          "validationStatus": "official_law",
+          "value": 75,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "população residente",
+        "numerator": "população residente"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    },
+    {
+      "administrativeDependence": [
+        "all"
+      ],
+      "category": "escolaridade_populacao",
+      "correspondence": "direct",
+      "legalCorrespondence": "direct",
+      "legalTextValidated": true,
+      "legalValidation": {
+        "validatedAt": "2026-07-19",
+        "lawVersion": "Lei nº 15.388/2026 — texto vigente em 2026-07-19",
+        "source": "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2026/lei/l15388.htm",
+        "validationId": "pne-law-15388-2026-validation-v1"
+      },
+      "operationalizationStatus": "direct",
+      "currentImplementation": {
+        "legalTextCheckedAt": "2026-07-19",
+        "officialInepPerEntityDefinitionStatus": "pending_within_180_day_legal_window",
+        "tracksGoal": true
+      },
+      "denominator": "populacao_18_29_total",
+      "direction": "at_least",
+      "finality": "goal_monitoring",
+      "formula": "100 * sum(populacao_18_29_ensino_medio_concluido) / denominator_aggregate(populacao_18_29_total)",
+      "indicatorId": "medio_concluido_18_29",
+      "legalGoalRefs": [
+        "11.c"
+      ],
+      "limits": [
+        "Acompanha a conclusão do ensino médio na população de 18 a 29 anos."
+      ],
+      "name": "População de 18 a 29 anos com ensino médio concluído",
+      "numerator": "populacao_18_29_ensino_medio_concluido",
+      "periodicity": "decenal/irregular",
+      "sourceIds": [
+        "ibge_censo_demografico_2010_2022"
+      ],
+      "targets": [
+        {
+          "dimension": "overall",
+          "direction": "at_least",
+          "legalGoalRef": "11.c",
+          "validationStatus": "official_law",
+          "value": 100,
+          "year": 2036
+        }
+      ],
+      "territorialCut": {
+        "denominator": "população residente",
+        "numerator": "população residente"
+      },
+      "unit": "percent",
+      "validRange": {
+        "maximum": 100,
+        "minimum": 0
+      },
+      "valueDomainPolicy": "exclude_outside_declared_domain",
+      "displayPolicy": "cap_to_declared_range_for_display_only",
+      "configuredReferenceRole": "quantitative_reference"
+    }
+  ]
+}

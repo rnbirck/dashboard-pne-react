@@ -9,19 +9,18 @@ import { ContentState } from './ContentState'
 import { IndicatorHistoryChart } from '../components/IndicatorHistoryChart'
 import { ChartEmptyState } from './ChartPrimitives'
 import { EducationSummaryCard } from './EducationSummaryCard'
-import { SearchField } from './SearchField'
 import { SegmentedControl } from './SegmentedControl'
 import {
   FinancialChartFrame,
+  FinancialCatalogSectionBar,
   FinancialDetailHeader,
   FinancialDetailNavigation,
-  FinancialIndicatorCard,
+  FinancialIndicatorGroup,
   FinancialSection,
   FinancialMetricStrip,
   FinancialMetricGrid,
   FinancialQuickReading,
-  FinancialMethodologyDisclosure,
-  FinancialSupportData,
+  FinancialPrimaryAnalysis,
 } from './FinancialIndicatorPrimitives'
 
 const FUNDEB_READING_CARDS = [
@@ -70,6 +69,29 @@ const FUNDEB_FILTER_OPTIONS = [
   { key: 'remuneracao', label: 'Remuneração' },
   { key: 'saldos', label: 'Saldos financeiros' },
 ]
+
+const FUNDEB_CATALOG_GROUPS = [
+  {
+    key: 'receitas',
+    label: 'Receitas e movimentação',
+    description: 'Recursos recebidos, despesas totais, ingressos e pagamentos registrados no período.',
+  },
+  {
+    key: 'remuneracao',
+    label: 'Remuneração',
+    description: 'Aplicação dos recursos do FUNDEB na remuneração dos profissionais da educação.',
+  },
+  {
+    key: 'saldos',
+    label: 'Saldos financeiros',
+    description: 'Disponibilidade financeira, saldos anteriores e conciliação ao fim do período.',
+  },
+]
+
+function getFundebGroup(indicatorKey) {
+  return FUNDEB_CATALOG_GROUPS.find((group) => FUNDEB_INDICATOR_GROUPS[group.key]?.has(indicatorKey))
+    ?? FUNDEB_CATALOG_GROUPS[0]
+}
 
 function formatCompactCurrency(value) {
   if (!Number.isFinite(Number(value))) return ''
@@ -205,6 +227,7 @@ function buildFundebIndicatorModel(indicator, historico) {
     initialYear: first?.ano ?? null,
     key: indicator.key,
     label: indicator.label,
+    groupLabel: getFundebGroup(indicator.key).label,
     moduleLabel: 'FUNDEB',
     currentDisplay: latest ? formatFundebValue(latest.valor, indicator.tipo) : '—',
     currentDisplayCompact: latest ? formatFundebCompactValue(latest.valor, indicator.tipo) : '—',
@@ -232,6 +255,16 @@ function getIndicatorHelpText(indicator) {
 }
 
 function FundebInfoIcon({ type }) {
+  if (type === 'remuneracao') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="9" cy="8" r="3" />
+        <path d="M3.5 20c.4-4.6 2.2-7 5.5-7s5.1 2.4 5.5 7" />
+        <path d="M16 7h5m-2.5-2.5v5M16 14h5m-2.5-2.5v5" />
+      </svg>
+    )
+  }
+
   if (type === 'despesas') {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -317,7 +350,20 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
     () => filteredItems.map((indicator) => buildFundebIndicatorModel(indicator, historico ?? [])),
     [filteredItems, historico],
   )
+  const visibleIndicatorGroups = useMemo(
+    () => FUNDEB_CATALOG_GROUPS
+      .filter((group) => selectedGroup === 'all' || group.key === selectedGroup)
+      .map((group) => ({
+        ...group,
+        indicators: indicatorModels.filter((indicator) => FUNDEB_INDICATOR_GROUPS[group.key]?.has(indicator.key)),
+      }))
+      .filter((group) => group.indicators.length),
+    [indicatorModels, selectedGroup],
+  )
   const selectedIndicatorModel = indicatorModels.find((indicator) => indicator.key === selectedKey) ?? indicatorModels[0] ?? null
+  const selectedMetadata = selectedIndicatorModel
+    ? getFinancialIndicatorMetadata('fundeb', selectedIndicatorModel.key)
+    : null
   const { activeIndex: selectedIndex, previousItem: previousIndicator, nextItem: nextIndicator } = resolveDetailSequence(indicatorModels, selectedIndicatorModel?.key)
 
   useEffect(() => {
@@ -408,6 +454,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
         <FinancialMetricStrip className="fundeb-summary-grid">
           <EducationSummaryCard
             accessibleValue={formatFundebValue(resumo_ultimo_ano?.receitas, 'financeiro')}
+            icon={<FundebInfoIcon type="receitas" />}
             label="Receitas do FUNDEB"
             value={formatFundebCompactValue(resumo_ultimo_ano?.receitas, 'financeiro')}
             valueSize="compact"
@@ -415,6 +462,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
           />
           <EducationSummaryCard
             accessibleValue={formatFundebValue(resumo_ultimo_ano?.despesa_total_fundeb, 'financeiro')}
+            icon={<FundebInfoIcon type="despesas" />}
             label="Despesa total do FUNDEB"
             value={formatFundebCompactValue(resumo_ultimo_ano?.despesa_total_fundeb, 'financeiro')}
             valueSize="compact"
@@ -423,6 +471,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
           <EducationSummaryCard
             accessibleValue={formatFundebValue(resumo_ultimo_ano?.percentual_minimo_remuneracao_profissionais, 'percentual')}
             detail={`Referência vigente: mínimo de ${resumo_ultimo_ano?.limite_remuneracao_referencia ?? getLimiteReferencia(ultimo_ano)}%`}
+            icon={<FundebInfoIcon type="remuneracao" />}
             label="Percentual aplicado em remuneração"
             value={formatFundebCompactValue(resumo_ultimo_ano?.percentual_minimo_remuneracao_profissionais, 'percentual')}
             year={ultimo_ano}
@@ -430,9 +479,11 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
           <EducationSummaryCard
             accessibleValue={formatFundebValue(ultimoRegistro?.disponibilidade_financeira_ate_bimestre, 'financeiro')}
             detail={`Saldo anterior: ${formatFundebValue(ultimoRegistro?.disponibilidade_financeira_ano_anterior, 'financeiro')}`}
+            icon={<FundebInfoIcon type="saldos" />}
             label="Disponibilidade financeira"
             value={formatFundebCompactValue(ultimoRegistro?.disponibilidade_financeira_ate_bimestre, 'financeiro')}
             valueSize="compact"
+            year={ultimo_ano}
           />
         </FinancialMetricStrip>
       </FinancialSection>
@@ -453,116 +504,56 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
           <section className="detail-panel educacao-detail-panel financial-detail-panel fundeb-detail">
             <FinancialDetailHeader indicator={selectedIndicatorModel} />
             <FinancialMetricGrid indicator={selectedIndicatorModel} />
-            <FinancialQuickReading description={selectedIndicatorModel.description} text={selectedIndicatorModel.quickReading} tone={selectedIndicatorModel.statusTone} />
             {(selectedKey === 'despesa_remuneracao_profissionais_creche' || selectedKey === 'despesa_remuneracao_profissionais_pre_escola') && (
               <MethodNote className="fundeb-indicator-note"><strong>Nota metodológica:</strong> Série exibida a partir de 2021 para manter comparabilidade com a estrutura do Novo FUNDEB.</MethodNote>
             )}
 
-            <FinancialChartFrame
-              subtitle={`${selectedIndicator.label} · FUNDEB`}
-              summary={selectedIndicatorModel.historySummary}
-              source={(
-                <DataSourceNote
-                  className="fundeb-data-source"
-                  context={{
-                    block: 'fundeb',
-                    detailType: 'chart',
-                    indicatorKey: selectedIndicator?.key,
-                    indicatorName: selectedIndicator?.label,
-                  }}
-                />
-              )}
-            >
-              {validSeries.length >= 2 ? (
-                <IndicatorHistoryChart
-                  chartHeight={224}
-                  endYear={series[series.length - 1].ano}
-                  formatDataLabel={chartUnit === 'currency' ? (v) => formatCompactDataLabel(v, 'financeiro') : (v) => formatCompactDataLabel(v, 'percentual')}
-                  formatYAxis={chartUnit === 'currency' ? formatCompactCurrency : undefined}
-                  item={{ label: selectedIndicator.label }}
-                  labelMode="all"
-                  missingLabel="—"
-                  result={null}
-                  series={series}
-                  showMetaLine={false}
-                  showMissingPoints={true}
-                  startYear={series[0].ano}
-                  title={selectedIndicator.label}
-                  unit={chartUnit}
-                  yTickCount={5}
-                />
-              ) : (
-                <ChartEmptyState message="Histórico não disponível." />
-              )}
-            </FinancialChartFrame>
-
-            <FinancialMethodologyDisclosure>
-              <FinancialIndicatorMetadata metadata={getFinancialIndicatorMetadata('fundeb', selectedIndicatorModel.key)} />
-            </FinancialMethodologyDisclosure>
-
-            {series.length >= 1 ? (
-              <FinancialSupportData subtitle="Tabela anual do demonstrativo do FUNDEB para o indicador selecionado.">
-                <div className="fundeb-table-card financial-support-table">
-                  <div className="fundeb-table-card__header">
-                    <div>
-                      <h4>Histórico do indicador</h4>
-                    </div>
-                  </div>
-                  <div className="fundeb-table-wrap" role="region" aria-label="Série histórica do indicador do FUNDEB. Role horizontalmente para consultar todas as colunas quando necessário." tabIndex={0}>
-                    <table className="fundeb-table">
-                      <caption className="u-sr-only">Série histórica do indicador do FUNDEB</caption>
-                      <thead>
-                        <tr>
-                          <th scope="col">Ano</th>
-                          <th scope="col">Valor</th>
-                          <th scope="col">Variação anual</th>
-                          {isPercentual && <th scope="col">Mínimo exigido</th>}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {historicoVisivel
-                          .filter((h) => h.ano != null)
-                          .map((entry, index) => {
-                            const prev = index > 0 ? historicoVisivel[index - 1] : null
-                            const currentVal = entry[selectedIndicator.key]
-                            const prevVal = prev?.[selectedIndicator.key]
-                            const vari = prev != null ? calcVariation(currentVal, prevVal, selectedIndicator.tipo) : null
-                            return (
-                              <tr key={entry.ano}>
-                                <td>{entry.ano}</td>
-                                <td>{formatFundebValue(currentVal, selectedIndicator.tipo)}</td>
-                                <td><span className={
-                                  index === 0 || vari == null
-                                    ? 'fundeb-variation-missing'
-                                    : vari > 0
-                                      ? 'fundeb-variation-positive'
-                                      : vari < 0
-                                        ? 'fundeb-variation-negative'
-                                        : 'fundeb-variation-neutral'
-                                } aria-label={index === 0 || vari == null ? 'Variação indisponível' : undefined}>{index === 0 ? '—' : formatVariation(vari, selectedIndicator.tipo)}</span></td>
-                                {isPercentual && <td>{getLimiteReferencia(entry.ano)}%</td>}
-                              </tr>
-                            )
-                          })}
-                      </tbody>
-                    </table>
-                  </div>
+            <FinancialPrimaryAnalysis>
+              <FinancialChartFrame
+                subtitle={selectedIndicatorModel.description}
+                source={(
                   <DataSourceNote
                     className="fundeb-data-source"
                     context={{
                       block: 'fundeb',
-                      detailType: 'table',
+                      detailType: 'chart',
                       indicatorKey: selectedIndicator?.key,
                       indicatorName: selectedIndicator?.label,
                     }}
                   />
-                </div>
-              </FinancialSupportData>
-            ) : (
-              <div className="fundeb-empty">
-                <p>Este indicador não possui série histórica disponível para este município.</p>
-              </div>
-            )}
+                )}
+              >
+                {validSeries.length >= 2 ? (
+                  <IndicatorHistoryChart
+                    chartHeight={300}
+                    endYear={series[series.length - 1].ano}
+                    formatDataLabel={chartUnit === 'currency' ? (v) => formatCompactDataLabel(v, 'financeiro') : (v) => formatCompactDataLabel(v, 'percentual')}
+                    formatYAxis={chartUnit === 'currency' ? formatCompactCurrency : undefined}
+                    item={{ label: selectedIndicator.label }}
+                    labelMode="all"
+                    missingLabel="—"
+                    result={null}
+                    series={series}
+                    showMetaLine={false}
+                    showMissingPoints={true}
+                    startYear={series[0].ano}
+                    title={selectedIndicator.label}
+                    unit={chartUnit}
+                    yTickCount={5}
+                  />
+                ) : (
+                  <ChartEmptyState message="Histórico não disponível." />
+                )}
+              </FinancialChartFrame>
+              <FinancialQuickReading
+                description={selectedIndicatorModel.description}
+                indicator={selectedIndicatorModel}
+                metadata={selectedMetadata}
+                text={selectedIndicatorModel.quickReading}
+              />
+            </FinancialPrimaryAnalysis>
+
+            <FinancialIndicatorMetadata metadata={selectedMetadata} />
           </section>
           <FinancialDetailNavigation
             activeIndex={selectedIndex}
@@ -578,48 +569,45 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
           />
         </div>
       ) : (
-      <FinancialSection
-        className="financial-indicator-section fundeb-workspace financial-grid-workspace"
-        eyebrow="Seção de indicadores"
-        meta={`${indicatorModels.length} indicadores`}
-        title="Indicadores do FUNDEB"
-        titleId="fundeb-indicators-title"
-      >
-              <div className="financial-indicator-filters platform-exploration-toolbar">
-                <SearchField
-                  ariaLabel="Buscar indicador"
-                  className="platform-search-field"
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  onClear={() => setSearchQuery('')}
-                  placeholder="Buscar indicador"
-                  value={searchQuery}
-                />
-                <SegmentedControl
-                  ariaLabel="Filtrar indicadores do FUNDEB por grupo"
-                  className="platform-segmented-control platform-segmented-control--scrollable"
-                  onSelect={setSelectedGroup}
-                  optionClassName="platform-segmented-option"
-                  options={FUNDEB_FILTER_OPTIONS}
-                  selectedKey={selectedGroup}
-                />
-              </div>
-              <div className="indicator-list financial-indicator-card-grid">
-                {indicatorModels.length === 0 ? (
-                  <div className="financial-indicator-grid-empty">
-                    <ContentState as="p" kind="noResults">Nenhum indicador encontrado.</ContentState>
-                  </div>
-                ) : (
-                  indicatorModels.map((indicator) => (
-                    <FinancialIndicatorCard
-                      buttonRef={(node) => detailNavigation.registerCard(indicator.key, node)}
-                      indicator={indicator}
-                      isSelected={isDetailOpen && indicator.key === selectedKey}
-                      key={indicator.key}
-                      onSelect={() => handleIndicatorSelect(indicator.key)}
-                    />
-                  ))
-                )}
-              </div>
+      <div className="financial-catalog-workspace fundeb-workspace financial-grid-workspace">
+        <FinancialCatalogSectionBar
+          count={indicatorModels.length}
+          description="Receitas, remuneração e saldos financeiros do fundo no município."
+          onSearchChange={setSearchQuery}
+          searchQuery={searchQuery}
+          title="FUNDEB"
+          titleId="fundeb-indicators-title"
+        />
+        <div className="financial-catalog-filter-row" aria-label="Filtros dos indicadores do FUNDEB">
+          <span className="fundeb-indicator-filter-label">Grupo de indicadores</span>
+          <SegmentedControl
+            ariaLabel="Filtrar indicadores do FUNDEB por grupo"
+            className="platform-segmented-control fundeb-indicator-group-control"
+            onSelect={setSelectedGroup}
+            optionClassName="platform-segmented-option"
+            options={FUNDEB_FILTER_OPTIONS}
+            selectedKey={selectedGroup}
+          />
+        </div>
+        {indicatorModels.length === 0 ? (
+          <div className="financial-indicator-grid-empty">
+            <ContentState as="p" kind="noResults">Nenhum indicador encontrado.</ContentState>
+          </div>
+        ) : (
+          <div className="education-indicator-groups financial-indicator-groups">
+            {visibleIndicatorGroups.map((group) => (
+              <FinancialIndicatorGroup
+                description={group.description}
+                groupKey={`fundeb-${group.key}`}
+                indicators={group.indicators}
+                key={group.key}
+                label={group.label}
+                onSelect={handleIndicatorSelect}
+                registerCard={detailNavigation.registerCard}
+              />
+            ))}
+          </div>
+        )}
 
           <div className="fundeb-detail fundeb-detail--legacy">
             <div className="fundeb-detail-header">
@@ -737,7 +725,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
               </div>
             )}
           </div>
-      </FinancialSection>
+      </div>
       )}
     </div>
   )

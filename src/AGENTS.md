@@ -31,7 +31,9 @@ to influence chunk boundaries.
 - Não implemente cálculos de indicador no frontend e não edite `public/data`.
 - Reutilize componentes e tokens existentes. `App.css` é legado e não cria padrões novos.
 - Alterações estruturais não podem mudar DOM, classes, textos ou aparência. Migração de CSS exige tarefa própria.
-- Durante o trabalho, execute o menor conjunto de testes relevante; antes de concluir, valide a alteração afetada.
+- Durante o trabalho, siga a política de execução do `AGENTS.md` da raiz. Não
+  execute testes ou outras validações sem pedido explícito, mesmo em mudanças
+  estruturais ou compartilhadas.
 
 ## Sistema visual estabilizado
 
@@ -41,13 +43,15 @@ to influence chunk boundaries.
 - Preserve a ordem de imports registrada em `docs/DESIGN_SYSTEM.md`; ela é protegida por `npm run test:ui-architecture`.
 - Não adicione tooltip ou legenda canônica de gráfico fora de `chart-system.css` e não faça `App.css` ultrapassar o teto de proteção sem uma migração documentada.
 
-Validação proporcional:
+Matriz de validação disponível quando o usuário ativar explicitamente a
+validação rápida ou completa:
 
 - componente isolado: catálogo e regressão isolada;
 - navegação/interação: catálogo, roteamento e E2E;
 - página/composição: catálogo, E2E e regressão pública;
 - cálculo/indicador: `verify:indicator` e testes de domínio.
 
-Antes de concluir mudança estrutural de UI, execute também `npm run typecheck`,
-`npm run lint`, `npm run build`, `npm run test:ui-architecture` e
-`git diff --check`.
+Para mudança estrutural de UI, `npm run typecheck`, `npm run lint`,
+`npm run build`, `npm run test:ui-architecture` e verificações de Git só podem ser
+executados no modo de validação explicitamente solicitado. No modo rápido, apenas
+implemente e informe o risco compartilhado conforme o `AGENTS.md` da raiz.

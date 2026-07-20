@@ -46,7 +46,7 @@ export function EducationCompactHeader({
   title,
   variant = 'section',
 }: EducationCompactHeaderProps) {
-  const inlineBackLink = variant === 'scenarios' ? backLink : undefined
+  const inlineBackLink = variant === 'detail' ? undefined : backLink
 
   return (
     <header className={`education-compact-header education-compact-header--${variant}${className ? ` ${className}` : ''}`}>
@@ -80,7 +80,7 @@ export function EducationCompactHeader({
 
 export function EducationContextChip({ item }: { item: EducationContextItem }) {
   return (
-    <div className="education-context-chip">
+    <div className={`education-context-chip${item.label === 'Seção' ? ' education-context-chip--section' : ''}`}>
       <span className="education-context-chip__icon" aria-hidden="true">
         <EducationContextIconGlyph name={item.icon ?? 'scope'} />
       </span>

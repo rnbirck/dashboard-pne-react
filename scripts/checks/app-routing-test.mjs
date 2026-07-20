@@ -56,6 +56,8 @@ const ROUTE_CASES = [
   ['#diagnostico', 'diagnostico'],
   ['#educacao', 'educacao'],
   ['#financeiros', FINANCIAL_PAGE_KEYS.overview],
+  ['#financeiros-panorama', FINANCIAL_PAGE_KEYS.panorama],
+  ['#panorama-financeiro', FINANCIAL_PAGE_KEYS.panorama],
   ['#financeiros-aplicacao-recursos', FINANCIAL_PAGE_KEYS.application],
   ['#financeiros-fundeb', FINANCIAL_PAGE_KEYS.fundeb],
   ['#financeiros-pnate', FINANCIAL_PAGE_KEYS.pnate],
@@ -116,6 +118,19 @@ test('combina parâmetros com prioridade do hash e constrói hashes sem vazios',
     [...mergeHashAndSearchParams('secao=trajetoria', 'secao=oferta&detalhe=x').entries()],
     [['secao', 'trajetoria'], ['detalhe', 'x']],
   )
+})
+
+test('preserva município e contexto educacional na rota do panorama financeiro', () => {
+  const hash = buildAppHash(FINANCIAL_PAGE_KEYS.panorama, {
+    municipio: 'agudo',
+    indicatorId: 'creche,alfabetizacao',
+    programId: 'salario_educacao_qsem,fundeb_vaar',
+  })
+  const parsed = parseAppHash(hash)
+  assert.equal(resolveActivePage(parsed), FINANCIAL_PAGE_KEYS.panorama)
+  assert.equal(parsed.params.get('municipio'), 'agudo')
+  assert.equal(parsed.params.get('indicatorId'), 'creche,alfabetizacao')
+  assert.equal(parsed.params.get('programId'), 'salario_educacao_qsem,fundeb_vaar')
 })
 
 test('mantém parse → build → parse e o adaptador compatível', () => {

@@ -383,7 +383,7 @@ const BASE_INDICATORS = [
   {
     key: 'alunos-turma-infantil',
     label: 'Alunos por turma - Educação Infantil',
-    description: 'Média oficial de alunos por turma em educação infantil. Use o filtro para trocar total, ano ou série.',
+    description: 'Média oficial de alunos por turma em educação infantil.',
     section: professionals,
     themeKey: 'turmas',
     dataBlock: 'alunos_turma',
@@ -395,7 +395,7 @@ const BASE_INDICATORS = [
   {
     key: 'alunos-turma-fundamental',
     label: 'Alunos por turma - Ensino Fundamental',
-    description: 'Média oficial de alunos por turma em ensino fundamental. Use o filtro para trocar total, ano ou série.',
+    description: 'Média oficial de alunos por turma em ensino fundamental.',
     section: professionals,
     sections: [overview, professionals],
     themeKey: 'turmas',
@@ -408,7 +408,7 @@ const BASE_INDICATORS = [
   {
     key: 'alunos-turma-medio',
     label: 'Alunos por turma - Ensino Médio',
-    description: 'Média oficial de alunos por turma em ensino médio. Use o filtro para trocar total, ano ou série.',
+    description: 'Média oficial de alunos por turma em ensino médio.',
     section: professionals,
     themeKey: 'turmas',
     dataBlock: 'alunos_turma',

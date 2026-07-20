@@ -23,11 +23,22 @@ Estas regras se aplicam a todo arquivo em `src/dev-ui`.
 
 ## Validação
 
-- Execute primeiro o cenário afetado com `npm run test:dev-ui:visual -- --scenario <id>`; atualize somente a combinação revisada com `test:dev-ui:visual:update`, nunca pelo comando normal.
-- Execute `npm run typecheck`, `npm run test:dev-ui`, `npm run test:dev-ui:visual`, `npm run test:ui-architecture`, `npm run lint` e `npm run build`.
-- Confirme que o catálogo funciona sem município e que nenhuma requisição a `/data/` ocorre.
-- Confirme que `dist` não contém `dev-ui`, `src/dev-ui` nem o título do catálogo.
+- A execução segue os modos do `AGENTS.md` da raiz. Nenhum comando desta seção
+  é automático, inclusive em alterações do catálogo ou de componentes
+  compartilhados.
+- Em validação rápida explicitamente solicitada, prefira apenas o cenário
+  afetado com `npm run test:dev-ui:visual -- --scenario <id>` e, salvo pedido de
+  vários viewports, uma única combinação.
+- Em validação completa explicitamente solicitada, ficam disponíveis
+  `npm run typecheck`, `npm run test:dev-ui`, `npm run test:dev-ui:visual`,
+  `npm run test:ui-architecture`, `npm run lint` e `npm run build`, além das confirmações
+  de isolamento do catálogo e ausência do catálogo em `dist`.
+- Atualize somente a combinação revisada com `test:dev-ui:visual:update`, nunca
+  pelo comando normal, e apenas quando a atualização de baseline fizer parte do
+  pedido explícito.
 - Preserve `[data-testid="catalog-preview"]`, `data-scenario-id` e `data-catalog-ready`; o harness depende desses contratos para captura e estabilização.
 - Resultados e diffs são temporários; somente `tests/dev-ui-visual/baselines` é versionado. Diferenças de dimensão são falhas e não devem ser mascaradas por tolerância.
-- O seletor interno de largura é uma inspeção rápida. Continue validando breakpoints reais em E2E e regressão visual pública.
+- O seletor interno de largura é uma inspeção rápida. Breakpoints reais podem ser
+  validados em E2E e regressão visual pública somente quando o modo solicitado os
+  incluir.
 - A matriz estabilizada possui 17 cenários e 31 combinações visuais. Adicione outra combinação somente quando houver risco responsivo não coberto; não busque simetria artificial entre categorias ou viewports.

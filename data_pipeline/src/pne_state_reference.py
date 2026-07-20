@@ -55,6 +55,20 @@ def _metadata(
         ),
         "methodology_version": METHODOLOGY_VERSION,
         "comparison_status": comparison_status,
+        "unit": "percent",
+        "compatibility": {
+            "indicatorRule": "same_indicator_id_required",
+            "formulaStatus": "curated_equivalent",
+            "yearRule": "same_year_required",
+            "rangeStatus": "curated_equivalent",
+            "stageStatus": "curated_equivalent",
+            "unit": "percent",
+            "universeStatus": "curated_equivalent",
+            "administrativeDependenceStatus": "registry_filters_required",
+            "aggregationRuleStatus": "curated_equivalent",
+            "methodologyVersion": METHODOLOGY_VERSION,
+            "territorialBasisStatus": "curated_equivalent",
+        },
         "notes": notes,
     }
 

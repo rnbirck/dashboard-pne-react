@@ -3,6 +3,10 @@
 > **Status: encerrado.** UI-01 a UI-18 foram concluídas nos respectivos escopos aprovados. Este documento preserva implementação, evidências, exceções e critérios de validação; novas iniciativas devem ser tratadas fora desta migração.
 >
 > Auditorias e propostas que originaram parte deste plano estão preservadas em [historico-ui/](historico-ui/).
+>
+> Registros de comandos, evidências e critérios das rodadas encerradas são
+> históricos e não autorizam execução automática pelo Codex. Para qualquer
+> trabalho atual, prevalecem os modos de execução do `AGENTS.md` da raiz.
 
 ## 1. Escopo e uso
 
@@ -48,7 +52,7 @@ Use este arquivo para:
 | UI-12 | Contexto endereçável de módulo e detalhe | Implementado (Lote 4) | P2 | A estratégia de hash cobre páginas, temas, módulos, Sistema S e detalhes estáveis de PNE, Educação, FUNDEB, PNATE e SIOPE. Os painéis financeiros recebem somente `detailKey` e `onDetailChange`; builders e disponibilidade continuam internos. | Acesso direto, recarga, abrir/trocar/fechar, voltar/avançar, foco restaurado, chave inválida e troca municipal são resolvidos após os dados. Trocar de módulo remove detalhe incompatível. |
 | UI-13 | Primitiva comum de sparkline | Implementado (piloto) | P2 | `src/utils/sparkline.js`, `src/components/Sparkline.jsx`, `EducationIndicatorCard`, `FinancialIndicatorCard`. | Educação e Financeiro usam o mesmo modelo geométrico e JSX, preservando filtragem, ordenação, escala constante, paths, período, estado vazio, classes legadas e `aria-hidden`; `MetaCard` permanece fora do piloto. |
 | UI-14 | Controles React compartilhados | Implementado | P2 | `src/components/SearchField.jsx` atende `CyclePage`, `EducacaoPage` e `PneLegalGoalsPage` no escopo aprovado; FUNDEB e PNATE mantêm a variante lateral `indicator-search` fora desse escopo. `src/components/SegmentedControl.jsx` atende `BasicEducationFilter` em `CyclePage` e `IndicatorSegmentedControl` em `EducacaoPage`, com `ariaLabel`, `className`, `optionClassName`, `options`, `selectedKey` e `onSelect`. Busca, PNE e Educação foram validados em 1366×768, 1280×720 e 1024×768; o segmento largo de Educação preserva 12 opções, wrapping, foco e `aria-pressed`. | Busca e segmento aprovados preservam DOM, classes, ordem, foco e lógica dos consumidores. O PNE preserva opções de 36 px; o segmento largo de Educação preserva a exceção legada de 30 px existente antes da migração, sem mudança de CSS. `infra-dep-pill` é uma ocorrência futura fora deste escopo por ainda não expor grupo rotulado nem `aria-pressed`. Filtros, tabs e navegação de módulo não entram em um componente universal. |
-| UI-15 | Arquitetura dos cards exploráveis | Implementado | P2 | `ExplorableIndicatorCardFrame`, `EducationIndicatorCard`, `FinancialIndicatorCard`, `StatusBadge`, `Sparkline`, `InteractionChevron`, `e2e-test.cjs`. | Educação e Financeiro mantêm APIs e consumidores atuais, adaptam seus próprios view-models textuais e fornecem contratos de classes BEM imutáveis ao frame de sete regiões, sem wrapper DOM, CSS ou regras de domínio. `MetaCard` preserva composição, cálculos e sparkline próprios do PNE. Lint, build e E2E validam DOM, classes específicas, atributos ARIA, foco restaurado, sparkline válida/vazia e fluxos em 1366×768, 1280×720 e 1024×768. |
+| UI-15 | Arquitetura dos cards exploráveis | Implementado | P2 | `ExplorableIndicatorCardFrame`, `EducationIndicatorCard`, `FinancialIndicatorCard`, `StatusBadge`, `Sparkline`, `InteractionChevron`, `institutional-refresh.css`, `e2e-test.cjs`. | Educação e Financeiro mantêm APIs e consumidores atuais, adaptam seus próprios view-models textuais e fornecem contratos de classes BEM imutáveis ao frame de sete regiões, sem wrapper DOM ou regras de domínio. A listagem de Educação usa altura proporcional ao conteúdo, preserva títulos integrais e estende horizontalmente a faixa de variação e seu divisor; Financeiro mantém a medida compartilhada vigente. `MetaCard` preserva composição, cálculos e sparkline próprios do PNE. Lint, build e E2E permanecem disponíveis para validar DOM, classes específicas, atributos ARIA, foco restaurado, sparkline válida/vazia e fluxos em 1366×768, 1280×720 e 1024×768. |
 | UI-16 | Propriedade de moldura e título de gráfico | Implementado (Lote 3) | P2 | `IndicatorChartHeader` concentra eyebrow, título, subtítulo, resumo e ações textuais equivalentes de Educação e `FinancialChartFrame`, sem wrapper ou classe nova. Fontes/metodologias continuam na composição externa e renderers preservam séries, escalas, eixos e tooltips. | `IndicatorHistoryChart` permanece específico do PNE porque seu título integra a semântica da seção e a alternativa acessível do SVG; o baseline comprova equivalência visual das extrações. |
 | UI-17 | Mecânica comum de seleção lista–detalhe | Implementado (Lote 3) | P2 | `resolveDetailSequence` consolida índice, anterior e próximo; `useDetailViewNavigation` mantém abertura, foco, posição e retorno. PNE, Educação, FUNDEB, PNATE e SIOPE usam a mesma mecânica. | Filtros, módulos, ciclos, modelos, disponibilidade, resets, textos e transformação permanecem nos consumidores; nenhuma API pública ou DOM foi alterado. |
 | UI-18 | Primitivas de cabeçalho | Implementado (Lote 3) | P3 | `PageHeadingText` atende ciclos do PNE e os cabeçalhos educacional/financeiro; `DetailHeadingText` atende detalhes de Educação e Financeiro. Ambos compartilham somente contexto, título e descrição, sem wrapper adicional. | Home permanece institucional; Diagnóstico permanece específico por combinar contexto, ações e anúncio; hero, métricas, filtros, referências e alertas não foram absorvidos. Baseline sem diferenças. |
@@ -110,6 +114,38 @@ Na rodada final de refinamento, os KPIs passaram a ocupar 1, 2, 3 ou 4 colunas c
 O refinamento editorial posterior manteve as linhas Tipo de indicador e Recorte sempre presentes. Em Tempo integral, Recorte usa um chip informativo não interativo de Educação básica e explica que somente o recorte geral possui trajetória futura; o bloco preserva altura e foco na troca de tipo. Os painéis reutilizam `MetricCard`, ícones e a anatomia compartilhada de análise principal: gráfico e leitura rápida em aproximadamente 70/30 no desktop, empilhados a partir de notebook/tablet, com KPIs 2×2 no tablet e uma coluna no celular. Cobertura e Tempo integral usam a mesma estrutura, sem reintroduzir matrículas, manutenção ou tabela comparativa.
 
 Evidência desta substituição deve ser lida nos testes do contrato, da apresentação e no E2E vigente; registros anteriores de cenários absolutos de matrículas nesta seção foram substituídos por esta decisão.
+
+### Cards analíticos compactos de Educação e Financiamento (2026-07-19)
+
+Os cards exploráveis de indicadores educacionais mantêm `EducationIndicatorCard` e `ExplorableIndicatorCardFrame`, em grade 4→3→2→1, e reproduzem a anatomia da referência aprovada: categoria, título e status no cabeçalho; valor e ano na faixa principal; variação com marcador direcional e período na faixa analítica; e rodapé integral com ícone, CTA e chevron. Categoria e título aparecem integralmente, com quebra de linha e crescimento do card quando necessário, sem reticências ou limite fixo de linhas. A descrição completa permanece no nome acessível e no detalhe, sem ocupar uma faixa visual própria no card.
+
+Os cards de Financiamento passaram a usar a mesma variante compartilhada e a mesma grade 4→3→2→1, preservando módulos, valores, anos, estados legais e séries financeiras. Variação e período ocupam a faixa analítica, e o rodapé passa a oferecer a mesma ação de série histórica. A altura mínima da variante preserva integralmente a faixa principal em quatro colunas, mantendo valores monetários compactos visíveis e em destaque ao lado do ano. O PNE não foi alterado.
+
+Alta, Queda e Estável são derivados exclusivamente da diferença entre o valor atual e o último ano anterior comparável. Sem esse ponto anterior, o badge é omitido e a leitura informa o início real da série ou a ausência de ano comparável. Esta rodada não alterou dados, cálculos de indicadores, filtros, rotas ou nomenclaturas e foi implementada no modo rápido, sem execução local de validações.
+
+Refinamento dos cards educacionais (2026-07-20): a variante de Educação deixou a composição compacta compartilhada e passou a reproduzir a referência retrato aprovada em grade 3→2→1. Descrição, valor dominante, coluna de Ano/Variação, faixa de Leitura/Período e chip final de etapa ou recorte permanecem visíveis no próprio card. Alturas são orientadas ao conteúdo para acomodar títulos e valores longos sem corte. A inspeção visual direcionada em `#educacao?secao=profissionais` e no card Taxa de aprovação confirmou a nova anatomia e ausência de overflow nos nove cards observados em 2530×1272; lint, build e testes automatizados não foram executados.
+
+Compactação posterior dos cards (2026-07-20): Educação preserva a proporção retrato da referência em escala aproximada de 330×350 px e passa à grade 4→3→2→1; Financiamento preserva sua anatomia horizontal em 5→4→3→2→1. Paddings, badges, faixas de valor, leitura e rodapés foram reduzidos com o limite tipográfico de 12 px. O rótulo visual “Variação desde” foi abreviado para “Var. desde”, e o rodapé financeiro para “Histórico”, mantendo as formulações completas nos nomes acessíveis. Dados, séries, cálculos, filtros e rotas permanecem inalterados. A alteração foi implementada no modo rápido, sem validações executáveis ou capturas.
+
+Ajuste de respiro dos cards educacionais (2026-07-20): o período deixou de ser repetido na faixa analítica, que agora dedica toda a largura e padding à Leitura. A altura mínima passou de aproximadamente 350 para 368 px, com reserva inferior maior na área de valor e metadados para impedir contato entre a unidade e a faixa de leitura. A série e seu período permanecem disponíveis no detalhe; Financiamento não foi alterado nesta rodada. Implementação em modo rápido, sem validações executáveis ou capturas.
+
+Limpeza editorial dos subtítulos (2026-07-20): as três descrições de alunos por turma passaram a apresentar somente a definição da medida. A instrução “Use o filtro para trocar total, ano ou série” foi removida do catálogo e do view model que gera os cards, sem alterar filtros, valores, séries ou navegação. Implementação em modo rápido, sem validações executáveis ou capturas.
+
+Proteção de respiro e conteúdo dos cards (2026-07-20): a grade deixou de anular o padding horizontal dos grupos, mantendo os cards afastados das bordas. A altura deixou de depender de proporção fixa, e a faixa compartilhada de valor/metadados passou a ter mínimo de 144 px com crescimento automático. Unidades e variações longas agora ampliam o card antes da faixa de Leitura, sem sobreposição. Dados, cálculos, filtros e rotas não foram alterados. Implementação em modo rápido, sem validações executáveis ou capturas.
+
+Equilíbrio da faixa principal dos cards educacionais (2026-07-20): valor e unidade foram centralizados na coluna primária, que passou a usar padding simétrico e contenção horizontal. Valores extensos quebram dentro da própria coluna antes do divisor de Ano, eliminando o vazio lateral sem permitir invasão dos metadados. Dados, cálculos, filtros e rotas não foram alterados. Implementação em modo rápido, sem validações executáveis ou capturas.
+
+Escala responsiva dos valores educacionais (2026-07-20): a faixa principal passou a classificar valores em escala regular, compacta ou densa conforme seu comprimento. O valor permanece em uma única linha e reduz a tipografia antes de alcançar o divisor de Ano; unidade e metadados preservam suas áreas. Dados, cálculos, filtros e rotas não foram alterados. Implementação em modo rápido, sem validações executáveis ou capturas.
+
+Convergência dos catálogos financeiros com Educação (2026-07-20): Financiamento e Execução, FUNDEB e PNATE passaram a reutilizar o cabeçalho compacto, os chips de contexto, a faixa de seção com busca, os agrupamentos com contagem e a grade retrato 4→3→2→1 dos indicadores educacionais. Os cards financeiros agora apresentam descrição, valor, Ano/Var. desde, Leitura e chip de grupo na mesma distribuição de Educação, com escala regular, compacta ou densa para valores monetários. Filtros existentes, detalhes, séries, dados, cálculos e rotas foram preservados. Implementação em modo rápido, sem validações executáveis ou capturas.
+
+Proteção integral do conteúdo financeiro (2026-07-20): os cards financeiros deixaram de depender de cálculos CSS de altura incompatíveis e passaram a usar altura mínima canônica com linhas orientadas ao conteúdo. Valores compactos e densos usam, respectivamente, escalas máximas de 32 px e 24 px; no PNATE, a abreviação monetária do card foi alinhada aos demais módulos. Valor, Ano/Var., Leitura e rodapé crescem em áreas independentes e permanecem visíveis sem sobreposição. Dados, cálculos, séries, filtros e rotas não foram alterados. Implementação em modo rápido, sem validações executáveis ou capturas.
+
+Variante explícita do catálogo financeiro (2026-07-20): os cards de Financiamento e Execução, FUNDEB e PNATE receberam um modificador compartilhado que neutraliza a altura compacta legada e aplica diretamente a anatomia educacional. Título e descrição crescem pelo conteúdo; valor, Ano/Var., Leitura e rodapé ocupam linhas reservadas independentes, mantendo todas as informações dentro do card. Dados, cálculos, séries, filtros e rotas não foram alterados. Implementação em modo rápido, sem validações executáveis ou capturas.
+
+Ponte de especificidade dos cards financeiros (2026-07-20): a variante de catálogo passou a declarar explicitamente o contexto financeiro e a anatomia educacional para superar os seletores legados mais específicos que ainda impunham 224 px de altura, proporção fixa e sobreposição entre Valor e Leitura. A correção preserva as seis áreas visuais do card e os tokens canônicos, sem alterar dados, cálculos, séries, filtros ou rotas.
+
+Legibilidade dos valores financeiros (2026-07-20): a grade financeira foi alinhada ao padrão 4→3→2→1 com pontos de quebra adequados ao comprimento monetário, ampliando a largura útil dos cards. O valor compacto deixou de herdar reticências e passa a preservar integralmente símbolo, número e unidade abreviada em uma linha, mantendo a coluna de Ano/Var. isolada pelo divisor. Dados e formatação monetária não foram alterados.
 
 ### Validação controlada do motor de projeções v2 (2026-07-17)
 
@@ -221,9 +257,9 @@ Home e shell, ciclos PNE 2014–2024 e PNE 2026–2036, metas legais, Educação
 - `scripts/checks/visual-test.cjs`: 22 baselines persistentes — 21 regiões desktop/notebook e um baseline móvel do PNE 2026 — com tolerância de 0,2% e PNG de diferença quando houver falha;
 - viewports cobertos: 1366×768, 1280×720, 1024×768, 768×1024, 390×844 e 320×568, além do smoke de zoom previsto no guia.
 
-### Validação obrigatória para mudanças futuras
+### Política de validação para mudanças futuras
 
-Toda mudança futura que alcance a interface deve executar:
+Os comandos abaixo permanecem disponíveis como suíte completa de referência:
 
 ```text
 npm run test:e2e
@@ -233,7 +269,12 @@ npm run build
 git diff --check
 ```
 
-Referências visuais só devem ser atualizadas deliberadamente com `npm run update:visual`, após revisão da diferença.
+A execução local pelo Codex depende de pedido explícito e segue os modos do
+`AGENTS.md` da raiz. Mudanças comuns usam o modo rápido sem qualquer comando;
+validação rápida seleciona somente a menor cobertura pedida; validação completa
+executa a suíte uma vez ao final do lote. Referências visuais só devem ser
+atualizadas deliberadamente com `npm run update:visual`, após pedido explícito e
+revisão da diferença.
 
 ## 5. Dívidas técnicas fora da migração
 
@@ -243,13 +284,14 @@ As questões abaixo não reabrem UI-01 a UI-18 e devem receber planejamento pró
 - **CSS legado ativo:** `src/App.css` permanece necessário para shell, composições locais, especificidade, ordem de cascata, exceções PNE/Financeiro e breakpoints estruturais. O legado está inventariado e não deve ser removido sem mapeamento de consumidores e baseline;
 - **melhorias futuras de produto ou design:** novos fluxos, conteúdo, recursos, redesign, revisão de arquitetura de informação e evolução visual devem começar com escopo e aprovação próprios, seguindo `docs/GUIA_DE_DESIGN.md`.
 
-## 6. Critérios de aceite de qualquer mudança futura
+## 6. Critérios de implementação de qualquer mudança futura
 
 - preservar identidade institucional, dados, cálculos, filtros, regras de negócio e textos analíticos;
-- comparar comportamento visual e funcional antes/depois;
-- validar primeiro 1366×768, 1280×720 e 1024×768; depois 768×1024, 390×844 e 320×568;
-- testar teclado, foco, contraste, zoom de 200%, texto longo, valores grandes, loading, erro e ausência;
-- executar lint, build e testes relevantes;
+- preservar o comportamento visual e funcional não solicitado;
+- considerar desktop, notebook, tablet, celular, teclado, foco, contraste, zoom,
+  texto longo, valores grandes, loading, erro e ausência conforme o escopo;
+- executar viewports, testes, lint ou build somente quando o modo de validação
+  correspondente for explicitamente solicitado;
 - atualizar o estado, a evidência e os consumidores deste plano;
 - remover regra legada somente após confirmar todos os consumidores.
 
@@ -287,7 +329,7 @@ Evidência da rodada: screenshots revisados em 1366×768, 1280×720, 1024×768 e
 390×844, incluindo drawer mobile e detalhe aberto do PNE; auditoria de rotas
 confirmou zero overflow horizontal em 12 rotas principais nos viewports de
 390×844 e 1024×768. `npm run test:e2e`, `npm run lint`, `npm run build` e
-`git diff --check` devem permanecer como critérios de aceite desta iniciativa;
+`git diff --check` foram os critérios de aceite dessa iniciativa encerrada;
 baselines visuais foram atualizados deliberadamente após a revisão final.
 
 ## 9. Segunda rodada — densidade, insets e leitura linear (2026-07-12)
@@ -313,9 +355,9 @@ classificações, URLs, aliases ou regras de negócio.
   `meta-grid-header`; contagens, status, títulos, município no hero, resumo do
   ciclo, detalhe, navegação e notas metodológicas permanecem.
 
-A evidência final deve cobrir as 22 regiões visuais, as rotas solicitadas em
-1366×768 e o drawer mobile em 390×844, além de loading, vazio, erro, texto
-longo, valores grandes, foco e teclado. O aceite é `npm run lint`,
+A evidência final dessa rodada cobriu as 22 regiões visuais, as rotas solicitadas
+em 1366×768 e o drawer mobile em 390×844, além de loading, vazio, erro, texto
+longo, valores grandes, foco e teclado. O aceite registrado usou `npm run lint`,
 `npm run build`, `npm run test:e2e`, `npm run update:visual`,
 `npm run test:visual` e `git diff --check`.
 
@@ -1178,3 +1220,214 @@ overflow global e console limpo. Typecheck, lint, build, 21 testes de Educação
 passaram. O E2E integral alcançou a asserção preexistente dos quatro recortes de
 infraestrutura (resultado atual: zero); a regressão visual global também mantém
 diferenças anteriores em PNE/SIOPE, fora deste cabeçalho.
+
+Acabamento posterior: o retorno compartilhado para a Visão geral passou a ficar
+visível também nas demais seções internas e em Metodologia, mantendo o retorno
+específico dos detalhes para a grade de origem. Em Cenários, a coluna de tipo foi
+ampliada para preservar “Cobertura” sem corte, o invólucro dos seletores passou a
+ser transparente para reutilizar diretamente a gramática de filtros do PNE e os
+dois grupos de filtro empilham no celular. Dados, opções, seleção e hashes
+existentes foram preservados.
+
+## Catálogo compacto de metodologia e fontes (2026-07-19)
+
+A página de Metodologia passou a organizar o escopo em uma faixa institucional,
+as fontes em linhas compactas pesquisáveis e os indicadores relacionados em até
+três chips no desktop ou dois no celular, seguidos por `+N`. Um único drawer
+compartilhado apresenta o detalhamento da fonte ou o catálogo completo, agrupa os
+indicadores pelas seções existentes e preserva estados distintos para fonte sem
+indicadores, indisponibilidade explícita e ausência de dados municipais. Dados,
+catálogo, relações, anos, filtros globais, rotas, sidebar e regras de negócio não
+foram alterados. A validação visual e as suítes locais não foram executadas,
+conforme o modo rápido padrão do projeto.
+
+## Síntese executiva do Diagnóstico municipal (2026-07-19)
+
+A página principal do Diagnóstico passou a apresentar somente indicadores com
+dados e referências comparáveis. Foram removidas da interface a seção técnica
+“Indicadores fora da ordem provisória”, sua lista, seus motivos e a contagem de
+excluídos; essas estruturas permanecem no contrato para auditoria. Título,
+subtítulo, métricas, filtros e situação por tema passaram a usar a terminologia
+“Indicadores analisados”, “Referências atingidas” e “Pontos de atenção”, com os
+totais recebidos do pipeline. Nenhum estilo novo, dado analítico ou regra de
+comparabilidade foi criado no React.
+
+A nota sobre matrículas localizadas e população residente aparece uma única vez
+na síntese e não é tratada como alerta. Em Aceguá, o resultado de pré-escola é
+exibido como 122,2%, com distância favorável de +22,2 p.p.; apenas a largura
+gráfica pode ser limitada. A inspeção em 1366×768 e 390×844 confirmou ausência
+da seção removida, barras contidas, zero overflow horizontal e console sem
+erros. As capturas estão em
+`artifacts/diagnostico-methodology-2026-07-19/`. Lint, build, testes de contrato,
+rotas, auditoria dos 497 payloads e `git diff --check` passaram. O E2E global
+manteve a falha preexistente de Educação sobre a ressalva geral visível, antes
+de alcançar o Diagnóstico; a rota foi validada separadamente.
+
+## Referência RS e financiamento potencial no Diagnóstico (2026-07-19)
+
+O Diagnóstico passou a incluir duas extensões lineares sem redesenho: uma faixa
+estadual compacta entre o filtro e os pontos de atenção e uma seção de relações
+financeiras entre os pontos de atenção e a situação por tema. A meta do PNE,
+Atual, Meta e Distância permanecem na primeira hierarquia; Referência RS é
+secundária e financiamento, terciário.
+
+- `diagnostico_v2` fornece totais, diferenças direcionais e listas de destaques;
+  o React não recalcula nem reordena.
+- Os blocos financeiros resolvem somente os catálogos globais versionados,
+  mantêm elegibilidade não verificada e não apresentam SIOPE/SICONFI como fonte.
+- A composição usa tokens e a camada editorial existente em
+  `institutional-refresh.css`, com reflow 2→1, alvo mínimo de 44 px e foco
+  visível. Nenhum padrão foi adicionado a `App.css`.
+
+Critério de aceite: ausência de overflow em 1366×768, 1280×720, 1024×768 e
+390×844; ordem Atual → Meta → Distância preservada; comparação estadual em
+segundo plano; financiamento em terceiro plano; teclado, rótulos acessíveis,
+estados sem benchmark/sem mecanismo e console sem erro.
+
+Evidência: os quatro viewports passaram sem overflow horizontal e com console
+limpo; o desktop manteve duas colunas para os grupos e o celular refluíu para
+uma. A inspeção confirmou um ponto de atenção sem benchmark numérico, três
+blocos sem mecanismo específico com estado neutro, foco visível de 2 px e alvo
+de 44 px nos links financeiros. Passaram 101 testes Python, 8 testes do contrato
+de Diagnóstico, validação dos 40.122 detalhes com zero erros, referência
+estadual, lint, build, 7 testes de rotas e 15 do ciclo PNE. O E2E global manteve
+a falha preexistente de Educação na ressalva geral, antes desta rota. Capturas:
+`artifacts/diagnostico-rs-financiamento-2026-07-19/`.
+
+## Estabilização da referência RS e síntese financeira (2026-07-19)
+
+A faixa estadual passou a depender de comparação realmente útil: sem benchmark
+comparável, ela não ocupa espaço e a ausência aparece somente junto à nota
+metodológica. Com benchmark, o componente mantém até três diferenças
+desfavoráveis e dois destaques favoráveis, incluindo os anos efetivamente
+comparados. A hierarquia filtro → RS → atenção foi preservada.
+
+A seção financeira agora consolida os cinco itens de atenção visíveis em até
+três frentes, com grade 3→2→1, no máximo três mecanismos por frente, uma ressalva
+de elegibilidade no topo e um link por frente. A expansão inline dos 21 cards foi
+removida; o acesso global aponta para a rota financeira existente. A matriz e os
+catálogos completos não mudaram. Evidências desta rodada ficam em
+`artifacts/diagnostico-stabilization-2026-07-19/`.
+
+## Trajetória e governabilidade compactas no Diagnóstico (2026-07-19)
+
+O contrato aprofundado saiu do `index.json` e passou a ser carregado por rota
+em `diagnostico.json`. Os cinco itens visíveis preservam a ordem e a hierarquia
+Atual → Meta → Distância; foram acrescentadas somente duas linhas compactas
+para trajetória e responsabilidade, uma linha opcional de pares e detalhes em
+expansão. Badges usam tokens e a gramática editorial existente; a seção
+financeira não mudou. O aceite visual cobre 1366×768, 1280×720, 1024×768 e
+390×844, sem atualizar baselines.
+## Síntese para decisão do Diagnóstico municipal (2026-07-19)
+
+O bloco ordinal de pontos de atenção foi substituído por uma lista compacta de
+ação municipal e pactuação, seguida de faixa recolhida para investigação. A
+composição reutiliza tokens, cards, disclosures, foco visível e responsividade
+existentes em `institutional-refresh.css`; nenhum padrão novo foi criado em
+`App.css`. O React apresenta somente `decisionSummary`, sem seleção ou
+ordenação local. A validação visual e as suítes locais não foram executadas,
+conforme o modo rápido padrão do projeto.
+
+Validação completa em 2026-07-20: os itens decisórios sem rank passaram a
+ocupar uma única coluna em `institutional-refresh.css`; no celular, o título
+deixou de transformar `flex-basis` horizontal em altura. O E2E dirigido passou
+em 1366×768, 1280×720, 1024×768 e 390×844, sem overflow e sem atualização de
+baseline. Lint, build, contratos React/financiamento, rotas e 119 testes Python
+também passaram.
+
+## Fechamento P3-C e piloto P4-B no Diagnóstico (2026-07-20)
+
+A investigação passou a ser uma faixa neutra fechada por padrão. Quando aberta,
+apresenta quatro grupos, quantidade, descrição e até dois exemplos; a lista
+completa permanece em disclosures metodológicos sem rolagem interna. A leitura
+executiva explicita ação, pactuação, investigação e acompanhamento. Preservação
+e monitoramento compartilham a seção compacta “Resultados a preservar e
+acompanhar”, em grupos separados. O rótulo de pares passou a informar com
+precisão “Municípios com oferta de porte semelhante” quando somente o porte da
+oferta participa do cálculo.
+
+O piloto `basico_integral × urban_rural` reutiliza tokens, cards, tipografia e
+responsividade do detalhe PNE. Ele mostra dois blocos comparáveis e uma diferença
+descritiva, sem gráfico complexo, sem linguagem causal e sem estado visual de
+erro. O bloco não aparece no Diagnóstico principal nem no `index.json`; o
+contrato aprofundado é carregado sob demanda no detalhe.
+
+Evidência: 128 testes Python, 15 testes do contrato React, 7 testes de rotas,
+lint e build passaram. A validação dos 40.122 detalhes terminou com zero erros e
+1.708 avisos preexistentes sobre séries por dependência. O E2E dirigido passou
+em 1366×768, 1280×720, 1024×768 e 390×844, sem overflow ou console com erro. A
+geração repetida preservou o hash agregado
+`3b5d66a6bd78efb2cc5465965a4a606a460970d64f29663864f139614ab273b1`.
+As capturas estão em `artifacts/diagnostico-p4b-2026-07-20/`; nenhum baseline
+foi atualizado. O typecheck manteve quatro falhas preexistentes em cenários de
+cards e componentes de Educação, sem falha nova deste lote.
+
+## Layout dos indicadores financeiros selecionados (2026-07-20)
+
+Os detalhes de SIOPE, FUNDEB e PNATE passaram a reutilizar a composição
+aprovada para indicadores financeiros selecionados: navegação local, título e
+contexto, quatro KPIs com ícones, análise principal 70/30 com gráfico de 300 px
+e leitura rápida estruturada, três cards de apoio à interpretação, referência
+técnica recolhida e navegação repetida ao final. O seletor de período não faz
+parte dessa composição. Tabelas, metodologia, fontes e notas existentes foram
+preservadas dentro do aprofundamento técnico, sem mudança em dados, cálculos,
+filtros, regras de negócio ou rotas. Validações executáveis não foram rodadas,
+conforme o modo rápido padrão do projeto.
+
+Ajuste posterior na mesma referência: a leitura rápida financeira passou a
+reutilizar diretamente cor, fonte, espaçamento, lista interna, divisores e
+ícones do padrão de Educação/PNE, com três itens. O bloco redundante de apoio à
+interpretação foi substituído pela referência técnica aberta, e o menu de série
+histórica em tabela foi removido dos detalhes selecionados. Dados do gráfico,
+fontes, metodologia, cálculos, filtros e rotas não foram alterados.
+
+## Panorama financeiro municipal P5-C1 (2026-07-20)
+
+A seção existente de Financiamento recebeu a rota lazy
+`#financeiros-panorama`, sem alterar a largura do shell ou criar uma navegação
+paralela. O cabeçalho compacto, quatro cards principais, fluxo de execução,
+componentes do Fundeb, QSE, cobertura, relações e fontes reutilizam tokens,
+superfícies, estados e foco da plataforma. A composição responde em grades
+4→2→1 para o resumo e 2→1 para os blocos analíticos, sem tabela ou rolagem
+interna no celular.
+
+O frontend apresenta diretamente o contrato `municipal-finance-v1`: taxas,
+nulos, estágios, natureza, cobertura e proibições de soma não são recalculados.
+
+### Refinamento de densidade P5-C1.1 (2026-07-20)
+
+A composição analítica deixou a linha única de dois painéis com altura
+compartilhada. No desktop, duas pilhas independentes colocam Execução e QSE à
+esquerda e Fundeb à direita, com 16 px entre os painéis da pilha esquerda; QSE
+começa antes do fim do Fundeb e elimina o vazio anterior. Até 1024 px, a ordem
+linear é Execução, Fundeb e QSE.
+
+Fundeb passou de quatro cards altos para quatro linhas com metadados em
+disclosure; QSE passou de seis cards para três grupos. Cobertura mostra resumo e
+três dimensões prioritárias, preservando as sete no detalhe, e fontes usam uma
+linha institucional com catálogo completo recolhido. Os disclosures são nativos
+e fechados por padrão. Shell, tokens, contratos, dados, rotas, loader, cálculos,
+escores e diagnóstico educacional não foram alterados. Evidências responsivas:
+`artifacts/municipal-finance-p5c1-1-2026-07-20/agudo-1366x768.png` e
+`artifacts/municipal-finance-p5c1-1-2026-07-20/agudo-390x844.png`.
+`insufficient`, RREO e reconciliação usam aparência neutra e texto explícito. A
+rota preserva slug/IBGE, `indicatorId`, `programId` e `tema` no fluxo de ida e
+retorno ao Diagnóstico. A evidência de validação e os itens bloqueados estão em
+`docs/DIAGNOSTICO_FINANCEIRO_MUNICIPAL_INTERFACE_P5C1.md`.
+
+## Aplicação constitucional da educação P5-C2 (2026-07-20)
+
+O Panorama Financeiro passou a apresentar, entre a síntese e as duas pilhas
+analíticas, a aplicação constitucional de 2024. A seção consome diretamente
+`constitutionalApplication` e `reconciliation` do contrato
+`municipal-finance-v1`: destaca o percentual e o valor aplicado em MDE, mostra
+a remuneração dos profissionais, identifica a receita Fundeb como declaração
+municipal e mantém período, base empenhada e fontes junto ao status.
+
+Valores canônicos são publicados somente no estado `reconciled`. Divergência,
+fonte ausente, cobertura parcial e revisão preservam as razões estruturadas; os
+valores SIOPE e RREO ficam separados no disclosure e uma revisão detectada
+bloqueia sua exibição. A nota metodológica mantém MDE constitucional e DCA em
+universos distintos. A composição reutiliza cards, tokens, badges neutros e o
+disclosure compartilhado, com grade 2→1 abaixo de 820 px. Pipeline, schema,
+JSONs, cálculos, escores e contratos educacionais não foram alterados.

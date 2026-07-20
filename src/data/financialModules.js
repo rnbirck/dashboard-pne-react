@@ -58,6 +58,11 @@ export const FINANCIAL_NAV_ITEMS = Object.freeze([
     pageKey: FINANCIAL_PAGE_KEYS.overview,
     label: FINANCIAL_OVERVIEW_LABEL,
   },
+  {
+    key: 'panorama',
+    pageKey: FINANCIAL_PAGE_KEYS.panorama,
+    label: 'Panorama financeiro',
+  },
   ...FINANCIAL_MODULES.map(({ key, navLabel, pageKey, title }) => ({
     key,
     pageKey,
@@ -148,6 +153,7 @@ export function getFinancialModuleByPageKey(pageKey) {
 
 export function getFinancialPageByKey(pageKey) {
   if (pageKey === FINANCIAL_PAGE_KEYS.overview) return { pageKey, key: 'overview', title: FINANCIAL_OVERVIEW_LABEL }
+  if (pageKey === FINANCIAL_PAGE_KEYS.panorama) return { pageKey, key: 'panorama', title: 'Panorama financeiro' }
   const module = getFinancialModuleByPageKey(pageKey)
   return module ? { ...module, title: module.title } : null
 }

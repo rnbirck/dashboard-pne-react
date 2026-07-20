@@ -108,7 +108,7 @@
   gap: var(--space-1);
 }
 
-.financial-indicator-metadata__heading h3 {
+.financial-indicator-metadata__heading :is(h2, h3) {
   margin: 0;
   color: var(--text-strong);
   font-size: var(--font-size-lg);
@@ -741,8 +741,8 @@
 }
 
 .financial-indicator-card-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--card-gap);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--indicator-card-gap);
   align-items: stretch;
 }
 
@@ -1333,33 +1333,1375 @@
 
 }
 
-/* Detail mode replaces module onboarding with a compact analytical workspace. */
+/* Selected indicator pages reproduce the compact institutional analysis sheet. */
 .financial-page--detail > :is(.financial-hero, .financial-compact-module),
 .financial-page--detail :is(
   .financial-intro-panel,
   .financial-metric-strip,
   .financial-indicator-section,
   .financial-technical-note,
-  .financial-methodology-note,
-  .financial-detail-nav--bottom
+  .financial-methodology-note
 ) {
   display: none;
 }
 
-.financial-page--detail .financial-detail-view {
+/* Panorama municipal P5-C1: compact evidence view, loaded only by its route. */
+.municipal-finance-panorama {
+  min-width: 0;
+  gap: var(--space-4);
+}
+
+.municipal-finance-hero {
+  min-width: 0;
+  padding: var(--space-5) var(--space-6);
+  display: grid;
+  gap: var(--space-1);
+}
+
+.municipal-finance-hero h1 {
+  max-width: 22ch;
+  margin: var(--space-1) 0 0;
+  color: var(--text-strong);
+  font-family: var(--font-serif);
+  font-size: clamp(var(--font-size-2xl), 3vw, var(--font-size-3xl));
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  text-wrap: balance;
+}
+
+.municipal-finance-hero > p {
+  max-width: var(--content-reading-max);
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  text-wrap: pretty;
+}
+
+.municipal-finance-hero .municipal-finance-hero__note {
+  margin-top: var(--space-1);
+  padding-top: var(--space-2);
+  border-top: var(--border-divider);
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+}
+
+.municipal-finance-back-link {
+  width: fit-content;
+  min-height: var(--touch-target-min);
+  color: var(--green-deep);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+}
+
+.municipal-finance-back-link:hover {
+  text-decoration: underline;
+}
+
+.municipal-finance-back-link:focus-visible,
+.municipal-finance-sources a:focus-visible,
+.municipal-finance-source-reference a:focus-visible {
+  border-radius: var(--radius-xs);
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 3px;
+}
+
+.municipal-finance-context {
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-moss);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-1) var(--space-4);
+}
+
+.municipal-finance-context strong {
+  grid-row: 1 / span 2;
+  color: var(--green-deep);
+  font-size: var(--font-size-xs);
+}
+
+.municipal-finance-context p {
+  min-width: 0;
+  margin: 0;
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}
+
+.municipal-finance-context p span {
+  color: var(--text-strong);
+  font-weight: var(--font-weight-semibold);
+}
+
+.municipal-finance-summary-grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--card-gap);
+}
+
+.municipal-finance-summary-card {
+  min-width: 0;
+  min-height: 0;
+  padding: var(--space-3);
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+}
+
+.municipal-finance-summary-card__label {
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.municipal-finance-summary-card__status {
+  color: var(--text-strong);
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-tight);
+}
+
+.municipal-finance-summary-card > p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+.municipal-finance-summary-card .municipal-finance-summary-card__secondary {
+  margin: 0;
+  color: var(--text-body);
+}
+
+.municipal-finance-primary-grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--card-gap);
+}
+
+.municipal-finance-primary-column {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: var(--card-gap);
+}
+
+.municipal-finance-section {
+  min-width: 0;
+  padding: var(--space-5);
+  display: grid;
+  gap: var(--space-4);
+}
+
+.municipal-finance-section__heading {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.municipal-finance-section__heading h2,
+.municipal-finance-sources h2 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-snug);
+}
+
+.municipal-finance-section__heading p {
+  max-width: var(--content-reading-max);
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.municipal-finance-section__heading-with-status {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.municipal-finance-constitutional-application {
   gap: var(--space-3);
 }
 
-.financial-page--detail .financial-detail-view .financial-detail-panel {
-  padding: var(--space-4);
+.municipal-finance-constitutional-application .municipal-finance-section__heading-with-status > .status-badge {
+  flex: 0 0 auto;
+}
+
+.municipal-finance-constitutional-primary-grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
   gap: var(--space-3);
+}
+
+.municipal-finance-constitutional-metric {
+  min-width: 0;
+  padding: var(--space-4);
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+}
+
+.municipal-finance-constitutional-metric h3,
+.municipal-finance-constitutional-source-grid h4 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-snug);
+}
+
+.municipal-finance-constitutional-metric__label,
+.municipal-finance-constitutional-reconciliation__status > span,
+.municipal-finance-constitutional-source-grid header span {
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.municipal-finance-constitutional-metric > .municipal-finance-value {
+  margin-top: var(--space-1);
+}
+
+.municipal-finance-constitutional-metric--mde > .municipal-finance-value--emphasized {
+  font-size: clamp(var(--font-size-2xl), 3vw, var(--font-size-4xl));
+}
+
+.municipal-finance-constitutional-metric dl {
+  margin: var(--space-2) 0 0;
+  padding-top: var(--space-2);
+  border-top: var(--border-divider);
+}
+
+.municipal-finance-constitutional-metric dt,
+.municipal-finance-constitutional-reconciliation dt,
+.municipal-finance-constitutional-source-grid dt {
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.municipal-finance-constitutional-metric dd,
+.municipal-finance-constitutional-reconciliation dd,
+.municipal-finance-constitutional-source-grid dd {
+  min-width: 0;
+  margin: 0;
+}
+
+.municipal-finance-constitutional-strip {
+  min-width: 0;
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.5fr);
+  overflow: hidden;
+}
+
+.municipal-finance-constitutional-revenue,
+.municipal-finance-constitutional-reconciliation {
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+}
+
+.municipal-finance-constitutional-revenue {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+}
+
+.municipal-finance-constitutional-revenue > div {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.municipal-finance-constitutional-revenue > p,
+.municipal-finance-constitutional-reconciliation > p {
+  margin: 0;
+  color: var(--text-body);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+.municipal-finance-constitutional-reconciliation {
+  border-left: var(--border-divider);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.municipal-finance-constitutional-reconciliation__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.municipal-finance-constitutional-reconciliation__status strong {
+  color: var(--text-strong);
+  font-size: var(--font-size-sm);
+}
+
+.municipal-finance-constitutional-reconciliation dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(132px, 0.55fr) minmax(120px, 0.5fr) minmax(0, 1.4fr);
+  gap: var(--space-2) var(--space-4);
+}
+
+.municipal-finance-constitutional-reconciliation dl > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.municipal-finance-constitutional-reconciliation dd {
+  color: var(--text-body);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.municipal-finance-constitutional-reasons {
+  margin: 0;
+  padding-left: var(--space-4);
+  color: var(--text-body);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+.municipal-finance-constitutional-disclosures {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.municipal-finance-constitutional-disclosure .platform-support-disclosure__summary {
+  min-height: var(--touch-target-min);
+  padding-block: var(--space-2);
+}
+
+.municipal-finance-constitutional-source-grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.municipal-finance-constitutional-source-grid > article {
+  min-width: 0;
+  padding: var(--space-3);
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+}
+
+.municipal-finance-constitutional-source-grid header {
+  min-width: 0;
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.municipal-finance-constitutional-source-grid header > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.municipal-finance-constitutional-source-meta,
+.municipal-finance-constitutional-source-values {
+  margin: 0;
+  display: grid;
+  gap: var(--space-2) var(--space-3);
+}
+
+.municipal-finance-constitutional-source-meta {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.municipal-finance-constitutional-source-meta > div,
+.municipal-finance-constitutional-source-values > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.municipal-finance-constitutional-source-values > div {
+  padding-top: var(--space-2);
+  border-top: var(--border-divider);
+}
+
+.municipal-finance-constitutional-source-grid .municipal-finance-source-reference {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+.municipal-finance-execution-flow {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  list-style: none;
+}
+
+.municipal-finance-execution-flow li {
+  position: relative;
+  min-width: 0;
+  padding: var(--space-3);
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  display: grid;
+  gap: var(--space-1);
+}
+
+.municipal-finance-execution-flow li:not(:last-child)::after {
+  position: absolute;
+  top: 50%;
+  right: calc(var(--space-3) * -1);
+  z-index: 1;
+  width: var(--space-3);
+  color: var(--green-primary);
+  content: '→';
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+  transform: translateY(-50%);
+}
+
+.municipal-finance-execution-flow li > span:first-child {
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.municipal-finance-execution-flow progress {
+  width: 100%;
+  height: 6px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  background: var(--surface-muted);
+}
+
+.municipal-finance-execution-flow progress::-webkit-progress-bar {
+  border-radius: var(--radius-pill);
+  background: var(--surface-muted);
+}
+
+.municipal-finance-execution-flow progress::-webkit-progress-value,
+.municipal-finance-execution-flow progress::-moz-progress-bar {
+  border-radius: var(--radius-pill);
+  background: var(--chart-series-1);
+}
+
+.municipal-finance-execution-detail-grid {
+  min-width: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 var(--space-4);
+}
+
+.municipal-finance-execution-detail-grid > div {
+  min-width: 0;
+  padding: var(--space-2) 0;
+  border-top: var(--border-divider);
+  display: grid;
+  gap: var(--space-1);
+}
+
+.municipal-finance-execution-detail-grid dt {
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.municipal-finance-execution-detail-grid dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--text-strong);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--line-height-tight);
+}
+
+.municipal-finance-execution-detail-grid dd .municipal-finance-value {
+  font-size: inherit;
+}
+
+.municipal-finance-outstanding-list,
+.municipal-finance-fundeb-card dl,
+.municipal-finance-constitutional dl,
+.municipal-finance-metric-grid,
+.municipal-finance-coverage-grid {
+  margin: 0;
+}
+
+.municipal-finance-outstanding-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.municipal-finance-outstanding-list > div {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.municipal-finance-outstanding-list dt,
+.municipal-finance-fundeb-card dt,
+.municipal-finance-metric-grid dt,
+.municipal-finance-coverage-grid dt,
+.municipal-finance-constitutional dt {
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.municipal-finance-outstanding-list dd,
+.municipal-finance-fundeb-card dd,
+.municipal-finance-metric-grid dd,
+.municipal-finance-coverage-grid dd,
+.municipal-finance-constitutional dd {
+  min-width: 0;
+  margin: 0;
+}
+
+.municipal-finance-rate-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2) var(--space-4);
+}
+
+.municipal-finance-rate-grid article {
+  min-width: 0;
+  padding-top: var(--space-3);
+  border-top: var(--border-divider);
+  display: grid;
+  gap: var(--space-1);
+}
+
+.municipal-finance-rate-grid strong {
+  color: var(--text-strong);
+  font-size: var(--font-size-lg);
+  font-variant-numeric: tabular-nums;
+}
+
+.municipal-finance-rate-grid span,
+.municipal-finance-method-note,
+.municipal-finance-no-sum {
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+.municipal-finance-method-note {
+  margin: 0;
+}
+
+.municipal-finance-fundeb-grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.municipal-finance-fundeb-card {
+  min-width: 0;
+  padding: var(--space-4);
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+}
+
+.municipal-finance-fundeb-card header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.municipal-finance-fundeb-card h3,
+.municipal-finance-constitutional h3,
+.municipal-finance-relation-list h3 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-snug);
+}
+
+.municipal-finance-fundeb-card dl {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.municipal-finance-fundeb-card dl > div {
+  display: grid;
+  grid-template-columns: minmax(72px, auto) minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+.municipal-finance-fundeb-card dd {
+  color: var(--text-body);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+}
+
+.municipal-finance-fundeb-card > p {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+.municipal-finance-fundeb-card .municipal-finance-no-sum {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-xs);
+  background: var(--surface-sand);
+  color: var(--source-label);
+  font-weight: var(--font-weight-semibold);
+}
+
+.municipal-finance-source-reference {
+  padding-top: var(--space-2);
+  border-top: var(--border-divider);
+  color: var(--text-soft);
+}
+
+.municipal-finance-source-reference span {
+  color: var(--source-label);
+  font-weight: var(--font-weight-semibold);
+}
+
+.municipal-finance-source-reference a,
+.municipal-finance-sources a {
+  color: var(--green-deep);
+}
+
+.municipal-finance-fundeb-list {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border-top: var(--border-divider);
+  list-style: none;
+}
+
+.municipal-finance-fundeb-list > li {
+  min-width: 0;
+  padding: var(--space-3) 0;
+  border-bottom: var(--border-divider);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'identity amount'
+    'note note';
+  align-items: start;
+  gap: var(--space-2) var(--space-3);
+}
+
+.municipal-finance-fundeb-list__identity {
+  min-width: 0;
+  grid-area: identity;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.municipal-finance-fundeb-list h3,
+.municipal-finance-fundeb-metadata h3,
+.municipal-finance-qse-groups h3 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-snug);
+}
+
+.municipal-finance-fundeb-list__amount {
+  min-width: 0;
+  grid-area: amount;
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+
+.municipal-finance-fundeb-list__amount > span {
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+}
+
+.municipal-finance-fundeb-list > li > p {
+  grid-area: note;
+  margin: 0;
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+.municipal-finance-fundeb-note {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sand);
+  color: var(--source-label);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.municipal-finance-disclosure {
+  min-width: 0;
+  border-top: var(--border-divider);
+}
+
+.municipal-finance-disclosure > summary {
+  min-height: var(--touch-target-min);
+  color: var(--green-deep);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.municipal-finance-disclosure > summary:focus-visible {
+  border-radius: var(--radius-xs);
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 3px;
+}
+
+.municipal-finance-fundeb-metadata {
+  padding-top: var(--space-2);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.municipal-finance-fundeb-metadata article {
+  min-width: 0;
+  padding: var(--space-3);
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.municipal-finance-fundeb-metadata dl {
+  margin: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.municipal-finance-fundeb-metadata dl > div {
+  display: grid;
+  grid-template-columns: minmax(88px, auto) minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+.municipal-finance-fundeb-metadata :is(dt, dd, p) {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+.municipal-finance-fundeb-metadata dt {
+  color: var(--text-soft);
+  font-weight: var(--font-weight-semibold);
+}
+
+.municipal-finance-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.municipal-finance-metric-grid > div {
+  min-width: 0;
+  padding: var(--space-3);
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.municipal-finance-metric-grid small {
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+}
+
+.municipal-finance-qse-groups {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.municipal-finance-qse-groups > article {
+  min-width: 0;
+  padding: var(--space-3);
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  display: grid;
+  gap: var(--space-2);
+}
+
+.municipal-finance-qse-groups dl {
+  min-width: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2) var(--space-3);
+}
+
+.municipal-finance-qse-groups dl > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.municipal-finance-qse-groups dt {
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.municipal-finance-qse-groups dd {
+  min-width: 0;
+  margin: 0;
+}
+
+.municipal-finance-qse-groups small,
+.municipal-finance-qse-groups > article > p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+.municipal-finance-qse-groups > article > p {
+  padding-top: var(--space-2);
+  border-top: var(--border-divider);
+}
+
+.municipal-finance-qse-groups .municipal-finance-value--emphasized {
+  font-size: var(--font-size-lg);
+}
+
+.municipal-finance-value {
+  min-width: 0;
+  color: var(--text-strong);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--line-height-snug);
+  overflow-wrap: anywhere;
+}
+
+.municipal-finance-value--emphasized {
+  font-size: clamp(var(--font-size-lg), 2vw, var(--font-size-2xl));
+  font-weight: var(--font-weight-bold);
+}
+
+.municipal-finance-value--missing {
+  color: var(--text-soft);
+  display: grid;
+  gap: var(--space-1);
+}
+
+.municipal-finance-value--missing small {
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.municipal-finance-coverage-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 var(--space-5);
+}
+
+.municipal-finance-coverage-summary {
+  width: fit-content;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--surface-muted);
+  color: var(--text-body);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.municipal-finance-coverage-grid--highlights {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.municipal-finance-coverage-grid > div {
+  min-width: 0;
+  padding: var(--space-3) 0;
+  border-bottom: var(--border-divider);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.municipal-finance-coverage-grid dd {
+  display: grid;
+  justify-items: end;
+  gap: var(--space-1);
+}
+
+.municipal-finance-coverage-grid small {
+  max-width: 30ch;
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  text-align: right;
+}
+
+.municipal-finance-coverage-grid.municipal-finance-coverage-grid--highlights > div {
+  padding: var(--space-3);
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
+  grid-template-columns: 1fr;
+  align-content: start;
+  gap: var(--space-2);
+}
+
+.municipal-finance-coverage-grid.municipal-finance-coverage-grid--highlights dd {
+  justify-items: start;
+}
+
+.municipal-finance-coverage-grid.municipal-finance-coverage-grid--highlights small {
+  max-width: none;
+  text-align: left;
+}
+
+.municipal-finance-constitutional {
+  padding: var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.municipal-finance-constitutional dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.municipal-finance-constitutional dl > div {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.municipal-finance-constitutional dd {
+  color: var(--text-body);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.municipal-finance-reconciliation-note {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sand);
+  color: var(--source-label);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.municipal-finance-coverage-disclosure .municipal-finance-coverage-grid {
+  padding-top: var(--space-2);
+}
+
+.municipal-finance-relation-list {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.municipal-finance-relation-list article {
+  min-width: 0;
+  padding: var(--space-3);
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+}
+
+.municipal-finance-relation-list article > span {
+  color: var(--green-deep);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.municipal-finance-relation-list article > strong {
+  color: var(--text-body);
+  font-size: var(--font-size-sm);
+}
+
+.municipal-finance-relation-list article > p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.municipal-finance-relation-list article > .municipal-finance-relation-list__indicator {
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.municipal-finance-relation-empty {
+  min-height: 0;
+  padding: var(--space-4);
+}
+
+.municipal-finance-sources {
+  min-width: 0;
+  padding-top: var(--space-4);
+  border-top: var(--border-divider);
+  display: grid;
+  grid-template-columns: minmax(160px, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2) var(--space-5);
+}
+
+.municipal-finance-sources__heading {
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+}
+
+.municipal-finance-sources__line {
+  min-width: 0;
+  margin: 0;
+  color: var(--text-body);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+}
+
+.municipal-finance-sources__disclosure {
+  grid-column: 1 / -1;
+}
+
+.municipal-finance-sources__groups {
+  min-width: 0;
+  margin: var(--space-2) 0 0;
+  padding: 0 0 var(--space-2);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+  list-style: none;
+}
+
+.municipal-finance-sources__groups > li {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+}
+
+.municipal-finance-sources__groups strong {
+  color: var(--text-strong);
+  font-size: var(--font-size-sm);
+}
+
+.municipal-finance-sources__groups p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.municipal-finance-sources__groups ul {
+  margin: var(--space-2) 0 0;
+  padding: var(--space-2) 0 0;
+  border-top: var(--border-divider);
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+}
+
+.municipal-finance-sources__groups ul li {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.municipal-finance-sources__groups a,
+.municipal-finance-sources__groups small {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.municipal-finance-sources__groups small {
+  color: var(--text-soft);
+}
+
+.municipal-finance-state {
+  min-height: var(--content-state-min-height);
+  padding: var(--space-6);
+  display: grid;
+  justify-items: start;
+  align-content: center;
+  gap: var(--space-2);
+}
+
+.municipal-finance-state h2,
+.municipal-finance-state p {
+  margin: 0;
+}
+
+.municipal-finance-skeleton {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-5);
+}
+
+.municipal-finance-skeleton .municipal-finance-summary-card,
+.municipal-finance-skeleton .municipal-finance-section {
+  min-height: var(--content-state-loading-min-height);
+}
+
+@media screen and (max-width: 1180px) {
+  .municipal-finance-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .municipal-finance-metric-grid,
+  .municipal-finance-sources__groups {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media screen and (max-width: 1024px) {
+  .municipal-finance-primary-grid {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .municipal-finance-primary-column {
+    display: contents;
+  }
+
+  .municipal-finance-execution {
+    order: 1;
+  }
+
+  .municipal-finance-fundeb {
+    order: 2;
+  }
+
+  .municipal-finance-qse {
+    order: 3;
+  }
+}
+
+@media screen and (min-width: 701px) and (max-width: 1024px) {
+  .municipal-finance-fundeb-list > li {
+    grid-template-columns: minmax(180px, 0.75fr) minmax(150px, 0.45fr) minmax(220px, 1fr);
+    grid-template-areas: 'identity amount note';
+    align-items: center;
+  }
+
+  .municipal-finance-fundeb-metadata {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media screen and (max-width: 900px) {
+  .municipal-finance-sources {
+    grid-template-columns: 1fr;
+  }
+
+  .municipal-finance-sources__disclosure {
+    grid-column: 1;
+  }
+}
+
+@media screen and (max-width: 820px) {
+  .municipal-finance-constitutional-primary-grid,
+  .municipal-finance-constitutional-strip,
+  .municipal-finance-constitutional-disclosures,
+  .municipal-finance-constitutional-source-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .municipal-finance-constitutional-reconciliation {
+    border-top: var(--border-divider);
+    border-left: 0;
+  }
+
+  .municipal-finance-constitutional-reconciliation dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media screen and (max-width: 620px) {
+  .municipal-finance-panorama {
+    gap: var(--space-4);
+  }
+
+  .municipal-finance-hero,
+  .municipal-finance-section {
+    padding: var(--panel-inset-mobile);
+  }
+
+  .municipal-finance-hero h1 {
+    max-width: none;
+    font-size: var(--font-size-2xl);
+  }
+
+  .municipal-finance-context,
+  .municipal-finance-summary-grid,
+  .municipal-finance-execution-flow,
+  .municipal-finance-execution-detail-grid,
+  .municipal-finance-outstanding-list,
+  .municipal-finance-rate-grid,
+  .municipal-finance-fundeb-grid,
+  .municipal-finance-metric-grid,
+  .municipal-finance-qse-groups dl,
+  .municipal-finance-coverage-grid,
+  .municipal-finance-constitutional dl,
+  .municipal-finance-relation-list,
+  .municipal-finance-sources__groups {
+    grid-template-columns: 1fr;
+  }
+
+  .municipal-finance-context strong {
+    grid-row: auto;
+  }
+
+  .municipal-finance-section__heading-with-status {
+    display: grid;
+  }
+
+  .municipal-finance-section__heading-with-status > .status-badge {
+    width: fit-content;
+  }
+
+  .municipal-finance-execution-flow li:not(:last-child)::after {
+    top: auto;
+    right: 50%;
+    bottom: calc(var(--space-3) * -1);
+    transform: translate(50%, 50%) rotate(90deg);
+  }
+
+  .municipal-finance-fundeb-list > li {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'identity'
+      'amount'
+      'note';
+  }
+
+  .municipal-finance-fundeb-list__amount {
+    justify-items: start;
+  }
+
+  .municipal-finance-coverage-grid > div {
+    grid-template-columns: 1fr;
+  }
+
+  .municipal-finance-coverage-grid dd {
+    justify-items: start;
+  }
+
+  .municipal-finance-coverage-grid small {
+    max-width: none;
+    text-align: left;
+  }
+
+  .municipal-finance-constitutional-reconciliation dl {
+    grid-template-columns: 1fr;
+  }
+
+  .municipal-finance-constitutional-source-grid header {
+    display: grid;
+  }
+
+  .municipal-finance-constitutional-source-grid header > .status-badge {
+    width: fit-content;
+  }
+}
+
+.financial-page--detail .financial-detail-view {
+  gap: var(--space-4);
+}
+
+.financial-page--detail .financial-detail-nav {
+  border: 0;
+  background: transparent;
+}
+
+.financial-page--detail .financial-detail-nav > .platform-detail-navigation__sequence {
+  grid-column: 3;
+}
+
+.content-area .financial-page--detail .financial-detail-nav--bottom {
+  display: grid;
+  width: 100%;
+  margin-top: var(--space-1);
+  justify-content: stretch;
+}
+
+.financial-page--detail .financial-detail-view .financial-detail-panel {
+  padding: 0;
+  gap: var(--space-4);
+  border: 0;
+  background: transparent;
 }
 
 .financial-page--detail .financial-detail-heading {
   min-height: 0;
-  padding: 0 0 var(--space-2);
-  gap: var(--space-3);
-  align-items: center;
+  padding: 0;
+  border: 0;
+  gap: var(--space-4);
+  align-items: end;
 }
 
 .financial-page--detail .financial-detail-heading .detail-heading__copy {
@@ -1370,95 +2712,108 @@
   display: none;
 }
 
-.financial-page--detail .financial-detail-heading h3 {
+.financial-page--detail .financial-detail-heading :is(h1, h3) {
   max-width: 52ch;
-  font-size: var(--font-size-xl);
-  line-height: var(--line-height-snug);
+  margin: 0;
+  color: var(--text-strong);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.financial-page--detail .financial-detail-heading p {
+  max-width: var(--content-reading-max);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.financial-page--detail .financial-detail-heading__badges {
+  align-self: center;
 }
 
 .financial-page--detail .financial-detail-view .financial-metric-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0;
+  gap: var(--space-2);
+}
+
+.financial-page--detail .financial-detail-view .metric-card,
+.dashboard-shell .content-area .financial-page--detail .financial-detail-view .financial-metric-grid .metric-card {
+  min-height: 96px;
+  padding: var(--space-3);
   border: var(--border-default);
   border-radius: var(--radius-sm);
-  overflow: hidden;
+  background: var(--surface-card);
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
+  align-content: center;
+  column-gap: var(--space-3);
+  row-gap: 2px;
 }
 
-.financial-page--detail .financial-detail-view .metric-card {
-  min-height: 72px;
-  padding: var(--space-3);
-  border: 0;
-  border-inline-start: var(--border-divider);
-  border-radius: 0;
-  gap: var(--space-1);
+.financial-page--detail .financial-detail-view .metric-card--large {
+  border-color: var(--border-card);
+  background: var(--surface-card);
 }
 
-.financial-page--detail .financial-detail-view .metric-card:first-child {
-  border-inline-start: 0;
+.financial-page--detail .financial-detail-view .metric-card__icon {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  align-self: center;
+  width: 34px;
+  height: 34px;
+  padding: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--green-soft);
+  color: var(--green-deep);
+  display: block;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.financial-page--detail .financial-detail-view .metric-card--warning .metric-card__icon {
+  background: var(--status-far-bg);
+  color: var(--status-far-ink);
+}
+
+.financial-page--detail .financial-detail-view .metric-card--muted .metric-card__icon {
+  background: var(--status-muted-bg);
+  color: var(--status-muted-ink);
+}
+
+.financial-page--detail .financial-detail-view .metric-card :is(.metric-card__label, .metric-card__value, .metric-card__detail) {
+  grid-column: 2;
 }
 
 .financial-page--detail .financial-detail-view .metric-card__value,
 .financial-page--detail .financial-detail-view .metric-card--large .metric-card__value {
+  color: var(--text-strong);
   font-size: var(--font-size-xl);
   line-height: var(--line-height-tight);
 }
 
-.financial-page--detail .financial-detail-view .financial-quick-reading {
-  padding: var(--space-3) var(--space-4);
-  grid-template-columns: minmax(150px, auto) minmax(0, 1fr);
-  gap: var(--space-1) var(--space-4);
-}
-
-.financial-page--detail .financial-detail-view .financial-quick-reading::before {
-  display: none;
-}
-
-.financial-page--detail .financial-detail-view .financial-quick-reading > span {
-  grid-row: 1 / span 2;
-}
-
-.financial-page--detail .financial-detail-view .financial-quick-reading :is(p, small) {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: var(--font-size-xs);
-  line-height: var(--line-height-normal);
+.financial-page--detail .financial-primary-analysis {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 2.15fr) minmax(240px, 0.75fr);
+  align-items: stretch;
+  gap: var(--space-3);
 }
 
 .financial-page--detail .financial-detail-view .financial-chart-card {
-  padding: var(--space-3);
-  gap: var(--space-2);
-}
-
-.financial-page--detail .financial-detail-view .financial-chart-card .indicator-chart-header {
-  padding-bottom: var(--space-2);
-}
-
-.financial-page--detail .financial-detail-view .financial-chart-card .history-chart__canvas,
-.financial-page--detail .financial-detail-view .financial-chart-card .history-chart svg {
-  min-height: 0;
-  height: var(--detail-chart-height-main);
-  max-height: var(--detail-chart-height-main);
-}
-
-.financial-page--detail .financial-methodology-disclosure,
-.financial-page--detail .financial-support-data {
-  padding: 0;
-}
-
-.financial-page--detail .financial-methodology-disclosure .financial-indicator-metadata {
-  border: 0;
-  background: transparent;
-}
-
-.dashboard-shell .content-area .financial-page--detail .financial-detail-view .financial-metric-grid .metric-card {
-  min-height: 80px;
-  padding: var(--space-2);
+  min-width: 0;
+  padding: var(--space-4);
+  gap: var(--space-3);
 }
 
 .dashboard-shell .content-area .financial-page--detail .financial-chart-card .indicator-chart-header {
   min-height: 0;
   margin-bottom: 0;
-  padding-bottom: var(--space-2);
+  padding-bottom: var(--space-3);
   gap: var(--space-1);
 }
 
@@ -1467,42 +2822,200 @@
 }
 
 .dashboard-shell .content-area .financial-page--detail .financial-chart-card .indicator-chart-title-group {
-  gap: 2px;
+  gap: var(--space-1);
 }
 
 .dashboard-shell .content-area .financial-page--detail .financial-chart-card .indicator-chart-title-group h3 {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-md);
   line-height: var(--line-height-snug);
 }
 
 .dashboard-shell .content-area .financial-page--detail .financial-chart-card .indicator-chart-title-group p {
+  color: var(--text-secondary);
   font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+.financial-page--detail .financial-detail-view .financial-chart-card .history-chart__canvas,
+.financial-page--detail .financial-detail-view .financial-chart-card .history-chart svg {
+  min-height: var(--chart-height-md);
+  height: var(--chart-height-md);
+  max-height: var(--chart-height-md);
+}
+
+.financial-page--detail .financial-detail-view .financial-quick-reading {
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-4);
+  border-color: color-mix(in srgb, var(--green-primary) 18%, var(--border-card));
+  background: color-mix(in srgb, var(--surface-moss) 58%, var(--surface-card));
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
+}
+
+.financial-page--detail .financial-detail-view .financial-quick-reading::before {
+  display: none;
+}
+
+.financial-page--detail .financial-quick-reading > .indicator-quick-reading__heading {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  color: var(--green-deep);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-snug);
 }
 
+.financial-page--detail .financial-quick-reading .indicator-quick-reading__heading-icon {
+  width: 28px;
+  height: 28px;
+  padding: 6px;
+  box-sizing: border-box;
+  border-radius: var(--radius-pill);
+  background: var(--green-soft);
+  color: var(--green-deep);
+  flex: 0 0 28px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.financial-page--detail .financial-quick-reading .education-quick-reading__icon {
+  box-sizing: border-box;
+  width: 34px;
+  height: 34px;
+  padding: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--green-soft);
+  color: var(--green-deep);
+  flex: 0 0 auto;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.financial-page--detail .financial-quick-reading .education-quick-reading__list {
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  list-style: none;
+  overflow: hidden;
+}
+
+.financial-page--detail .financial-quick-reading .education-quick-reading__list li {
+  min-height: 76px;
+  padding: var(--space-3);
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.financial-page--detail .financial-quick-reading .education-quick-reading__list li + li {
+  border-top: var(--border-divider);
+}
+
+.financial-page--detail .financial-quick-reading .education-quick-reading__list li > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.financial-page--detail .financial-quick-reading .education-quick-reading__list li > div > span {
+  color: var(--text-strong);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.financial-page--detail .financial-quick-reading .education-quick-reading__list p {
+  max-width: none;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  text-wrap: pretty;
+}
+
+.financial-page--detail .financial-quick-reading .education-quick-reading__list p strong {
+  color: var(--text-strong);
+  font-weight: var(--font-weight-bold);
+}
+
+.financial-page--detail .financial-detail-view > .financial-indicator-metadata {
+  padding: var(--space-5);
+  border: var(--border-default);
+  background: var(--surface-card);
+}
+
+.financial-page--detail .financial-detail-view > .financial-indicator-metadata .financial-indicator-metadata__heading {
+  padding-bottom: var(--space-3);
+  border-bottom: var(--border-divider);
+}
+
+@media screen and (max-width: 1100px) {
+  .financial-page--detail .financial-primary-analysis {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .financial-page--detail .financial-quick-reading .education-quick-reading__list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .financial-page--detail .financial-quick-reading .education-quick-reading__list li + li {
+    border-top: 0;
+    border-inline-start: var(--border-divider);
+  }
+}
+
 @media screen and (max-width: 700px) {
+  .financial-page--detail .financial-detail-nav > .platform-detail-navigation__sequence {
+    grid-column: 1 / -1;
+  }
+
   .financial-page--detail .financial-detail-heading {
     grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .financial-page--detail .financial-detail-heading__badges {
+    justify-content: flex-start;
   }
 
   .financial-page--detail .financial-detail-view .financial-metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .financial-page--detail .financial-detail-view .metric-card:nth-child(odd) {
+  .financial-page--detail .financial-quick-reading .education-quick-reading__list {
+    display: flex;
+  }
+
+  .financial-page--detail .financial-quick-reading .education-quick-reading__list li + li {
+    border-top: var(--border-divider);
     border-inline-start: 0;
   }
 
-  .financial-page--detail .financial-detail-view .metric-card:nth-child(n + 3) {
-    border-top: var(--border-divider);
-  }
-
-  .financial-page--detail .financial-detail-view .financial-quick-reading {
-    grid-template-columns: 1fr;
-  }
-
-  .financial-page--detail .financial-detail-view .financial-quick-reading > span {
-    grid-row: auto;
+  .financial-page--detail .financial-detail-view .financial-chart-card .history-chart__canvas,
+  .financial-page--detail .financial-detail-view .financial-chart-card .history-chart svg {
+    min-height: 280px;
+    height: 280px;
+    max-height: 280px;
   }
 }
 
@@ -1515,8 +3028,8 @@
 }
 
 .financial-page .financial-indicator-card-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--card-gap);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--indicator-card-gap);
 }
 
 .financial-page .financial-grid-workspace .indicator-list.financial-indicator-card-grid {
@@ -1625,7 +3138,7 @@
 
 @media screen and (min-width: 701px) and (max-width: 1180px) {
   .financial-page .financial-indicator-card-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .financial-page .pnate-summary-grid {
@@ -1638,6 +3151,12 @@
 
   .financial-page .pnate-summary-grid .education-card:nth-child(n + 4) {
     border-top: var(--border-divider);
+  }
+}
+
+@media screen and (min-width: 701px) and (max-width: 860px) {
+  .financial-page .financial-indicator-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -1670,5 +3189,166 @@
 
   .financial-detail-view .financial-chart-card .history-chart__canvas {
     min-height: var(--chart-height-md);
+  }
+}
+
+/* FUNDEB list: Education-reference hierarchy without changing financial data. */
+
+.financial-page .fundeb-summary,
+.financial-page .fundeb-workspace {
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+.financial-page :is(.fundeb-summary, .fundeb-workspace) > .financial-section-heading {
+  width: 100%;
+  max-width: none;
+  padding: var(--space-5) var(--financial-panel-padding);
+  border-bottom: var(--border-divider);
+  background: var(--surface-sand);
+}
+
+.financial-page .fundeb-summary-grid {
+  padding: var(--space-5) var(--financial-panel-padding);
+  border: 0;
+  border-radius: 0;
+  background: var(--surface-card);
+  gap: var(--space-3);
+  overflow: visible;
+}
+
+.financial-page .fundeb-summary .education-card {
+  min-height: 176px;
+  padding: var(--space-4);
+  border: var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  grid-template-rows: auto minmax(32px, auto) auto auto minmax(28px, 1fr);
+  align-content: start;
+  gap: var(--space-2);
+  box-shadow: var(--shadow-sm);
+}
+
+.financial-page .fundeb-summary .education-card__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  background: var(--green-soft);
+  color: var(--green-deep);
+  display: inline-grid;
+  place-items: center;
+}
+
+.financial-page .fundeb-summary .education-card__icon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.financial-page .fundeb-summary .education-card__label {
+  color: var(--text);
+}
+
+.financial-page .fundeb-summary .education-card__value,
+.financial-page .fundeb-summary .education-card__value--compact {
+  color: var(--text-strong);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.03em;
+  line-height: var(--line-height-tight);
+}
+
+.financial-page .fundeb-summary .education-card__detail {
+  align-self: end;
+}
+
+.fundeb-indicator-filters {
+  min-width: 0;
+  padding: var(--space-4) var(--financial-panel-padding);
+  border-bottom: var(--border-divider);
+  background: var(--surface-card);
+  display: grid;
+  grid-template-columns: minmax(240px, 0.72fr) minmax(0, 1.28fr);
+  align-items: end;
+  gap: var(--space-5);
+}
+
+.fundeb-indicator-filter-group {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.fundeb-indicator-filter-label {
+  color: var(--green-deep);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  line-height: var(--line-height-snug);
+  text-transform: uppercase;
+}
+
+.fundeb-indicator-filter-group--search .platform-search-field {
+  width: 100%;
+  max-width: none;
+}
+
+.financial-page .fundeb-indicator-group-control.platform-segmented-control {
+  width: fit-content;
+  max-width: 100%;
+  justify-content: flex-start;
+}
+
+.financial-page .fundeb-workspace .indicator-list.financial-indicator-card-grid {
+  padding: var(--space-5) var(--financial-panel-padding) var(--financial-panel-padding);
+  background: var(--surface-card);
+}
+
+@media screen and (max-width: 1080px) {
+  .financial-page .fundeb-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fundeb-indicator-filters {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: var(--space-4);
+  }
+}
+
+@media screen and (max-width: 700px) {
+  .financial-page :is(.fundeb-summary, .fundeb-workspace) > .financial-section-heading,
+  .financial-page .fundeb-summary-grid,
+  .fundeb-indicator-filters,
+  .financial-page .fundeb-workspace .indicator-list.financial-indicator-card-grid {
+    padding-inline: var(--space-4);
+  }
+
+  .financial-page .fundeb-summary .education-card {
+    border: var(--border-default);
+    border-radius: var(--radius-md);
+  }
+
+  .financial-page .fundeb-indicator-group-control.platform-segmented-control {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .financial-page .fundeb-indicator-group-control .platform-segmented-option {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .financial-page .fundeb-summary-grid {
+    grid-template-columns: 1fr;
   }
 }

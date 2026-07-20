@@ -6,14 +6,15 @@ import { MethodNote } from './MethodNote'
 import { ContentState } from './ContentState'
 import {
   FinancialChartFrame,
+  FinancialCatalogSectionBar,
   FinancialDetailHeader,
   FinancialDetailNavigation,
-  FinancialIndicatorCard,
+  FinancialIndicatorGroup,
   FinancialSection,
   FinancialMetricStrip,
   FinancialMetricGrid,
   FinancialQuickReading,
-  FinancialMethodologyDisclosure,
+  FinancialPrimaryAnalysis,
 } from './FinancialIndicatorPrimitives'
 import { IndicatorHistoryChart } from './IndicatorHistoryChart'
 import { ChartEmptyState } from './ChartPrimitives'
@@ -342,50 +343,11 @@ function SiopeEmpty({ children }) {
   )
 }
 
-function SiopeReadingGuide({ fallback, guide }) {
-  const items = [
-    { label: 'O que mede', text: guide?.oQueMede ?? fallback },
-    { label: 'Como interpretar', text: guide?.comoInterpretar },
-    { label: 'Atenção na leitura', text: guide?.atencaoLeitura },
-  ].filter((item) => item.text)
-
-  if (!items.length) return null
-
-  return (
-    <div className="educacao-indicator-reference financial-indicator-reference siope-reading-guide">
-      {items.map((item) => (
-        <div className="siope-reading-guide__item" key={item.label}>
-          <span>{item.label}</span>
-          <p>{item.text}</p>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function SiopeHistoricalData({ children }) {
-  if (!children) return null
-
-  return (
-    <details className="educacao-explore education-support-data financial-support-data siope-history-table-section platform-support-disclosure">
-      <summary className="platform-support-disclosure__summary">
-        <div>
-          <span className="educacao-explore__eyebrow">Série histórica em tabela</span>
-          <h3>Dados históricos</h3>
-          <p>Série anual declarada no SIOPE para o indicador selecionado.</p>
-        </div>
-      </summary>
-      <div className="educacao-explore__panel siope-history-table-panel">
-        {children}
-      </div>
-    </details>
-  )
-}
-
 export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey = '', onDetailChange }) {
   const state = useAsyncData(() => loadSiopeDashboardData(), [])
   const [selectedGroupKey, setSelectedGroupKey] = useState('')
   const [selectedIndicatorKey, setSelectedIndicatorKey] = useState(detailKey)
+  const [searchQuery, setSearchQuery] = useState('')
   const [isDetailOpen, setIsDetailOpen] = useState(Boolean(detailKey))
   const detailNavigation = useDetailViewNavigation({
     activeKey: selectedIndicatorKey,
@@ -444,8 +406,18 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
     : model.groups[0]?.key)
   const activeGroup = model.groups.find((group) => group.key === activeGroupKey) ?? model.groups[0]
   const activeIndicators = activeGroup?.items ?? []
-  const indicatorModels = activeIndicators.map((indicator) => buildSiopeIndicatorModel(indicator, model.municipality, activeGroup))
+  const normalizedSearchQuery = searchQuery.trim().toLocaleLowerCase('pt-BR')
+  const visibleActiveIndicators = normalizedSearchQuery
+    ? activeIndicators.filter((indicator) => {
+        const text = `${indicator.nome_dashboard ?? ''} ${indicator.descricao_curta ?? ''}`.toLocaleLowerCase('pt-BR')
+        return text.includes(normalizedSearchQuery)
+      })
+    : activeIndicators
+  const indicatorModels = visibleActiveIndicators.map((indicator) => buildSiopeIndicatorModel(indicator, model.municipality, activeGroup))
   const selectedIndicatorModel = indicatorModels.find((indicator) => indicator.key === selectedIndicatorKey) ?? indicatorModels[0]
+  const selectedMetadata = selectedIndicatorModel
+    ? getFinancialIndicatorMetadata('siope', selectedIndicatorModel.key)
+    : null
   const selectedIndicator = selectedIndicatorModel?.raw
   const series = selectedIndicator
     ? buildIndicatorSeries(model.municipality, selectedIndicator)
@@ -514,43 +486,41 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
         </FinancialMetricStrip>
       </FinancialSection>
 
-      <FinancialSection
-        className="financial-indicator-section financial-axis-section"
-        eyebrow="Seção de indicadores"
-        meta={`${activeIndicators.length} indicadores`}
-        title="Eixos de análise"
-        titleId="siope-axis-title"
-      >
-          <div className="financial-axis-tabs">
-            <CategoryTabs
-            ariaLabel="Eixos de análise dos recursos da educação"
-            categories={model.groups}
-            selectedCategory={activeGroupKey}
-            onSelectCategory={handleGroupSelect}
+      {!isDetailOpen ? (
+        <div className="financial-catalog-workspace siope-catalog-workspace">
+          <FinancialCatalogSectionBar
+            count={indicatorModels.length}
+            description={SIOPE_SECTION_SUBTITLE}
+            onSearchChange={setSearchQuery}
+            searchQuery={searchQuery}
+            title="Financiamento e Execução"
+            titleId="siope-axis-title"
           />
-        </div>
-        <div className="financial-axis-context platform-results-summary">
-          <span>{activeGroup?.label ?? 'Eixo de análise'}</span>
-          <span>{model.municipality.municipio}</span>
-        </div>
-        {!isDetailOpen ? (
-          indicatorModels.length ? (
-            <div className="financial-indicator-card-grid">
-              {indicatorModels.map((indicator) => (
-                <FinancialIndicatorCard
-                  buttonRef={(node) => detailNavigation.registerCard(indicator.key, node)}
-                  indicator={indicator}
-                  isSelected={isDetailOpen && indicator.key === selectedIndicatorKey}
-                  key={indicator.key}
-                  onSelect={() => handleIndicatorSelect(indicator.key)}
-                />
-              ))}
+          <div className="financial-catalog-filter-row financial-axis-tabs">
+            <span className="fundeb-indicator-filter-label">Eixo de análise</span>
+            <CategoryTabs
+              ariaLabel="Eixos de análise dos recursos da educação"
+              categories={model.groups}
+              selectedCategory={activeGroupKey}
+              onSelectCategory={handleGroupSelect}
+            />
+          </div>
+          {indicatorModels.length ? (
+            <div className="education-indicator-groups financial-indicator-groups">
+              <FinancialIndicatorGroup
+                description={`Indicadores declarados ao SIOPE/FNDE para ${model.municipality.municipio}.`}
+                groupKey={`siope-${activeGroupKey}`}
+                indicators={indicatorModels}
+                label={activeGroup?.label ?? 'Eixo de análise'}
+                onSelect={handleIndicatorSelect}
+                registerCard={detailNavigation.registerCard}
+              />
             </div>
           ) : (
             <SiopeEmpty>Nenhum indicador disponível neste eixo.</SiopeEmpty>
-          )
-        ) : null}
-      </FinancialSection>
+          )}
+        </div>
+      ) : null}
 
       {isDetailOpen && selectedIndicatorModel && selectedIndicator ? (
         <div className="financial-detail-view education-detail-view" ref={detailNavigation.detailViewRef}>
@@ -568,80 +538,49 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
           <section className="detail-panel educacao-detail-panel financial-detail-panel siope-detail">
             <FinancialDetailHeader indicator={selectedIndicatorModel} />
             <FinancialMetricGrid indicator={selectedIndicatorModel} />
-            <FinancialQuickReading description={selectedIndicatorModel.description} text={selectedIndicatorModel.quickReading} tone={selectedIndicatorModel.statusTone} />
             {selectedIndicatorHasMissingValues ? (
               <p className="fundeb-indicator-note siope-register-alert platform-coverage-note">
                 <strong>Registro:</strong> {MISSING_VALUE_NOTE}
               </p>
             ) : null}
 
-            <FinancialChartFrame
-              subtitle={`${selectedIndicatorModel.label} · ${selectedIndicatorModel.groupLabel}`}
-              summary={selectedIndicatorModel.historySummary}
-              source={<DataSourceNote className="fundeb-data-source siope-chart-source" source={SIOPE_SOURCE} />}
-            >
-              {validSeries.length >= 2 ? (
-                <IndicatorHistoryChart
-                  chartHeight={224}
-                  endYear={2025}
-                  formatDataLabel={(value) => formatCompactDataLabel(value, selectedIndicator.unidade)}
-                  formatYAxis={selectedIndicator.unidade === 'reais' ? formatCompactCurrency : undefined}
-                  item={{ label: selectedIndicator.nome_dashboard }}
-                  labelMode="all"
-                  missingLabel={EM}
-                  result={null}
-                  series={chartSeries}
-                  showMetaLine={false}
-                  showMissingPoints={true}
-                  startYear={2021}
-                  title={selectedIndicator.nome_dashboard}
-                  unit={getIndicatorUnit(selectedIndicator)}
-                  yTickCount={5}
-                />
-              ) : (
-                <ChartEmptyState message="Histórico não disponível." />
-              )}
-            </FinancialChartFrame>
-
-            <FinancialMethodologyDisclosure>
-              <SiopeReadingGuide
-                fallback={selectedIndicatorModel.description}
-                guide={selectedIndicatorModel.readingGuide}
+            <FinancialPrimaryAnalysis>
+              <FinancialChartFrame
+                subtitle={selectedIndicatorModel.description}
+                source={<DataSourceNote className="fundeb-data-source siope-chart-source" source={SIOPE_SOURCE} />}
+              >
+                {validSeries.length >= 2 ? (
+                  <IndicatorHistoryChart
+                    chartHeight={300}
+                    endYear={2025}
+                    formatDataLabel={(value) => formatCompactDataLabel(value, selectedIndicator.unidade)}
+                    formatYAxis={selectedIndicator.unidade === 'reais' ? formatCompactCurrency : undefined}
+                    item={{ label: selectedIndicator.nome_dashboard }}
+                    labelMode="all"
+                    missingLabel={EM}
+                    result={null}
+                    series={chartSeries}
+                    showMetaLine={false}
+                    showMissingPoints={true}
+                    startYear={2021}
+                    title={selectedIndicator.nome_dashboard}
+                    unit={getIndicatorUnit(selectedIndicator)}
+                    yTickCount={5}
+                  />
+                ) : (
+                  <ChartEmptyState message="Histórico não disponível." />
+                )}
+              </FinancialChartFrame>
+              <FinancialQuickReading
+                description={selectedIndicatorModel.description}
+                indicator={selectedIndicatorModel}
+                metadata={selectedMetadata}
+                readingGuide={selectedIndicatorModel.readingGuide}
+                text={selectedIndicatorModel.quickReading}
               />
-              <FinancialIndicatorMetadata metadata={getFinancialIndicatorMetadata('siope', selectedIndicatorModel.key)} />
-            </FinancialMethodologyDisclosure>
+            </FinancialPrimaryAnalysis>
 
-            <SiopeHistoricalData>
-              <div className="fundeb-table-card financial-support-table">
-                <div className="fundeb-table-card__header siope-table-card__header">
-                  <div>
-                    <h4>Valores por ano</h4>
-                  </div>
-                </div>
-                <div className="fundeb-table-wrap" role="region" aria-label="Série histórica do indicador do SIOPE. Role horizontalmente para consultar todas as colunas quando necessário." tabIndex={0}>
-                  <table className="fundeb-table">
-                    <caption className="u-sr-only">Série histórica do indicador do SIOPE</caption>
-                    <thead>
-                      <tr>
-                        <th scope="col">Ano</th>
-                        <th scope="col">Valor</th>
-                        <th scope="col" className="platform-data-cell--text">Registro</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {series.map((point) => (
-                        <tr key={point.ano}>
-                          <td>{point.ano}</td>
-                          <td>{formatSiopeValue(point.valor, selectedIndicator.unidade)}</td>
-                          <td className="platform-data-cell--text">{point.hasValue ? 'Com dados' : <span className="platform-data-missing" aria-label="Dado não disponível" title="Dado não disponível">{EM}</span>}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <DataSourceNote className="fundeb-data-source" source={SIOPE_SOURCE} />
-              </div>
-            </SiopeHistoricalData>
+            <FinancialIndicatorMetadata metadata={selectedMetadata} />
           </section>
           <FinancialDetailNavigation
             activeIndex={selectedIndex}

@@ -149,6 +149,20 @@ notas em abas ou disclosures. Financiamento e os demais domínios podem manter o
 aprofundamento progressivo quando a densidade ou a tarefa justificar, sem
 remover acesso por teclado ou alternativa textual.
 
+Nos detalhes de Financiamento, a abertura usa navegação local, título curto com
+descrição e badges de fonte/unidade, seguida de uma faixa única com valor
+inicial, valor atual, variação no período e ano de referência. O gráfico de
+evolução e a leitura rápida compartilham a linha em proporção aproximada de
+70/30 no desktop; a leitura separa evolução observada, definição da medida,
+e recorte exibido, com a mesma cor, tipografia, espaçamento, superfície interna
+e divisores usados em Educação e PNE. Não há seletor de período nessa
+composição. A referência técnica aparece aberta logo abaixo da análise e reúne
+conceito, cálculo, fonte, regra, base legal e nota metodológica, sem repetir um
+bloco de apoio à interpretação e sem menu adicional de série histórica. A
+navegação local é repetida ao final. Em notebook e tablet, gráfico e leitura são
+empilhados; no celular, os KPIs usam duas colunas e o gráfico preserva 280 px de
+altura.
+
 Desktop e notebook são as prioridades de composição. Acima de 1080 px, a sidebar pode ser persistente; em larguras menores, a navegação deve reduzir seu impacto vertical e preservar o acesso ao município e ao conteúdo prioritário.
 
 ## 5. Regras de componentes
@@ -171,9 +185,9 @@ Card é adequado quando agrupa uma unidade de informação, uma ação clara, it
 
 Um card de indicador pode conter tema, status textual, título, valor, unidade, ano, referência, variação e sparkline quando estes elementos ajudarem a decisão. Altura fixa não pode truncar título ou valor relevante.
 
-Nos grids exploráveis de Educação e Financiamento, a anatomia editorial compartilhada prioriza: contexto e status no cabeçalho; título e descrição de até duas linhas; valor institucional ao lado de Ano/Variação; faixa Leitura/Período; e rodapé com chip e chevron simples. A direção aparece apenas no badge e na variação, nunca colore o valor principal. Sem série comparável, a variação e o período comparativo são omitidos, sem converter ausência em zero. Em telas estreitas, o valor ocupa uma linha e Ano/Variação passam para duas colunas abaixo.
+Nos grids exploráveis de Educação, a anatomia editorial aprovada usa card retrato com contexto e status no cabeçalho; título e descrição integralmente visíveis; valor dominante à esquerda; coluna lateral com Ano e Variação desde o último ponto comparável; faixa interna em superfície musgo dedicada somente à Leitura; e rodapé com chip de etapa ou recorte e chevron simples. O período permanece disponível no detalhe e não é repetido no card. Subtítulos descrevem somente a medida ou o recorte e não incluem instruções como “use o filtro”, “selecione” ou equivalentes. A grade progride em 4→3→2→1 colunas e respeita o padding horizontal do grupo, sem compensação negativa nas bordas. Títulos, descrições, metadados e chips aceitam quebra de linha e fazem o card crescer, sem reticências ou limite fixo de linhas.
 
-Cards comparáveis de PNE, Educação e Financiamento usam a medida canônica de 324 px no desktop/notebook, com 16 px de padding e valor principal em escala de 32 px. Nos cards de Educação e Financiamento, o valor fica alinhado à esquerda dentro da coluna primária de 60%, com recuo interno adicional de 16 px, preservando a coluna lateral de Ano/Variação. Em até 700 px, a composição volta a ser fluida com altura mínima comum de 364 px, sem truncar valor, metadados ou ação. Alta usa verde-azulado suave, Queda usa terracota suave e Estável usa areia; a variação repete a cor semântica do badge.
+Cards comparáveis de PNE preservam sua composição compacta. Nos catálogos de Educação e Financiamento, a escala compacta parte de aproximadamente 330×368 px no desktop amplo, com 16 px de padding, valor principal em escala de até 48 px e coluna lateral separada por divisor. Valor e unidade são centralizados na coluna primária, com padding simétrico e contenção horizontal; conforme o comprimento, o valor reduz progressivamente sua escala para permanecer em uma única linha e nunca atravessar o divisor de Ano. Valores financeiros compactos usam até 32 px e valores densos até 24 px, preservando integralmente símbolo, número e unidade abreviada. A altura é mínima, nunca fixa por proporção: a faixa de valor e metadados cresce conforme o conteúdo e reserva espaço inferior para que unidades ou variações longas não invadam a Leitura. Em até 720 px, o valor reduz uma etapa e a composição permanece fluida, sem truncar valor, metadados ou ação. Alta usa verde-azulado suave, Queda usa terracota suave e Estável usa areia; a variação repete a cor semântica do badge. Sem série comparável, o badge e a variação são omitidos, sem converter ausência em zero. As grades de Educação, Financiamento e Execução, FUNDEB e PNATE progridem em 4→3→2→1 colunas; rótulos auxiliares podem usar abreviações inequívocas, mantendo a formulação completa no nome acessível.
 
 Cards exploráveis devem expor affordance por estrutura, foco e estado, não apenas por hover. Cards informativos não recebem cursor, chevron ou elevação que sugira ação.
 
@@ -231,7 +245,7 @@ O tom é claro, profissional e responsável. Preferir “exige atenção”, “
 - [ ] Estados default, hover, foco, ativo, desabilitado, loading, erro e vazio foram considerados conforme o componente.
 - [ ] Valor informa unidade e período; zero não é apresentado como ausência.
 - [ ] Gráficos e tabelas permanecem acessíveis, legíveis e contextuais.
-- [ ] Desktop e notebook foram priorizados; tablet, celular, zoom e textos longos foram validados.
+- [ ] Desktop e notebook foram priorizados; tablet, celular, zoom e textos longos foram considerados. A validação executável depende do modo explicitamente solicitado conforme `AGENTS.md`.
 - [ ] Nenhuma mudança visual alterou dados, cálculos, filtros, regras de negócio ou conteúdo analítico.
 
 ## 9. Direção editorial SESI-RS

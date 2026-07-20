@@ -207,6 +207,7 @@ export function EducationPage({ indicadores, municipioData, navigationContext, s
     />
   ) : isMethodologySection ? (
     <EducationCompactHeader
+      backLink={{ onClick: handleBackToEducationOverview }}
       contextItems={[
         { icon: 'municipality', label: 'Município', value: selectedMunicipio },
         { icon: 'scope', label: 'Escopo', value: `${EDUCATION_INDICATOR_CATALOG.length} indicadores` },
@@ -218,6 +219,7 @@ export function EducationPage({ indicadores, municipioData, navigationContext, s
     />
   ) : (
     <EducationCompactHeader
+      backLink={isOverviewSection ? undefined : { onClick: handleBackToEducationOverview }}
       contextItems={[
         { icon: 'municipality', label: 'Município', value: selectedMunicipio },
         { icon: 'section', label: 'Seção', value: section?.label ?? 'Visão geral' },
@@ -272,7 +274,7 @@ export function EducationPage({ indicadores, municipioData, navigationContext, s
     })
   }
 
-  function handleDemandBackToIndicators() {
+  function handleBackToEducationOverview() {
     setSelectedIndicatorKey('')
     setIsDetailOpen(false)
     setHashContext(navigationContext?.rawRoute || 'educacao', {
@@ -289,7 +291,7 @@ export function EducationPage({ indicadores, municipioData, navigationContext, s
       ) : isDemandSection && !isSistemaSTheme ? (
         <EducationDemandSection
           municipioData={municipioData}
-          onBackToIndicators={handleDemandBackToIndicators}
+          onBackToIndicators={handleBackToEducationOverview}
           selectedMunicipio={selectedMunicipio}
         />
       ) : isMethodologySection && !isSistemaSTheme ? (

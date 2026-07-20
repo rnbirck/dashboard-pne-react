@@ -1,7 +1,8 @@
 import { ErrorState } from '../components/ErrorState'
 import { LoadingState } from '../components/LoadingState'
-import { lazy, Suspense, type ComponentType, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useMemo, type ComponentType, type ReactNode } from 'react'
 import { useMunicipality } from '../context/MunicipalityContext'
+import { FINANCIAL_PAGE_KEYS } from '../data/financialPageKeys'
 import { useMunicipioData } from '../hooks/useMunicipioData'
 import { Home } from '../pages/Home'
 import type { AppPageKey } from '../types/app'
@@ -15,6 +16,7 @@ const LazyCyclePage = lazy(() => import('../pages/CyclePage').then((module) => (
 const LazyDiagnostico = lazy(() => import('../pages/Diagnostico').then((module) => ({ default: module.Diagnostico })))
 const LazyEducationPage = lazy(() => import('../features/education/EducationPage').then((module) => ({ default: module.EducationPage })))
 const LazyFinancialPage = lazy(() => import('../pages/FinancialPage').then((module) => ({ default: module.FinancialPage })))
+const LazyMunicipalFinancePanoramaPage = lazy(() => import('../features/municipal-finance/MunicipalFinancePanoramaPage').then((module) => ({ default: module.MunicipalFinancePanoramaPage })))
 const LazyPneLegalGoalsPage = lazy(() => import('../pages/PneLegalGoalsPage').then((module) => ({ default: module.PneLegalGoalsPage })))
 const LazyPneOverviewPage = lazy(() => import('../pages/PneOverviewPage').then((module) => ({ default: module.PneOverviewPage })))
 
@@ -62,6 +64,29 @@ export function AppPageRouter({
     error: municipioError,
     loading: municipioLoading,
   } = useMunicipioData(municipiosIndex, selectedMunicipio)
+  const requestedMunicipalityValue = activePage === FINANCIAL_PAGE_KEYS.panorama
+    ? navigationContext.params.get('municipio')?.trim() ?? ''
+    : ''
+  const requestedMunicipalityEntry = useMemo(() => {
+    if (!requestedMunicipalityValue) return null
+    const normalized = requestedMunicipalityValue.toLocaleLowerCase('pt-BR')
+    return municipiosIndex.find((item) => (
+      item.slug === normalized
+      || item.id_municipio === normalized
+      || item.nome.toLocaleLowerCase('pt-BR') === normalized
+    )) ?? null
+  }, [municipiosIndex, requestedMunicipalityValue])
+  const loadedMunicipalitySlug = typeof municipioData?.slug === 'string' ? municipioData.slug : null
+
+  useEffect(() => {
+    if (
+      activePage === FINANCIAL_PAGE_KEYS.panorama
+      && requestedMunicipalityEntry
+      && requestedMunicipalityEntry.nome !== selectedMunicipio
+    ) {
+      setSelectedMunicipio(requestedMunicipalityEntry.nome)
+    }
+  }, [activePage, requestedMunicipalityEntry, selectedMunicipio, setSelectedMunicipio])
 
   if (activePage === 'home') {
     return <Home onNavigate={onNavigate} selectedMunicipio={selectedMunicipio} />
@@ -84,6 +109,18 @@ export function AppPageRouter({
           onMunicipioChange={setSelectedMunicipio}
           onNavigate={onNavigate}
           selectedMunicipio={selectedMunicipio}
+        />
+      </LazyPageBoundary>
+    )
+  }
+
+  if (activePage === FINANCIAL_PAGE_KEYS.panorama) {
+    return (
+      <LazyPageBoundary page={activePage}>
+        <LazyMunicipalFinancePanoramaPage
+          municipalityIdentifier={requestedMunicipalityEntry?.slug ?? loadedMunicipalitySlug}
+          municipalityName={requestedMunicipalityEntry?.nome ?? selectedMunicipio}
+          navigationContext={navigationContext}
         />
       </LazyPageBoundary>
     )
@@ -173,7 +210,6 @@ export function AppPageRouter({
     return (
       <LazyPageBoundary page={activePage}>
         <LazyDiagnostico
-          indicadores={indicadores}
           municipioData={municipioData}
           selectedMunicipio={selectedMunicipio}
         />

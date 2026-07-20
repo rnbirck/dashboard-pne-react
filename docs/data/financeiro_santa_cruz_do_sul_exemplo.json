@@ -1,0 +1,438 @@
+{
+  "schemaVersion": "municipal-finance-v1",
+  "methodologyVersion": "municipal-finance-p5a-v1",
+  "generatedAt": "2026-07-20T00:00:00-03:00",
+  "municipality": {
+    "ibgeCode": "4316808",
+    "name": "Santa Cruz do Sul",
+    "uf": "RS",
+    "sampleRoles": [
+      "médio porte",
+      "beneficiário VAAR confirmado em 2026"
+    ]
+  },
+  "referencePeriod": {
+    "primaryFiscalYear": 2024,
+    "currentPartialYear": 2026,
+    "currentCutoffDate": "2026-06-22",
+    "mixesPeriodsInTotals": false
+  },
+  "dataQuality": {
+    "level": "medium",
+    "coverageRate": 0.67,
+    "automatableSourceCount": 4,
+    "manualSourceCount": 5,
+    "unresolvedLimitations": [
+      "A complementação VAAR de 2026 é previsão oficial e permanece separada da execução fechada de 2024."
+    ]
+  },
+  "summary": {
+    "confirmedTransfersPrimaryYear": {
+      "value": 5127525.46,
+      "unit": "BRL",
+      "referenceYear": 2024,
+      "amountNature": "confirmed",
+      "financialStage": "transferred",
+      "nullReason": null
+    },
+    "officialForecastsCurrentPartialYear": {
+      "value": 127263051.8,
+      "unit": "BRL",
+      "referenceYear": 2026,
+      "amountNature": "official_estimate",
+      "financialStage": "forecast",
+      "nullReason": null
+    },
+    "educationCommittedPrimaryYear": {
+      "value": 185759300.34,
+      "unit": "BRL",
+      "referenceYear": 2024,
+      "amountNature": "municipal_declared",
+      "financialStage": "empenhado",
+      "nullReason": null
+    },
+    "financingPotential": {
+      "value": null,
+      "unit": "BRL",
+      "referenceYear": 2026,
+      "nullReason": {
+        "code": "unsupported_estimate_prohibited",
+        "category": "governance",
+        "message": "Nenhum potencial não oficial é calculado.",
+        "sourceIds": []
+      }
+    }
+  },
+  "transfers": [
+    {
+      "transferId": "qse-4316808-2024",
+      "programId": "salario_educacao_qsem",
+      "label": "Quota municipal do salário-educação distribuída",
+      "referenceYear": 2024,
+      "financialStage": "transferred",
+      "amountNature": "confirmed",
+      "amount": {
+        "value": 5127525.46,
+        "unit": "BRL",
+        "referenceYear": 2024,
+        "amountNature": "confirmed",
+        "financialStage": "transferred",
+        "nullReason": null
+      },
+      "sourceId": "fnde_qse_realized_2024",
+      "evidenceStatus": "official_nominal",
+      "isPartialPeriod": false,
+      "canBeSummedWithConfirmedTransfers": true,
+      "notes": "Valor nominal distribuído pelo FNDE; não equivale a saldo bancário disponível."
+    },
+    {
+      "transferId": "fundeb-total-4316808-2026",
+      "programId": "fundeb_total",
+      "label": "Receita total anual prevista do Fundeb",
+      "referenceYear": 2026,
+      "financialStage": "forecast",
+      "amountNature": "official_estimate",
+      "amount": {
+        "value": 127263051.8,
+        "unit": "BRL",
+        "referenceYear": 2026,
+        "amountNature": "official_estimate",
+        "financialStage": "forecast",
+        "nullReason": null
+      },
+      "sourceId": "fnde_fundeb_total_forecast_2026",
+      "evidenceStatus": "official_nominal",
+      "isPartialPeriod": true,
+      "canBeSummedWithConfirmedTransfers": false,
+      "notes": "Previsão anual oficial mantida fora do total de transferências confirmadas."
+    }
+  ],
+  "programStatuses": [
+    {
+      "programId": "fundeb_vaar",
+      "status": "confirmed_beneficiary",
+      "statusAsOf": "2026-06-22",
+      "amount": {
+        "value": 8039699.99,
+        "unit": "BRL",
+        "referenceYear": 2026,
+        "amountNature": "official_estimate",
+        "financialStage": "forecast",
+        "nullReason": null
+      },
+      "evidence": {
+        "sourceId": "fnde_fundeb_vaar_status_2026",
+        "sourceName": "Lista de entes beneficiários e não beneficiários da complementação VAAR 2026",
+        "sourceUrl": "https://www.gov.br/fnde/pt-br/acesso-a-informacao/acoes-e-programas/financiamento/fundeb/2026-1/ListaentesbeneficiariosenaobeneficiariosacomplementacaoVAARdoFundeb2026.csv",
+        "publisher": "FNDE",
+        "accessedAt": "2026-07-20",
+        "referenceYear": 2026,
+        "municipalityKey": "ibge_code",
+        "evidenceStatus": "official_nominal",
+        "notes": "Beneficiário nominal confirmado; o valor associado continua sendo previsão.",
+        "publicationDate": "2026-06-22"
+      },
+      "notes": "Status municipal nominal, sem inferência baseada em indicador educacional."
+    }
+  ],
+  "execution": {
+    "referenceYear": 2024,
+    "functionalClassification": "12 - Educação",
+    "budgeted": {
+      "value": null,
+      "unit": "BRL",
+      "referenceYear": 2024,
+      "nullReason": {
+        "code": "different_grain",
+        "category": "methodology",
+        "message": "O Anexo I-E da DCA informa execução por função, mas não a dotação orçamentária da função Educação.",
+        "sourceIds": [
+          "siconfi_dca_function_2024"
+        ]
+      }
+    },
+    "committed": {
+      "value": 185759300.34,
+      "unit": "BRL",
+      "referenceYear": 2024,
+      "amountNature": "municipal_declared",
+      "financialStage": "empenhado",
+      "nullReason": null
+    },
+    "liquidated": {
+      "value": 180438770.93,
+      "unit": "BRL",
+      "referenceYear": 2024,
+      "amountNature": "municipal_declared",
+      "financialStage": "liquidado",
+      "nullReason": null
+    },
+    "paid": {
+      "value": 170482599.91,
+      "unit": "BRL",
+      "referenceYear": 2024,
+      "amountNature": "municipal_declared",
+      "financialStage": "paid",
+      "nullReason": null
+    },
+    "currentExpense": {
+      "value": null,
+      "unit": "BRL",
+      "referenceYear": 2024,
+      "nullReason": {
+        "code": "different_grain",
+        "category": "methodology",
+        "message": "A separação corrente/capital exige junção validada entre função e natureza, não disponível no extrato auditado.",
+        "sourceIds": [
+          "siconfi_dca_function_2024"
+        ]
+      }
+    },
+    "capitalExpense": {
+      "value": null,
+      "unit": "BRL",
+      "referenceYear": 2024,
+      "nullReason": {
+        "code": "different_grain",
+        "category": "methodology",
+        "message": "A separação corrente/capital exige junção validada entre função e natureza, não disponível no extrato auditado.",
+        "sourceIds": [
+          "siconfi_dca_function_2024"
+        ]
+      }
+    },
+    "outstandingNonProcessed": {
+      "value": 5320529.41,
+      "unit": "BRL",
+      "referenceYear": 2024,
+      "amountNature": "municipal_declared",
+      "financialStage": "balance",
+      "nullReason": null
+    },
+    "outstandingProcessed": {
+      "value": 9956171.02,
+      "unit": "BRL",
+      "referenceYear": 2024,
+      "amountNature": "municipal_declared",
+      "financialStage": "balance",
+      "nullReason": null
+    },
+    "evidence": {
+      "sourceId": "siconfi_dca_function_2024",
+      "sourceName": "SICONFI DCA — Anexo I-E, despesa por função",
+      "sourceUrl": "https://apidatalake.tesouro.gov.br/ords/cdwhprd/siconfi/tt/dca?an_exercicio=2024&no_anexo=DCA-Anexo%20I-E&co_esfera=M&id_ente=4316808",
+      "publisher": "Secretaria do Tesouro Nacional",
+      "accessedAt": "2026-07-20",
+      "referenceYear": 2024,
+      "municipalityKey": "ibge_code",
+      "evidenceStatus": "municipal_declared",
+      "notes": "Dados declarados pelo ente e publicados no sistema oficial; não são transferência financeira.",
+      "publicationDate": "2025"
+    }
+  },
+  "reconciliation": {
+    "status": "reconciliation_required",
+    "comparedSourceIds": [
+      "siconfi_dca_function_2024",
+      "siope_municipal_reports"
+    ],
+    "absoluteDifference": {
+      "value": null,
+      "unit": "BRL",
+      "referenceYear": 2024,
+      "nullReason": {
+        "code": "reconciliation_pending",
+        "category": "reconciliation",
+        "message": "O relatório municipal corrente do SIOPE não possui extração pública estável para cálculo reproduzível da diferença.",
+        "sourceIds": [
+          "siconfi_dca_function_2024",
+          "siope_municipal_reports"
+        ]
+      }
+    },
+    "explanation": "SICONFI e SIOPE têm regras, recortes e estágios próprios; a coincidência nominal de campos não autoriza soma ou substituição.",
+    "nextAction": "Na P5-B, obter o relatório SIOPE do mesmo exercício, mapear conceitos e registrar divergência campo a campo."
+  },
+  "perStudent": [
+    {
+      "metricId": "qse_transferred_per_student",
+      "label": "QSE distribuída por matrícula usada no coeficiente",
+      "referenceYear": 2024,
+      "value": {
+        "value": null,
+        "unit": "BRL_per_student",
+        "referenceYear": 2024,
+        "nullReason": {
+          "code": "denominator_not_integrated",
+          "category": "methodology",
+          "message": "O denominador nominal não foi integrado ao protótipo.",
+          "sourceIds": [
+            "fnde_qse_realized_2024"
+          ]
+        }
+      },
+      "numerator": {
+        "value": 5127525.46,
+        "unit": "BRL",
+        "referenceYear": 2024,
+        "amountNature": "confirmed",
+        "financialStage": "transferred",
+        "nullReason": null
+      },
+      "denominator": {
+        "value": null,
+        "unit": "count",
+        "referenceYear": 2024,
+        "nullReason": {
+          "code": "denominator_not_integrated",
+          "category": "methodology",
+          "message": "As matrículas do mesmo documento precisam ser extraídas e validadas antes do cálculo.",
+          "sourceIds": [
+            "fnde_qse_realized_2024"
+          ]
+        }
+      },
+      "denominatorSourceId": "fnde_qse_realized_2024",
+      "sameReferenceYear": true,
+      "calculationAllowed": false,
+      "notes": "É proibido substituir o denominador por matrícula de outro ano."
+    }
+  ],
+  "educationLinks": [
+    {
+      "indicatorId": "creche",
+      "programId": "salario_educacao_qsem",
+      "relationType": "general_mde",
+      "municipalStatus": "transferred",
+      "financialStatus": "transferred",
+      "amountNature": "confirmed",
+      "evidenceStatus": "official_nominal",
+      "confirmedAmount": {
+        "value": 5127525.46,
+        "unit": "BRL",
+        "referenceYear": 2024,
+        "amountNature": "confirmed",
+        "financialStage": "transferred",
+        "nullReason": null
+      },
+      "potentialAmount": {
+        "value": null,
+        "unit": "BRL",
+        "referenceYear": 2026,
+        "nullReason": {
+          "code": "unsupported_estimate_prohibited",
+          "category": "governance",
+          "message": "Nenhum potencial não oficial é calculado.",
+          "sourceIds": []
+        }
+      },
+      "affectsEducationalScores": false,
+      "notes": "Recurso geral de MDE; não há nexo causal ou destinação confirmada para este indicador isolado."
+    },
+    {
+      "indicatorId": "alfabetizacao",
+      "programId": "fundeb_vaar",
+      "relationType": "conditional_support",
+      "municipalStatus": "confirmed_beneficiary",
+      "financialStatus": "forecast",
+      "amountNature": "official_estimate",
+      "evidenceStatus": "official_nominal",
+      "confirmedAmount": {
+        "value": null,
+        "unit": "BRL",
+        "referenceYear": 2026,
+        "nullReason": {
+          "code": "not_published",
+          "category": "availability",
+          "message": "O arquivo auditado contém previsão ou status, não transferência VAAR recebida.",
+          "sourceIds": [
+            "fnde_fundeb_vaar_status_2026",
+            "fnde_fundeb_vaar_forecast_2026"
+          ]
+        }
+      },
+      "potentialAmount": {
+        "value": 8039699.99,
+        "unit": "BRL",
+        "referenceYear": 2026,
+        "amountNature": "official_estimate",
+        "financialStage": "forecast",
+        "nullReason": null
+      },
+      "affectsEducationalScores": false,
+      "notes": "O vínculo é contextual. Status VAAR não altera prioridade, necessidade, confiança ou acionabilidade."
+    }
+  ],
+  "educationalScoreIsolation": {
+    "needScore": null,
+    "actionabilityScore": null,
+    "confidenceScore": null,
+    "priorityScore": null,
+    "nullReasons": {
+      "needScore": {
+        "code": "score_isolation_required",
+        "category": "governance",
+        "message": "O contrato financeiro P5-A não altera os escores educacionais.",
+        "sourceIds": []
+      },
+      "actionabilityScore": {
+        "code": "score_isolation_required",
+        "category": "governance",
+        "message": "O contrato financeiro P5-A não altera os escores educacionais.",
+        "sourceIds": []
+      },
+      "confidenceScore": {
+        "code": "score_isolation_required",
+        "category": "governance",
+        "message": "O contrato financeiro P5-A não altera os escores educacionais.",
+        "sourceIds": []
+      },
+      "priorityScore": {
+        "code": "score_isolation_required",
+        "category": "governance",
+        "message": "O contrato financeiro P5-A não altera os escores educacionais.",
+        "sourceIds": []
+      }
+    },
+    "changesDecisionSummary": false,
+    "changesAttentionOrder": false
+  },
+  "sources": [
+    {
+      "sourceId": "fnde_qse_realized_2024",
+      "use": "transfer",
+      "evidenceStatus": "official_nominal"
+    },
+    {
+      "sourceId": "fnde_fundeb_total_forecast_2026",
+      "use": "transfer",
+      "evidenceStatus": "official_nominal"
+    },
+    {
+      "sourceId": "fnde_fundeb_vaar_status_2026",
+      "use": "program_status",
+      "evidenceStatus": "official_nominal"
+    },
+    {
+      "sourceId": "siconfi_dca_function_2024",
+      "use": "execution",
+      "evidenceStatus": "municipal_declared"
+    },
+    {
+      "sourceId": "siope_municipal_reports",
+      "use": "context_only",
+      "evidenceStatus": "panel_only"
+    },
+    {
+      "sourceId": "inep_censo_escolar",
+      "use": "denominator",
+      "evidenceStatus": "not_verified"
+    }
+  ],
+  "generationMetadata": {
+    "interfacePublished": false,
+    "publicDataRegenerated": false,
+    "lazyMunicipalRoutePlanned": true,
+    "prototypeOnly": true
+  }
+}

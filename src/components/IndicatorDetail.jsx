@@ -40,9 +40,10 @@ import {
   SubsequentExpansionTracking,
 } from './SubsequentExpansionTargetDetail'
 import { RatioDualMilestoneDetail } from './RatioDualMilestoneDetail'
+import { InequalityPilotSection } from './InequalityPilotSection'
 
 export const IndicatorDetail = forwardRef(function IndicatorDetail(
-  { cycle, item, municipioData, result },
+  { cycle, inequalityPilot, inequalityPilotLoading, item, municipioData, result },
   ref,
 ) {
   const cycleCopy = getPneCycleCopy(cycle)
@@ -593,6 +594,9 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
 
       {isExpansionShareBaseline ? (
         <ExpansionShareTechnicalDisclosure model={currentDetailModel} />
+      ) : null}
+      {cycle === 'pne_2026_2036' && item?.key === 'basico_integral' ? (
+        <InequalityPilotSection loading={inequalityPilotLoading} pilot={inequalityPilot} />
       ) : null}
       <footer className="pne-detail-footer">
         <PneSourceNotes

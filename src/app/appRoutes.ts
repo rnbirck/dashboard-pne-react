@@ -14,6 +14,8 @@ const HASH_PAGE_MAP: Readonly<Record<string, AppPageKey>> = Object.freeze({
   diagnostico: 'diagnostico',
   educacao: 'educacao',
   financeiros: 'financeiros',
+  financeirospanorama: FINANCIAL_PAGE_KEYS.panorama,
+  panoramafinanceiro: FINANCIAL_PAGE_KEYS.panorama,
   financeirosaplicacaorecursos: FINANCIAL_PAGE_KEYS.application,
   financeirosfundeb: FINANCIAL_PAGE_KEYS.fundeb,
   financeirospnate: FINANCIAL_PAGE_KEYS.pnate,

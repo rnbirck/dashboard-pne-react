@@ -9,7 +9,7 @@ import { SegmentedControl } from '../components/SegmentedControl'
 import { PNE_2026_INDICATOR_GOAL_REFS } from '../data/pne2026IndicatorGoalRefs'
 import { PNE_2014_INDICATOR_GOAL_REFS } from '../data/pne2014IndicatorGoalRefs'
 import { buildThematicGroups } from '../data/thematicGroups'
-import { loadMunicipioDetails, loadPneStateReference } from '../data/staticData'
+import { loadMunicipioDetails, loadMunicipioDiagnostic, loadPneStateReference } from '../data/staticData'
 import { normalizePopulationPercentResults } from '../utils/indicatorValues'
 import { getPneCycleCopy } from '../utils/pneCycleCopy'
 import { filterPneComparableCategories } from '../utils/pneDisplayRules'
@@ -130,6 +130,18 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   )
   const isCycleTransition = previousCycleRef.current !== cycle
   const isShowingDetail = Boolean(!isCycleTransition && isDetailOpen && activeItem)
+  const shouldLoadInequalityPilot = cycle === 'pne_2026_2036'
+    && isShowingDetail
+    && activeItem?.key === 'basico_integral'
+  const {
+    data: inequalityDiagnostic,
+    loading: inequalityPilotLoading,
+  } = useAsyncData(
+    () => shouldLoadInequalityPilot && municipioData?.slug
+      ? loadMunicipioDiagnostic(municipioData.slug)
+      : null,
+    [municipioData?.slug, shouldLoadInequalityPilot],
+  )
   const activeThemeLabel = selectedGroup?.shortLabel ?? selectedGroup?.label ?? null
   const detailNavigation = useDetailViewNavigation({
     activeKey: activeIndicatorKey,
@@ -274,6 +286,8 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
             />
             <IndicatorDetail
               cycle={cycle}
+              inequalityPilot={shouldLoadInequalityPilot ? inequalityDiagnostic?.inequalityPilot : null}
+              inequalityPilotLoading={shouldLoadInequalityPilot && inequalityPilotLoading}
               item={activeItem}
               municipioData={municipioData}
               result={activeResult}

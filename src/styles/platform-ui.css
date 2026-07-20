@@ -1311,6 +1311,166 @@
     color: var(--green-deep);
   }
 
+  /* Education and Finance mirror the reference card: header, value/year, change/period, action. */
+  .content-area .indicator-card-shell.indicator-card-shell--education-reference {
+    min-height: calc(var(--space-16) * 4);
+    height: auto;
+    aspect-ratio: 1.23 / 1;
+    padding: var(--space-4);
+    grid-template-columns: minmax(0, 1.9fr) minmax(72px, 1fr);
+    grid-template-rows: auto auto minmax(64px, 1fr) 1px minmax(52px, auto) auto;
+    grid-template-areas:
+      "topline topline"
+      "title title"
+      "value metadata"
+      "divider divider"
+      "insight insight"
+      "footer footer";
+    gap: 0;
+  }
+
+  .content-area .indicator-card-shell--education-reference .indicator-card-shell__description {
+    display: none;
+  }
+
+  .content-area .indicator-card-shell--education-reference .indicator-card-shell__title {
+    min-height: 0;
+    max-height: none;
+    padding-top: var(--space-2);
+    display: block;
+    overflow: visible;
+    -webkit-line-clamp: unset;
+  }
+
+  .content-area .indicator-card-shell--education-reference .indicator-card-shell__context {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .content-area .indicator-card-shell--education-reference .indicator-card-shell__value-row {
+    padding: var(--space-4) var(--space-4) 0 0;
+    border-top: var(--border-divider);
+    align-self: stretch;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: var(--space-1);
+  }
+
+  .content-area .indicator-card-shell--education-reference .indicator-card-shell__metadata {
+    padding: var(--space-4) 0 0 var(--space-4);
+    border-top: var(--border-divider);
+    border-left: var(--border-divider);
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    gap: 0;
+  }
+
+  .content-area .indicator-card-shell--education-reference .indicator-card-shell__metadata-label {
+    white-space: nowrap;
+  }
+
+  .content-area .indicator-card-shell--education-reference .indicator-card-shell__insight {
+    min-height: 52px;
+    padding: var(--space-2) 0;
+    border-radius: 0;
+    background: transparent;
+    grid-template-columns: minmax(0, 1.9fr) minmax(72px, 1fr);
+    align-items: center;
+    gap: 0;
+  }
+
+  .content-area .indicator-card-shell--education-reference .indicator-card-shell__insight-item {
+    min-height: 36px;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .content-area .indicator-card-shell--education-reference .indicator-card-shell__insight-item + .indicator-card-shell__insight-item {
+    padding-left: var(--space-4);
+    border-left: var(--border-divider);
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: var(--space-1);
+  }
+
+  .content-area .indicator-card-shell--education-reference .indicator-card-shell__insight-marker {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-pill);
+    background: var(--indicator-direction-soft);
+    color: var(--indicator-direction-ink);
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 28px;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1;
+  }
+
+  .content-area .indicator-card-shell--education-reference .indicator-card-shell__insight-marker svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2.25;
+  }
+
+  .content-area .indicator-card-shell--education-reference .indicator-card-shell__insight-item:first-child .indicator-card-shell__insight-value {
+    color: var(--indicator-direction-ink);
+    font-size: var(--font-size-xs);
+  }
+
+  .content-area .indicator-card-shell--education-reference .indicator-card-shell__insight-copy {
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 2px var(--space-1);
+  }
+
+  .content-area .indicator-card-shell--education-reference .indicator-card-shell__insight-copy > span {
+    color: var(--text-soft);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-snug);
+  }
+
+  .content-area .indicator-card-shell--education-reference .indicator-card-shell__footer {
+    min-height: 40px;
+    margin: 0 calc(var(--space-4) * -1) calc(var(--space-4) * -1);
+    padding: var(--space-2) var(--space-4);
+    border-top: var(--border-divider);
+    background: var(--surface-soft);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 24px;
+  }
+
+  .content-area .indicator-card-shell--education-reference .indicator-card-shell__footer > span:not(.indicator-card-shell__action) {
+    width: max-content;
+    justify-self: start;
+    border: var(--border-default);
+    background: var(--surface-card);
+    color: var(--green-deep);
+    font-weight: var(--font-weight-semibold);
+    gap: var(--space-2);
+  }
+
+  .content-area .indicator-card-shell--education-reference .indicator-card-shell__footer-icon {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-width: 2.25;
+    flex: 0 0 16px;
+  }
+
   .content-area .platform-info-card {
     min-width: 0;
     padding: var(--space-5);
@@ -1360,6 +1520,10 @@
     .indicator-card-shell--financial
   ) .indicator-card-shell__value-row strong {
     font-size: var(--font-size-lg);
+  }
+
+  .indicator-card-shell.indicator-card-shell--education-reference .indicator-card-shell__value-row strong {
+    font-size: var(--font-size-2xl);
   }
 }
 
@@ -1488,6 +1652,43 @@
     .indicator-card-shell--financial
   ) .indicator-card-shell__insight {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .content-area .indicator-card-shell.indicator-card-shell--education-reference {
+    min-height: 0;
+    grid-template-columns: minmax(0, 1.45fr) minmax(72px, 0.65fr);
+    grid-template-rows: auto auto minmax(64px, auto) 1px minmax(52px, auto) auto;
+    grid-template-areas:
+      "topline topline"
+      "title title"
+      "value metadata"
+      "divider divider"
+      "insight insight"
+      "footer footer";
+  }
+
+  .content-area .indicator-card-shell--education-reference .indicator-card-shell__description {
+    display: none;
+  }
+
+  .content-area .indicator-card-shell--education-reference .indicator-card-shell__value-row {
+    padding: var(--space-3) var(--space-3) 0 0;
+    border-right: 0;
+  }
+
+  .content-area .indicator-card-shell--education-reference .indicator-card-shell__metadata {
+    padding: var(--space-3) 0 0 var(--space-3);
+    border-top: var(--border-divider);
+    border-left: var(--border-divider);
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .content-area .indicator-card-shell--education-reference .indicator-card-shell__insight {
+    grid-template-columns: minmax(0, 1.45fr) minmax(72px, 0.65fr);
+  }
+
+  .content-area .indicator-card-shell--education-reference .indicator-card-shell__footer {
+    border-top: var(--border-divider);
   }
 }
 

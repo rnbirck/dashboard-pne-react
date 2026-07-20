@@ -1,9 +1,7 @@
 const METADATA_FIELDS = [
   ['definition', 'O que é'],
-  ['measures', 'O que mede'],
   ['calculation', 'Como é calculado'],
   ['financingSource', 'De onde vêm os recursos'],
-  ['relevance', 'Por que é acompanhado'],
   ['referenceRule', 'Regra ou referência'],
   ['legalBasis', 'Base legal'],
   ['methodNote', 'Nota metodológica'],
@@ -15,8 +13,8 @@ export function FinancialIndicatorMetadata({ metadata }) {
   return (
     <section className="financial-indicator-metadata" aria-labelledby="financial-indicator-metadata-title">
       <div className="financial-indicator-metadata__heading">
-        <span className="eyebrow">Contexto do indicador</span>
-        <h3 id="financial-indicator-metadata-title">Como ler este indicador</h3>
+        <span className="eyebrow">Referência técnica</span>
+        <h2 id="financial-indicator-metadata-title">Conceito, cálculo, fonte e base legal</h2>
       </div>
       <dl>
         {METADATA_FIELDS.map(([key, label]) => (

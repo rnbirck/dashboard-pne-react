@@ -1,10 +1,12 @@
 import sys
+from datetime import datetime, timezone
 
 import dash
 import dash_bootstrap_components as dbc
 from dash import ALL, Input, Output, State, callback, ctx, dcc, html
 
-from src.views.pne_shared import _format_metric_value, _tracks_goal
+from src.views.pne_shared import _format_metric_value
+from src.municipal_diagnostic import build_municipal_diagnostic_v2
 
 
 dash.register_page(
@@ -28,12 +30,12 @@ CATEGORY_META = {
         "subtitle": "Acesso e permanência",
         "accent": "#4f46e5",
         "observed": (
-            "O município apresenta desafios de acesso e permanência, com metas "
-            "ainda abaixo do esperado em parte dos indicadores acompanhados."
+            "O tema reúne indicadores de acesso e permanência com estados "
+            "comparáveis e exclusões metodológicas explícitas."
         ),
         "reading": (
-            "A leitura indica necessidade de concentrar esforços nos indicadores "
-            "abaixo da meta, preservando os avanços já alcançados em acesso escolar."
+            "A leitura distingue referências atingidas, lacunas comparáveis e "
+            "indicadores que não participam da ordem provisória."
         ),
     },
     "rendimento": {
@@ -41,12 +43,12 @@ CATEGORY_META = {
         "subtitle": "Aprendizagem e desempenho",
         "accent": "#10b981",
         "observed": (
-            "O município apresenta desafios importantes de aprendizagem e desempenho, "
-            "com necessidade de apoio pedagógico nos indicadores em atenção."
+            "O tema reúne os resultados disponíveis de aprendizagem e desempenho, "
+            "preservando as limitações de cada medida."
         ),
         "reading": (
-            "O maior desafio está em recuperar aprendizagem e elevar resultados de "
-            "alfabetização, desempenho e conclusão escolar nas metas ainda pendentes."
+            "As dimensões incompletas do SAEB e definições pendentes permanecem fora "
+            "da comparação legal global."
         ),
     },
     "corpo_docente": {
@@ -54,12 +56,12 @@ CATEGORY_META = {
         "subtitle": "Profissionais da educação",
         "accent": "#f59e0b",
         "observed": (
-            "O diagnóstico docente aponta a necessidade de acompanhar formação, "
-            "vínculo e valorização dos profissionais da educação básica."
+            "O tema reúne formação, vínculo e valorização dos profissionais da "
+            "educação básica no período disponível."
         ),
         "reading": (
-            "A dimensão docente exige ações voltadas à formação adequada, redução de "
-            "vínculos frágeis e sustentação das condições de trabalho."
+            "Referências mínimas e máximas são avaliadas de acordo com a direção "
+            "registrada no contrato."
         ),
     },
     "infraestrutura": {
@@ -71,8 +73,8 @@ CATEGORY_META = {
             "acessibilidade, climatização e recursos tecnológicos disponíveis nas escolas."
         ),
         "reading": (
-            "A leitura indica que a rede precisa fortalecer condições físicas e digitais "
-            "para sustentar a aprendizagem e a permanência dos estudantes."
+            "Indicadores de presença de recursos representam dimensões parciais e não "
+            "o cumprimento integral das condições legais de oferta."
         ),
     },
     "escolaridade_populacao": {
@@ -84,8 +86,8 @@ CATEGORY_META = {
             "das etapas escolares entre jovens e adultos do município."
         ),
         "reading": (
-            "A dimensão aponta desafios estruturais de escolarização acumulados na "
-            "população e ajuda a orientar políticas de recomposição e continuidade."
+            "Proxies etárias ou universos incompatíveis são apresentados como "
+            "informação, sem distância legal direta."
         ),
     },
 }
@@ -133,8 +135,8 @@ def _get_pne2026_module():
 
 
 def _distance_value(record):
-    distance = record["result"].get("distance")
-    return 0 if distance is None else float(distance)
+    rank = record.get("provisional_rank")
+    return float("inf") if rank is None else int(rank)
 
 
 def _is_attention(record):
@@ -159,6 +161,18 @@ def _load_diagnostic(municipio):
     results = pne2026._calculate_results_for_categories(
         municipio, tuple(DIAGNOSTIC_CATEGORIES)
     )
+    contract = build_municipal_diagnostic_v2(
+        municipality_name=municipio,
+        results=results,
+        generated_at=datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
+    )
+    assessments = {
+        item["indicatorId"]: item for item in contract.get("indicators", [])
+    }
+    attention_ranks = {
+        item["indicatorId"]: item["rank"]
+        for item in contract.get("attentionItems", [])
+    }
     categories = []
 
     for category_key in DIAGNOSTIC_CATEGORIES:
@@ -169,19 +183,29 @@ def _load_diagnostic(municipio):
         indicators = []
         for item in category["items"]:
             result = results.get(item["key"], {})
-            tracks_goal = _tracks_goal(item, result)
-            if result.get("available"):
+            assessment = assessments[item["key"]]
+            tracks_goal = assessment["targetComparisonStatus"] == "eligible"
+            if assessment["rawValue"] is not None:
+                canonical_result = dict(result)
+                canonical_result.update(
+                    {
+                        "atingida": assessment["goalAttained"],
+                        "distance": assessment["favorableDistance"],
+                        "meta": assessment["configuredReference"]["value"],
+                        "direction": assessment["direction"],
+                    }
+                )
                 indicators.append(
                     {
                         "key": item["key"],
                         "label": item["label"],
                         "desc": item["desc"],
                         "item": item,
-                        "result": result,
+                        "result": canonical_result,
                         "tracks_goal": tracks_goal,
-                        "achieved": bool(result.get("atingida"))
-                        if tracks_goal
-                        else False,
+                        "achieved": assessment["goalAttained"] is True,
+                        "provisional_rank": attention_ranks.get(item["key"]),
+                        "exclusion_reasons": assessment["exclusionReasons"],
                     }
                 )
 
@@ -437,59 +461,27 @@ def _detail_column(icon, title, lines, *, as_list=False):
 
 
 def _challenge_rows(categories):
-    rows = []
     attention = []
     for category in categories:
         for record in category["attention"]:
-            attention.append({**record, "category_key": category["key"]})
-    templates = {
-        "atendimento": [
-            "Ampliar a cobertura em {label}.",
-            "Reduzir desigualdades de acesso em {label}.",
-            "Priorizar territórios com menor resultado em {label}.",
-        ],
-        "rendimento": [
-            "Reforçar a aprendizagem em {label}.",
-            "Acompanhar escolas com menor desempenho em {label}.",
-            "Definir metas intermediárias para {label}.",
-        ],
-        "corpo_docente": [
-            "Fortalecer políticas docentes para {label}.",
-            "Mapear escolas com maior lacuna em {label}.",
-            "Apoiar formação e gestão de equipes em {label}.",
-        ],
-        "infraestrutura": [
-            "Priorizar investimentos em {label}.",
-            "Mapear escolas com maior necessidade em {label}.",
-            "Integrar manutenção e planejamento para {label}.",
-        ],
-        "escolaridade_populacao": [
-            "Ampliar estratégias para {label}.",
-            "Articular busca ativa e continuidade de estudos em {label}.",
-            "Acompanhar desigualdades territoriais em {label}.",
-        ],
-    }
-    for index, record in enumerate(sorted(attention, key=_distance_value)[:4]):
-        options = templates.get(record["category_key"], templates["atendimento"])
-        rows.append(options[index % len(options)].format(label=record["label"]))
-    return rows or ["Manter o acompanhamento das metas já atingidas."]
+            attention.append(record)
+    rows = [
+        f"Lacuna comparável no critério provisório: {record['label']}."
+        for record in sorted(attention, key=_distance_value)[:4]
+    ]
+    return rows or ["Nenhuma lacuna comparável no critério provisório atual."]
 
 
 def _positive_rows(categories):
-    rows = []
     positives = []
     for category in categories:
         positives.extend(category["positive"])
-    templates = [
-        "Meta alcançada: {label}.",
-        "Resultado positivo em {label}.",
-        "Avanço consolidado no indicador {label}.",
-        "Referência atendida em {label}.",
+    rows = [
+        f"Referência configurada atendida: {record['label']}."
+        for record in positives[:4]
     ]
-    for index, record in enumerate(positives[:4]):
-        rows.append(templates[index % len(templates)].format(label=record["label"]))
     return rows or [
-        "Município com dados suficientes para orientar o acompanhamento das metas."
+        "Nenhuma referência configurada atendida entre os indicadores comparáveis."
     ]
 
 

@@ -220,8 +220,10 @@ fontes ou conteúdo metodológico para resolver uma necessidade visual.
 A ordem atual é um contrato de cascata. `index.css` carrega os tokens; `App.tsx`
 carrega `App.css`, gráficos, PNE, plataforma, Financeiro e navegação, nessa
 ordem; `main.jsx` carrega `institutional-refresh.css` por último. O CSS de
-Educação é carregado com o chunk da página. Alterar essa ordem exige revisão de
-diff visual, catálogo, E2E e regressão pública.
+Educação é carregado com o chunk da página. Se o usuário solicitar validação
+completa para uma alteração nessa ordem, a cobertura recomendada inclui diff
+visual, catálogo, E2E e regressão pública; o risco não ativa esses comandos por
+si só.
 
 ## 13. Inventário operacional
 
@@ -265,7 +267,11 @@ Não copie um bloco compartilhado para o CSS de domínio. Se a exceção exigir
 mais propriedades que a anatomia base, documente por que ela não é uma variante
 reutilizável antes de implementá-la.
 
-## 15. Decisão rápida de validação
+## 15. Matriz de validação sob demanda
+
+A execução local pelo Codex segue exclusivamente os modos do `AGENTS.md` da
+raiz. A matriz abaixo ajuda a escolher a menor cobertura somente depois de um
+pedido explícito de validação:
 
 ```text
 Alteração em componente isolado:
@@ -281,8 +287,9 @@ Alteração em cálculo ou indicador:
 → verify:indicator e testes de domínio.
 ```
 
-Execute também `npm run typecheck`, `npm run lint`, `npm run build` e
-`npm run test:ui-architecture` para qualquer alteração estrutural de UI.
+Em alteração estrutural de UI, `npm run typecheck`, `npm run lint`,
+`npm run build` e `npm run test:ui-architecture` ficam reservados à validação
+explicitamente solicitada; o risco estrutural não autoriza execução automática.
 Baseline só pode mudar quando a diferença visual for intencional, necessária,
 documentada e revisada. Instabilidade, fonte ausente, foco acidental, loading,
 dimensão diferente ou erro de console devem ser corrigidos, não aceitos.
@@ -299,7 +306,7 @@ dimensão diferente ou erro de console devem ser corrigidos, não aceitos.
 - alterar dado, cálculo, escala, filtro, rota ou conteúdo para resolver layout;
 - atualizar baseline por conveniência.
 
-Antes da entrega, confirme:
+Antes da entrega, preserve por implementação e inspeção dos arquivos afetados:
 
 - componente ou variante equivalente reutilizado;
 - desktop, notebook e celular sem overflow global;
@@ -308,4 +315,6 @@ Antes da entrega, confirme:
 - zero distinto de ausência e estado não dependente apenas de cor;
 - textos longos, valores grandes, loading, vazio e erro legíveis;
 - catálogo isolado sem dados municipais e ausente do build público;
-- suíte proporcional ao risco e `git diff --check` aprovados.
+
+Testes executáveis, inspeções em viewports, build e verificações de Git dependem
+do modo de validação explicitamente solicitado conforme `AGENTS.md`.

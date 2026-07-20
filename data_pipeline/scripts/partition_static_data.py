@@ -316,7 +316,195 @@ def extract_rankings(payload: dict, municipio: str) -> dict:
 
 
 def extract_diagnostico(payload: dict, municipio: str) -> dict:
-    return payload.get("municipios", {}).get(municipio, {})
+    municipal = payload.get("municipios", {}).get(municipio, {})
+    return municipal.get("diagnostico", municipal)
+
+
+def extract_diagnostico_v2(payload: dict, municipio: str) -> dict:
+    return payload.get("municipios", {}).get(municipio, {}).get("diagnostico_v2", {})
+
+
+def validate_diagnostic_payload(payloads: dict[str, dict], municipios: list[str]) -> None:
+    diagnostic_payload = payloads["diagnostico"]
+    municipal_contracts = diagnostic_payload.get("municipios", {})
+    problems: list[str] = []
+    if len(municipios) != EXPECTED_MUNICIPALITIES:
+        problems.append(
+            f"esperados {EXPECTED_MUNICIPALITIES} municípios; encontrados {len(municipios)}"
+        )
+    if len(municipal_contracts) != len(municipios):
+        problems.append(
+            f"diagnóstico contém {len(municipal_contracts)} contratos para {len(municipios)} municípios"
+        )
+
+    for municipio in municipios:
+        contract = extract_diagnostico_v2(diagnostic_payload, municipio)
+        indicators = contract.get("indicators", [])
+        indicator_ids = [item.get("indicatorId") for item in indicators]
+        indicator_lookup = {item.get("indicatorId"): item for item in indicators}
+        if contract.get("schemaVersion") != "municipal-diagnostic-v2":
+            problems.append(f"schema incompatível em {municipio}")
+            break
+        if len(indicators) != 49 or len(set(indicator_ids)) != 49:
+            problems.append(f"contrato sem 49 indicadores únicos em {municipio}")
+            break
+        for indicator in indicators:
+            null_reasons = indicator.get("nullReasons", {})
+            for field, value in indicator.items():
+                if value is None and field not in null_reasons:
+                    problems.append(
+                        f"null sem razão em {municipio}/{indicator.get('indicatorId')}/{field}"
+                    )
+                    break
+            configured_reference = indicator.get("configuredReference", {})
+            for field, value in configured_reference.items():
+                path = f"configuredReference.{field}"
+                if value is None and path not in null_reasons:
+                    problems.append(
+                        f"null sem razão em {municipio}/{indicator.get('indicatorId')}/{path}"
+                    )
+                    break
+            benchmarks = indicator.get("benchmarks", {})
+            for benchmark_name in ("state", "municipalDistribution"):
+                benchmark = benchmarks.get(benchmark_name)
+                if not isinstance(benchmark, dict):
+                    problems.append(
+                        f"benchmark ausente em {municipio}/{indicator.get('indicatorId')}/{benchmark_name}"
+                    )
+                    break
+                null_reason = benchmark.get("reason") or benchmark.get("directionReason")
+                if any(value is None for key, value in benchmark.items() if key not in {"reason", "directionReason"}) and not null_reason:
+                    problems.append(
+                        f"null de benchmark sem razão em {municipio}/{indicator.get('indicatorId')}/{benchmark_name}"
+                    )
+                    break
+            if indicator.get("priorityScore") is not None:
+                problems.append(
+                    f"priorityScore publicado em {municipio}/{indicator.get('indicatorId')}"
+                )
+                break
+            if (
+                indicator.get("targetComparisonStatus")
+                == "methodologically_incompatible"
+                and indicator.get("goalAttained") is not None
+            ):
+                problems.append(
+                    f"incompatível com cumprimento definido em {municipio}/{indicator.get('indicatorId')}"
+                )
+                break
+            if problems:
+                break
+        if problems:
+            break
+
+        for attention_item in contract.get("attentionItems", []):
+            indicator = indicator_lookup.get(attention_item.get("indicatorId"))
+            if not indicator:
+                problems.append(f"referência de atenção quebrada em {municipio}")
+                break
+            if (
+                indicator.get("legalCorrespondence") in {"proxy", "informational"}
+                or indicator.get("targetComparisonStatus") != "eligible"
+                or indicator.get("valueDomainStatus") != "within_domain"
+            ):
+                problems.append(
+                    f"indicador inelegível na atenção em {municipio}/{indicator.get('indicatorId')}"
+                )
+                break
+        if problems:
+            break
+
+        for collection_name in ("preservedItems", "excludedItems"):
+            for reference in contract.get(collection_name, []):
+                if reference.get("indicatorId") not in indicator_lookup:
+                    problems.append(
+                        f"referência quebrada em {municipio}/{collection_name}"
+                    )
+                    break
+        if problems:
+            break
+
+        attention_ids = [
+            reference.get("indicatorId")
+            for reference in contract.get("attentionItems", [])
+        ]
+        if len(attention_ids) != len(set(attention_ids)):
+            problems.append(f"atenção contém referências duplicadas em {municipio}")
+            break
+
+        decision_summary = contract.get("decisionSummary", {})
+        decision_collections = {
+            "municipalActionItems": decision_summary.get("municipalActionItems", []),
+            "coordinationItems": decision_summary.get("coordinationItems", []),
+            "investigationItems": decision_summary.get("investigationItems", []),
+            "monitoringItems": decision_summary.get("monitoringItems", []),
+            "preservationItems": decision_summary.get("preservationItems", []),
+        }
+        if decision_summary.get("selectionMethodologyVersion") != "municipal-decision-summary-p3c-v2":
+            problems.append(f"síntese decisória ausente em {municipio}")
+            break
+        if len(decision_collections["municipalActionItems"]) > 3:
+            problems.append(f"mais de três ações municipais em {municipio}")
+            break
+        if len(decision_collections["coordinationItems"]) > 2:
+            problems.append(f"mais de duas pactuações em {municipio}")
+            break
+        selected_ids = [
+            reference.get("indicatorId")
+            for references in decision_collections.values()
+            for reference in references
+        ]
+        if len(selected_ids) != len(set(selected_ids)):
+            problems.append(f"síntese decisória duplicada em {municipio}")
+            break
+        for reference in decision_collections["investigationItems"]:
+            if "selectionPosition" in reference:
+                problems.append(f"investigação ordinal em {municipio}")
+                break
+        for reference in decision_collections["municipalActionItems"]:
+            indicator = indicator_lookup.get(reference.get("indicatorId"), {})
+            if (
+                indicator.get("evidenceLevel") not in {"high", "medium"}
+                or indicator.get("governance", {}).get("classification")
+                in {"state_led", "federal_led", "territorial", "informational"}
+            ):
+                problems.append(
+                    f"ação municipal inelegível em {municipio}/{reference.get('indicatorId')}"
+                )
+                break
+        if problems:
+            break
+
+        state_summary = contract.get("stateBenchmarkSummary", {})
+        if state_summary.get("analyzedCount") != contract.get("summary", {}).get("validLegalComparisons"):
+            problems.append(f"resumo estadual fora do universo analisado em {municipio}")
+            break
+        primary_total = sum(
+            int(state_summary.get(key, 0))
+            for key in ("betterCount", "worseCount", "equivalentCount", "unavailableCount")
+        )
+        if primary_total != int(state_summary.get("analyzedCount", -1)):
+            problems.append(f"totais estaduais inconsistentes em {municipio}")
+            break
+        if any(
+            not isinstance(indicator.get(field), dict)
+            for indicator in indicators
+            for field in (
+                "trajectory",
+                "governance",
+                "municipalExposure",
+                "similarMunicipalities",
+                "evidence",
+                "decisionReading",
+            )
+        ):
+            problems.append(f"extensÃ£o aprofundada ausente em {municipio}")
+            break
+
+    if problems:
+        raise RuntimeError(
+            "[partition] Contratos diagnostico_v2 inválidos: " + "; ".join(problems)
+        )
 
 
 def extract_indicator_details(payload: dict, municipio: str) -> dict:
@@ -375,6 +563,9 @@ def build_municipio_payload(
     education_attendance = extract_education_attendance(
         payloads["education_attendance"], municipio
     )
+    diagnostico_v2 = build_partitioned_diagnostic_contract(
+        payloads, municipio, id_municipio
+    )
     payload = {
         "id_municipio": id_municipio,
         "municipio": municipio,
@@ -386,7 +577,14 @@ def build_municipio_payload(
         "pne_2026_2036": {
             "indicadores": extract_results(payloads["pne_2026_2036_indicadores"], municipio),
             "rankings": extract_rankings(payloads["pne_2026_2036_rankings"], municipio),
-            "diagnostico": extract_diagnostico(payloads["diagnostico"], municipio),
+            "diagnostico_ref": {
+                "status": "available" if diagnostico_v2 else "unavailable",
+                "schemaVersion": diagnostico_v2.get("schemaVersion") if diagnostico_v2 else None,
+                "methodologyVersion": diagnostico_v2.get("methodologyVersion") if diagnostico_v2 else None,
+                "generatedAt": diagnostico_v2.get("generatedAt") if diagnostico_v2 else None,
+                "path": f"/data/municipios/{slug}/diagnostico.json",
+                "legacyCompatibility": "aggregate_only",
+            },
             "projecoes": projection_data,
             "cenarios_planejamento": planning_scenarios,
         },
@@ -399,6 +597,53 @@ def build_municipio_payload(
     if pnate_data is not None:
         payload.setdefault("blocos", {})["pnate"] = pnate_data
     return payload
+
+
+def build_partitioned_diagnostic_contract(
+    payloads: dict[str, dict],
+    municipio: str,
+    id_municipio: str | None,
+) -> dict:
+    diagnostico_v2 = extract_diagnostico_v2(payloads["diagnostico"], municipio)
+    if not diagnostico_v2:
+        return {}
+    contract = dict(diagnostico_v2)
+    metadata = dict(contract.get("generationMetadata") or {})
+    contract["municipalityId"] = str(id_municipio or contract.get("municipalityId"))
+    metadata["municipalityIdentityStatus"] = (
+        "official_id" if id_municipio else "name_fallback_pending_partition"
+    )
+    metadata["deliveryMode"] = "route_lazy_static_json"
+    metadata["legacyCompatibility"] = "aggregate_export_only"
+    contract["generationMetadata"] = metadata
+    if "trajectoryScenarioInventory" not in contract:
+        projection_data = extract_projections(payloads["projecoes"], municipio)
+        scenario_data = extract_planning_scenarios(
+            payloads["planning_scenarios"], municipio
+        )
+        contract["trajectoryScenarioInventory"] = {
+            "attendance": [
+                {
+                    "indicatorId": indicator_id,
+                    "scenarioType": "trend_projection",
+                    "status": (
+                        "available"
+                        if scenario.get("available") is True
+                        else "not_available"
+                    ),
+                }
+                for indicator_id, scenario in projection_data.items()
+            ],
+            "maintenance": [
+                {
+                    "indicatorId": indicator_id,
+                    "scenarioType": "component_maintenance",
+                    "status": str(scenario.get("status") or "not_available"),
+                }
+                for indicator_id, scenario in scenario_data.items()
+            ],
+        }
+    return contract
 
 
 def format_size(bytes_count: int) -> str:
@@ -448,6 +693,7 @@ def main() -> int:
     validate_fundeb_payload(payloads, municipios)
     validate_pnate_payload(payloads, municipios)
     validate_planning_scenarios_payload(payloads, municipios)
+    validate_diagnostic_payload(payloads, municipios)
     slug_map = unique_slugs(municipios)
     id_map = {
         municipio: extract_fundeb_id(payloads["fundeb"], municipio)
@@ -518,9 +764,18 @@ def main() -> int:
                 slug,
                 id_municipio,
             )
+            diagnostic_contract = build_partitioned_diagnostic_contract(
+                payloads, municipio, id_municipio
+            )
             write_json(
                 OUTPUT_DIR / "municipios" / slug / "index.json",
                 municipio_payload,
+                stats,
+                expected_paths,
+            )
+            write_json(
+                OUTPUT_DIR / "municipios" / slug / "diagnostico.json",
+                diagnostic_contract,
                 stats,
                 expected_paths,
             )
@@ -534,6 +789,12 @@ def main() -> int:
                 write_json(
                     OUTPUT_DIR / "municipios" / id_municipio / "index.json",
                     municipio_payload,
+                    stats,
+                    expected_paths,
+                )
+                write_json(
+                    OUTPUT_DIR / "municipios" / id_municipio / "diagnostico.json",
+                    diagnostic_contract,
                     stats,
                     expected_paths,
                 )

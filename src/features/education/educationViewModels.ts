@@ -285,6 +285,129 @@ function getContextTrendStatus(series, currentValue, currentYear) {
   return { detail: `Sem variação${period}`, label: 'Estabilidade', tone: 'muted' }
 }
 
+function signedOverviewValue(value, maximumFractionDigits = 1) {
+  const numericValue = Number(value)
+  if (!Number.isFinite(numericValue)) return null
+  const formatted = Math.abs(numericValue).toLocaleString('pt-BR', {
+    minimumFractionDigits: maximumFractionDigits,
+    maximumFractionDigits,
+  })
+  if (numericValue > 0) return `+${formatted}`
+  if (numericValue < 0) return `−${formatted}`
+  return formatted
+}
+
+function overviewSeriesContext(series, valueKey, currentYear) {
+  const points = normalizeYearSeries(series, valueKey)
+    .map((point) => ({ year: Number(point.ano), value: Number(point[valueKey]) }))
+    .filter((point) => Number.isFinite(point.year) && Number.isFinite(point.value))
+
+  if (!points.length) return { points, current: null, previous: null }
+  const currentIndex = currentYear == null
+    ? points.length - 1
+    : points.findIndex((point) => point.year === Number(currentYear))
+  if (currentIndex < 0) return { points, current: null, previous: null }
+  return {
+    points,
+    current: points[currentIndex],
+    previous: currentIndex > 0 ? points[currentIndex - 1] : null,
+  }
+}
+
+function overviewComparisonText(card, current, previous) {
+  const difference = current.value - previous.value
+
+  if (card.comparison === 'percentage') {
+    if (previous.value === 0) return `Sem variação percentual calculável sobre ${previous.year}`
+    const percentage = signedOverviewValue((difference / Math.abs(previous.value)) * 100)
+    return percentage ? `${percentage}% em relação a ${previous.year} · ${formatNumber(previous.value)}` : null
+  }
+
+  if (card.comparison === 'count') {
+    if (difference === 0) return `Mesmo total de ${card.countLabel}s de ${previous.year}`
+    const amount = formatNumber(Math.abs(difference))
+    const direction = difference > 0 ? 'a mais' : 'a menos'
+    return `${amount} ${card.countLabel}${Math.abs(difference) === 1 ? '' : 's'} ${direction} que em ${previous.year}`
+  }
+
+  if (card.comparison === 'ratio') {
+    if (difference === 0) return `Sem diferença na média desde ${previous.year}`
+    const ratio = signedOverviewValue(difference)
+    return ratio ? `${ratio} aluno por turma desde ${previous.year}` : null
+  }
+
+  if (card.comparison === 'percentage-points') {
+    const points = signedOverviewValue(difference)
+    return points ? `${points} p.p. em relação a ${previous.year} · ${formatPercent(previous.value)}` : null
+  }
+
+  if (card.comparison === 'score') {
+    if (difference === 0) return `Mesmo resultado da edição de ${previous.year}`
+    const score = signedOverviewValue(difference)
+    return score ? `${score} ponto desde ${previous.year}` : null
+  }
+
+  return null
+}
+
+function buildOverviewInsight(card) {
+  const numericValue = Number(card.currentValue)
+  const hasCurrentValue = !isMissing(card.currentValue) && Number.isFinite(numericValue)
+  const context = overviewSeriesContext(card.series, card.valueKey, card.year)
+  const current = context.current
+
+  if (!hasCurrentValue) {
+    return card.year ? `Sem valor publicado em ${card.year}` : 'Série sem valor publicado'
+  }
+
+  if (card.zeroMessage && numericValue === 0) return card.zeroMessage(card.year)
+
+  if (current && context.previous) {
+    const comparison = overviewComparisonText(card, current, context.previous)
+    if (comparison) return comparison
+  }
+
+  if (typeof card.composition === 'function') {
+    const composition = card.composition()
+    if (composition) return composition
+  }
+
+  if (context.points.length === 1) {
+    return card.comparison === 'score'
+      ? `Indicador publicado apenas em ${context.points[0].year}`
+      : `Série disponível somente para ${context.points[0].year}`
+  }
+
+  return 'Sem valor comparável no período anterior'
+}
+
+function buildEducationOverviewCards({ alunosTurma, aprend, fluxo, mat, oferta, preferredIdeb, rede, turmas }) {
+  const matResumo = mat.resumo_ultimo_ano ?? {}
+  const redeResumo = rede.resumo_ultimo_ano ?? {}
+  const alunosTurmaResumo = alunosTurma.resumo_ultimo_ano ?? {}
+  const turmasResumo = turmas.resumo_ultimo_ano ?? {}
+  const fluxoResumo = fluxo.resumo_ultimo_ano ?? {}
+  const ofertaResumo = oferta.resumo_ultimo_ano ?? {}
+  const preferredIdebSeries = preferredIdeb?.etapa ? aprend.series?.ideb?.[preferredIdeb.etapa] : []
+
+  const cards = [
+    { key: 'matriculas', icon: 'enrollment', label: 'Matrículas', currentValue: matResumo.total_matriculas, value: formatNumber(matResumo.total_matriculas), year: mat.ultimo_ano, series: mat.series?.total, valueKey: 'valor', comparison: 'percentage' },
+    { key: 'escolas', icon: 'school', label: 'Escolas', currentValue: redeResumo.total_escolas, value: formatNumber(redeResumo.total_escolas), year: rede.ultimo_ano, series: rede.series?.total, valueKey: 'valor', comparison: 'count', countLabel: 'escola', composition: () => {
+      const publicCount = Number(redeResumo.escolas_publica)
+      const privateCount = Number(redeResumo.escolas_privada)
+      if (!Number.isFinite(publicCount) || !Number.isFinite(privateCount)) return null
+      return `${formatNumber(publicCount)} públicas · ${formatNumber(privateCount)} privadas`
+    } },
+    { key: 'docentes', icon: 'teacher', label: 'Docentes', currentValue: turmasResumo.docentes, value: formatNumber(turmasResumo.docentes), year: turmas.ultimo_ano, series: turmas.series?.total, valueKey: 'docentes', comparison: 'count', countLabel: 'docente' },
+    { key: 'alunos-turma', icon: 'classroom', label: 'Alunos/turma — ensino fundamental', currentValue: alunosTurmaResumo.alunos_por_turma_fundamental, value: formatRatio(alunosTurmaResumo.alunos_por_turma_fundamental), year: alunosTurma.ultimo_ano, series: alunosTurma.series?.por_etapa?.fundamental, valueKey: 'alunos_por_turma', comparison: 'ratio' },
+    { key: 'aprovacao', icon: 'approval', label: 'Aprovação', currentValue: fluxoResumo.taxa_aprovacao, value: formatPercent(fluxoResumo.taxa_aprovacao), year: fluxo.ultimo_ano, series: fluxo.series?.por_etapa?.fundamental, valueKey: 'taxa_aprovacao', comparison: 'percentage-points' },
+    { key: 'ideb', icon: 'ideb', label: 'IDEB', currentValue: preferredIdeb?.ideb, value: preferredIdeb ? formatValue(preferredIdeb.ideb) : EM, year: preferredIdeb?.ano, series: preferredIdebSeries, valueKey: 'ideb', comparison: 'score' },
+    { key: 'matriculas-tecnicas', icon: 'technical', label: 'Matrículas técnicas', currentValue: ofertaResumo.total_matriculas_tecnicas, value: formatNumber(ofertaResumo.total_matriculas_tecnicas), year: oferta.ultimo_ano, series: oferta.series?.total, valueKey: 'valor', comparison: 'count', countLabel: 'matrícula', zeroMessage: (year) => year ? `Sem matrículas registradas em ${year}` : 'Série publicada com valor zero' },
+  ]
+
+  return cards.map((card) => ({ ...card, detail: buildOverviewInsight(card) }))
+}
+
 export function buildEducationModel(blocos) {
   const mat = blocos.matriculas ?? {}
   const rede = blocos.rede_escolar ?? {}
@@ -293,13 +416,7 @@ export function buildEducationModel(blocos) {
   const fluxo = blocos.fluxo ?? {}
   const aprend = blocos.aprendizagem ?? {}
   const oferta = blocos.oferta_tecnica ?? {}
-  const matResumo = mat.resumo_ultimo_ano ?? {}
-  const redeResumo = rede.resumo_ultimo_ano ?? {}
-  const alunosTurmaResumo = alunosTurma.resumo_ultimo_ano ?? {}
-  const turmasResumo = turmas.resumo_ultimo_ano ?? {}
-  const fluxoResumo = fluxo.resumo_ultimo_ano ?? {}
   const aprendResumo = aprend.resumo_ultimo_ano ?? {}
-  const ofertaResumo = oferta.resumo_ultimo_ano ?? {}
   const preferredIdeb = getPreferredIdeb(aprendResumo)
 
   const items = [
@@ -323,15 +440,7 @@ export function buildEducationModel(blocos) {
   ]
 
   return {
-    overview: [
-      { label: 'Matrículas', value: formatNumber(matResumo.total_matriculas), year: mat.ultimo_ano },
-      { label: 'Escolas', value: formatNumber(redeResumo.total_escolas), year: rede.ultimo_ano },
-      { label: 'Docentes', value: formatNumber(turmasResumo.docentes), year: turmas.ultimo_ano },
-      { label: 'Alunos/turma (fund.)', value: formatRatio(alunosTurmaResumo.alunos_por_turma_fundamental), year: alunosTurma.ultimo_ano },
-      { label: 'Aprovação', value: formatPercent(fluxoResumo.taxa_aprovacao), year: fluxo.ultimo_ano, tone: 'success' },
-      { label: 'IDEB', value: preferredIdeb ? formatValue(preferredIdeb.ideb) : EM, year: preferredIdeb?.ano },
-      { label: 'Matrículas técnicas', value: formatNumber(ofertaResumo.total_matriculas_tecnicas), year: oferta.ultimo_ano },
-    ],
+    overview: buildEducationOverviewCards({ alunosTurma, aprend, fluxo, mat, oferta, preferredIdeb, rede, turmas }),
     items,
     themes,
   }
@@ -454,7 +563,7 @@ function buildAlunosTurmaIndicators(alunosTurma) {
       ...base,
       key: `alunos-turma-${stageKey}`,
       label: `Alunos por turma — ${etapaLabel(stageKey)}`,
-      description: `Média oficial de alunos por turma em ${etapaLabel(stageKey).toLocaleLowerCase('pt-BR')}. Use o filtro para trocar total, ano ou série.`,
+      description: `Média oficial de alunos por turma em ${etapaLabel(stageKey).toLocaleLowerCase('pt-BR')}.`,
       categories: [FILTER_KEYS[stageKey] ?? FILTER_KEYS.todos],
       stageKey,
       stageLabel: etapaLabel(stageKey),

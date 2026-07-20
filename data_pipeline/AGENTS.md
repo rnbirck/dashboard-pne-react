@@ -14,7 +14,11 @@
 
 Procure a chave em `src/views/pne_2014_2024.py` ou `src/views/pne_2026_2036.py` com `rg '"<chave>"' data_pipeline/src/views`. A fórmula está no `compute` do item ou no cálculo em lote correspondente; os metadados ficam no mesmo catálogo. Não altere UI, componentes React ou estilos em tarefas de indicador.
 
-## Fluxos de validação
+## Fluxos de validação sob demanda
+
+Estes comandos permanecem disponíveis, mas a execução pelo Codex segue os modos
+do `AGENTS.md` da raiz e depende de pedido explícito, inclusive para mudanças de
+cálculo, pipeline ou dados compartilhados.
 
 Rápido — um município e um ou mais indicadores; grava somente em `export/debug` e não particiona, sincroniza nem faz build:
 
@@ -28,13 +32,18 @@ Intermediário — atualiza todos os dados e valida sem build:
 npm run update:data:skip-build -- --profile
 ```
 
-Completo — execute apenas ao final, depois das verificações focadas:
+Completo — quando a validação completa for explicitamente solicitada, execute
+uma vez ao final, depois das verificações focadas pedidas:
 
 ```powershell
 npm run update:data -- --profile
 ```
 
-Para mudanças de cálculo, no mínimo execute o comando rápido, os testes Python relacionados em `data_pipeline/tests`, a comparação semântica do indicador selecionado e `npm run lint`. A atualização completa e o build ficam para a validação final; não os repita durante as tentativas.
+Para mudanças de cálculo, o comando rápido, os testes Python relacionados em
+`data_pipeline/tests`, a comparação semântica do indicador e `npm run lint` são
+opções de validação, não etapas automáticas. No modo rápido, implemente sem
+executá-los e informe que a área compartilhada recomenda validação completa ao
+encerrar o lote.
 
 ## Limites conhecidos do caminho rápido
 

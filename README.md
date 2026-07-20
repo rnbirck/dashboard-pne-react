@@ -15,6 +15,10 @@ O Vite abre a aplicacao em `http://127.0.0.1:5173/` ou na proxima porta livre.
 
 ## Comandos disponiveis
 
+Os comandos abaixo permanecem disponíveis sob demanda. Para trabalho local pelo
+Codex, a execução segue os modos do `AGENTS.md`: alterações comuns não disparam
+validações; validação rápida e validação completa exigem pedido explícito.
+
 ```powershell
 npm run dev
 npm run build

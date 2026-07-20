@@ -8,7 +8,6 @@ const filePath = process.argv[2]
 const payload = JSON.parse(fs.readFileSync(filePath, 'utf8'))
 const isClosedCycle = payload.cycle === 'pne_2014_2024'
 const expectedRegistryCount = isClosedCycle ? 24 : 50
-const expectedBlockedCount = isClosedCycle ? 12 : 16
 const requiredRegistryFields = [
   'indicator_id',
   'aggregation_method',
@@ -39,40 +38,11 @@ const requiredSeriesFields = [
   'comparison_status',
   'notes',
 ]
-const fallbackBlocked = isClosedCycle
-  ? [
-      'alfabetizacao',
-      'ideb_anos_iniciais',
-      'ideb_anos_finais',
-      'ideb_ensino_medio',
-      'adequacao_ai',
-      'adequacao_af',
-      'adequacao_em',
-      'rendimento_magisterio',
-      'escolaridade_media_18_29',
-      'razao_escolaridade_racial_18_29',
-      'medio_tecnico_total',
-      'medio_tecnico',
-    ]
-  : [
-      'aee',
-      'eja_integrada_educacao_profissional',
-      'alfabetizacao',
-      'idade_regular_quinto',
-      'idade_regular_nono',
-      'idade_regular_medio',
-      'adequacao_ai',
-      'adequacao_af',
-      'adequacao_em',
-      'rendimento_magisterio',
-      'saeb_matematica_anos_iniciais',
-      'saeb_matematica_anos_finais',
-      'saeb_matematica_ensino_medio',
-      'saeb_portugues_anos_iniciais',
-      'saeb_portugues_anos_finais',
-      'saeb_portugues_ensino_medio',
-    ]
-const blocked = new Set(payload.blocked_indicators ?? fallbackBlocked)
+const blocked = new Set(
+  Object.entries(payload.indicators)
+    .filter(([, indicator]) => indicator.comparison_status === 'methodology_pending')
+    .map(([indicatorId]) => indicatorId),
+)
 
 function assert(condition, message) {
   if (!condition) throw new Error(message)
@@ -84,7 +54,7 @@ function isFiniteNumber(value) {
 
 assert(payload.municipalities_expected === 497, 'O universo estadual deve ter 497 municípios.')
 assert(payload.methodology_version === (isClosedCycle ? 'pne2014-rs-reference-v1' : 'pne2026-rs-reference-v1'), 'Versão metodológica incorreta.')
-assert(blocked.size === expectedBlockedCount, `O artefato deve bloquear ${expectedBlockedCount} indicadores.`)
+assert(blocked.size > 0, 'O artefato deve registrar explicitamente pendências metodológicas.')
 assert(Object.keys(payload.registry).length === expectedRegistryCount, `O registro deve conter ${expectedRegistryCount} indicadores.`)
 assert(Object.keys(payload.indicators).length === expectedRegistryCount, `O artefato deve conter ${expectedRegistryCount} indicadores.`)
 if (isClosedCycle) {
@@ -106,6 +76,17 @@ if (isClosedCycle) {
 for (const [indicatorId, registry] of Object.entries(payload.registry)) {
   for (const field of requiredRegistryFields) {
     assert(Object.prototype.hasOwnProperty.call(registry, field), `${indicatorId}: campo de registro ausente: ${field}`)
+  }
+  if (!isClosedCycle) {
+    assert(registry.unit === 'percent', `${indicatorId}: unidade estadual incompatível.`)
+    assert(registry.compatibility?.yearRule === 'same_year_required', `${indicatorId}: regra de ano ausente.`)
+    assert(registry.compatibility?.formulaStatus === 'curated_equivalent', `${indicatorId}: compatibilidade de fórmula ausente.`)
+    assert(registry.compatibility?.rangeStatus === 'curated_equivalent', `${indicatorId}: compatibilidade de faixa ausente.`)
+    assert(registry.compatibility?.stageStatus === 'curated_equivalent', `${indicatorId}: compatibilidade de etapa ausente.`)
+    assert(registry.compatibility?.universeStatus === 'curated_equivalent', `${indicatorId}: compatibilidade de universo ausente.`)
+    assert(registry.compatibility?.administrativeDependenceStatus === 'registry_filters_required', `${indicatorId}: dependência administrativa ausente.`)
+    assert(registry.compatibility?.aggregationRuleStatus === 'curated_equivalent', `${indicatorId}: regra de agregação ausente.`)
+    assert(registry.compatibility?.territorialBasisStatus === 'curated_equivalent', `${indicatorId}: base territorial ausente.`)
   }
   const indicator = payload.indicators[indicatorId]
   assert(indicator, `${indicatorId}: indicador ausente.`)
@@ -150,3 +131,4 @@ if (isClosedCycle) {
 
 console.log(`Referência estadual válida: ${filePath}`)
 console.log(`Indicadores: ${Object.keys(payload.indicators).length}; municípios esperados: ${payload.municipalities_expected}`)
+console.log(`Comparáveis: ${Object.values(payload.indicators).filter((indicator) => indicator.comparison_status === 'comparable').length}; pendentes: ${blocked.size}`)

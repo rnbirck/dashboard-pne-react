@@ -242,6 +242,10 @@ def main() -> int:
     if args.profile:
         export_command.append("--profile")
     partition_command = [PYTHON, "data_pipeline/scripts/partition_static_data.py"]
+    inequality_pilot_command = [
+        PYTHON,
+        "data_pipeline/scripts/refresh_municipal_inequality_pilot.py",
+    ]
     validate_command = [NPM, "run", "validate:details"]
     build_command = [NPM, "run", "build"]
 
@@ -252,7 +256,7 @@ def main() -> int:
         run_command("validate", validate_command, results)
         print_summary(
             results,
-            ["export", "partition", "sync", "build"],
+            ["export", "partition", "sync", "inequality-pilot", "build"],
             validate_ok=True,
             build_ok=None,
             profile=args.profile,
@@ -269,6 +273,8 @@ def main() -> int:
         planned_commands.append(("export", export_command))
     if run_partition:
         planned_commands.append(("partition", partition_command))
+    if run_export or run_partition:
+        planned_commands.append(("inequality-pilot", inequality_pilot_command))
     planned_commands.append(("validate", validate_command))
 
     if args.dry_run:
@@ -288,6 +294,11 @@ def main() -> int:
         sync_partitioned_to_public(results)
     else:
         skipped.extend(["partition", "sync"])
+
+    if run_export or run_partition:
+        run_command("inequality-pilot", inequality_pilot_command, results)
+    else:
+        skipped.append("inequality-pilot")
 
     run_command("validate", validate_command, results)
     validate_ok = True

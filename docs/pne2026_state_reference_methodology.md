@@ -28,6 +28,9 @@ entrou no denominador, conforme o indicador.
 - `data_pipeline/src/views/pne_shared.py`: cálculo municipal comum também deixa de preencher razão inválida com zero.
 - `data_pipeline/scripts/export_static_data.py`: gera `pne_2026_2036/referencia_estadual.json` sobre o universo completo do RS.
 - `data_pipeline/scripts/partition_static_data.py`: copia o artefato para a raiz estática, sem duplicá-lo em 497 payloads municipais.
+- `data_pipeline/src/municipal_diagnostic.py`: cruza o ponto estadual com a
+  observação municipal do mesmo ano, calcula a distribuição e serializa apenas
+  estatísticas compactas em `diagnostico_v2`.
 - `src/data/staticData.js`: carrega a referência estadual sob demanda.
 - `src/utils/stateReference.js` e `src/components/MetaCard.jsx`: só exibem comparação quando município e RS possuem o mesmo ano comparável.
 - `src/styles/pne-cycle-experience.css`: estilo secundário da referência usando tokens existentes; não há novo padrão em `App.css`.
@@ -44,6 +47,30 @@ Cada registro de indicador contém, no mínimo, `indicator_id`,
 `municipalities_valid`, `municipalities_expected`,
 `municipal_coverage_percent`, `denominator_coverage_percent`, `source`,
 `source_type`, `methodology_version`, `comparison_status` e `notes`.
+
+No ciclo vigente, o registro também publica `unit` e `compatibility`, com regra
+de mesmo indicador e mesmo ano, equivalência curada de fórmula/universo/base
+territorial, filtros de dependência e versão metodológica. O diagnóstico bloqueia
+a diferença estadual quando qualquer uma dessas condições falha.
+
+## Uso no Diagnóstico municipal
+
+O benchmark municipal não lê uma média pronta. O pipeline usa a Referência RS
+agregada deste artefato e calcula, sobre os resultados municipais do mesmo
+indicador e ano, mediana, Q1, Q3 e percentil direcional. A distribuição exige
+ao menos 20 municípios e cobertura de 80%; valores fora do domínio são
+excluídos, exceto nos quatro indicadores de base territorial mista cuja política
+aceita valores acima de 100%.
+
+Diferença favorável positiva sempre significa situação municipal mais favorável:
+`município - RS` em `at_least` e `RS - município` em `at_most`. Diferenças de
+até 0,1 p.p. em módulo são equivalentes. `basico_15_17` pode receber este
+benchmark contextual mesmo mantendo a distância legal bloqueada.
+
+O pipeline gera `stateBenchmarkSummary` somente sobre indicadores com resultado
+na síntese municipal e escolhe até três diferenças desfavoráveis e dois
+destaques favoráveis. O React consome as listas sem recalculá-las e a referência
+estadual não altera `attentionItems`.
 
 ## Indicadores comparáveis habilitados
 

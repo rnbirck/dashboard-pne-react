@@ -1245,6 +1245,7 @@
   }
 
   .dashboard-shell .content-area .diagnostic-scoreboard {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     overflow: hidden;
     border-color: var(--border-line);
     border-radius: var(--radius-sm);
@@ -1259,8 +1260,8 @@
     color: var(--green-deep);
   }
 
-  .dashboard-shell .content-area .diagnostic-scoreboard__item--danger dd {
-    color: var(--signal-clay);
+  .dashboard-shell .content-area .diagnostic-scoreboard__item--muted dd {
+    color: var(--text-body);
   }
 
   .dashboard-shell .content-area .diagnostic-priorities,
@@ -1276,6 +1277,212 @@
     padding: 16px var(--panel-inset-intermediate) 15px;
   }
 
+  .dashboard-shell .content-area .diagnostic-priorities__header h2 {
+    margin: 0;
+    color: var(--text-strong);
+    font-size: var(--font-size-xl);
+    line-height: var(--line-height-tight);
+  }
+
+  .dashboard-shell .content-area .diagnostic-decision-summary__groups {
+    display: grid;
+  }
+
+  .dashboard-shell .content-area .diagnostic-decision-group + .diagnostic-decision-group {
+    border-top: var(--border-divider);
+  }
+
+  .dashboard-shell .content-area .diagnostic-decision-group__heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--panel-inset-intermediate) var(--space-2);
+  }
+
+  .dashboard-shell .content-area .diagnostic-decision-group__heading h3 {
+    margin: 0;
+    color: var(--text-strong);
+    font-size: var(--font-size-md);
+  }
+
+  .dashboard-shell .content-area .diagnostic-decision-group__heading span {
+    min-width: 28px;
+    min-height: 28px;
+    display: grid;
+    place-items: center;
+    border: var(--border-divider);
+    border-radius: var(--radius-pill);
+    background: var(--surface-soft);
+    color: var(--text-body);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+  }
+
+  .dashboard-shell .content-area .diagnostic-decision-item {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .dashboard-shell .content-area .diagnostic-decision-item .diagnostic-priorities__body {
+    grid-column: 1;
+  }
+
+  .dashboard-shell .content-area .diagnostic-investigation-band {
+    padding: 0;
+    border-top: var(--border-divider);
+    background: var(--surface-soft);
+  }
+
+  .dashboard-shell .content-area .diagnostic-investigation-summary {
+    width: 100%;
+  }
+
+  .dashboard-shell .content-area .diagnostic-investigation-summary > summary {
+    min-height: var(--control-height);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--panel-inset-intermediate);
+    color: var(--green-deep);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    cursor: pointer;
+  }
+
+  .dashboard-shell .content-area .diagnostic-investigation-summary > summary > span:first-child {
+    color: var(--text-strong);
+    font-weight: var(--font-weight-medium);
+  }
+
+  .dashboard-shell .content-area .diagnostic-investigation-summary summary:focus-visible {
+    outline: var(--border-width-strong) solid var(--focus-ring-color);
+    outline-offset: var(--space-1);
+  }
+
+  .dashboard-shell .content-area .diagnostic-investigation-groups {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+    padding: 0 var(--panel-inset-intermediate) var(--space-4);
+  }
+
+  .dashboard-shell .content-area .diagnostic-investigation-group {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: var(--border-divider);
+    border-radius: var(--radius-sm);
+    background: var(--surface-card);
+  }
+
+  .dashboard-shell .content-area .diagnostic-investigation-group > header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  .dashboard-shell .content-area .diagnostic-investigation-group h3,
+  .dashboard-shell .content-area .diagnostic-investigation-group p,
+  .dashboard-shell .content-area .diagnostic-investigation-group small {
+    margin: 0;
+  }
+
+  .dashboard-shell .content-area .diagnostic-investigation-group h3 {
+    color: var(--text-strong);
+    font-size: var(--font-size-sm);
+  }
+
+  .dashboard-shell .content-area .diagnostic-investigation-group > header > span {
+    min-width: 28px;
+    min-height: 28px;
+    display: grid;
+    place-items: center;
+    border: var(--border-divider);
+    border-radius: var(--radius-pill);
+    color: var(--text-body);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+  }
+
+  .dashboard-shell .content-area .diagnostic-investigation-group > :is(p, small) {
+    color: var(--text-body);
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-normal);
+  }
+
+  .dashboard-shell .content-area .diagnostic-investigation-group > details > summary {
+    min-height: var(--control-height);
+    display: flex;
+    align-items: center;
+    color: var(--green-deep);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    cursor: pointer;
+  }
+
+  .dashboard-shell .content-area .diagnostic-investigation-group ul {
+    display: grid;
+    gap: var(--space-2);
+    margin: var(--space-2) 0 0;
+    padding: var(--space-3) 0 0;
+    border-top: var(--border-divider);
+    list-style: none;
+  }
+
+  .dashboard-shell .content-area .diagnostic-investigation-group li {
+    display: grid;
+    gap: 2px;
+  }
+
+  .dashboard-shell .content-area .diagnostic-investigation-group li + li {
+    padding-top: var(--space-2);
+    border-top: var(--border-width) solid var(--border-faint);
+  }
+
+  .dashboard-shell .content-area .diagnostic-investigation-group li :is(span, small) {
+    color: var(--text-body);
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-normal);
+  }
+
+  .dashboard-shell .content-area .diagnostic-outcomes__groups {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-top: var(--border-divider);
+  }
+
+  .dashboard-shell .content-area .diagnostic-outcomes__group {
+    min-width: 0;
+    padding: var(--space-4) var(--panel-inset-intermediate);
+  }
+
+  .dashboard-shell .content-area .diagnostic-outcomes__group + .diagnostic-outcomes__group {
+    border-left: var(--border-divider);
+  }
+
+  .dashboard-shell .content-area .diagnostic-outcomes__heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-2);
+  }
+
+  .dashboard-shell .content-area .diagnostic-outcomes__heading h4 {
+    margin: 0;
+    color: var(--text-strong);
+    font-size: var(--font-size-sm);
+  }
+
+  .dashboard-shell .content-area .diagnostic-outcomes__heading span {
+    color: var(--text-body);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+  }
+
   .dashboard-shell .content-area .diagnostic-priorities__rank {
     border-color: var(--border-strong-line);
     background: var(--surface-moss);
@@ -1283,10 +1490,393 @@
   }
 
   .dashboard-shell .content-area .diagnostic-area-mini-card {
+    grid-template-columns: minmax(180px, 0.8fr) minmax(0, 2.2fr);
+    grid-template-areas: "header metrics";
+    min-height: 0;
     border-color: var(--border-line);
     border-radius: var(--radius-sm);
     background: var(--surface-card);
     box-shadow: none;
+  }
+
+  .dashboard-shell .content-area .diagnostic-area-mini-card__metrics {
+    grid-template-columns: repeat(5, minmax(72px, 1fr));
+    gap: var(--space-2);
+  }
+
+  .dashboard-shell .content-area :is(.diagnostic-state-benchmark, .diagnostic-financing) {
+    display: grid;
+    gap: var(--space-4);
+    padding: var(--panel-inset-intermediate);
+    border: var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--surface-card);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .dashboard-shell .content-area :is(.diagnostic-state-benchmark__header, .diagnostic-financing__header) {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-5);
+    padding-bottom: var(--space-3);
+    border-bottom: var(--border-divider);
+  }
+
+  .dashboard-shell .content-area :is(.diagnostic-state-benchmark__header, .diagnostic-financing__header) > div {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .dashboard-shell .content-area :is(.diagnostic-state-benchmark__header, .diagnostic-financing__header) h2 {
+    margin: 0;
+    color: var(--text-strong);
+    font-size: var(--font-size-xl);
+    line-height: var(--line-height-tight);
+    text-wrap: balance;
+  }
+
+  .dashboard-shell .content-area :is(.diagnostic-state-benchmark__header, .diagnostic-financing__header) div > span {
+    color: var(--green-deep);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .dashboard-shell .content-area .diagnostic-state-benchmark__header > p {
+    max-width: var(--content-reading-max);
+    margin: 0;
+    color: var(--text-body);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-relaxed);
+    text-wrap: pretty;
+  }
+
+  .dashboard-shell .content-area .diagnostic-state-benchmark__groups {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+
+  .dashboard-shell .content-area .diagnostic-state-group {
+    min-width: 0;
+    padding: var(--space-3);
+    border: var(--border-divider);
+    border-radius: var(--radius-sm);
+    background: var(--surface-soft);
+  }
+
+  .dashboard-shell .content-area .diagnostic-state-group--attention {
+    border-color: var(--status-warn-line);
+    background: var(--status-warn-bg);
+  }
+
+  .dashboard-shell .content-area .diagnostic-state-group--favorable {
+    border-color: var(--status-ok-line);
+    background: var(--status-ok-bg);
+  }
+
+  .dashboard-shell .content-area .diagnostic-state-group h3 {
+    margin: 0 0 var(--space-2);
+    color: var(--text-strong);
+    font-size: var(--font-size-sm);
+  }
+
+  .dashboard-shell .content-area .diagnostic-state-group :is(ul, p) {
+    margin: 0;
+  }
+
+  .dashboard-shell .content-area .diagnostic-state-group ul {
+    display: grid;
+    padding: 0;
+    list-style: none;
+  }
+
+  .dashboard-shell .content-area .diagnostic-state-group li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-1) var(--space-3);
+    padding: var(--space-2) 0;
+  }
+
+  .dashboard-shell .content-area .diagnostic-state-group li + li {
+    border-top: var(--border-width) solid var(--border-faint);
+  }
+
+  .dashboard-shell .content-area .diagnostic-state-group li > strong {
+    grid-column: 1 / -1;
+    color: var(--text-strong);
+    font-size: var(--font-size-sm);
+  }
+
+  .dashboard-shell .content-area .diagnostic-state-group li > span,
+  .dashboard-shell .content-area .diagnostic-state-group li > small,
+  .dashboard-shell .content-area .diagnostic-state-group > p {
+    color: var(--text-body);
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-normal);
+  }
+
+  .dashboard-shell .content-area .diagnostic-state-group li > small {
+    grid-column: 1 / -1;
+    color: var(--text-strong);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .dashboard-shell .content-area .diagnostic-priorities__state-context {
+    margin: 0;
+    color: var(--text-body);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .dashboard-shell .content-area .diagnostic-priorities__item {
+    grid-template-columns: 34px minmax(0, 1fr);
+    align-items: start;
+    min-height: 0;
+    padding-block: var(--space-3);
+  }
+
+  .dashboard-shell .content-area .diagnostic-priorities__item.diagnostic-decision-item {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-shell .content-area .diagnostic-priorities__topline {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .dashboard-shell .content-area .diagnostic-priorities__badges,
+  .dashboard-shell .content-area .diagnostic-priorities__reading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-3);
+  }
+
+  .dashboard-shell .content-area .diagnostic-priorities__badges {
+    justify-content: flex-end;
+  }
+
+  .dashboard-shell .content-area .diagnostic-priorities__chip {
+    min-height: 24px;
+    display: inline-flex;
+    align-items: center;
+    padding: 2px var(--space-2);
+    border: var(--border-divider);
+    border-radius: var(--radius-pill);
+    background: var(--surface-soft);
+    color: var(--text-body);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .dashboard-shell .content-area .diagnostic-priorities__reading > span + span {
+    padding-left: var(--space-3);
+    border-left: var(--border-width) solid var(--border-line);
+  }
+
+  .dashboard-shell .content-area .diagnostic-priorities__peer-context {
+    margin: 0;
+    color: var(--text-body);
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-normal);
+  }
+
+  .dashboard-shell .content-area .diagnostic-priorities__decision-line {
+    margin: 0;
+    color: var(--text-body);
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-normal);
+  }
+
+  .dashboard-shell .content-area .diagnostic-priorities__source[open] {
+    padding-top: var(--space-1);
+  }
+
+  .dashboard-shell .content-area .diagnostic-priorities__source[open] > summary {
+    margin-bottom: var(--space-2);
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing__header > div > p {
+    max-width: var(--content-reading-max);
+    margin: var(--space-1) 0 0;
+    color: var(--text-body);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-relaxed);
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing__header > span {
+    flex: 0 0 auto;
+    padding: var(--space-1) var(--space-2);
+    border: var(--border-divider);
+    border-radius: var(--radius-pill);
+    background: var(--surface-moss);
+    color: var(--green-deep);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing__list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing-block {
+    display: grid;
+    align-content: start;
+    gap: var(--space-2);
+    min-width: 0;
+    padding: var(--space-3);
+    border: var(--border-divider);
+    border-radius: var(--radius-sm);
+    background: var(--surface-soft);
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing-block__heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding-bottom: var(--space-2);
+    border-bottom: var(--border-width) solid var(--border-faint);
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing-block__heading > span {
+    max-width: 18ch;
+    color: var(--green-deep);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    text-align: right;
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing-block__heading small {
+    color: var(--text-soft);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing-block__heading h3 {
+    margin: 0;
+    color: var(--text-strong);
+    font-size: var(--font-size-md);
+    line-height: var(--line-height-tight);
+    text-wrap: balance;
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing-block__description,
+  .dashboard-shell .content-area .diagnostic-financing-block__indicators p {
+    margin: 0;
+    color: var(--text-body);
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-normal);
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing-block__indicators {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing-block__indicators small {
+    color: var(--text-soft);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing-block ul {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing-block li {
+    display: grid;
+    gap: var(--space-1);
+    padding: var(--space-1) 0;
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing-block li + li {
+    border-top: var(--border-width) solid var(--border-faint);
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing-block li strong {
+    color: var(--text-strong);
+    font-size: var(--font-size-sm);
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing-block li span {
+    justify-self: start;
+    padding: var(--space-1) var(--space-2);
+    border: var(--border-width) solid var(--status-muted-line);
+    border-radius: var(--radius-pill);
+    background: var(--status-muted-bg);
+    color: var(--green-deep);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing-block li p,
+  .dashboard-shell .content-area .diagnostic-financing-block__empty {
+    margin: 0;
+    color: var(--text-body);
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-normal);
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing-block > a,
+  .dashboard-shell .content-area .diagnostic-financing__explore {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--touch-target-min);
+    margin-top: auto;
+    padding: var(--space-2) var(--space-3);
+    border: var(--border-width) solid var(--green-primary);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--green-deep);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    text-decoration: none;
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing-block > a:hover,
+  .dashboard-shell .content-area .diagnostic-financing__explore:hover {
+    background: var(--surface-moss);
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing-block > a:focus-visible,
+  .dashboard-shell .content-area .diagnostic-financing__explore:focus-visible {
+    outline: var(--border-width-strong) solid var(--green-primary);
+    outline-offset: var(--space-1);
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing__general-note {
+    margin: 0;
+    padding: var(--space-3);
+    border: var(--border-divider);
+    border-radius: var(--radius-sm);
+    background: var(--surface-moss);
+    color: var(--text-body);
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-normal);
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing__explore {
+    justify-self: start;
+    margin-top: 0;
+  }
+
+  .dashboard-shell .content-area .diagnostic-state-benchmark-note {
+    margin: 0;
+    color: var(--text-soft);
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-normal);
   }
 
   /* Detail views use the same navigation and metric strip as the overview. */
@@ -1842,18 +2432,19 @@
   line-height: var(--line-height-tight);
 }
 
-.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__title {
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education.indicator-card-shell--education-reference .indicator-card-shell__title {
   grid-row: 2;
   min-height: 0;
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-snug);
-  height: 1.35em;
-  max-height: 1.35em;
+  height: auto;
+  max-height: none;
+  padding-block: var(--space-3);
   display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education .indicator-card-shell__description {
@@ -2259,10 +2850,22 @@
 }
 
 .dashboard-shell .content-area .financial-page .financial-indicator-card-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+@media screen and (max-width: 1440px) {
+  .dashboard-shell .content-area .financial-page .financial-indicator-card-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 @media screen and (max-width: 1180px) {
+  .dashboard-shell .content-area .financial-page .financial-indicator-card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media screen and (max-width: 860px) {
   .dashboard-shell .content-area .financial-page .financial-indicator-card-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2309,6 +2912,94 @@
 
   .dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) .indicator-card-shell__footer {
     grid-row: 7;
+  }
+}
+
+@media screen and (max-width: 1080px) {
+  .dashboard-shell .content-area .diagnostic-financing__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media screen and (max-width: 900px) {
+  .dashboard-shell .content-area .diagnostic-state-benchmark__groups,
+  .dashboard-shell .content-area .diagnostic-financing__list {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-shell .content-area .diagnostic-state-benchmark__header,
+  .dashboard-shell .content-area .diagnostic-financing__header {
+    flex-direction: column;
+  }
+
+  .dashboard-shell .content-area .diagnostic-area-mini-card {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "header"
+      "metrics";
+  }
+
+  .dashboard-shell .content-area .diagnostic-area-mini-card__metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media screen and (max-width: 620px) {
+  .dashboard-shell .content-area :is(.diagnostic-state-benchmark, .diagnostic-financing) {
+    padding: var(--panel-inset-mobile);
+  }
+
+  .dashboard-shell .content-area .diagnostic-state-group li {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-shell .content-area .diagnostic-state-group li > :is(strong, small) {
+    grid-column: 1;
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing-block__heading {
+    flex-direction: column;
+  }
+
+  .dashboard-shell .content-area .diagnostic-financing-block__heading > span {
+    max-width: none;
+    text-align: left;
+  }
+
+  .dashboard-shell .content-area .diagnostic-priorities__topline,
+  .dashboard-shell .content-area .diagnostic-investigation-band {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dashboard-shell .content-area .diagnostic-priorities__badges {
+    justify-content: flex-start;
+  }
+
+  .dashboard-shell .content-area .diagnostic-priorities__indicator {
+    width: 100%;
+    flex: 0 1 auto;
+  }
+
+  .dashboard-shell .content-area .diagnostic-area-mini-card__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-shell .content-area .diagnostic-scoreboard,
+  .dashboard-shell .content-area .diagnostic-investigation-groups,
+  .dashboard-shell .content-area .diagnostic-outcomes__groups {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-shell .content-area .diagnostic-investigation-summary > summary {
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .dashboard-shell .content-area .diagnostic-outcomes__group + .diagnostic-outcomes__group {
+    border-top: var(--border-divider);
+    border-left: 0;
   }
 }
 
@@ -2527,5 +3218,1025 @@
   .dashboard-shell .content-area .cycle-page .meta-card--cycle,
   .dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell:is(.indicator-card-shell--education, .indicator-card-shell--financial) {
     min-height: 364px;
+  }
+}
+
+/* Shared Education reference anatomy: header, value/year, change/period and action. */
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell.indicator-card-shell--education-reference {
+  min-height: calc(var(--space-16) * 4);
+  height: auto;
+  aspect-ratio: 1.23 / 1;
+  padding: var(--space-4);
+  grid-template-columns: minmax(0, 1.9fr) minmax(72px, 1fr);
+  grid-template-rows: auto auto minmax(64px, 1fr) 1px minmax(52px, auto) auto;
+  grid-template-areas:
+    "topline topline"
+    "title title"
+    "value metadata"
+    "divider divider"
+    "insight insight"
+    "footer footer";
+  gap: 0;
+  align-content: stretch;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference {
+  --education-card-inline-inset: var(--space-4);
+  min-height: calc(var(--space-16) * 4);
+  height: auto;
+  aspect-ratio: auto;
+  grid-template-rows: auto auto minmax(72px, auto) 1px minmax(52px, auto) auto;
+  align-content: start;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell--education-reference .indicator-card-shell__topline {
+  grid-area: topline;
+  min-height: 28px;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell--education-reference .status-badge {
+  min-height: 28px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell--education-reference .indicator-card-shell__context {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell--education-reference .indicator-card-shell__title {
+  grid-area: title;
+  min-height: 0;
+  height: auto;
+  max-height: none;
+  padding-top: var(--space-2);
+  display: block;
+  overflow: visible;
+  white-space: normal;
+  -webkit-line-clamp: unset;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell--education-reference .indicator-card-shell__description {
+  display: none;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell.indicator-card-shell--education-reference .indicator-card-shell__value-row {
+  grid-area: value;
+  min-height: 64px;
+  padding: var(--space-4) var(--space-4) 0 0;
+  border-top: var(--border-divider);
+  align-self: stretch;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--space-1);
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell.indicator-card-shell--education-reference .indicator-card-shell__metadata {
+  grid-area: metadata;
+  min-height: 64px;
+  padding: var(--space-4) 0 0 var(--space-4);
+  border-top: var(--border-divider);
+  border-left: var(--border-divider);
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  gap: 0;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell.indicator-card-shell--education-reference .indicator-card-shell__divider {
+  grid-area: divider;
+  width: 100%;
+  height: 1px;
+  display: block;
+  background: var(--border-line);
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell--education-reference .indicator-card-shell__insight {
+  grid-area: insight;
+  min-height: 52px;
+  height: auto;
+  padding: var(--space-2) 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  grid-template-columns: minmax(0, 1.9fr) minmax(72px, 1fr);
+  align-items: center;
+  gap: 0;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell--education-reference .indicator-card-shell__insight-item {
+  min-height: 36px;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell--education-reference .indicator-card-shell__insight-item + .indicator-card-shell__insight-item {
+  min-height: 36px;
+  padding-left: var(--space-4);
+  border-left: var(--border-divider);
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--space-1);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__divider {
+  width: auto;
+  margin-inline: calc(var(--education-card-inline-inset) * -1);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__insight {
+  width: auto;
+  margin-inline: calc(var(--education-card-inline-inset) * -1);
+  padding-inline: var(--education-card-inline-inset);
+  border-inline: 0;
+  border-radius: 0;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell--education-reference .indicator-card-shell__footer {
+  grid-area: footer;
+  min-height: 40px;
+  margin: 0 calc(var(--space-4) * -1) calc(var(--space-4) * -1);
+  padding: var(--space-2) var(--space-4);
+  border-top: var(--border-divider);
+  background: var(--surface-soft);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24px;
+  align-items: center;
+}
+
+.dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell--education-reference .indicator-card-shell__footer > span:not(.indicator-card-shell__action) {
+  min-height: 24px;
+  width: max-content;
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-default);
+  background: var(--surface-card);
+  color: var(--green-deep);
+  font-weight: var(--font-weight-semibold);
+  gap: var(--space-2);
+  justify-self: start;
+}
+
+@media screen and (max-width: 700px) {
+  .dashboard-shell .content-area :is(.educacao-page, .financial-page) .indicator-card-shell.indicator-card-shell--education-reference {
+    min-height: 0;
+  }
+}
+
+@media screen and (max-width: 420px) {
+  .dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference {
+    --education-card-inline-inset: var(--space-3);
+  }
+}
+
+/* FUNDEB adopts the same filled analytical band used by Education cards. */
+.dashboard-shell .content-area .financial-page .fundeb-workspace .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__divider {
+  width: auto;
+  margin-inline: calc(var(--space-4) * -1);
+}
+
+.dashboard-shell .content-area .financial-page .fundeb-workspace .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__insight {
+  width: auto;
+  margin-inline: calc(var(--space-4) * -1);
+  padding-inline: var(--space-4);
+  background: var(--surface-moss);
+}
+
+.dashboard-shell .content-area .financial-page .fundeb-workspace .fundeb-indicator-group-control.platform-segmented-control {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  justify-content: flex-start;
+}
+
+.dashboard-shell .content-area .financial-page .fundeb-workspace .financial-indicator-card.indicator-card-shell--education-reference {
+  min-height: calc(var(--space-16) * 4 + var(--space-2));
+  aspect-ratio: auto;
+  grid-template-rows: auto minmax(2.8em, auto) minmax(64px, 1fr) 1px minmax(52px, auto) auto;
+}
+
+.dashboard-shell .content-area .financial-page .fundeb-workspace .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__title {
+  min-height: 2.8em;
+  height: auto;
+  max-height: none;
+  padding-bottom: var(--space-2);
+  overflow: visible;
+  -webkit-line-clamp: unset;
+}
+
+@media screen and (max-width: 700px) {
+  .dashboard-shell .content-area .financial-page .fundeb-workspace .fundeb-indicator-group-control.platform-segmented-control {
+    width: 100%;
+  }
+}
+
+/* Education indicator card: compact scale of the approved portrait reference. */
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference {
+  --education-card-inline-inset: var(--space-4);
+  min-height: calc(var(--space-16) * 5 + var(--space-12));
+  height: auto;
+  aspect-ratio: auto;
+  padding: var(--education-card-inline-inset);
+  border-radius: var(--radius-lg);
+  grid-template-columns: minmax(0, 1.75fr) minmax(96px, 1fr);
+  grid-template-rows: 32px auto auto minmax(144px, auto) 60px 36px;
+  grid-template-areas:
+    "topline topline"
+    "title title"
+    "description description"
+    "value metadata"
+    "insight insight"
+    "footer footer";
+  gap: 0;
+  align-content: stretch;
+  box-shadow: var(--shadow-sm);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__topline {
+  min-height: 32px;
+  align-items: flex-start;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__context {
+  padding-top: var(--space-1);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .status-badge {
+  min-height: 32px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .status-badge__marker {
+  font-size: 1.1em;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education.indicator-card-shell--education-reference .indicator-card-shell__title {
+  min-height: auto;
+  height: auto;
+  max-height: none;
+  padding: var(--space-2) 0 var(--space-1);
+  color: var(--text-strong);
+  display: block;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  overflow: visible;
+  white-space: normal;
+  -webkit-line-clamp: unset;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__description {
+  grid-area: description;
+  min-height: auto;
+  height: auto;
+  max-height: none;
+  padding: 0 0 var(--space-2);
+  color: var(--text-secondary);
+  display: block;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  overflow: visible;
+  white-space: normal;
+  -webkit-line-clamp: unset;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__value-row {
+  min-width: 0;
+  min-height: 128px;
+  padding: var(--space-2) var(--space-3) var(--space-4);
+  border-top: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  text-align: center;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__value-row strong {
+  color: var(--green-ink);
+  font-size: calc(var(--font-size-3xl) * 1.5);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.05em;
+  line-height: 1.08;
+  max-width: 100%;
+  overflow-wrap: normal;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__value-row > span {
+  width: 100%;
+  max-width: 100%;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-snug);
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  text-align: center;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__metadata {
+  min-height: 144px;
+  padding: var(--space-2) 0 var(--space-3) var(--space-3);
+  border-top: 0;
+  border-left: var(--border-divider);
+  align-content: center;
+  gap: var(--space-2);
+  overflow: visible;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__metadata-item {
+  gap: var(--space-1);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__metadata-item + .indicator-card-shell__metadata-item {
+  padding-top: var(--space-2);
+  border-top: var(--border-divider);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference :is(.indicator-card-shell__metadata-label, .indicator-card-shell__insight-label) {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-snug);
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__metadata-value {
+  color: var(--green-ink);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__metadata-value--variation {
+  color: var(--indicator-direction-ink);
+  max-width: none;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__divider {
+  display: none;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__insight {
+  width: 100%;
+  min-height: 60px;
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--surface-moss);
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 0;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__insight-item,
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__insight-copy {
+  width: 100%;
+  min-height: 0;
+  display: grid;
+  align-content: center;
+  align-items: start;
+  gap: var(--space-1);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__insight-item + .indicator-card-shell__insight-item {
+  min-height: 36px;
+  padding-left: var(--space-3);
+  border-left: var(--border-divider);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__insight-value,
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__insight-item:first-child .indicator-card-shell__insight-value {
+  color: var(--text-strong);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__footer {
+  min-height: 36px;
+  margin: 0;
+  padding: var(--space-2) 0 0;
+  border-top: 0;
+  background: transparent;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24px;
+  align-items: end;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__footer > span:not(.indicator-card-shell__action) {
+  width: fit-content;
+  min-height: 24px;
+  max-width: calc(100% - var(--space-2));
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface-muted);
+  color: var(--green-deep);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  justify-self: start;
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__action,
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__action .interaction-chevron {
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+  align-self: end;
+}
+
+@media screen and (max-width: 720px) {
+  .dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference {
+    --education-card-inline-inset: var(--space-4);
+    aspect-ratio: auto;
+    grid-template-columns: minmax(0, 1.65fr) minmax(96px, 1fr);
+  }
+
+  .dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__value-row strong {
+    font-size: calc(var(--font-size-3xl) * 1.375);
+  }
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__value-row--compact strong {
+  font-size: calc(var(--font-size-3xl) * 1.25);
+}
+
+.dashboard-shell .content-area .educacao-page .education-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__value-row--dense strong {
+  font-size: var(--font-size-3xl);
+}
+
+/* Financial indicator cards: denser scale with the same horizontal anatomy. */
+.dashboard-shell .content-area .financial-page .financial-indicator-card.indicator-card-shell--education-reference,
+.dashboard-shell .content-area .financial-page .fundeb-workspace .financial-indicator-card.indicator-card-shell--education-reference {
+  min-height: calc(var(--space-16) * 3 + var(--space-8));
+  aspect-ratio: 1.23 / 1;
+  padding: var(--space-3);
+  grid-template-rows: auto auto minmax(52px, 1fr) 1px minmax(44px, auto) auto;
+}
+
+.dashboard-shell .content-area .financial-page .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__topline {
+  min-height: 24px;
+}
+
+.dashboard-shell .content-area .financial-page .financial-indicator-card.indicator-card-shell--education-reference .status-badge {
+  min-height: 24px;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+}
+
+.dashboard-shell .content-area .financial-page .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__title,
+.dashboard-shell .content-area .financial-page .fundeb-workspace .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__title {
+  min-height: 2.6em;
+  padding: var(--space-1) 0;
+  font-size: var(--font-size-sm);
+}
+
+.dashboard-shell .content-area .financial-page .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__value-row {
+  min-height: 52px;
+  padding: var(--space-2) var(--space-2) 0 0;
+}
+
+.dashboard-shell .content-area .financial-page .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__metadata {
+  min-height: 52px;
+  padding: var(--space-2) 0 0 var(--space-2);
+}
+
+.dashboard-shell .content-area .financial-page .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__insight,
+.dashboard-shell .content-area .financial-page .fundeb-workspace .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__insight {
+  min-height: 44px;
+  padding-block: var(--space-1);
+  grid-template-columns: minmax(0, 1.9fr) minmax(64px, 1fr);
+}
+
+.dashboard-shell .content-area .financial-page .fundeb-workspace .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__divider {
+  margin-inline: calc(var(--space-3) * -1);
+}
+
+.dashboard-shell .content-area .financial-page .fundeb-workspace .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__insight {
+  margin-inline: calc(var(--space-3) * -1);
+  padding-inline: var(--space-3);
+}
+
+.dashboard-shell .content-area .financial-page .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__insight-item,
+.dashboard-shell .content-area .financial-page .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__insight-item + .indicator-card-shell__insight-item {
+  min-height: 32px;
+}
+
+.dashboard-shell .content-area .financial-page .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__insight-item + .indicator-card-shell__insight-item {
+  padding-left: var(--space-2);
+}
+
+.dashboard-shell .content-area .financial-page .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__footer {
+  min-height: 32px;
+  margin: 0 calc(var(--space-3) * -1) calc(var(--space-3) * -1);
+  padding: var(--space-1) var(--space-3);
+}
+
+.dashboard-shell .content-area .financial-page .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__footer > span:not(.indicator-card-shell__action) {
+  min-height: 20px;
+  padding: var(--space-1) var(--space-2);
+}
+
+/* Financial catalogs follow the same page rhythm and portrait-card anatomy as Education. */
+.dashboard-shell .content-area .financial-page--education-catalog {
+  gap: 0;
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog:not(.financial-page--detail) :is(
+  .financial-intro-panel,
+  .financial-technical-note,
+  .fundeb-summary,
+  .siope-summary,
+  .financial-methodology-note
+) {
+  display: none;
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog :is(.fundeb-panel-embedded, .siope-panel) {
+  gap: var(--space-4);
+}
+
+.dashboard-shell .content-area .financial-catalog-header.education-compact-header {
+  border-top: 0;
+}
+
+.dashboard-shell .content-area .financial-catalog-workspace {
+  min-width: 0;
+  border: var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+}
+
+.dashboard-shell .content-area .financial-catalog-workspace > .education-section-bar {
+  border-top: 0;
+}
+
+.dashboard-shell .content-area .financial-catalog-filter-row {
+  min-width: 0;
+  padding: var(--space-3) var(--education-panel-padding);
+  border-bottom: var(--border-divider);
+  background: var(--surface-card);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.dashboard-shell .content-area .financial-catalog-filter-row :is(.platform-segmented-control, .platform-category-tabs) {
+  width: fit-content;
+  max-width: 100%;
+  justify-self: end;
+}
+
+.dashboard-shell .content-area .financial-catalog-workspace .financial-indicator-groups {
+  gap: var(--space-8);
+}
+
+.dashboard-shell .content-area .financial-catalog-workspace .financial-indicator-group {
+  padding-inline: var(--education-panel-padding);
+}
+
+.dashboard-shell .content-area .financial-catalog-workspace .financial-indicator-card-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: auto;
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference {
+  --education-card-inline-inset: var(--space-4);
+  min-height: var(--indicator-card-height-mobile);
+  height: auto;
+  aspect-ratio: auto;
+  padding: var(--education-card-inline-inset);
+  border-radius: var(--radius-lg);
+  grid-template-columns: minmax(0, 1.75fr) minmax(96px, 1fr);
+  grid-template-rows: minmax(32px, auto) auto auto minmax(144px, auto) minmax(64px, auto) minmax(36px, auto);
+  grid-template-areas:
+    "topline topline"
+    "title title"
+    "description description"
+    "value metadata"
+    "insight insight"
+    "footer footer";
+  gap: 0;
+  align-content: stretch;
+  box-shadow: var(--shadow-sm);
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__topline {
+  min-height: 32px;
+  height: auto;
+  align-items: flex-start;
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__context {
+  padding-top: var(--space-1);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference .status-badge {
+  min-height: 32px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference .status-badge__marker {
+  font-size: 1.1em;
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__title {
+  min-height: auto;
+  height: auto;
+  max-height: none;
+  padding: var(--space-2) 0 var(--space-1);
+  color: var(--text-strong);
+  display: block;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  overflow: visible;
+  white-space: normal;
+  -webkit-line-clamp: unset;
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__description {
+  grid-area: description;
+  min-height: auto;
+  height: auto;
+  max-height: none;
+  padding: 0 0 var(--space-2);
+  color: var(--text-secondary);
+  display: block;
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  overflow: visible;
+  white-space: normal;
+  -webkit-line-clamp: unset;
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__value-row {
+  min-width: 0;
+  min-height: 144px;
+  height: auto;
+  padding: var(--space-2) var(--space-3) var(--space-4);
+  border: 0;
+  align-self: stretch;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  text-align: center;
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__value-row strong {
+  max-width: 100%;
+  color: var(--green-ink);
+  font-size: calc(var(--font-size-3xl) * 1.5);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.05em;
+  line-height: 1.08;
+  overflow-wrap: normal;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__value-row--compact strong {
+  font-size: var(--font-size-3xl);
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__value-row--dense strong {
+  font-size: var(--font-size-2xl);
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__metadata {
+  min-height: 144px;
+  height: auto;
+  padding: var(--space-2) 0 var(--space-3) var(--space-3);
+  border-top: 0;
+  border-left: var(--border-divider);
+  align-self: stretch;
+  align-content: center;
+  gap: var(--space-2);
+  overflow: visible;
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__metadata-item {
+  gap: var(--space-1);
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__metadata-item + .indicator-card-shell__metadata-item {
+  padding-top: var(--space-2);
+  border-top: var(--border-divider);
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference :is(.indicator-card-shell__metadata-label, .indicator-card-shell__insight-label) {
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-snug);
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__metadata-value {
+  color: var(--green-ink);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__metadata-value--variation {
+  color: var(--indicator-direction-ink);
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__divider {
+  display: none;
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__insight {
+  width: 100%;
+  min-height: 64px;
+  height: auto;
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--surface-moss);
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 0;
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference :is(.indicator-card-shell__insight-item, .indicator-card-shell__insight-copy) {
+  width: 100%;
+  min-height: 0;
+  display: grid;
+  align-content: center;
+  align-items: start;
+  gap: var(--space-1);
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__insight-value {
+  color: var(--text-strong);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__footer {
+  min-height: 36px;
+  height: auto;
+  margin: 0;
+  padding: var(--space-2) 0 0;
+  border-top: 0;
+  background: transparent;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24px;
+  align-items: end;
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__footer > span:not(.indicator-card-shell__action) {
+  width: fit-content;
+  min-height: 24px;
+  max-width: calc(100% - var(--space-2));
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface-muted);
+  color: var(--green-deep);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  justify-self: start;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference :is(.indicator-card-shell__action, .indicator-card-shell__action .interaction-chevron) {
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+  align-self: end;
+}
+
+@media screen and (max-width: 900px) {
+  .dashboard-shell .content-area .financial-catalog-filter-row {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-shell .content-area .financial-catalog-filter-row :is(.platform-segmented-control, .platform-category-tabs) {
+    width: 100%;
+    justify-self: stretch;
+    overflow-x: auto;
+  }
+}
+
+@media screen and (max-width: 720px) {
+  .dashboard-shell .content-area .financial-catalog-filter-row,
+  .dashboard-shell .content-area .financial-catalog-workspace .financial-indicator-group {
+    padding-inline: var(--space-4);
+  }
+
+  .dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference {
+    grid-template-columns: minmax(0, 1.65fr) minmax(96px, 1fr);
+  }
+
+  .dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__value-row strong {
+    font-size: calc(var(--font-size-3xl) * 1.375);
+  }
+
+  .dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__value-row--compact strong {
+    font-size: var(--font-size-3xl);
+  }
+
+  .dashboard-shell .content-area .financial-page--education-catalog .financial-indicator-card.indicator-card-shell--education-reference .indicator-card-shell__value-row--dense strong {
+    font-size: var(--font-size-2xl);
+  }
+}
+
+/*
+ * Specificity bridge for the legacy financial card contract. Keep the complete
+ * page + anatomy + catalog chain until the older fixed-height selectors leave
+ * App.css and the module stylesheets.
+ */
+.dashboard-shell .content-area .financial-page .financial-indicator-card.financial-indicator-card--catalog.indicator-card-shell--education-reference {
+  min-height: calc(var(--indicator-card-height-mobile) + var(--space-4));
+  height: auto;
+  aspect-ratio: auto;
+  padding: var(--space-4);
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(104px, 1fr);
+  grid-template-rows:
+    minmax(32px, auto)
+    minmax(40px, auto)
+    minmax(48px, auto)
+    minmax(144px, auto)
+    minmax(64px, auto)
+    minmax(36px, auto);
+  grid-template-areas:
+    "topline topline"
+    "title title"
+    "description description"
+    "value metadata"
+    "insight insight"
+    "footer footer";
+  gap: 0;
+  align-content: start;
+  overflow: hidden;
+}
+
+.dashboard-shell .content-area .financial-page .financial-indicator-card--catalog.indicator-card-shell--education-reference .indicator-card-shell__topline {
+  grid-area: topline;
+  min-height: 32px;
+  height: auto;
+}
+
+.dashboard-shell .content-area .financial-page .financial-indicator-card--catalog.indicator-card-shell--education-reference .indicator-card-shell__title {
+  grid-area: title;
+  min-height: 40px;
+  height: auto;
+  max-height: none;
+  padding: var(--space-2) 0 var(--space-1);
+  display: block;
+  overflow: visible;
+  white-space: normal;
+  -webkit-line-clamp: unset;
+}
+
+.dashboard-shell .content-area .financial-page .financial-indicator-card--catalog.indicator-card-shell--education-reference .indicator-card-shell__description {
+  grid-area: description;
+  min-height: 48px;
+  height: auto;
+  max-height: none;
+  padding: 0 0 var(--space-2);
+  display: block;
+  overflow: visible;
+  white-space: normal;
+  -webkit-line-clamp: unset;
+}
+
+.dashboard-shell .content-area .financial-page .financial-indicator-card--catalog.indicator-card-shell--education-reference .indicator-card-shell__value-row {
+  grid-area: value;
+  min-width: 0;
+  min-height: 144px;
+  height: auto;
+  padding: var(--space-3);
+  border: 0;
+  align-self: stretch;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  text-align: center;
+}
+
+.dashboard-shell .content-area .financial-page .financial-indicator-card--catalog.indicator-card-shell--education-reference .indicator-card-shell__value-row strong {
+  width: max-content;
+  max-width: 100%;
+  font-size: calc(var(--font-size-3xl) * 1.375);
+  line-height: 1.05;
+  overflow: visible;
+  overflow-wrap: normal;
+  text-align: center;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.dashboard-shell .content-area .financial-page .financial-indicator-card--catalog.indicator-card-shell--education-reference .indicator-card-shell__value-row--compact strong {
+  font-size: var(--font-size-3xl);
+}
+
+.dashboard-shell .content-area .financial-page .financial-indicator-card--catalog.indicator-card-shell--education-reference .indicator-card-shell__value-row--dense strong {
+  font-size: var(--font-size-2xl);
+}
+
+.dashboard-shell .content-area .financial-page .financial-indicator-card--catalog.indicator-card-shell--education-reference .indicator-card-shell__metadata {
+  grid-area: metadata;
+  min-width: 0;
+  min-height: 144px;
+  height: auto;
+  padding: var(--space-3) 0 var(--space-3) var(--space-3);
+  border-top: 0;
+  border-left: var(--border-divider);
+  align-self: stretch;
+  align-content: center;
+  overflow: visible;
+}
+
+.dashboard-shell .content-area .financial-page .financial-indicator-card--catalog.indicator-card-shell--education-reference .indicator-card-shell__metadata-value {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.dashboard-shell .content-area .financial-page .financial-indicator-card--catalog.indicator-card-shell--education-reference .indicator-card-shell__divider {
+  display: none;
+}
+
+.dashboard-shell .content-area .financial-page .financial-indicator-card--catalog.indicator-card-shell--education-reference .indicator-card-shell__insight {
+  grid-area: insight;
+  position: static;
+  width: 100%;
+  min-height: 64px;
+  height: auto;
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  align-self: stretch;
+  overflow: visible;
+}
+
+.dashboard-shell .content-area .financial-page .financial-indicator-card--catalog.indicator-card-shell--education-reference .indicator-card-shell__footer {
+  grid-area: footer;
+  position: static;
+  min-height: 36px;
+  height: auto;
+  margin: 0;
+  padding-top: var(--space-2);
+  align-self: stretch;
+  overflow: visible;
+}
+
+@media screen and (max-width: 720px) {
+  .dashboard-shell .content-area .financial-page .financial-indicator-card.financial-indicator-card--catalog.indicator-card-shell--education-reference {
+    grid-template-columns: minmax(0, 1.55fr) minmax(96px, 1fr);
+  }
+}
+
+@media screen and (max-width: 1599px) {
+  .dashboard-shell .content-area .financial-catalog-workspace .financial-indicator-card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media screen and (max-width: 1080px) {
+  .dashboard-shell .content-area .financial-catalog-workspace .financial-indicator-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media screen and (max-width: 720px) {
+  .dashboard-shell .content-area .financial-catalog-workspace .financial-indicator-card-grid {
+    grid-template-columns: 1fr;
   }
 }
