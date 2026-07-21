@@ -435,6 +435,113 @@ export interface DiagnosticInequalityPilotV1 {
   groups: DiagnosticInequalityPilotGroupV1[]
 }
 
+export type Pne2026PublicResultClassification = 'maintain' | 'advance'
+export type Pne2026PublicRelationship = 'direct' | 'partial_component'
+export type Pne2026PublicPosition = 'above' | 'near' | 'below'
+
+export interface Pne2026PublicStateComparisonV1 {
+  municipalityValue: number
+  stateValue: number
+  year: number
+  favorableDifference: number
+  state: Pne2026PublicPosition
+  reading: string
+}
+
+export interface Pne2026PublicStatewidePositionV1 {
+  band: 'top_quarter' | 'middle' | 'more_room_to_advance'
+  reading: string
+}
+
+export interface Pne2026PublicSimilarMunicipalitiesV1 {
+  title: 'Municípios com oferta educacional de tamanho semelhante'
+  median: number
+  favorableDifference: number
+  state: Pne2026PublicPosition
+  reading: string
+}
+
+export interface Pne2026PublicTrajectoryV1 {
+  historicalState: 'improved' | 'stable' | 'declined'
+  historicalReading: string
+  estimatedAchievementYear?: number
+  achievementReading?: string
+}
+
+export interface Pne2026PublicResultV1 {
+  indicatorId: string
+  relationship: Pne2026PublicRelationship
+  theme: string
+  publicName: string
+  current: {
+    value: number
+    displayValue: number | null
+    year: number
+    unit: 'percent' | 'index' | 'count' | 'years'
+  }
+  target: {
+    value: number
+    displayValue: number
+    year: number
+    direction: DiagnosticDirection
+  }
+  classification: Pne2026PublicResultClassification
+  targetReading: string
+  remainingGap: number
+  favorableDifference: number
+  stateComparison?: Pne2026PublicStateComparisonV1
+  statewidePosition?: Pne2026PublicStatewidePositionV1
+  similarMunicipalities?: Pne2026PublicSimilarMunicipalitiesV1
+  trajectory?: Pne2026PublicTrajectoryV1
+  publicReading: string
+  sourceIds: string[]
+}
+
+export interface Pne2026PublicGoalV1 {
+  goalId: string
+  order: number
+  publicTitle: string
+  publicDescription: string
+  targetYear: number | null
+  results: Pne2026PublicResultV1[]
+}
+
+export interface Pne2026PublicThemeV1 {
+  theme: string
+  publicTitle: string
+  displayedResultsCount: number
+  maintainResultsCount: number
+  advanceResultsCount: number
+  goalIds: string[]
+}
+
+export interface Pne2026PublicSourceV1 {
+  id: 'inep_censo_escolar' | 'ibge_censo_demografico_2010_2022'
+  organization: string
+  publicTitle: string
+  period: string
+  officialUrl: string
+}
+
+export interface Pne2026PublicDiagnosticV1 {
+  version: 'pne2026-public-diagnostic-v1'
+  cycleId: 'pne_2026_2036'
+  scope: {
+    allowedGoalIds: string[]
+    allowedIndicatorIds: string[]
+  }
+  summary: {
+    displayedResultsCount: number
+    reachedResultsCount: number
+    advanceResultsCount: number
+    stateAboveOrNearCount: number
+    stateBelowCount: number
+  }
+  themes: Pne2026PublicThemeV1[]
+  goals: Pne2026PublicGoalV1[]
+  sources: Pne2026PublicSourceV1[]
+}
+
 export interface MunicipalDiagnosticContractV2 {
   schemaVersion: 'municipal-diagnostic-v2'
   methodologyVersion: 'municipal-diagnostic-p3c-v1'
@@ -464,6 +571,7 @@ export interface MunicipalDiagnosticContractV2 {
   preservedItems: DiagnosticPreservedItemV2[]
   excludedItems: DiagnosticExcludedItemV2[]
   warnings: Array<DiagnosticReason & { indicatorIds: string[] }>
+  pne2026PublicDiagnostic?: Pne2026PublicDiagnosticV1
   generationMetadata: {
     generator: 'build_municipal_diagnostic_v2'
     catalogVersion: string

@@ -1431,3 +1431,46 @@ bloqueia sua exibição. A nota metodológica mantém MDE constitucional e DCA e
 universos distintos. A composição reutiliza cards, tokens, badges neutros e o
 disclosure compartilhado, com grade 2→1 abaixo de 820 px. Pipeline, schema,
 JSONs, cálculos, escores e contratos educacionais não foram alterados.
+
+## Integração pública de programas no Diagnóstico DF2 (2026-07-20)
+
+O Diagnóstico substituiu “Caminhos de financiamento relacionados” pela seção
+“Programas que podem apoiar as melhorias”, posicionada depois dos resultados
+educacionais. A composição consome apenas a camada pública DF1, consolida cada
+programa e suas ações e encerra a página com as fontes oficiais efetivamente
+usadas. A lista e as fontes são completamente omitidas quando o seletor não
+retorna itens. O layout reutiliza tokens e superfícies vigentes, com grade 2→1,
+listas semânticas e foco visível nos links.
+
+A auditoria preservou o baseline de 497 contratos, 486 municípios com itens, 11
+sem itens, 1.254 associações e 2.845 itens agrupados, sem ID desconhecido. Os 31
+testes e o lint direcionado passaram, assim como o typecheck isolado do módulo e
+o build. O typecheck global manteve quatro falhas preexistentes fora da DF2. A
+evidência completa está em
+`docs/DIAGNOSTICO_FINANCIAMENTO_INTERFACE_DF2.md`.
+
+## Reconstrução final do Diagnóstico municipal DGP2 (2026-07-21)
+
+A rota do Diagnóstico foi reconstruída sobre a propriedade pública
+`pne2026PublicDiagnostic`. Cabeçalho, resumo, filtros, metas, resultados,
+comparações, evolução, cópia, impressão e fontes agora consomem somente essa
+camada materializada. Placar, coleções decisórias, grupos técnicos, listas
+estaduais separadas e estados vazios antigos deixaram de ser renderizados.
+
+A integração DF2 foi encerrada: componente, apresentação, catálogo, testes e CSS
+financeiro exclusivos foram removidos após a confirmação de ausência de outros
+consumidores. O Panorama financeiro e seus catálogos próprios foram preservados.
+A composição específica nova usa tokens e a gramática compartilhada em
+`institutional-refresh.css`; `App.css` não recebeu novas regras. A auditoria de
+497 contratos, o build e a inspeção em 1366×768, 1024×768 e 390×844 passaram. O
+registro completo está em `docs/DIAGNOSTICO_MUNICIPAL_INTERFACE_DGP2.md`.
+
+## Acabamento funcional do Diagnóstico municipal DGP3 (2026-07-21)
+
+A auditoria final corrigiu nomes acessíveis duplicados nas fontes, restaurou a
+gramática e a largura integral do relatório impresso — inclusive ocultando a
+barra móvel — e alinhou a opcionalidade do tipo à ausência operacional já
+homologada. Cópia, filtros, teclado, foco, loading, erro, retry, quatro viewports
+e impressão A4 foram validados sem alterar dados, pipeline, JSONs, regras de
+negócio, Panorama financeiro ou baselines. Registro completo:
+`docs/DIAGNOSTICO_MUNICIPAL_INTERFACE_DGP3.md`.

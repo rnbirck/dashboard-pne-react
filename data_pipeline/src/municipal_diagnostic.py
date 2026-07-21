@@ -29,6 +29,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CATALOG_PATH = (
     REPO_ROOT / "src" / "data" / "diagnostic" / "indicatorCatalog.json"
 )
+PUBLIC_DIAGNOSTIC_CONFIG_PATH = (
+    Path(__file__).resolve().parent / "data" / "pne2026_public_diagnostic_v1.json"
+)
 
 CATEGORY_ORDER = (
     "atendimento",
@@ -226,6 +229,13 @@ def load_indicator_catalog(path: Path | None = None) -> dict[str, Any]:
     if len(set(ids)) != len(ids) or any(not item_id for item_id in ids):
         raise ValueError("Catálogo contém identificadores ausentes ou duplicados.")
     return catalog
+
+
+def load_pne_2026_public_diagnostic_config(
+    path: Path | None = None,
+) -> dict[str, Any]:
+    config_path = path or PUBLIC_DIAGNOSTIC_CONFIG_PATH
+    return json.loads(config_path.read_text(encoding="utf-8"))
 
 
 def calculate_directional_distance(
@@ -2454,6 +2464,551 @@ def build_urban_rural_integral_pilot(
     }
 
 
+def _public_number(value: float) -> str:
+    rounded = round(value, 1)
+    formatted = f"{rounded:.1f}".rstrip("0").rstrip(".")
+    return formatted.replace(".", ",")
+
+
+def _public_unit_label(unit: str, value: float) -> str:
+    if unit == "percent":
+        return "ponto percentual" if abs(value) == 1 else "pontos percentuais"
+    if unit == "years":
+        return "ano" if abs(value) == 1 else "anos"
+    return "unidade" if abs(value) == 1 else "unidades"
+
+
+def _validate_public_directional_fields(indicator: Mapping[str, Any]) -> None:
+    current = _finite_number(indicator.get("rawValue"))
+    reference = indicator.get("configuredReference") or {}
+    target = _finite_number(reference.get("value"))
+    direction = indicator.get("direction")
+    goal_attained = indicator.get("goalAttained")
+    favorable = _finite_number(indicator.get("favorableDistance"))
+    remaining = _finite_number(indicator.get("remainingGap"))
+    if (
+        current is None
+        or target is None
+        or direction not in {"at_least", "at_most"}
+        or not isinstance(goal_attained, bool)
+        or favorable is None
+        or remaining is None
+    ):
+        return
+    expected = calculate_directional_distance(current, target, str(direction))
+    if (
+        goal_attained is not expected["goalAttained"]
+        or not math.isclose(
+            favorable, float(expected["favorableDistance"]), abs_tol=1e-9
+        )
+        or not math.isclose(
+            remaining, float(expected["remainingGap"]), abs_tol=1e-9
+        )
+    ):
+        raise ValueError(
+            "Campos direcionais divergentes no indicador "
+            f"{indicator.get('indicatorId')}."
+        )
+
+
+def _public_target_reading(
+    *,
+    classification: str,
+    favorable_difference: float,
+    remaining_gap: float,
+    direction: str,
+    unit: str,
+) -> str:
+    if classification == "advance":
+        value = _public_number(remaining_gap)
+        unit_label = _public_unit_label(unit, remaining_gap)
+        action = "reduzir o resultado até" if direction == "at_most" else "alcançar"
+        return (
+            f"Faltam {value} {unit_label} para {action} o valor previsto "
+            "neste resultado."
+        )
+    if math.isclose(favorable_difference, 0.0, abs_tol=1e-9):
+        return "O valor previsto neste resultado foi alcançado."
+    value = _public_number(abs(favorable_difference))
+    unit_label = _public_unit_label(unit, abs(favorable_difference))
+    position = "abaixo" if direction == "at_most" else "acima"
+    return (
+        f"O resultado está {value} {unit_label} {position} do valor previsto "
+        "para este resultado."
+    )
+
+
+def _public_state_comparison(
+    indicator: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    state = ((indicator.get("benchmarks") or {}).get("state") or {})
+    if state.get("status") != "comparable":
+        return None
+    municipality_value = _finite_number(state.get("municipalityValue"))
+    state_value = _finite_number(state.get("value"))
+    year = _integer(state.get("year"))
+    municipality_year = _integer(state.get("municipalityYear"))
+    coverage = _finite_number(state.get("coverageRate"))
+    direction = indicator.get("direction")
+    method = str(state.get("method") or "")
+    favorable = _finite_number(state.get("favorableDifference"))
+    position = state.get("position")
+    if (
+        municipality_value is None
+        or state_value is None
+        or year is None
+        or municipality_year != year
+        or coverage is None
+        or coverage < MINIMUM_STATE_COVERAGE_RATE
+        or direction not in {"at_least", "at_most"}
+        or not method
+        or method == "not_available"
+        or favorable is None
+        or position not in {"better", "equivalent", "worse"}
+    ):
+        return None
+    expected = calculate_state_favorable_difference(
+        municipality_value, state_value, str(direction)
+    )
+    if expected is None or not math.isclose(favorable, expected, abs_tol=1e-9):
+        raise ValueError(
+            "Comparação estadual direcional divergente no indicador "
+            f"{indicator.get('indicatorId')}."
+        )
+    expected_position = (
+        "equivalent"
+        if abs(expected) <= STATE_EQUIVALENCE_TOLERANCE
+        else "better" if expected > 0 else "worse"
+    )
+    if position != expected_position:
+        raise ValueError(
+            "Posição estadual divergente no indicador "
+            f"{indicator.get('indicatorId')}."
+        )
+    public_state = {
+        "better": "above",
+        "equivalent": "near",
+        "worse": "below",
+    }[str(position)]
+    unit = str(indicator.get("unit") or "")
+    if public_state == "near":
+        reading = (
+            "O resultado do município está próximo do resultado do Rio Grande "
+            "do Sul."
+        )
+    else:
+        value = _public_number(abs(favorable))
+        unit_label = _public_unit_label(unit, abs(favorable))
+        if direction == "at_least":
+            numeric_position = "acima" if public_state == "above" else "abaixo"
+            reading = (
+                f"O resultado do município está {value} {unit_label} "
+                f"{numeric_position} do resultado do Rio Grande do Sul."
+            )
+        elif public_state == "above":
+            reading = (
+                f"O resultado do município está {value} {unit_label} abaixo do "
+                "valor do Rio Grande do Sul, em posição favorável."
+            )
+        else:
+            reading = (
+                f"O resultado do município está {value} {unit_label} acima do "
+                "valor do Rio Grande do Sul e apresenta maior espaço para avançar."
+            )
+    return {
+        "municipalityValue": municipality_value,
+        "stateValue": state_value,
+        "year": year,
+        "favorableDifference": favorable,
+        "state": public_state,
+        "reading": reading,
+    }
+
+
+def _public_statewide_position(
+    indicator: Mapping[str, Any],
+) -> dict[str, str] | None:
+    distribution = (
+        (indicator.get("benchmarks") or {}).get("municipalDistribution") or {}
+    )
+    percentile = _finite_number(distribution.get("performancePercentile"))
+    if (
+        distribution.get("status") != "available"
+        or percentile is None
+        or percentile < 0
+        or percentile > 100
+    ):
+        return None
+    if percentile >= 75:
+        return {
+            "band": "top_quarter",
+            "reading": (
+                "O município está entre os 25% com resultados mais favoráveis "
+                "do Rio Grande do Sul."
+            ),
+        }
+    if percentile >= 25:
+        return {
+            "band": "middle",
+            "reading": (
+                "O resultado está na faixa intermediária entre os municípios "
+                "do Rio Grande do Sul."
+            ),
+        }
+    return {
+        "band": "more_room_to_advance",
+        "reading": (
+            "O município está entre os que apresentam maior espaço para avançar "
+            "neste resultado."
+        ),
+    }
+
+
+def _public_similar_municipalities(
+    indicator: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    peers = indicator.get("similarMunicipalities") or {}
+    compatibility = peers.get("compatibility") or {}
+    required_compatibility = {
+        "sameIndicator",
+        "sameYear",
+        "sameFormula",
+        "sameUnit",
+        "sameTerritorialBasis",
+        "sameOfferBasis",
+    }
+    statistics = peers.get("statistics") or {}
+    median = _finite_number(statistics.get("median"))
+    current = _finite_number(indicator.get("rawValue"))
+    year = _integer(peers.get("year"))
+    direction = indicator.get("direction")
+    if (
+        peers.get("status") != "available"
+        or peers.get("indicatorId") != indicator.get("indicatorId")
+        or year != _integer(indicator.get("currentYear"))
+        or median is None
+        or current is None
+        or direction not in {"at_least", "at_most"}
+        or set(peers.get("featuresUsed") or []) != {"offering_size"}
+        or not all(compatibility.get(key) is True for key in required_compatibility)
+    ):
+        return None
+    favorable = calculate_state_favorable_difference(current, median, str(direction))
+    if favorable is None:
+        return None
+    state = (
+        "near"
+        if abs(favorable) <= STATE_EQUIVALENCE_TOLERANCE
+        else "above" if favorable > 0 else "below"
+    )
+    public_position = {
+        "above": "acima",
+        "near": "próximo",
+        "below": "abaixo",
+    }[state]
+    return {
+        "title": "Municípios com oferta educacional de tamanho semelhante",
+        "median": median,
+        "favorableDifference": favorable,
+        "state": state,
+        "reading": (
+            "Entre municípios com oferta educacional de tamanho semelhante, "
+            f"o resultado está {public_position} da mediana."
+        ),
+    }
+
+
+def _public_trajectory(indicator: Mapping[str, Any]) -> dict[str, Any] | None:
+    trajectory = indicator.get("trajectory") or {}
+    pace = _finite_number(trajectory.get("observedFavorableAnnualPace"))
+    if (
+        indicator.get("targetComparisonStatus") != "eligible"
+        or trajectory.get("status") != "available"
+        or trajectory.get("scenarioType") != "component_maintenance"
+        or str(trajectory.get("quality") or "not_assessed").lower()
+        == "not_assessed"
+        or pace is None
+        or (_integer(trajectory.get("historyPointCount")) or 0) < 2
+        or _finite_number(trajectory.get("projectedValue")) is None
+    ):
+        return None
+    if pace > 1e-9:
+        historical_state = "improved"
+        historical_reading = "O resultado melhorou nos últimos anos."
+    elif pace < -1e-9:
+        historical_state = "declined"
+        historical_reading = "O resultado recuou no período recente."
+    else:
+        historical_state = "stable"
+        historical_reading = "O resultado permaneceu próximo do mesmo nível."
+    payload: dict[str, Any] = {
+        "historicalState": historical_state,
+        "historicalReading": historical_reading,
+    }
+    estimated_year = _integer(trajectory.get("estimatedAchievementYear"))
+    base_year = _integer(trajectory.get("baseYear"))
+    if estimated_year is not None and (base_year is None or estimated_year >= base_year):
+        payload["estimatedAchievementYear"] = estimated_year
+        payload["achievementReading"] = (
+            "Se a evolução recente continuar, o município pode alcançar o valor "
+            f"previsto em {estimated_year}."
+        )
+    return payload
+
+
+def _combined_public_reading(
+    classification: str, state_comparison: Mapping[str, Any] | None
+) -> str:
+    state = state_comparison.get("state") if state_comparison else None
+    if classification == "maintain" and state in {"above", "near"}:
+        return (
+            "Resultado a manter. O valor previsto foi alcançado e o município "
+            "está em posição favorável no Rio Grande do Sul."
+        )
+    if classification == "maintain" and state == "below":
+        return (
+            "O valor previsto foi alcançado. O resultado deve continuar sendo "
+            "acompanhado em relação ao Rio Grande do Sul."
+        )
+    if classification == "advance" and state in {"above", "near"}:
+        return (
+            "Ponto para avançar. O valor previsto ainda não foi alcançado, embora "
+            "o resultado esteja próximo ou acima do Rio Grande do Sul."
+        )
+    if classification == "advance" and state == "below":
+        return (
+            "Ponto para avançar. Há espaço para melhorar em relação à meta e ao "
+            "resultado do Rio Grande do Sul."
+        )
+    if classification == "maintain":
+        return "Resultado a manter. O valor previsto neste resultado foi alcançado."
+    return "Ponto para avançar. O valor previsto neste resultado ainda não foi alcançado."
+
+
+def _public_source_is_official(source: Mapping[str, Any]) -> bool:
+    source_id = str(source.get("id") or "")
+    official_url = str(source.get("officialUrl") or "")
+    expected_prefix = {
+        "inep_censo_escolar": "https://www.gov.br/inep/",
+        "ibge_censo_demografico_2010_2022": "https://www.ibge.gov.br/",
+    }.get(source_id)
+    return bool(
+        expected_prefix
+        and official_url.startswith(expected_prefix)
+        and source.get("organization")
+        and source.get("publicTitle")
+        and source.get("period")
+    )
+
+
+def build_pne_2026_public_diagnostic(
+    municipal_diagnostic_contract: Mapping[str, Any],
+    *,
+    config: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build the closed presentation contract without mutating technical data."""
+
+    resolved_config = dict(config or load_pne_2026_public_diagnostic_config())
+    configured_goals = list(resolved_config.get("goals") or [])
+    allowed_goal_ids = [str(goal["goalId"]) for goal in configured_goals]
+    relationships = [
+        (goal, relationship)
+        for goal in configured_goals
+        for relationship in goal.get("relationships") or []
+    ]
+    allowed_indicator_ids = [
+        str(relationship["indicatorId"]) for _, relationship in relationships
+    ]
+    relationship_types = [
+        str(relationship.get("relationship")) for _, relationship in relationships
+    ]
+    if (
+        resolved_config.get("version") != "pne2026-public-diagnostic-v1"
+        or resolved_config.get("cycleId") != "pne_2026_2036"
+    ):
+        raise ValueError("Versão ou ciclo público não reconhecido.")
+    if len(allowed_goal_ids) != 24 or len(set(allowed_goal_ids)) != 24:
+        raise ValueError("A configuração pública deve conter 24 metas únicas.")
+    if len(allowed_indicator_ids) != 20 or len(set(allowed_indicator_ids)) != 20:
+        raise ValueError("A configuração pública deve conter 20 indicadores únicos.")
+    if (
+        relationship_types.count("direct") != 11
+        or relationship_types.count("partial_component") != 9
+        or set(relationship_types) != {"direct", "partial_component"}
+    ):
+        raise ValueError(
+            "A configuração pública deve conter 11 vínculos diretos e 9 parciais."
+        )
+
+    source_registry = {
+        str(source["id"]): dict(source) for source in resolved_config.get("sources") or []
+    }
+    indicators = {
+        str(indicator.get("indicatorId")): indicator
+        for indicator in municipal_diagnostic_contract.get("indicators") or []
+    }
+    public_goals: list[dict[str, Any]] = []
+    used_source_ids: list[str] = []
+
+    for order, goal in enumerate(configured_goals, start=1):
+        public_results: list[dict[str, Any]] = []
+        for relationship in goal.get("relationships") or []:
+            indicator_id = str(relationship["indicatorId"])
+            indicator = indicators.get(indicator_id)
+            if not indicator:
+                continue
+            _validate_public_directional_fields(indicator)
+            current = _finite_number(indicator.get("rawValue"))
+            current_year = _integer(indicator.get("currentYear"))
+            unit = str(indicator.get("unit") or "")
+            reference = indicator.get("configuredReference") or {}
+            target = _finite_number(reference.get("value"))
+            target_year = _integer(reference.get("year"))
+            direction = indicator.get("direction")
+            favorable = _finite_number(indicator.get("favorableDistance"))
+            remaining = _finite_number(indicator.get("remainingGap"))
+            goal_attained = indicator.get("goalAttained")
+            source_ids = [
+                str(source_id)
+                for source_id in (indicator.get("source") or {}).get("sourceIds") or []
+            ]
+            sources_are_official = bool(source_ids) and all(
+                source_id in source_registry
+                and _public_source_is_official(source_registry[source_id])
+                for source_id in source_ids
+            )
+            if (
+                indicator.get("targetComparisonStatus") != "eligible"
+                or current is None
+                or current_year is None
+                or unit not in {"percent", "index", "count", "years"}
+                or not sources_are_official
+                or target is None
+                or target_year is None
+                or direction not in {"at_least", "at_most"}
+                or favorable is None
+                or remaining is None
+                or not isinstance(goal_attained, bool)
+            ):
+                continue
+            classification = "maintain" if goal_attained else "advance"
+            state_comparison = _public_state_comparison(indicator)
+            result_payload: dict[str, Any] = {
+                "indicatorId": indicator_id,
+                "relationship": str(relationship["relationship"]),
+                "theme": str(indicator.get("theme") or ""),
+                "publicName": str(indicator.get("title") or indicator_id),
+                "current": {
+                    "value": current,
+                    "displayValue": _finite_number(indicator.get("displayValue")),
+                    "year": current_year,
+                    "unit": unit,
+                },
+                "target": {
+                    "value": target,
+                    "displayValue": target,
+                    "year": target_year,
+                    "direction": direction,
+                },
+                "classification": classification,
+                "targetReading": _public_target_reading(
+                    classification=classification,
+                    favorable_difference=favorable,
+                    remaining_gap=remaining,
+                    direction=str(direction),
+                    unit=unit,
+                ),
+                "remainingGap": remaining,
+                "favorableDifference": favorable,
+                "publicReading": _combined_public_reading(
+                    classification, state_comparison
+                ),
+                "sourceIds": source_ids,
+            }
+            if state_comparison is not None:
+                result_payload["stateComparison"] = state_comparison
+            statewide_position = _public_statewide_position(indicator)
+            if statewide_position is not None:
+                result_payload["statewidePosition"] = statewide_position
+            similar = _public_similar_municipalities(indicator)
+            if similar is not None:
+                result_payload["similarMunicipalities"] = similar
+            trajectory = _public_trajectory(indicator)
+            if trajectory is not None:
+                result_payload["trajectory"] = trajectory
+            public_results.append(result_payload)
+            for source_id in source_ids:
+                if source_id not in used_source_ids:
+                    used_source_ids.append(source_id)
+        if not public_results:
+            continue
+        target_years = {result["target"]["year"] for result in public_results}
+        public_goals.append(
+            {
+                "goalId": str(goal["goalId"]),
+                "order": order,
+                "publicTitle": str(goal["publicTitle"]),
+                "publicDescription": str(goal["publicDescription"]),
+                "targetYear": next(iter(target_years)) if len(target_years) == 1 else None,
+                "results": public_results,
+            }
+        )
+
+    flat_results = [
+        result for goal in public_goals for result in goal.get("results") or []
+    ]
+    themes: list[dict[str, Any]] = []
+    for result in flat_results:
+        theme = result["theme"]
+        existing = next((item for item in themes if item["theme"] == theme), None)
+        if existing is None:
+            existing = {
+                "theme": theme,
+                "publicTitle": CATEGORY_LABELS.get(theme, theme),
+                "displayedResultsCount": 0,
+                "maintainResultsCount": 0,
+                "advanceResultsCount": 0,
+                "goalIds": [],
+            }
+            themes.append(existing)
+        existing["displayedResultsCount"] += 1
+        existing[f"{result['classification']}ResultsCount"] += 1
+        goal_id = next(
+            goal["goalId"] for goal in public_goals if result in goal["results"]
+        )
+        if goal_id not in existing["goalIds"]:
+            existing["goalIds"].append(goal_id)
+
+    return {
+        "version": str(resolved_config["version"]),
+        "cycleId": str(resolved_config["cycleId"]),
+        "scope": {
+            "allowedGoalIds": allowed_goal_ids,
+            "allowedIndicatorIds": allowed_indicator_ids,
+        },
+        "summary": {
+            "displayedResultsCount": len(flat_results),
+            "reachedResultsCount": sum(
+                result["classification"] == "maintain" for result in flat_results
+            ),
+            "advanceResultsCount": sum(
+                result["classification"] == "advance" for result in flat_results
+            ),
+            "stateAboveOrNearCount": sum(
+                result.get("stateComparison", {}).get("state") in {"above", "near"}
+                for result in flat_results
+            ),
+            "stateBelowCount": sum(
+                result.get("stateComparison", {}).get("state") == "below"
+                for result in flat_results
+            ),
+        },
+        "themes": themes,
+        "goals": public_goals,
+        "sources": [source_registry[source_id] for source_id in used_source_ids],
+    }
+
+
 def build_municipal_diagnostic_v2(
     *,
     municipality_name: str,
@@ -2609,7 +3164,7 @@ def build_municipal_diagnostic_v2(
         )
 
     public_municipality_id = str(municipality_id or f"name:{municipality_name}")
-    return {
+    contract = {
         "schemaVersion": SCHEMA_VERSION,
         "methodologyVersion": METHODOLOGY_VERSION,
         "generatedAt": generated_at,
@@ -2695,6 +3250,8 @@ def build_municipal_diagnostic_v2(
             "deferredStages": ["P4-remaining", "P5-B", "P6"],
         },
     }
+    contract["pne2026PublicDiagnostic"] = build_pne_2026_public_diagnostic(contract)
+    return contract
 
 
 def apply_partitioned_municipality_id(

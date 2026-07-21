@@ -31,8 +31,9 @@ export function ExplorableIndicatorCardFrame({
   const usesEducationReference = isEditorialCard
   const statusTone = status?.tone ?? 'default'
   const valueLength = Array.from(String(value?.display ?? '')).length
+  const denseValueLength = anatomy === 'financial' ? 11 : 9
   const valueScaleClass = isEditorialCard
-    ? valueLength >= 9
+    ? valueLength >= denseValueLength
       ? ' indicator-card-shell__value-row--dense'
       : valueLength >= 6
         ? ' indicator-card-shell__value-row--compact'

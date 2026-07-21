@@ -1,5 +1,5 @@
 import { DiagnosticPanel } from '../components/DiagnosticPanel'
-import { ErrorState } from '../components/ErrorState'
+import { ContentState } from '../components/ContentState'
 import { LoadingState } from '../components/LoadingState'
 import { selectMunicipalDiagnosticContract } from '../features/diagnostic/diagnosticPresentation'
 import { useMunicipioDiagnostic } from '../hooks/useMunicipioDiagnostic'
@@ -9,15 +9,17 @@ export function Diagnostico({ municipioData, selectedMunicipio }) {
   const { data, error, loading } = useMunicipioDiagnostic(slug)
 
   if (loading) {
-    return <LoadingState message={`Carregando diagnóstico de ${selectedMunicipio}...`} />
+    return <LoadingState message={`Carregando o diagnóstico de ${selectedMunicipio}…`} />
   }
 
   if (error) {
     return (
-      <ErrorState
-        title="Erro ao carregar o diagnóstico"
-        message={error}
-      />
+      <ContentState kind="error" className="pne-diagnostic-error">
+        <strong>Não foi possível abrir o diagnóstico agora. Tente novamente.</strong>
+        <button type="button" onClick={() => globalThis.window?.location.reload()}>
+          Tentar novamente
+        </button>
+      </ContentState>
     )
   }
 
@@ -28,7 +30,6 @@ export function Diagnostico({ municipioData, selectedMunicipio }) {
       contractStatus={status}
       data={contract}
       municipio={selectedMunicipio}
-      municipioSlug={slug}
     />
   )
 }
