@@ -1,0 +1,1616 @@
+{
+  "schemaVersion": "municipal-education-overview-v1",
+  "publicationState": "published",
+  "municipality": {
+    "idMunicipality": "4304804",
+    "name": "Carlos Barbosa",
+    "slug": "carlos-barbosa"
+  },
+  "reference": {
+    "year": 2025,
+    "generatedAt": "2026-07-22T19:11:38-03:00"
+  },
+  "universe": {
+    "territorialBasis": "school_location",
+    "locationLabel": "Localização da escola",
+    "basicEducationSourceField": "QT_MAT_BAS",
+    "methodologyNotes": [
+      "O snapshot usa exclusivamente o ano de 2025; não há seleção dinâmica nem fallback anual.",
+      "Educação Básica usa QT_MAT_BAS como total oficial e não é recomposta pela soma das etapas.",
+      "A base territorial é o município onde a escola está localizada; urbana e rural referem-se à localização da escola.",
+      "Subtotais públicos só são derivados quando municipal, estadual e federal estão observados ou com zero derivado; ausências não confirmadas permanecem indisponíveis.",
+      "Linhas com os sete campos centrais nulos não aumentam totais e mantêm indisponível apenas o recorte de rede/localização afetado.",
+      "Zero derivado exige carga municipal completa de 2025, domínios válidos, ausência de duplicidade/negativos, total da etapa observado e ausência de nullCoreRow no recorte.",
+      "Os cinco componentes principais da composição reconciliam com QT_MAT_BAS; detalhamentos internos não são somados novamente.",
+      "A Educação Especial é um recorte transversal já incluído nas etapas e modalidades da Educação Básica.",
+      "As taxas de rendimento usam os registros municipais do INEP para o conjunto das redes, sem média entre escolas ou dependências."
+    ]
+  },
+  "basicEducation": {
+    "total": {
+      "value": 5624,
+      "state": "observed",
+      "year": 2025,
+      "sourceId": "inep_censo_escolar",
+      "sourceField": "QT_MAT_BAS"
+    }
+  },
+  "basicEducationComposition": {
+    "total": {
+      "value": 5624,
+      "state": "observed",
+      "year": 2025,
+      "sourceId": "inep_censo_escolar",
+      "sourceField": "QT_MAT_BAS"
+    },
+    "components": {
+      "earlyChildhood": {
+        "total": {
+          "value": 1402,
+          "state": "observed",
+          "year": 2025,
+          "sourceId": "inep_censo_escolar",
+          "sourceField": "QT_MAT_INF"
+        },
+        "details": {
+          "creche": {
+            "value": 675,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_INF_CRE"
+          },
+          "preSchool": {
+            "value": 727,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_INF_PRE"
+          }
+        }
+      },
+      "elementary": {
+        "total": {
+          "value": 3269,
+          "state": "observed",
+          "year": 2025,
+          "sourceId": "inep_censo_escolar",
+          "sourceField": "QT_MAT_FUND"
+        },
+        "details": {
+          "initialYears": {
+            "value": 1927,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_FUND_AI"
+          },
+          "finalYears": {
+            "value": 1342,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_FUND_AF"
+          }
+        }
+      },
+      "highSchool": {
+        "total": {
+          "value": 810,
+          "state": "observed",
+          "year": 2025,
+          "sourceId": "inep_censo_escolar",
+          "sourceField": "QT_MAT_MED"
+        },
+        "details": {
+          "integratedTechnical": {
+            "value": 0,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_MED_IFTP_CT"
+          }
+        }
+      },
+      "youthAndAdultEducation": {
+        "total": {
+          "value": 61,
+          "state": "observed",
+          "year": 2025,
+          "sourceId": "inep_censo_escolar",
+          "sourceField": "QT_MAT_EJA"
+        },
+        "details": {
+          "elementary": {
+            "value": 48,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_EJA_FUND"
+          },
+          "highSchool": {
+            "value": 13,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_EJA_MED"
+          }
+        }
+      },
+      "otherProfessionalOffers": {
+        "total": {
+          "value": 82,
+          "state": "observed",
+          "year": 2025,
+          "sourceId": "inep_censo_escolar",
+          "sourceField": "derived:QT_MAT_PROF_TEC_CONC+QT_MAT_PROF_TEC_SUBS+QT_MAT_PROF_TEC_IFTP_CT+QT_MAT_PROF_IFTP_QP+QT_MAT_PROF_FIC_CONC"
+        },
+        "details": {
+          "concomitantTechnical": {
+            "value": 0,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_PROF_TEC_CONC"
+          },
+          "subsequentTechnical": {
+            "value": 82,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_PROF_TEC_SUBS"
+          },
+          "otherOffers": {
+            "value": 0,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "derived:QT_MAT_PROF_TEC_IFTP_CT+QT_MAT_PROF_IFTP_QP+QT_MAT_PROF_FIC_CONC"
+          }
+        }
+      }
+    },
+    "reconciliation": {
+      "id": "basic_education_composition",
+      "label": "Cinco componentes aditivos = Educação Básica",
+      "expected": 5624,
+      "observed": 5624,
+      "difference": 0,
+      "status": "reconciled"
+    }
+  },
+  "specialEducation": {
+    "total": {
+      "value": 287,
+      "state": "observed",
+      "year": 2025,
+      "sourceId": "inep_censo_escolar",
+      "sourceField": "QT_MAT_ESP"
+    },
+    "commonClasses": {
+      "value": 232,
+      "state": "observed",
+      "year": 2025,
+      "sourceId": "inep_censo_escolar",
+      "sourceField": "QT_MAT_ESP_CC"
+    },
+    "exclusiveClasses": {
+      "value": 55,
+      "state": "observed",
+      "year": 2025,
+      "sourceId": "inep_censo_escolar",
+      "sourceField": "QT_MAT_ESP_CE"
+    }
+  },
+  "highSchool": {
+    "total": {
+      "total": {
+        "value": 810,
+        "state": "observed",
+        "year": 2025,
+        "sourceId": "inep_censo_escolar",
+        "sourceField": "QT_MAT_MED"
+      },
+      "shareOfBasicEducation": {
+        "value": 14.402560455192035,
+        "numerator": 810,
+        "denominator": 5624,
+        "state": "observed",
+        "year": 2025,
+        "sourceId": "inep_censo_escolar"
+      },
+      "byNetwork": {
+        "publicSubtotal": {
+          "enrollments": {
+            "value": 727,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "derived:municipal+estadual+federal"
+          },
+          "share": {
+            "value": 89.75308641975307,
+            "numerator": 727,
+            "denominator": 810,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "municipal": {
+          "enrollments": {
+            "value": 0,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_MED"
+          },
+          "share": {
+            "value": 0.0,
+            "numerator": 0,
+            "denominator": 810,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "state": {
+          "enrollments": {
+            "value": 727,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_MED"
+          },
+          "share": {
+            "value": 89.75308641975307,
+            "numerator": 727,
+            "denominator": 810,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "federal": {
+          "enrollments": {
+            "value": 0,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_MED"
+          },
+          "share": {
+            "value": 0.0,
+            "numerator": 0,
+            "denominator": 810,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "private": {
+          "enrollments": {
+            "value": 83,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_MED"
+          },
+          "share": {
+            "value": 10.246913580246913,
+            "numerator": 83,
+            "denominator": 810,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        }
+      },
+      "bySchoolLocation": {
+        "urban": {
+          "enrollments": {
+            "value": 810,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_MED"
+          },
+          "share": {
+            "value": 100.0,
+            "numerator": 810,
+            "denominator": 810,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "rural": {
+          "enrollments": {
+            "value": 0,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_MED"
+          },
+          "share": {
+            "value": 0.0,
+            "numerator": 0,
+            "denominator": 810,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        }
+      }
+    },
+    "integratedTechnical": {
+      "total": {
+        "value": 0,
+        "state": "observed",
+        "year": 2025,
+        "sourceId": "inep_censo_escolar",
+        "sourceField": "QT_MAT_MED_IFTP_CT"
+      },
+      "shareOfHighSchool": {
+        "value": 0.0,
+        "numerator": 0,
+        "denominator": 810,
+        "state": "observed",
+        "year": 2025,
+        "sourceId": "inep_censo_escolar"
+      }
+    }
+  },
+  "schoolPerformance": {
+    "referenceYear": 2025,
+    "stages": {
+      "elementary": {
+        "approval": {
+          "value": 99.2,
+          "state": "observed",
+          "year": 2025,
+          "sourceId": "inep_taxas_rendimento_escolar",
+          "sourceField": "taxa_aprovacao"
+        },
+        "failure": {
+          "value": 0.8,
+          "state": "observed",
+          "year": 2025,
+          "sourceId": "inep_taxas_rendimento_escolar",
+          "sourceField": "taxa_reprovacao"
+        },
+        "dropout": {
+          "value": 0,
+          "state": "observed",
+          "year": 2025,
+          "sourceId": "inep_taxas_rendimento_escolar",
+          "sourceField": "taxa_abandono"
+        }
+      },
+      "initialYears": {
+        "approval": {
+          "value": 99.5,
+          "state": "observed",
+          "year": 2025,
+          "sourceId": "inep_taxas_rendimento_escolar",
+          "sourceField": "taxa_aprovacao"
+        },
+        "failure": {
+          "value": 0.4,
+          "state": "observed",
+          "year": 2025,
+          "sourceId": "inep_taxas_rendimento_escolar",
+          "sourceField": "taxa_reprovacao"
+        },
+        "dropout": {
+          "value": 0.1,
+          "state": "observed",
+          "year": 2025,
+          "sourceId": "inep_taxas_rendimento_escolar",
+          "sourceField": "taxa_abandono"
+        }
+      },
+      "finalYears": {
+        "approval": {
+          "value": 98.8,
+          "state": "observed",
+          "year": 2025,
+          "sourceId": "inep_taxas_rendimento_escolar",
+          "sourceField": "taxa_aprovacao"
+        },
+        "failure": {
+          "value": 1.2,
+          "state": "observed",
+          "year": 2025,
+          "sourceId": "inep_taxas_rendimento_escolar",
+          "sourceField": "taxa_reprovacao"
+        },
+        "dropout": {
+          "value": 0,
+          "state": "observed",
+          "year": 2025,
+          "sourceId": "inep_taxas_rendimento_escolar",
+          "sourceField": "taxa_abandono"
+        }
+      },
+      "highSchool": {
+        "approval": {
+          "value": 95.2,
+          "state": "observed",
+          "year": 2025,
+          "sourceId": "inep_taxas_rendimento_escolar",
+          "sourceField": "taxa_aprovacao"
+        },
+        "failure": {
+          "value": 3,
+          "state": "observed",
+          "year": 2025,
+          "sourceId": "inep_taxas_rendimento_escolar",
+          "sourceField": "taxa_reprovacao"
+        },
+        "dropout": {
+          "value": 1.8,
+          "state": "observed",
+          "year": 2025,
+          "sourceId": "inep_taxas_rendimento_escolar",
+          "sourceField": "taxa_abandono"
+        }
+      }
+    },
+    "sourceId": "inep_taxas_rendimento_escolar"
+  },
+  "earlyChildhood": {
+    "total": {
+      "total": {
+        "value": 1402,
+        "state": "observed",
+        "year": 2025,
+        "sourceId": "inep_censo_escolar",
+        "sourceField": "QT_MAT_INF"
+      },
+      "shareOfBasicEducation": {
+        "value": 24.92887624466572,
+        "numerator": 1402,
+        "denominator": 5624,
+        "state": "observed",
+        "year": 2025,
+        "sourceId": "inep_censo_escolar"
+      },
+      "byNetwork": {
+        "publicSubtotal": {
+          "enrollments": {
+            "value": 1179,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "derived:municipal+estadual+federal"
+          },
+          "share": {
+            "value": 84.0941512125535,
+            "numerator": 1179,
+            "denominator": 1402,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "municipal": {
+          "enrollments": {
+            "value": 1179,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_INF"
+          },
+          "share": {
+            "value": 84.0941512125535,
+            "numerator": 1179,
+            "denominator": 1402,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "state": {
+          "enrollments": {
+            "value": 0,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_INF"
+          },
+          "share": {
+            "value": 0.0,
+            "numerator": 0,
+            "denominator": 1402,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "federal": {
+          "enrollments": {
+            "value": 0,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_INF"
+          },
+          "share": {
+            "value": 0.0,
+            "numerator": 0,
+            "denominator": 1402,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "private": {
+          "enrollments": {
+            "value": 223,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_INF"
+          },
+          "share": {
+            "value": 15.905848787446505,
+            "numerator": 223,
+            "denominator": 1402,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        }
+      },
+      "bySchoolLocation": {
+        "urban": {
+          "enrollments": {
+            "value": 1318,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_INF"
+          },
+          "share": {
+            "value": 94.00855920114122,
+            "numerator": 1318,
+            "denominator": 1402,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "rural": {
+          "enrollments": {
+            "value": 84,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_INF"
+          },
+          "share": {
+            "value": 5.991440798858773,
+            "numerator": 84,
+            "denominator": 1402,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        }
+      }
+    },
+    "creche": {
+      "total": {
+        "value": 675,
+        "state": "observed",
+        "year": 2025,
+        "sourceId": "inep_censo_escolar",
+        "sourceField": "QT_MAT_INF_CRE"
+      },
+      "shareOfBasicEducation": {
+        "value": 12.002133712660028,
+        "numerator": 675,
+        "denominator": 5624,
+        "state": "observed",
+        "year": 2025,
+        "sourceId": "inep_censo_escolar"
+      },
+      "byNetwork": {
+        "publicSubtotal": {
+          "enrollments": {
+            "value": 547,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "derived:municipal+estadual+federal"
+          },
+          "share": {
+            "value": 81.03703703703704,
+            "numerator": 547,
+            "denominator": 675,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "municipal": {
+          "enrollments": {
+            "value": 547,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_INF_CRE"
+          },
+          "share": {
+            "value": 81.03703703703704,
+            "numerator": 547,
+            "denominator": 675,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "state": {
+          "enrollments": {
+            "value": 0,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_INF_CRE"
+          },
+          "share": {
+            "value": 0.0,
+            "numerator": 0,
+            "denominator": 675,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "federal": {
+          "enrollments": {
+            "value": 0,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_INF_CRE"
+          },
+          "share": {
+            "value": 0.0,
+            "numerator": 0,
+            "denominator": 675,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "private": {
+          "enrollments": {
+            "value": 128,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_INF_CRE"
+          },
+          "share": {
+            "value": 18.962962962962962,
+            "numerator": 128,
+            "denominator": 675,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        }
+      },
+      "bySchoolLocation": {
+        "urban": {
+          "enrollments": {
+            "value": 650,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_INF_CRE"
+          },
+          "share": {
+            "value": 96.29629629629629,
+            "numerator": 650,
+            "denominator": 675,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "rural": {
+          "enrollments": {
+            "value": 25,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_INF_CRE"
+          },
+          "share": {
+            "value": 3.7037037037037033,
+            "numerator": 25,
+            "denominator": 675,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        }
+      },
+      "shareOfParentStage": {
+        "value": 48.14550641940086,
+        "numerator": 675,
+        "denominator": 1402,
+        "state": "observed",
+        "year": 2025,
+        "sourceId": "inep_censo_escolar"
+      }
+    },
+    "preSchool": {
+      "total": {
+        "value": 727,
+        "state": "observed",
+        "year": 2025,
+        "sourceId": "inep_censo_escolar",
+        "sourceField": "QT_MAT_INF_PRE"
+      },
+      "shareOfBasicEducation": {
+        "value": 12.926742532005688,
+        "numerator": 727,
+        "denominator": 5624,
+        "state": "observed",
+        "year": 2025,
+        "sourceId": "inep_censo_escolar"
+      },
+      "byNetwork": {
+        "publicSubtotal": {
+          "enrollments": {
+            "value": 632,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "derived:municipal+estadual+federal"
+          },
+          "share": {
+            "value": 86.93259972489685,
+            "numerator": 632,
+            "denominator": 727,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "municipal": {
+          "enrollments": {
+            "value": 632,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_INF_PRE"
+          },
+          "share": {
+            "value": 86.93259972489685,
+            "numerator": 632,
+            "denominator": 727,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "state": {
+          "enrollments": {
+            "value": 0,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_INF_PRE"
+          },
+          "share": {
+            "value": 0.0,
+            "numerator": 0,
+            "denominator": 727,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "federal": {
+          "enrollments": {
+            "value": 0,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_INF_PRE"
+          },
+          "share": {
+            "value": 0.0,
+            "numerator": 0,
+            "denominator": 727,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "private": {
+          "enrollments": {
+            "value": 95,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_INF_PRE"
+          },
+          "share": {
+            "value": 13.067400275103164,
+            "numerator": 95,
+            "denominator": 727,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        }
+      },
+      "bySchoolLocation": {
+        "urban": {
+          "enrollments": {
+            "value": 668,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_INF_PRE"
+          },
+          "share": {
+            "value": 91.88445667125173,
+            "numerator": 668,
+            "denominator": 727,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "rural": {
+          "enrollments": {
+            "value": 59,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_INF_PRE"
+          },
+          "share": {
+            "value": 8.11554332874828,
+            "numerator": 59,
+            "denominator": 727,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        }
+      },
+      "shareOfParentStage": {
+        "value": 51.85449358059915,
+        "numerator": 727,
+        "denominator": 1402,
+        "state": "observed",
+        "year": 2025,
+        "sourceId": "inep_censo_escolar"
+      }
+    }
+  },
+  "elementary": {
+    "total": {
+      "total": {
+        "value": 3269,
+        "state": "observed",
+        "year": 2025,
+        "sourceId": "inep_censo_escolar",
+        "sourceField": "QT_MAT_FUND"
+      },
+      "shareOfBasicEducation": {
+        "value": 58.12588904694168,
+        "numerator": 3269,
+        "denominator": 5624,
+        "state": "observed",
+        "year": 2025,
+        "sourceId": "inep_censo_escolar"
+      },
+      "byNetwork": {
+        "publicSubtotal": {
+          "enrollments": {
+            "value": 2870,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "derived:municipal+estadual+federal"
+          },
+          "share": {
+            "value": 87.79443254817987,
+            "numerator": 2870,
+            "denominator": 3269,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "municipal": {
+          "enrollments": {
+            "value": 1719,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_FUND"
+          },
+          "share": {
+            "value": 52.58488834505965,
+            "numerator": 1719,
+            "denominator": 3269,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "state": {
+          "enrollments": {
+            "value": 1151,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_FUND"
+          },
+          "share": {
+            "value": 35.20954420312022,
+            "numerator": 1151,
+            "denominator": 3269,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "federal": {
+          "enrollments": {
+            "value": 0,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_FUND"
+          },
+          "share": {
+            "value": 0.0,
+            "numerator": 0,
+            "denominator": 3269,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "private": {
+          "enrollments": {
+            "value": 399,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_FUND"
+          },
+          "share": {
+            "value": 12.205567451820128,
+            "numerator": 399,
+            "denominator": 3269,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        }
+      },
+      "bySchoolLocation": {
+        "urban": {
+          "enrollments": {
+            "value": 2980,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_FUND"
+          },
+          "share": {
+            "value": 91.15937595594983,
+            "numerator": 2980,
+            "denominator": 3269,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "rural": {
+          "enrollments": {
+            "value": 289,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_FUND"
+          },
+          "share": {
+            "value": 8.840624044050168,
+            "numerator": 289,
+            "denominator": 3269,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        }
+      }
+    },
+    "initialYears": {
+      "total": {
+        "value": 1927,
+        "state": "observed",
+        "year": 2025,
+        "sourceId": "inep_censo_escolar",
+        "sourceField": "QT_MAT_FUND_AI"
+      },
+      "shareOfBasicEducation": {
+        "value": 34.26386913229019,
+        "numerator": 1927,
+        "denominator": 5624,
+        "state": "observed",
+        "year": 2025,
+        "sourceId": "inep_censo_escolar"
+      },
+      "byNetwork": {
+        "publicSubtotal": {
+          "enrollments": {
+            "value": 1700,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "derived:municipal+estadual+federal"
+          },
+          "share": {
+            "value": 88.22003113648158,
+            "numerator": 1700,
+            "denominator": 1927,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "municipal": {
+          "enrollments": {
+            "value": 1106,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_FUND_AI"
+          },
+          "share": {
+            "value": 57.394914374675665,
+            "numerator": 1106,
+            "denominator": 1927,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "state": {
+          "enrollments": {
+            "value": 594,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_FUND_AI"
+          },
+          "share": {
+            "value": 30.825116761805916,
+            "numerator": 594,
+            "denominator": 1927,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "federal": {
+          "enrollments": {
+            "value": 0,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_FUND_AI"
+          },
+          "share": {
+            "value": 0.0,
+            "numerator": 0,
+            "denominator": 1927,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "private": {
+          "enrollments": {
+            "value": 227,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_FUND_AI"
+          },
+          "share": {
+            "value": 11.779968863518423,
+            "numerator": 227,
+            "denominator": 1927,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        }
+      },
+      "bySchoolLocation": {
+        "urban": {
+          "enrollments": {
+            "value": 1749,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_FUND_AI"
+          },
+          "share": {
+            "value": 90.76284379865075,
+            "numerator": 1749,
+            "denominator": 1927,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "rural": {
+          "enrollments": {
+            "value": 178,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_FUND_AI"
+          },
+          "share": {
+            "value": 9.237156201349247,
+            "numerator": 178,
+            "denominator": 1927,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        }
+      },
+      "shareOfParentStage": {
+        "value": 58.94769042520649,
+        "numerator": 1927,
+        "denominator": 3269,
+        "state": "observed",
+        "year": 2025,
+        "sourceId": "inep_censo_escolar"
+      }
+    },
+    "finalYears": {
+      "total": {
+        "value": 1342,
+        "state": "observed",
+        "year": 2025,
+        "sourceId": "inep_censo_escolar",
+        "sourceField": "QT_MAT_FUND_AF"
+      },
+      "shareOfBasicEducation": {
+        "value": 23.862019914651494,
+        "numerator": 1342,
+        "denominator": 5624,
+        "state": "observed",
+        "year": 2025,
+        "sourceId": "inep_censo_escolar"
+      },
+      "byNetwork": {
+        "publicSubtotal": {
+          "enrollments": {
+            "value": 1170,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "derived:municipal+estadual+federal"
+          },
+          "share": {
+            "value": 87.1833084947839,
+            "numerator": 1170,
+            "denominator": 1342,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "municipal": {
+          "enrollments": {
+            "value": 613,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_FUND_AF"
+          },
+          "share": {
+            "value": 45.67809239940387,
+            "numerator": 613,
+            "denominator": 1342,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "state": {
+          "enrollments": {
+            "value": 557,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_FUND_AF"
+          },
+          "share": {
+            "value": 41.505216095380035,
+            "numerator": 557,
+            "denominator": 1342,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "federal": {
+          "enrollments": {
+            "value": 0,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_FUND_AF"
+          },
+          "share": {
+            "value": 0.0,
+            "numerator": 0,
+            "denominator": 1342,
+            "state": "derived_zero",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "private": {
+          "enrollments": {
+            "value": 172,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_FUND_AF"
+          },
+          "share": {
+            "value": 12.816691505216097,
+            "numerator": 172,
+            "denominator": 1342,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        }
+      },
+      "bySchoolLocation": {
+        "urban": {
+          "enrollments": {
+            "value": 1231,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_FUND_AF"
+          },
+          "share": {
+            "value": 91.72876304023845,
+            "numerator": 1231,
+            "denominator": 1342,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        },
+        "rural": {
+          "enrollments": {
+            "value": 111,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar",
+            "sourceField": "QT_MAT_FUND_AF"
+          },
+          "share": {
+            "value": 8.271236959761548,
+            "numerator": 111,
+            "denominator": 1342,
+            "state": "observed",
+            "year": 2025,
+            "sourceId": "inep_censo_escolar"
+          }
+        }
+      },
+      "shareOfParentStage": {
+        "value": 41.05230957479352,
+        "numerator": 1342,
+        "denominator": 3269,
+        "state": "observed",
+        "year": 2025,
+        "sourceId": "inep_censo_escolar"
+      }
+    }
+  },
+  "sources": [
+    {
+      "id": "inep_censo_escolar",
+      "organization": "Instituto Nacional de Estudos e Pesquisas Educacionais Anísio Teixeira (INEP)",
+      "title": "Censo Escolar da Educação Básica",
+      "referenceYear": 2025,
+      "url": "https://www.gov.br/inep/pt-br/acesso-a-informacao/dados-abertos/microdados/censo-escolar"
+    },
+    {
+      "id": "inep_taxas_rendimento_escolar",
+      "organization": "Instituto Nacional de Estudos e Pesquisas Educacionais Anísio Teixeira (INEP)",
+      "title": "Taxas de Rendimento Escolar",
+      "referenceYear": 2025,
+      "url": "https://www.gov.br/inep/pt-br/acesso-a-informacao/dados-abertos/indicadores-educacionais/taxas-de-rendimento-escolar"
+    }
+  ],
+  "methodology": [
+    "O snapshot usa exclusivamente o ano de 2025; não há seleção dinâmica nem fallback anual.",
+    "Educação Básica usa QT_MAT_BAS como total oficial e não é recomposta pela soma das etapas.",
+    "A base territorial é o município onde a escola está localizada; urbana e rural referem-se à localização da escola.",
+    "Subtotais públicos só são derivados quando municipal, estadual e federal estão observados ou com zero derivado; ausências não confirmadas permanecem indisponíveis.",
+    "Linhas com os sete campos centrais nulos não aumentam totais e mantêm indisponível apenas o recorte de rede/localização afetado.",
+    "Zero derivado exige carga municipal completa de 2025, domínios válidos, ausência de duplicidade/negativos, total da etapa observado e ausência de nullCoreRow no recorte.",
+    "Os cinco componentes principais da composição reconciliam com QT_MAT_BAS; detalhamentos internos não são somados novamente.",
+    "A Educação Especial é um recorte transversal já incluído nas etapas e modalidades da Educação Básica.",
+    "As taxas de rendimento usam os registros municipais do INEP para o conjunto das redes, sem média entre escolas ou dependências."
+  ],
+  "quality": {
+    "reconciliations": [
+      {
+        "id": "early_childhood_substages",
+        "label": "Creche + pré-escola = Educação Infantil",
+        "expected": 1402,
+        "observed": 1402,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "elementary_substages",
+        "label": "Anos iniciais + anos finais = Ensino Fundamental",
+        "expected": 3269,
+        "observed": 3269,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "eja_substages",
+        "label": "EJA Fundamental + EJA Médio = EJA",
+        "expected": 61,
+        "observed": 61,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "special_education_classes",
+        "label": "Classes comuns + classes exclusivas = Educação Especial",
+        "expected": 287,
+        "observed": 287,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "basic_education_composition",
+        "label": "Cinco componentes aditivos = Educação Básica",
+        "expected": 5624,
+        "observed": 5624,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "early_childhood_public_subtotal",
+        "label": "Municipal + estadual + federal = subtotal público",
+        "expected": 1179,
+        "observed": 1179,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "early_childhood_network_total",
+        "label": "Subtotal público + privada = total da etapa",
+        "expected": 1402,
+        "observed": 1402,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "early_childhood_location_total",
+        "label": "Urbana + rural = total da etapa",
+        "expected": 1402,
+        "observed": 1402,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "creche_public_subtotal",
+        "label": "Municipal + estadual + federal = subtotal público",
+        "expected": 547,
+        "observed": 547,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "creche_network_total",
+        "label": "Subtotal público + privada = total da etapa",
+        "expected": 675,
+        "observed": 675,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "creche_location_total",
+        "label": "Urbana + rural = total da etapa",
+        "expected": 675,
+        "observed": 675,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "pre_school_public_subtotal",
+        "label": "Municipal + estadual + federal = subtotal público",
+        "expected": 632,
+        "observed": 632,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "pre_school_network_total",
+        "label": "Subtotal público + privada = total da etapa",
+        "expected": 727,
+        "observed": 727,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "pre_school_location_total",
+        "label": "Urbana + rural = total da etapa",
+        "expected": 727,
+        "observed": 727,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "elementary_public_subtotal",
+        "label": "Municipal + estadual + federal = subtotal público",
+        "expected": 2870,
+        "observed": 2870,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "elementary_network_total",
+        "label": "Subtotal público + privada = total da etapa",
+        "expected": 3269,
+        "observed": 3269,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "elementary_location_total",
+        "label": "Urbana + rural = total da etapa",
+        "expected": 3269,
+        "observed": 3269,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "initial_years_public_subtotal",
+        "label": "Municipal + estadual + federal = subtotal público",
+        "expected": 1700,
+        "observed": 1700,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "initial_years_network_total",
+        "label": "Subtotal público + privada = total da etapa",
+        "expected": 1927,
+        "observed": 1927,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "initial_years_location_total",
+        "label": "Urbana + rural = total da etapa",
+        "expected": 1927,
+        "observed": 1927,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "final_years_public_subtotal",
+        "label": "Municipal + estadual + federal = subtotal público",
+        "expected": 1170,
+        "observed": 1170,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "final_years_network_total",
+        "label": "Subtotal público + privada = total da etapa",
+        "expected": 1342,
+        "observed": 1342,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "final_years_location_total",
+        "label": "Urbana + rural = total da etapa",
+        "expected": 1342,
+        "observed": 1342,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "high_school_public_subtotal",
+        "label": "Municipal + estadual + federal = subtotal público",
+        "expected": 727,
+        "observed": 727,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "high_school_network_total",
+        "label": "Subtotal público + privada = total da etapa",
+        "expected": 810,
+        "observed": 810,
+        "difference": 0,
+        "status": "reconciled"
+      },
+      {
+        "id": "high_school_location_total",
+        "label": "Urbana + rural = total da etapa",
+        "expected": 810,
+        "observed": 810,
+        "difference": 0,
+        "status": "reconciled"
+      }
+    ],
+    "semanticWarnings": [],
+    "nullCoreRows": [],
+    "completeness": {
+      "referenceYear": 2025,
+      "expectedMunicipalities": 497,
+      "municipalitiesPresent": 497,
+      "annualLoadPresent": true,
+      "validDependencyDomain": true,
+      "validSchoolLocationDomain": true,
+      "duplicateGrainCount": 0,
+      "negativeValueCount": 0,
+      "isCompleteForDerivedZero": true
+    },
+    "schoolPerformanceChecks": [
+      {
+        "stage": "elementary",
+        "sum": 100.0,
+        "difference": 0.0,
+        "status": "reconciled"
+      },
+      {
+        "stage": "initialYears",
+        "sum": 100.0,
+        "difference": 0.0,
+        "status": "reconciled"
+      },
+      {
+        "stage": "finalYears",
+        "sum": 100.0,
+        "difference": 0.0,
+        "status": "reconciled"
+      },
+      {
+        "stage": "highSchool",
+        "sum": 100.0,
+        "difference": 0.0,
+        "status": "reconciled"
+      }
+    ]
+  }
+}

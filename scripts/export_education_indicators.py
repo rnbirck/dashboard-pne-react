@@ -830,15 +830,31 @@ def montar_bloco_vaar(df, id_mun):
 # ── Bloco: Matriculas ────────────────────────────────────────────────────
 
 
+ETAPAS_FUNDAMENTAL_DETALHADAS = {
+    "fundamental_anos_iniciais",
+    "fundamental_anos_finais",
+}
+
+
 def montar_bloco_matriculas(df, id_mun, df_faixa_etaria=None, df_cor_raca=None):
     """Constroi o bloco de matriculas para um municipio."""
     d = df[df["id_municipio"] == id_mun].copy()
     if d.empty:
         return _bloco_vazio("matriculas", ["etapa_ensino", "dependencia", "localizacao"])
 
-    # Serie total (dependencia=total, localizacao=total, todas as etapas somadas)
+    # Os anos iniciais e finais sao recortes do total do ensino fundamental.
+    # Mantemos esses recortes nas series por etapa, mas os excluimos de qualquer
+    # total para nao contar as mesmas matriculas duas vezes.
+    d_sem_sobreposicao = d[
+        ~d["etapa_ensino"].isin(ETAPAS_FUNDAMENTAL_DETALHADAS)
+    ]
+
+    # Serie total (dependencia=total, localizacao=total, sem recortes sobrepostos)
     total = (
-        d[(d["dependencia"] == "total") & (d["localizacao"] == "total")]
+        d_sem_sobreposicao[
+            (d_sem_sobreposicao["dependencia"] == "total")
+            & (d_sem_sobreposicao["localizacao"] == "total")
+        ]
         .groupby("ano")["matriculas"]
         .sum(min_count=1)
         .reset_index()
@@ -867,7 +883,10 @@ def montar_bloco_matriculas(df, id_mun, df_faixa_etaria=None, df_cor_raca=None):
     por_dep = {}
     for dep in ["publica", "privada", "estadual", "municipal", "federal"]:
         sub = (
-            d[(d["dependencia"] == dep) & (d["localizacao"] == "total")]
+            d_sem_sobreposicao[
+                (d_sem_sobreposicao["dependencia"] == dep)
+                & (d_sem_sobreposicao["localizacao"] == "total")
+            ]
             .groupby("ano")["matriculas"]
             .sum(min_count=1)
             .reset_index()
@@ -883,7 +902,10 @@ def montar_bloco_matriculas(df, id_mun, df_faixa_etaria=None, df_cor_raca=None):
     por_loc = {}
     for loc in ["urbana", "rural"]:
         sub = (
-            d[(d["dependencia"] == "total") & (d["localizacao"] == loc)]
+            d_sem_sobreposicao[
+                (d_sem_sobreposicao["dependencia"] == "total")
+                & (d_sem_sobreposicao["localizacao"] == loc)
+            ]
             .groupby("ano")["matriculas"]
             .sum(min_count=1)
             .reset_index()
@@ -897,7 +919,10 @@ def montar_bloco_matriculas(df, id_mun, df_faixa_etaria=None, df_cor_raca=None):
 
     # Integral
     integral = (
-        d[(d["dependencia"] == "total") & (d["localizacao"] == "total")]
+        d_sem_sobreposicao[
+            (d_sem_sobreposicao["dependencia"] == "total")
+            & (d_sem_sobreposicao["localizacao"] == "total")
+        ]
         .groupby("ano")
         .agg(matriculas=("matriculas", "sum"), integral=("matriculas_integral", "sum"))
         .reset_index()
@@ -920,12 +945,12 @@ def montar_bloco_matriculas(df, id_mun, df_faixa_etaria=None, df_cor_raca=None):
             {"dependencia": "total", "localizacao": "total"},
         ),
         "por_rede": detalhamento_matriculas(
-            d,
+            d_sem_sobreposicao,
             ["dependencia"],
             {"dependencia": deps_rede, "localizacao": "total"},
         ),
         "por_localizacao": detalhamento_matriculas(
-            d,
+            d_sem_sobreposicao,
             ["localizacao"],
             {"dependencia": "total", "localizacao": locs},
         ),
@@ -940,7 +965,7 @@ def montar_bloco_matriculas(df, id_mun, df_faixa_etaria=None, df_cor_raca=None):
             {"dependencia": "total", "localizacao": locs},
         ),
         "por_rede_localizacao": detalhamento_matriculas(
-            d,
+            d_sem_sobreposicao,
             ["dependencia", "localizacao"],
             {"dependencia": deps_rede, "localizacao": locs},
         ),
@@ -950,12 +975,12 @@ def montar_bloco_matriculas(df, id_mun, df_faixa_etaria=None, df_cor_raca=None):
             {"dependencia": "total", "localizacao": "total"},
         ),
         "tempo_integral_por_rede": detalhamento_tempo_integral(
-            d,
+            d_sem_sobreposicao,
             ["dependencia"],
             {"dependencia": deps_rede, "localizacao": "total"},
         ),
         "tempo_integral_por_localizacao": detalhamento_tempo_integral(
-            d,
+            d_sem_sobreposicao,
             ["localizacao"],
             {"dependencia": "total", "localizacao": locs},
         ),
@@ -1030,8 +1055,12 @@ def _resumo_matriculas(d, ano):
     if ano is None:
         return {}
     d_ano = d[d["ano"] == ano]
-    total = d_ano[
-        (d_ano["dependencia"] == "total") & (d_ano["localizacao"] == "total")
+    d_ano_sem_sobreposicao = d_ano[
+        ~d_ano["etapa_ensino"].isin(ETAPAS_FUNDAMENTAL_DETALHADAS)
+    ]
+    total = d_ano_sem_sobreposicao[
+        (d_ano_sem_sobreposicao["dependencia"] == "total")
+        & (d_ano_sem_sobreposicao["localizacao"] == "total")
     ]["matriculas"].sum()
 
     por_etapa = {}
@@ -1045,21 +1074,22 @@ def _resumo_matriculas(d, ano):
         if v is not None:
             por_etapa[etapa] = ri(v)
 
-    publica = d_ano[(d_ano["dependencia"] == "publica") & (d_ano["localizacao"] == "total")][
+    publica = d_ano_sem_sobreposicao[(d_ano_sem_sobreposicao["dependencia"] == "publica") & (d_ano_sem_sobreposicao["localizacao"] == "total")][
         "matriculas"
     ].sum()
-    privada = d_ano[(d_ano["dependencia"] == "privada") & (d_ano["localizacao"] == "total")][
+    privada = d_ano_sem_sobreposicao[(d_ano_sem_sobreposicao["dependencia"] == "privada") & (d_ano_sem_sobreposicao["localizacao"] == "total")][
         "matriculas"
     ].sum()
-    urbana = d_ano[(d_ano["dependencia"] == "total") & (d_ano["localizacao"] == "urbana")][
+    urbana = d_ano_sem_sobreposicao[(d_ano_sem_sobreposicao["dependencia"] == "total") & (d_ano_sem_sobreposicao["localizacao"] == "urbana")][
         "matriculas"
     ].sum()
-    rural = d_ano[(d_ano["dependencia"] == "total") & (d_ano["localizacao"] == "rural")][
+    rural = d_ano_sem_sobreposicao[(d_ano_sem_sobreposicao["dependencia"] == "total") & (d_ano_sem_sobreposicao["localizacao"] == "rural")][
         "matriculas"
     ].sum()
 
-    inte = d_ano[
-        (d_ano["dependencia"] == "total") & (d_ano["localizacao"] == "total")
+    inte = d_ano_sem_sobreposicao[
+        (d_ano_sem_sobreposicao["dependencia"] == "total")
+        & (d_ano_sem_sobreposicao["localizacao"] == "total")
     ]["matriculas_integral"].sum()
     perc_integral = r1(inte / total * 100) if limpar_null(total) and total > 0 and limpar_null(inte) else None
 

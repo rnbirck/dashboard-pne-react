@@ -89,7 +89,23 @@ export const EDUCATION_DEMAND_GROUP_CATALOG = Object.freeze([
 const SECTION_GROUP_DEFINITIONS = Object.freeze({
   [attendance]: [
     { key: 'matriculas-atendimento', label: 'Matrículas e atendimento', description: 'Matrículas observadas, tempo integral e redes de atendimento.' },
-    { key: 'oferta-etapa', label: 'Oferta por etapa', description: 'Escolas e matrículas organizadas por etapa de ensino.' },
+    {
+      key: 'oferta-etapa',
+      label: 'Oferta por etapa',
+      description: 'Escolas e matrículas organizadas por etapa e modalidade da educação básica.',
+      indicatorKeys: Object.freeze([
+        'mat-infantil',
+        'mat-fundamental',
+        'mat-medio',
+        'mat-eja',
+        'mat-profissional',
+        'rede-infantil',
+        'rede-fundamental',
+        'rede-medio',
+        'rede-eja',
+        'rede-profissional',
+      ]),
+    },
     { key: 'redes-ensino', label: 'Redes de ensino', description: 'Distribuição da oferta entre dependências administrativas.' },
   ],
   [trajectory]: [
@@ -226,6 +242,7 @@ const BASE_INDICATORS = [
     label: 'Matrículas na EJA',
     description: 'Matrículas registradas na educação de jovens e adultos.',
     section: modalities,
+    sections: [attendance, modalities],
     themeKey: 'matriculas',
     dataBlock: 'matriculas',
     seriesPath: 'series.por_etapa.eja',
@@ -238,6 +255,7 @@ const BASE_INDICATORS = [
     label: 'Matrículas na educação profissional — Censo Escolar',
     description: 'Matrículas registradas na educação profissional/técnica no Censo Escolar, por etapa de ensino.',
     section: modalities,
+    sections: [attendance, modalities],
     themeKey: 'matriculas',
     dataBlock: 'matriculas',
     seriesPath: 'series.por_etapa.profissional',
@@ -348,6 +366,7 @@ const BASE_INDICATORS = [
     label: 'EJA',
     description: 'Escolas que ofertam EJA.',
     section: modalities,
+    sections: [attendance, modalities],
     themeKey: 'rede',
     dataBlock: 'rede_escolar',
     seriesPath: 'series.por_etapa.eja',
@@ -360,6 +379,7 @@ const BASE_INDICATORS = [
     label: 'Educação Profissional',
     description: 'Escolas que ofertam educação profissional.',
     section: modalities,
+    sections: [attendance, modalities],
     themeKey: 'rede',
     dataBlock: 'rede_escolar',
     seriesPath: 'series.por_etapa.profissional',
@@ -736,7 +756,7 @@ export const EDUCATION_SECTION_GROUPS = Object.freeze(
       sectionKey,
       groups.map((group) => ({
         ...group,
-        indicatorKeys: EDUCATION_INDICATOR_CATALOG
+        indicatorKeys: group.indicatorKeys ?? EDUCATION_INDICATOR_CATALOG
           .filter((indicator) => indicator.section === sectionKey && indicator.groupKey === group.key)
           .map((indicator) => indicator.key),
       })),
@@ -765,7 +785,7 @@ export const EDUCATION_SECTION_CATALOG = Object.freeze([
     key,
     label: EDUCATION_SECTION_LABELS[key],
     description: EDUCATION_SECTION_DESCRIPTIONS[key],
-    indicatorKeys: EDUCATION_INDICATOR_CATALOG.filter((item) => item.section === key).map((item) => item.key),
+    indicatorKeys: EDUCATION_INDICATOR_CATALOG.filter((item) => item.sections.includes(key)).map((item) => item.key),
     groups: EDUCATION_SECTION_GROUPS[key],
     status: 'available-in-existing-data',
   })),

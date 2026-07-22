@@ -23,12 +23,30 @@ const formatters = await import(moduleUrl('src/features/education/educationForma
 const planningScenarios = await import(moduleUrl('src/data/planningScenarios.js'))
 const attendancePresentation = await import(moduleUrl('src/features/education/educationAttendancePresentation.js'))
 const attendanceFilters = await import(moduleUrl('src/features/education/educationAttendanceFilters.js'))
+const overviewPresentation = await import(moduleUrl('src/features/education/municipalEducationOverviewPresentation.js'))
+const overviewLoader = await import(moduleUrl('src/data/municipalEducationOverview.js'))
 const projectionEndLabels = await import(pathToFileURL(path.resolve('src/utils/projectionEndLabels.js')).href)
 
 const indicators = [
   { key: 'b', label: 'Zeta', description: 'Atendimento escolar', themeLabel: 'Matrículas' },
   { key: 'a', label: 'Álfa', description: 'Trajetória', categoryLabel: 'Fluxo' },
 ]
+
+test('visão geral municipal preserva zero, ausência e contrato ampliado', () => {
+  const base = { year: 2025, sourceId: 'inep', sourceField: 'campo' }
+  assert.equal(overviewPresentation.formatSchoolPerformanceRate({ ...base, state: 'observed', value: 0 }), '0,0%')
+  assert.equal(overviewPresentation.formatSchoolPerformanceRate({ ...base, state: 'unavailable', value: null }), '—')
+  assert.equal(overviewPresentation.formatSchoolPerformanceRate({ ...base, state: 'not_applicable', value: null }), '—')
+  assert.equal(overviewLoader.isMunicipalEducationOverviewDocument({
+    schemaVersion: 'municipal-education-overview-v1',
+    municipality: { idMunicipality: '4319356', name: 'São Pedro da Serra', slug: 'sao-pedro-da-serra' },
+    reference: { year: 2025, generatedAt: '2026-07-22T12:00:00-03:00' },
+    basicEducationComposition: { components: {} },
+    highSchool: { total: { byNetwork: {}, bySchoolLocation: {} }, integratedTechnical: {} },
+    specialEducation: {},
+    schoolPerformance: { referenceYear: 2025 },
+  }, 'sao-pedro-da-serra'), true)
+})
 
 test('agrupa itens na ordem declarada da seção', () => {
   assert.deepEqual(

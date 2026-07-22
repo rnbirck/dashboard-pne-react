@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { PneSourceNotes } from '../components/PneSourceNotes'
 import { MunicipalitySelector } from '../components/MunicipalitySelector'
+import { PnePageHeader } from '../components/PnePageHeader'
 import { SearchField } from '../components/SearchField'
 import {
   PNE_2026_LEGAL_GOAL_INDICATOR_MAP,
@@ -163,31 +164,24 @@ export function PneLegalGoalsPage({
 
   return (
     <div className="page-stack legal-goals-page">
-      <section className="page-card legal-goals-hero">
-        <div className="legal-goals-hero__copy">
-          <span className="eyebrow">Plano Nacional de Educação · ciclo vigente</span>
-          <h1>Metas legais do PNE 2026–2036</h1>
-          <p>
-            Consulte as metas legais do ciclo vigente e veja como elas se conectam
-            aos indicadores municipais disponíveis no painel.
-          </p>
-          {selectedMunicipio ? (
-            <p className="legal-goals-hero__municipio">
-              Município em foco: <strong>{selectedMunicipio}</strong>
+      <PnePageHeader
+        asideLabel="Base legal"
+        asideContent={(
+          <>
+            <span className="pne-page-header__aside-title">Base legal</span>
+            <strong className="pne-page-header__aside-highlight">{PNE_2026_LEGAL_GOAL_MAPPING_METADATA.law}</strong>
+            <p className="pne-page-header__aside-description">
+              {PNE_2026_LEGAL_GOAL_MAPPING_METADATA.totalLegalGoals} metas legais
+              do ciclo vigente, com acompanhamento municipal quando há indicador
+              comparável disponível no painel.
             </p>
-          ) : null}
-        </div>
-
-        <aside className="legal-goals-law-card" aria-label="Base legal">
-          <span>Base legal</span>
-          <strong>{PNE_2026_LEGAL_GOAL_MAPPING_METADATA.law}</strong>
-          <p>
-            {PNE_2026_LEGAL_GOAL_MAPPING_METADATA.totalLegalGoals} metas legais
-            do ciclo vigente, com acompanhamento municipal quando há indicador
-            comparável disponível no painel.
-          </p>
-        </aside>
-      </section>
+          </>
+        )}
+        context={selectedMunicipio ? <>Município em foco: <strong>{selectedMunicipio}</strong></> : null}
+        description="Consulte as metas legais do ciclo vigente e veja como elas se conectam aos indicadores municipais disponíveis no painel."
+        eyebrow="PLANO NACIONAL DE EDUCAÇÃO · CICLO VIGENTE"
+        title="Metas legais do PNE 2026–2036"
+      />
 
       <section className="legal-goals-summary-grid" aria-label="Resumo da cobertura da matriz">
         <SummaryCard

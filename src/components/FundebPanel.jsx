@@ -3,43 +3,22 @@ import { resolveDetailSequence, useDetailViewNavigation } from '../hooks/useDeta
 import { FUNDEB_INDICATORS, formatFundebCompactValue, formatFundebValue, getLimiteReferencia } from '../data/fundebIndicators'
 import { getFinancialIndicatorMetadata } from '../data/financialIndicatorMetadata'
 import { DataSourceNote } from './DataSourceNote'
-import { FinancialIndicatorMetadata } from './FinancialIndicatorMetadata'
+import { FinancialIndicatorDisclosures } from './FinancialIndicatorMetadata'
 import { MethodNote } from './MethodNote'
-import { ContentState } from './ContentState'
 import { IndicatorHistoryChart } from '../components/IndicatorHistoryChart'
-import { ChartEmptyState } from './ChartPrimitives'
-import { EducationSummaryCard } from './EducationSummaryCard'
-import { SegmentedControl } from './SegmentedControl'
 import {
   FinancialChartFrame,
-  FinancialCatalogSectionBar,
   FinancialDetailHeader,
   FinancialDetailNavigation,
-  FinancialIndicatorGroup,
-  FinancialSection,
-  FinancialMetricStrip,
   FinancialMetricGrid,
   FinancialQuickReading,
   FinancialPrimaryAnalysis,
+  FinancialSourcesFooter,
 } from './FinancialIndicatorPrimitives'
-
-const FUNDEB_READING_CARDS = [
-  {
-    icon: 'receitas',
-    title: 'Receitas e recursos',
-    text: 'Acompanhe os recursos registrados para manutenção e desenvolvimento da educação básica.',
-  },
-  {
-    icon: 'despesas',
-    title: 'Despesas e remuneração',
-    text: 'Veja despesas totais e aplicação na remuneração dos profissionais da educação.',
-  },
-  {
-    icon: 'saldos',
-    title: 'Saldos financeiros',
-    text: 'Consulte saldos, disponibilidade financeira e valores conciliados no período.',
-  },
-]
+import {
+  isPublishableFinancialIndicator,
+  isPublishableFinancialValue,
+} from '../utils/financialPresentation'
 
 const FUNDEB_INDICATOR_GROUPS = Object.freeze({
   receitas: new Set([
@@ -63,18 +42,11 @@ const FUNDEB_INDICATOR_GROUPS = Object.freeze({
   ]),
 })
 
-const FUNDEB_FILTER_OPTIONS = [
-  { key: 'all', label: 'Todos' },
-  { key: 'receitas', label: 'Receitas e movimentação' },
-  { key: 'remuneracao', label: 'Remuneração' },
-  { key: 'saldos', label: 'Saldos financeiros' },
-]
-
 const FUNDEB_CATALOG_GROUPS = [
   {
     key: 'receitas',
     label: 'Receitas e movimentação',
-    description: 'Recursos recebidos, despesas totais, ingressos e pagamentos registrados no período.',
+    description: 'Receita declarada, despesas totais, ingressos e pagamentos registrados no período.',
   },
   {
     key: 'remuneracao',
@@ -145,16 +117,6 @@ function filterCrechePreEscola(historico, indicatorKey) {
   return historico
 }
 
-function findUltimoRegistro(historico, ultimo_ano) {
-  const ano = Number(ultimo_ano)
-  if (!Number.isFinite(ano)) return null
-  const found = historico.find((item) => Number(item.ano) === ano)
-  if (found) return found
-  return historico
-    .filter((item) => Number.isFinite(Number(item.ano)))
-    .sort((a, b) => Number(b.ano) - Number(a.ano))[0] ?? null
-}
-
 function firstAvailable(series) {
   return [...series]
     .filter((point) => point.valor !== null && point.valor !== undefined && Number.isFinite(Number(point.valor)))
@@ -173,9 +135,9 @@ function buildSeriesForIndicator(historico, indicator) {
     .map((entry) => ({ ano: entry.ano, valor: entry[indicator.key] ?? null }))
 }
 
-function getFundebStatus(indicator, latest, variation) {
+function getFundebStatus(indicator, latest) {
   if (latest?.valor === null || latest?.valor === undefined || !Number.isFinite(Number(latest.valor))) {
-    return { label: 'Sem dados', tone: 'muted' }
+    return { label: null, tone: 'default' }
   }
 
   if (indicator.key === 'percentual_minimo_remuneracao_profissionais') {
@@ -185,10 +147,7 @@ function getFundebStatus(indicator, latest, variation) {
       : { label: 'Abaixo do mínimo', tone: 'warning' }
   }
 
-  if (variation === null) return { label: 'Com dados', tone: 'info' }
-  if (variation > 0) return { label: 'Aumento', tone: 'info' }
-  if (variation < 0) return { label: 'Redução', tone: 'info' }
-  return { label: 'Estável', tone: 'muted' }
+  return { label: null, tone: 'default' }
 }
 
 function buildFundebHistorySummary(model) {
@@ -197,21 +156,14 @@ function buildFundebHistorySummary(model) {
 }
 
 function buildFundebQuickReading(model) {
-  if (!model.currentYear || model.currentDisplay === '—') {
-    return 'O município não possui dado disponível para este indicador no período carregado.'
-  }
+  if (!model.currentYear || model.currentDisplay === '—') return ''
   if (model.raw.key === 'percentual_minimo_remuneracao_profissionais') {
     return model.statusTone === 'success'
-      ? `O município alcançou o mínimo de remuneração do FUNDEB no dado mais recente disponível.`
-      : `O município ficou abaixo do mínimo de remuneração do FUNDEB no dado mais recente disponível.`
+      ? `O município alcançou o mínimo de remuneração do FUNDEB em ${model.currentYear}.`
+      : `O município ficou abaixo do mínimo de remuneração do FUNDEB em ${model.currentYear}.`
   }
-  if (model.variationDisplay === '—') return `O indicador mais recente disponível é de ${model.currentYear}.`
-  const movement = model.statusLabel === 'Aumento'
-    ? 'aumento'
-    : model.statusLabel === 'Redução'
-      ? 'redução'
-      : 'estabilidade'
-  return `O indicador mais recente disponível é de ${model.currentYear}; a série aponta ${movement} no período observado.`
+  if (model.variationDisplay === '—') return `Valor informado em ${model.currentYear}.`
+  return `Entre ${model.initialYear} e ${model.currentYear}, a variação foi de ${model.variationDisplay}.`
 }
 
 function buildFundebIndicatorModel(indicator, historico) {
@@ -219,7 +171,7 @@ function buildFundebIndicatorModel(indicator, historico) {
   const first = firstAvailable(series)
   const latest = latestAvailable(series)
   const variation = calcVariation(latest?.valor, first?.valor, indicator.tipo)
-  const status = getFundebStatus(indicator, latest, variation)
+  const status = getFundebStatus(indicator, latest)
   const model = {
     cardDescription: indicator.cardDescription ?? getIndicatorHelpText(indicator),
     description: getIndicatorHelpText(indicator),
@@ -254,53 +206,69 @@ function getIndicatorHelpText(indicator) {
   return indicator?.description || 'Acompanhe a evolução anual deste indicador.'
 }
 
-function FundebInfoIcon({ type }) {
-  if (type === 'remuneracao') {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="9" cy="8" r="3" />
-        <path d="M3.5 20c.4-4.6 2.2-7 5.5-7s5.1 2.4 5.5 7" />
-        <path d="M16 7h5m-2.5-2.5v5M16 14h5m-2.5-2.5v5" />
-      </svg>
-    )
-  }
-
-  if (type === 'despesas') {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="4" y="5" width="16" height="15" rx="3" />
-        <path d="M8 5V3m8 2V3M4 9h16" />
-        <path d="M9 14h6m-3-3v6" />
-      </svg>
-    )
-  }
-
-  if (type === 'saldos') {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 12c1.8-3.2 4.4-4.8 8-4.8s6.2 1.6 8 4.8c-1.8 3.2-4.4 4.8-8 4.8S5.8 15.2 4 12Z" />
-        <circle cx="12" cy="12" r="2.4" />
-        <path d="M12 5.2V3.5m0 17v-1.7" />
-      </svg>
-    )
-  }
-
+function FundebDetailButton({ label = 'Ver detalhe', model, onSelect, registerButton }) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="4" y="4" width="16" height="16" rx="3" />
-      <path d="M8 9h5m-5 4h8m-8 4h4" />
-      <path d="M16 8.5h2.5V11" />
-    </svg>
+    <button
+      ref={(node) => registerButton?.(model.key, node)}
+      type="button"
+      onClick={() => onSelect(model.key)}
+    >
+      {label}
+    </button>
   )
 }
 
-export function FundebPanel({ municipioData, selectedMunicipio, embedded = false, detailKey = '', onDetailChange }) {
+function hasSameFundebSnapshot(left, right) {
+  if (!left || !right || left.currentYear !== right.currentYear) return false
+  const leftValue = Number(latestAvailable(left.series)?.valor)
+  const rightValue = Number(latestAvailable(right.series)?.valor)
+  return Number.isFinite(leftValue) && Number.isFinite(rightValue) && leftValue === rightValue
+}
+
+function FundebSummaryMetric({ label, model }) {
+  if (!model) return null
+  return (
+    <article className="siope-public-summary__item">
+      <span>{label}</span>
+      <strong>{model.currentDisplay}</strong>
+      <small>{model.currentYear ? `Período: ${model.currentYear}` : 'Período não informado'}</small>
+    </article>
+  )
+}
+
+function FundebPublicMetric({ label, model, onSelect, registerButton }) {
+  if (!model) return null
+  return (
+    <article className="siope-public-metric fundeb-public-metric">
+      <div>
+        <span>{label}</span>
+        <strong>{model.currentDisplay}</strong>
+        <small>{model.currentYear ? `Período: ${model.currentYear}` : 'Período não informado'}</small>
+      </div>
+      <FundebDetailButton model={model} onSelect={onSelect} registerButton={registerButton} />
+    </article>
+  )
+}
+
+function FundebLeadMetric({ label, model, onSelect, registerButton }) {
+  if (!model) return null
+  return (
+    <article className="siope-application__lead fundeb-lead-metric">
+      <span>{label}</span>
+      <strong>{model.currentDisplay}</strong>
+      <div>
+        <small>{model.currentYear ? `Período: ${model.currentYear}` : 'Período não informado'}</small>
+      </div>
+      <FundebDetailButton label="Ver detalhe e evolução" model={model} onSelect={onSelect} registerButton={registerButton} />
+    </article>
+  )
+}
+
+export function FundebPanel({ municipioData, embedded = false, detailKey = '', onDetailChange }) {
   const rawFundebData = municipioData?.blocos?.fundeb
   const hasFundebData = Boolean(rawFundebData?.historico?.length)
   const fundebData = rawFundebData ?? {}
   const [selectedKey, setSelectedKey] = useState(detailKey || FUNDEB_INDICATORS[0].key)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedGroup, setSelectedGroup] = useState('all')
   const [isDetailOpen, setIsDetailOpen] = useState(Boolean(detailKey))
   const detailNavigation = useDetailViewNavigation({
     activeKey: selectedKey,
@@ -312,18 +280,11 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
     [selectedKey],
   )
 
-  const { resumo_ultimo_ano, ultimo_ano, historico } = fundebData
+  const { historico } = fundebData
   const historicoVisivel = useMemo(
     () => filterCrechePreEscola(historico ?? [], selectedIndicator?.key),
     [historico, selectedIndicator?.key],
   )
-  const ultimoRegistro = useMemo(
-    () => findUltimoRegistro(historico ?? [], ultimo_ano),
-    [historico, ultimo_ano],
-  )
-
-  const isPercentual = selectedIndicator?.key === 'percentual_minimo_remuneracao_profissionais'
-
   const series = useMemo(() => {
     if (!selectedIndicator || !historicoVisivel) return []
     return historicoVisivel
@@ -331,40 +292,38 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
       .map((h) => ({ ano: h.ano, valor: h[selectedIndicator.key] ?? null }))
   }, [selectedIndicator, historicoVisivel])
 
-  const validSeries = useMemo(() => series.filter((s) => s.valor !== null), [series])
+  const validSeries = useMemo(() => series.filter((s) => isPublishableFinancialValue(s.valor)), [series])
 
   const chartUnit = selectedIndicator?.tipo === 'percentual' ? 'percent' : 'currency'
 
-  const filteredItems = useMemo(() => {
-    const query = searchQuery.trim().toLocaleLowerCase('pt-BR')
-    const groupItems = selectedGroup === 'all'
-      ? FUNDEB_INDICATORS
-      : FUNDEB_INDICATORS.filter((ind) => FUNDEB_INDICATOR_GROUPS[selectedGroup]?.has(ind.key))
-    if (!query) return groupItems
-    return groupItems.filter((ind) => {
-      const text = `${ind.label} ${ind.cardDescription ?? ''} ${ind.description ?? ''}`.toLocaleLowerCase('pt-BR')
-      return text.includes(query)
-    })
-  }, [searchQuery, selectedGroup])
   const indicatorModels = useMemo(
-    () => filteredItems.map((indicator) => buildFundebIndicatorModel(indicator, historico ?? [])),
-    [filteredItems, historico],
+    () => FUNDEB_INDICATORS
+      .map((indicator) => buildFundebIndicatorModel(indicator, historico ?? []))
+      .filter(isPublishableFinancialIndicator),
+    [historico],
   )
-  const visibleIndicatorGroups = useMemo(
-    () => FUNDEB_CATALOG_GROUPS
-      .filter((group) => selectedGroup === 'all' || group.key === selectedGroup)
-      .map((group) => ({
-        ...group,
-        indicators: indicatorModels.filter((indicator) => FUNDEB_INDICATOR_GROUPS[group.key]?.has(indicator.key)),
-      }))
-      .filter((group) => group.indicators.length),
-    [indicatorModels, selectedGroup],
-  )
+  const publicModelByKey = new Map(indicatorModels.map((indicator) => [indicator.key, indicator]))
   const selectedIndicatorModel = indicatorModels.find((indicator) => indicator.key === selectedKey) ?? indicatorModels[0] ?? null
   const selectedMetadata = selectedIndicatorModel
     ? getFinancialIndicatorMetadata('fundeb', selectedIndicatorModel.key)
     : null
   const { activeIndex: selectedIndex, previousItem: previousIndicator, nextItem: nextIndicator } = resolveDetailSequence(indicatorModels, selectedIndicatorModel?.key)
+  const declaredRevenueModel = publicModelByKey.get('receitas')
+  const declaredInflowsModel = publicModelByKey.get('ingresso_recursos_ate_bimestre')
+  const totalExpenseModel = publicModelByKey.get('despesa_total_fundeb')
+  const remunerationModel = publicModelByKey.get('despesa_remuneracao_profissionais')
+  const finalAvailabilityModel = publicModelByKey.get('disponibilidade_financeira_ate_bimestre')
+  const reconciledBalanceModel = publicModelByKey.get('saldo_financeiro_conciliado')
+  const revenueAndInflowsMatch = hasSameFundebSnapshot(declaredRevenueModel, declaredInflowsModel)
+  const availabilityAndBalanceMatch = hasSameFundebSnapshot(finalAvailabilityModel, reconciledBalanceModel)
+  const summaryMetrics = [
+    { label: 'Receita do Fundeb declarada', model: declaredRevenueModel },
+    revenueAndInflowsMatch
+      ? { label: 'Despesa do Fundeb com remuneração', model: remunerationModel }
+      : { label: 'Ingressos do Fundeb declarados no ano', model: declaredInflowsModel },
+    { label: 'Despesa total declarada do Fundeb', model: totalExpenseModel },
+    { label: 'Disponibilidade do Fundeb ao final do exercício', model: finalAvailabilityModel },
+  ].filter(({ model }) => Boolean(model))
 
   useEffect(() => {
     if (!detailKey) return setIsDetailOpen(false)
@@ -398,7 +357,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
     return (
       <div className={embedded ? 'fundeb-panel-embedded' : 'page-stack fundeb-page'}>
         <div className="fundeb-empty">
-          <p>Dados do FUNDEB não disponíveis para este município.</p>
+          <p>Não há informações financeiras do Fundeb para este município.</p>
         </div>
       </div>
     )
@@ -410,83 +369,11 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
         <section className="page-card fundeb-hero">
           <div>
             <span className="eyebrow">FUNDEB</span>
-            <h1>Fundo de Manutenção e Desenvolvimento da Educação Básica</h1>
-            <p>Município em foco: <strong>{selectedMunicipio}</strong></p>
+            <h1>Fundeb: recursos, aplicação e saldos</h1>
+            <p>Veja os recursos declarados, como foram utilizados e a disponibilidade financeira do Fundeb no município.</p>
           </div>
         </section>
       )}
-
-      <section className="page-card fundeb-info-box financial-intro-panel" aria-labelledby="fundeb-info-title">
-        <div className="fundeb-info-box__header">
-          <h2 id="fundeb-info-title">O que é o FUNDEB</h2>
-          <p>
-            O FUNDEB reúne recursos destinados à manutenção e desenvolvimento da educação básica.
-            Os indicadores mostram receitas, despesas, remuneração dos profissionais e saldos
-            financeiros do município selecionado.
-          </p>
-        </div>
-        <div className="fundeb-info-box__cards" aria-label="Eixos de leitura do FUNDEB">
-          {FUNDEB_READING_CARDS.map((card) => (
-            <article className="fundeb-info-card" key={card.title}>
-              <span className="fundeb-info-card__icon">
-                <FundebInfoIcon type={card.icon} />
-              </span>
-              <div>
-                <strong>{card.title}</strong>
-                <p>{card.text}</p>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <FinancialSection
-        className="fundeb-summary financial-metric-strip"
-        eyebrow="Resumo financeiro"
-        meta={Number.isInteger(ultimo_ano)
-          ? ultimo_ano < 2025
-            ? `Último dado disponível: ${ultimo_ano}`
-            : `Dados financeiros do ano de referência: ${ultimo_ano}.`
-          : null}
-        title="Visão geral"
-        titleId="fundeb-summary-title"
-      >
-        <FinancialMetricStrip className="fundeb-summary-grid">
-          <EducationSummaryCard
-            accessibleValue={formatFundebValue(resumo_ultimo_ano?.receitas, 'financeiro')}
-            icon={<FundebInfoIcon type="receitas" />}
-            label="Receitas do FUNDEB"
-            value={formatFundebCompactValue(resumo_ultimo_ano?.receitas, 'financeiro')}
-            valueSize="compact"
-            year={ultimo_ano}
-          />
-          <EducationSummaryCard
-            accessibleValue={formatFundebValue(resumo_ultimo_ano?.despesa_total_fundeb, 'financeiro')}
-            icon={<FundebInfoIcon type="despesas" />}
-            label="Despesa total do FUNDEB"
-            value={formatFundebCompactValue(resumo_ultimo_ano?.despesa_total_fundeb, 'financeiro')}
-            valueSize="compact"
-            year={ultimo_ano}
-          />
-          <EducationSummaryCard
-            accessibleValue={formatFundebValue(resumo_ultimo_ano?.percentual_minimo_remuneracao_profissionais, 'percentual')}
-            detail={`Referência vigente: mínimo de ${resumo_ultimo_ano?.limite_remuneracao_referencia ?? getLimiteReferencia(ultimo_ano)}%`}
-            icon={<FundebInfoIcon type="remuneracao" />}
-            label="Percentual aplicado em remuneração"
-            value={formatFundebCompactValue(resumo_ultimo_ano?.percentual_minimo_remuneracao_profissionais, 'percentual')}
-            year={ultimo_ano}
-          />
-          <EducationSummaryCard
-            accessibleValue={formatFundebValue(ultimoRegistro?.disponibilidade_financeira_ate_bimestre, 'financeiro')}
-            detail={`Saldo anterior: ${formatFundebValue(ultimoRegistro?.disponibilidade_financeira_ano_anterior, 'financeiro')}`}
-            icon={<FundebInfoIcon type="saldos" />}
-            label="Disponibilidade financeira"
-            value={formatFundebCompactValue(ultimoRegistro?.disponibilidade_financeira_ate_bimestre, 'financeiro')}
-            valueSize="compact"
-            year={ultimo_ano}
-          />
-        </FinancialMetricStrip>
-      </FinancialSection>
 
       {isDetailOpen && selectedIndicatorModel ? (
         <div className="financial-detail-view education-detail-view" ref={detailNavigation.detailViewRef}>
@@ -509,6 +396,7 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
             )}
 
             <FinancialPrimaryAnalysis>
+              {validSeries.length >= 2 ? (
               <FinancialChartFrame
                 subtitle={selectedIndicatorModel.description}
                 source={(
@@ -523,28 +411,26 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
                   />
                 )}
               >
-                {validSeries.length >= 2 ? (
-                  <IndicatorHistoryChart
+                <IndicatorHistoryChart
+                    chartType={chartUnit === 'currency' && validSeries.length <= 3 ? 'bar' : 'line'}
                     chartHeight={300}
-                    endYear={series[series.length - 1].ano}
+                    endYear={validSeries[validSeries.length - 1].ano}
                     formatDataLabel={chartUnit === 'currency' ? (v) => formatCompactDataLabel(v, 'financeiro') : (v) => formatCompactDataLabel(v, 'percentual')}
                     formatYAxis={chartUnit === 'currency' ? formatCompactCurrency : undefined}
                     item={{ label: selectedIndicator.label }}
                     labelMode="all"
                     missingLabel="—"
                     result={null}
-                    series={series}
+                    series={validSeries}
                     showMetaLine={false}
-                    showMissingPoints={true}
-                    startYear={series[0].ano}
+                    showMissingPoints={false}
+                    startYear={validSeries[0].ano}
                     title={selectedIndicator.label}
                     unit={chartUnit}
                     yTickCount={5}
                   />
-                ) : (
-                  <ChartEmptyState message="Histórico não disponível." />
-                )}
               </FinancialChartFrame>
+              ) : null}
               <FinancialQuickReading
                 description={selectedIndicatorModel.description}
                 indicator={selectedIndicatorModel}
@@ -553,179 +439,191 @@ export function FundebPanel({ municipioData, selectedMunicipio, embedded = false
               />
             </FinancialPrimaryAnalysis>
 
-            <FinancialIndicatorMetadata metadata={selectedMetadata} />
+            <FinancialIndicatorDisclosures
+              formatValue={(value) => formatFundebValue(value, selectedIndicator?.tipo)}
+              indicator={selectedIndicatorModel}
+              metadata={selectedMetadata}
+              series={selectedIndicatorModel.series}
+            />
           </section>
-          <FinancialDetailNavigation
-            activeIndex={selectedIndex}
-            isBottom
-            nextIndicator={nextIndicator}
-            onBack={handleBackToGrid}
-            onNext={handleIndicatorSelect}
-            onPrevious={handleIndicatorSelect}
-            previousIndicator={previousIndicator}
-            statusLabel={selectedIndicatorModel.statusLabel}
-            statusTone={selectedIndicatorModel.statusTone}
-            total={indicatorModels.length}
-          />
         </div>
       ) : (
-      <div className="financial-catalog-workspace fundeb-workspace financial-grid-workspace">
-        <FinancialCatalogSectionBar
-          count={indicatorModels.length}
-          description="Receitas, remuneração e saldos financeiros do fundo no município."
-          onSearchChange={setSearchQuery}
-          searchQuery={searchQuery}
-          title="FUNDEB"
-          titleId="fundeb-indicators-title"
-        />
-        <div className="financial-catalog-filter-row" aria-label="Filtros dos indicadores do FUNDEB">
-          <span className="fundeb-indicator-filter-label">Grupo de indicadores</span>
-          <SegmentedControl
-            ariaLabel="Filtrar indicadores do FUNDEB por grupo"
-            className="platform-segmented-control fundeb-indicator-group-control"
-            onSelect={setSelectedGroup}
-            optionClassName="platform-segmented-option"
-            options={FUNDEB_FILTER_OPTIONS}
-            selectedKey={selectedGroup}
-          />
-        </div>
-        {indicatorModels.length === 0 ? (
-          <div className="financial-indicator-grid-empty">
-            <ContentState as="p" kind="noResults">Nenhum indicador encontrado.</ContentState>
-          </div>
-        ) : (
-          <div className="education-indicator-groups financial-indicator-groups">
-            {visibleIndicatorGroups.map((group) => (
-              <FinancialIndicatorGroup
-                description={group.description}
-                groupKey={`fundeb-${group.key}`}
-                indicators={group.indicators}
-                key={group.key}
-                label={group.label}
-                onSelect={handleIndicatorSelect}
-                registerCard={detailNavigation.registerCard}
-              />
-            ))}
-          </div>
-        )}
-
-          <div className="fundeb-detail fundeb-detail--legacy">
-            <div className="fundeb-detail-header">
-              <div>
-                <span className="eyebrow">Indicador selecionado</span>
-                <h3>{selectedIndicator.label}</h3>
-                {selectedIndicator?.description && (
-                  <p className="fundeb-indicator-description">{selectedIndicator.description}</p>
-                )}
+        <div className="fundeb-public-page">
+          {summaryMetrics.length ? (
+            <section className="page-card siope-public-summary fundeb-public-summary" aria-labelledby="fundeb-summary-title">
+              <div className="siope-public-section-heading">
+                <span className="eyebrow">Resumo principal</span>
+                <h2 id="fundeb-summary-title">Números mais recentes</h2>
               </div>
-              <span className={
-                selectedIndicator.tipo === 'percentual'
-                  ? 'indicator-stage-badge indicator-stage-badge--pct'
-                  : 'indicator-stage-badge'
-              }>
-                {selectedIndicator.tipo === 'percentual' ? 'Percentual' : 'Financeiro'}
-              </span>
+              <div className="siope-public-summary__grid">
+                {summaryMetrics.map(({ label, model }) => (
+                  <FundebSummaryMetric key={model.key} label={label} model={model} />
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          <section className="page-card siope-public-section fundeb-resources" aria-labelledby="fundeb-resources-title">
+            <div className="siope-public-section-heading">
+              <span className="eyebrow">Recursos do Fundeb</span>
+              <h2 id="fundeb-resources-title">Quanto foi declarado como recurso do Fundeb?</h2>
             </div>
-
-            {(selectedKey === 'despesa_remuneracao_profissionais_creche' || selectedKey === 'despesa_remuneracao_profissionais_pre_escola') && (
-              <MethodNote className="fundeb-indicator-note"><strong>Nota metodológica:</strong> Série exibida a partir de 2021 para manter comparabilidade com a estrutura do Novo FUNDEB.</MethodNote>
-            )}
-
-            {(validSeries.length >= 2 || series.length >= 1) && (
-              <div className="fundeb-visual-grid">
-                {validSeries.length >= 2 && (
-                <div className="fundeb-chart-card">
-                  <IndicatorHistoryChart
-                    chartHeight={224}
-                    endYear={series[series.length - 1].ano}
-                    formatDataLabel={chartUnit === 'currency' ? (v) => formatCompactDataLabel(v, 'financeiro') : (v) => formatCompactDataLabel(v, 'percentual')}
-                    formatYAxis={chartUnit === 'currency' ? formatCompactCurrency : undefined}
-                    item={{ label: selectedIndicator.label }}
-                    labelMode="all"
-                    missingLabel="—"
-                    result={null}
-                    series={series}
-                    showMetaLine={false}
-                    showMissingPoints={true}
-                    startYear={series[0].ano}
-                    title={selectedIndicator.label}
-                    unit={chartUnit}
-                    yTickCount={5}
-                  />
-                </div>
-                )}
-
-                {validSeries.length <= 1 && series.length >= 2 && (
-                  <ChartEmptyState message="Histórico não disponível." />
-                )}
-
-                {series.length >= 1 && (
-                <div className="fundeb-table-card">
-                <div className="fundeb-table-card__header">
-                  <div>
-                    <h4>Histórico do indicador</h4>
-                  </div>
-                </div>
-                <div className="fundeb-table-wrap" role="region" aria-label="Série histórica do indicador do FUNDEB. Role horizontalmente para consultar todas as colunas quando necessário." tabIndex={0}>
-                  <table className="fundeb-table">
-                    <caption className="u-sr-only">Série histórica do indicador do FUNDEB</caption>
-                    <thead>
-                      <tr>
-                        <th scope="col">Ano</th>
-                        <th scope="col">Valor</th>
-                        <th scope="col">Variação anual</th>
-                        {isPercentual && <th scope="col">Mínimo exigido</th>}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {historicoVisivel
-                        .filter((h) => h.ano != null)
-                        .map((entry, index) => {
-                          const prev = index > 0 ? historicoVisivel[index - 1] : null
-                          const currentVal = entry[selectedIndicator.key]
-                          const prevVal = prev?.[selectedIndicator.key]
-                          const vari = prev != null ? calcVariation(currentVal, prevVal, selectedIndicator.tipo) : null
-                          return (
-                            <tr key={entry.ano}>
-                              <td>{entry.ano}</td>
-                              <td>{formatFundebValue(currentVal, selectedIndicator.tipo)}</td>
-                              <td><span className={
-                                index === 0 || vari == null
-                                  ? 'fundeb-variation-missing'
-                                  : vari > 0
-                                    ? 'fundeb-variation-positive'
-                                    : vari < 0
-                                      ? 'fundeb-variation-negative'
-                                      : 'fundeb-variation-neutral'
-                              } aria-label={index === 0 || vari == null ? 'Variação indisponível' : undefined}>{index === 0 ? '—' : formatVariation(vari, selectedIndicator.tipo)}</span></td>
-                              {isPercentual && <td>{getLimiteReferencia(entry.ano)}%</td>}
-                            </tr>
-                          )
-                        })}
-                    </tbody>
-                  </table>
-                </div>
-                <DataSourceNote
-                  className="fundeb-data-source"
-                  context={{
-                    block: 'fundeb',
-                    detailType: 'table',
-                    indicatorKey: selectedIndicator?.key,
-                    indicatorName: selectedIndicator?.label,
-                  }}
+            <div className="siope-application__layout fundeb-section-layout">
+              <FundebLeadMetric
+                label="Recursos do Fundeb declarados"
+                model={publicModelByKey.get('receitas')}
+                onSelect={handleIndicatorSelect}
+                registerButton={detailNavigation.registerCard}
+              />
+              <div className="siope-application__primary-list">
+                <FundebPublicMetric
+                  label="Ingressos do Fundeb declarados no ano"
+                  model={publicModelByKey.get('ingresso_recursos_ate_bimestre')}
+                  onSelect={handleIndicatorSelect}
+                  registerButton={detailNavigation.registerCard}
                 />
               </div>
-                )}
-              </div>
-            )}
+            </div>
+            {revenueAndInflowsMatch ? (
+              <p className="financial-inline-note">A receita declarada e os ingressos coincidem no exercício exibido; os ingressos permanecem como linha de apoio, pois representam conceitos distintos.</p>
+            ) : null}
+          </section>
 
-            {series.length === 0 && (
-              <div className="fundeb-empty">
-                <p>Este indicador não possui série histórica disponível para este município.</p>
+          <section className="page-card siope-public-section fundeb-use" aria-labelledby="fundeb-use-title">
+            <div className="siope-public-section-heading">
+              <span className="eyebrow">Utilização dos recursos</span>
+              <h2 id="fundeb-use-title">Como os recursos do Fundeb foram utilizados?</h2>
+              <p>Despesa total e pagamentos mostram momentos diferentes da utilização dos recursos e não devem ser somados. A remuneração é uma parcela da despesa do Fundeb.</p>
+            </div>
+            <div className="siope-application__layout fundeb-section-layout">
+              <FundebLeadMetric
+                label="Despesa total declarada do Fundeb"
+                model={publicModelByKey.get('despesa_total_fundeb')}
+                onSelect={handleIndicatorSelect}
+                registerButton={detailNavigation.registerCard}
+              />
+              <div className="siope-application__primary-list">
+                <FundebPublicMetric
+                  label="Pagamentos realizados com recursos do Fundeb"
+                  model={publicModelByKey.get('pagamentos_efetuados_ate_bimestre')}
+                  onSelect={handleIndicatorSelect}
+                  registerButton={detailNavigation.registerCard}
+                />
+                <FundebPublicMetric
+                  label="Parcela destinada à remuneração"
+                  model={publicModelByKey.get('despesa_remuneracao_profissionais')}
+                  onSelect={handleIndicatorSelect}
+                  registerButton={detailNavigation.registerCard}
+                />
+              </div>
+            </div>
+          </section>
+
+          <section className="page-card siope-public-section fundeb-remuneration" aria-labelledby="fundeb-remuneration-title">
+            <div className="siope-public-section-heading">
+              <span className="eyebrow">Remuneração dos profissionais</span>
+              <h2 id="fundeb-remuneration-title">Quanto foi destinado à remuneração?</h2>
+            </div>
+            <div className="fundeb-remuneration__layout">
+              <FundebLeadMetric
+                label="Total destinado à remuneração"
+                model={publicModelByKey.get('despesa_remuneracao_profissionais')}
+                onSelect={handleIndicatorSelect}
+                registerButton={detailNavigation.registerCard}
+              />
+              <div className="fundeb-remuneration__composition" aria-label="Composição da remuneração">
+                <FundebPublicMetric
+                  label="Ensino fundamental"
+                  model={publicModelByKey.get('despesa_remuneracao_profissionais_ensino_fundamental')}
+                  onSelect={handleIndicatorSelect}
+                  registerButton={detailNavigation.registerCard}
+                />
+                <div className="fundeb-remuneration__child-group">
+                  <FundebPublicMetric
+                    label="Educação infantil"
+                    model={publicModelByKey.get('despesa_remuneracao_profissionais_ensino_infantil')}
+                    onSelect={handleIndicatorSelect}
+                    registerButton={detailNavigation.registerCard}
+                  />
+                  <div className="fundeb-remuneration__details" aria-label="Detalhamento da educação infantil">
+                    <FundebPublicMetric
+                      label="Creche"
+                      model={publicModelByKey.get('despesa_remuneracao_profissionais_creche')}
+                      onSelect={handleIndicatorSelect}
+                      registerButton={detailNavigation.registerCard}
+                    />
+                    <FundebPublicMetric
+                      label="Pré-escola"
+                      model={publicModelByKey.get('despesa_remuneracao_profissionais_pre_escola')}
+                      onSelect={handleIndicatorSelect}
+                      registerButton={detailNavigation.registerCard}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="fundeb-remuneration__rate">
+              <FundebPublicMetric
+                label="Percentual dos recursos aplicado em remuneração"
+                model={publicModelByKey.get('percentual_minimo_remuneracao_profissionais')}
+                onSelect={handleIndicatorSelect}
+                registerButton={detailNavigation.registerCard}
+              />
+            </div>
+          </section>
+
+          <section className="page-card siope-public-section fundeb-balances" aria-labelledby="fundeb-balances-title">
+            <div className="siope-public-section-heading">
+              <span className="eyebrow">Disponibilidade e saldos</span>
+              <h2 id="fundeb-balances-title">Qual era a disponibilidade financeira?</h2>
+              <p>Estes valores mostram disponibilidades e saldos do Fundeb; não representam receita nova.</p>
+            </div>
+            <div className="fundeb-balances__grid">
+              <FundebPublicMetric
+                label="Disponibilidade no início do exercício"
+                model={publicModelByKey.get('disponibilidade_financeira_ano_anterior')}
+                onSelect={handleIndicatorSelect}
+                registerButton={detailNavigation.registerCard}
+              />
+              <FundebPublicMetric
+                label="Disponibilidade ao final do exercício"
+                model={publicModelByKey.get('disponibilidade_financeira_ate_bimestre')}
+                onSelect={handleIndicatorSelect}
+                registerButton={detailNavigation.registerCard}
+              />
+            </div>
+            {availabilityAndBalanceMatch ? (
+              <details className="platform-support-disclosure fundeb-balance-disclosure">
+                <summary className="platform-support-disclosure__summary">
+                  <div><h3>Dados usados no cálculo</h3><p>Disponibilidade final e saldo conciliado coincidem no exercício exibido.</p></div>
+                </summary>
+                <div className="platform-support-disclosure__body">
+                  <FundebPublicMetric
+                    label="Saldo conciliado"
+                    model={reconciledBalanceModel}
+                    onSelect={handleIndicatorSelect}
+                    registerButton={detailNavigation.registerCard}
+                  />
+                </div>
+              </details>
+            ) : (
+              <div className="fundeb-balances__secondary">
+                <FundebPublicMetric
+                  label="Saldo conciliado"
+                  model={reconciledBalanceModel}
+                  onSelect={handleIndicatorSelect}
+                  registerButton={detailNavigation.registerCard}
+                />
               </div>
             )}
-          </div>
-      </div>
+          </section>
+          <FinancialSourcesFooter
+            periods="Os períodos mostrados em cada linha correspondem ao exercício declarado pela fonte."
+            source="FNDE/Fundeb e demonstrativos financeiros municipais."
+          >
+            Receita, ingressos, despesas, pagamentos e disponibilidade são conceitos distintos e não devem ser somados entre si.
+          </FinancialSourcesFooter>
+        </div>
       )}
     </div>
   )

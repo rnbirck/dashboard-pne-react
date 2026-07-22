@@ -6,6 +6,10 @@ import { MetricCard } from './MetricCard'
 import { QuickReadingHeading } from './QuickReadingHeading'
 import { SearchField } from './SearchField'
 import { EducationSectionBar } from '../features/education/components/EducationSectionBar'
+import {
+  isPublishableFinancialDisplay,
+  isPublishableFinancialIndicator,
+} from '../utils/financialPresentation'
 
 const EM = '\u2014'
 const FINANCIAL_CARD_CLASS_CONTRACT = Object.freeze({
@@ -30,7 +34,8 @@ const FINANCIAL_CARD_CLASS_CONTRACT = Object.freeze({
 })
 
 export function FinancialIndicatorCard({ buttonRef, indicator, isSelected = false, onSelect }) {
-  const hasCurrentValue = Boolean(indicator.currentDisplay && indicator.currentDisplay !== EM)
+  if (!isPublishableFinancialIndicator(indicator)) return null
+
   const comparableSeries = getComparableSeries(indicator.series)
   const hasComparison = comparableSeries.length >= 2
     && indicator.initialYear !== null
@@ -39,12 +44,10 @@ export function FinancialIndicatorCard({ buttonRef, indicator, isSelected = fals
     && indicator.currentYear !== undefined
     && indicator.variationDisplay
     && indicator.variationDisplay !== EM
-  const direction = getFinancialDirection({ hasComparison, hasCurrentValue, series: comparableSeries })
-  const reading = getFinancialReading({ direction, hasComparison, hasCurrentValue, hasSeries: comparableSeries.length > 0 })
+  const direction = getFinancialDirection({ hasComparison, series: comparableSeries })
+  const reading = getFinancialReading({ direction, hasComparison, currentYear: indicator.currentYear })
   const description = String(indicator.cardDescription ?? indicator.description ?? '').trim()
-  const statusLabel = normalizeFinancialStatusLabel(
-    indicator.statusLabel ?? (hasCurrentValue ? 'Com dados' : 'Sem dados'),
-  )
+  const statusLabel = normalizeFinancialStatusLabel(indicator.statusLabel)
   const statusTone = statusLabel === 'Alta'
     ? 'success'
     : statusLabel === 'Queda'
@@ -52,15 +55,15 @@ export function FinancialIndicatorCard({ buttonRef, indicator, isSelected = fals
       : statusLabel === 'Estável'
         ? 'muted'
         : indicator.statusTone ?? 'default'
-  const hasSeries = comparableSeries.length > 0
-  const footerLabel = hasSeries ? 'Ver série histórica' : 'Abrir detalhes'
-  const footerVisualLabel = hasSeries ? 'Histórico' : 'Detalhes'
+  const hasHistoricalSeries = comparableSeries.length >= 2
+  const footerLabel = hasHistoricalSeries ? 'Ver série histórica' : 'Abrir detalhes'
+  const footerVisualLabel = hasHistoricalSeries ? 'Histórico' : 'Detalhes'
   const viewModel = {
     anatomy: 'financial',
     ariaLabel: [
       `Abrir detalhe do indicador ${indicator.label}.`,
       `Valor ${indicator.currentDisplay ?? EM},`,
-      indicator.currentYear ? `ano ${indicator.currentYear}.` : 'ano indisponível.',
+      `ano ${indicator.currentYear}.`,
       statusLabel ? `${statusLabel}.` : '',
       hasComparison ? `${indicator.variationLabel}: ${indicator.variationDisplay}.` : '',
       description ? `Descrição: ${description}.` : '',
@@ -81,7 +84,7 @@ export function FinancialIndicatorCard({ buttonRef, indicator, isSelected = fals
       period: null,
     },
     metadata: {
-      year: indicator.currentYear ?? 'Indisponível',
+      year: indicator.currentYear,
       variation: hasComparison
         ? {
             label: `Var. desde ${indicator.initialYear}`,
@@ -119,9 +122,8 @@ function getComparableSeries(series) {
   return series.filter((point) => point?.valor !== null && point?.valor !== undefined && Number.isFinite(Number(point.valor)))
 }
 
-function getFinancialDirection({ hasComparison, hasCurrentValue, series }) {
-  if (!hasCurrentValue) return 'missing'
-  if (!hasComparison) return 'data'
+function getFinancialDirection({ hasComparison, series }) {
+  if (!hasComparison) return null
   const first = Number(series[0]?.valor)
   const latest = Number(series[series.length - 1]?.valor)
   if (latest > first) return 'up'
@@ -137,14 +139,14 @@ function getDirectionMarker(direction) {
 }
 
 function normalizeFinancialStatusLabel(label) {
+  if (!label) return null
   if (label === 'Aumento' || label === 'Aumentou') return 'Alta'
   if (label === 'Redução' || label === 'Reduziu') return 'Queda'
   return label
 }
 
-function getFinancialReading({ direction, hasComparison, hasCurrentValue, hasSeries }) {
-  if (!hasCurrentValue) return 'Leitura recente indisponível'
-  if (!hasComparison) return hasSeries ? 'Série disponível' : 'Leitura recente indisponível'
+function getFinancialReading({ direction, hasComparison, currentYear }) {
+  if (!hasComparison) return `Valor informado para ${currentYear}`
   if (direction === 'up') return 'Crescimento recente'
   if (direction === 'down') return 'Redução recente'
   return 'Estabilidade recente'
@@ -239,29 +241,50 @@ export function FinancialDetailHeader({ indicator }) {
 }
 
 export function FinancialMetricGrid({ indicator }) {
-  return (
-    <div className="metric-grid metric-grid--four financial-metric-grid">
+  const hasInitialValue = isPublishableFinancialDisplay(indicator.initialDisplay)
+  const hasCurrentValue = isPublishableFinancialDisplay(indicator.currentDisplay)
+  const hasVariation = isPublishableFinancialDisplay(indicator.variationDisplay)
+    && indicator.initialYear !== indicator.currentYear
+  const metrics = [
+    hasInitialValue && indicator.initialYear !== indicator.currentYear ? (
       <MetricCard
         icon="current"
+        key="initial"
         label="Valor inicial"
-        value={indicator.initialDisplay ?? EM}
+        value={indicator.initialDisplay}
         detail={indicator.initialYear ? `Ano ${indicator.initialYear}` : null}
       />
+    ) : null,
+    hasCurrentValue ? (
       <MetricCard
         icon="comparison"
+        key="current"
         label="Valor atual"
-        value={indicator.currentDisplay ?? EM}
+        value={indicator.currentDisplay}
         detail={indicator.currentYear ? `Ano ${indicator.currentYear}` : null}
         size="large"
       />
+    ) : null,
+    hasVariation ? (
       <MetricCard
         icon="variation"
+        key="variation"
         label="Variação no período"
-        value={indicator.variationDisplay ?? EM}
+        value={indicator.variationDisplay}
         detail={indicator.initialYear && indicator.currentYear ? `${indicator.initialYear} a ${indicator.currentYear}` : null}
         tone={indicator.variationTone ?? 'default'}
       />
-      <MetricCard icon="current" label="Ano de referência" value={indicator.currentYear ?? EM} />
+    ) : null,
+    indicator.currentYear ? (
+      <MetricCard icon="current" key="year" label="Ano de referência" value={indicator.currentYear} />
+    ) : null,
+  ].filter(Boolean)
+
+  if (!metrics.length) return null
+
+  return (
+    <div className="metric-grid metric-grid--four financial-metric-grid">
+      {metrics}
     </div>
   )
 }
@@ -302,8 +325,9 @@ export function FinancialIndicatorGroup({
   registerCard,
   groupKey,
 }) {
-  if (!indicators.length) return null
-  const countLabel = `${indicators.length} ${indicators.length === 1 ? 'indicador' : 'indicadores'}`
+  const publishableIndicators = indicators.filter(isPublishableFinancialIndicator)
+  if (!publishableIndicators.length) return null
+  const countLabel = `${publishableIndicators.length} ${publishableIndicators.length === 1 ? 'indicador' : 'indicadores'}`
   const titleId = `financial-group-${groupKey}`
 
   return (
@@ -317,7 +341,7 @@ export function FinancialIndicatorGroup({
       </div>
       {description ? <p className="education-indicator-group__description">{description}</p> : null}
       <div className="education-indicator-card-grid financial-indicator-card-grid">
-        {indicators.map((indicator) => (
+        {publishableIndicators.map((indicator) => (
           <FinancialIndicatorCard
             buttonRef={(node) => registerCard(indicator.key, node)}
             indicator={indicator}
@@ -396,5 +420,37 @@ export function FinancialChartFrame({ children, source, subtitle, summary, title
       {children}
       {source}
     </div>
+  )
+}
+
+export function FinancialSourcesFooter({ children, periods, source }) {
+  if (!source && !periods && !children) return null
+
+  return (
+    <footer className="financial-sources-footer">
+      <div className="financial-sources-footer__heading">
+        <span className="eyebrow">Referências oficiais</span>
+        <h2>Fontes e metodologia</h2>
+      </div>
+      {source ? <p><strong>Fonte oficial:</strong> {source}</p> : null}
+      {periods ? <p>{periods}</p> : null}
+      {children ? (
+        <details className="platform-support-disclosure financial-sources-footer__details">
+          <DisclosureSummary description="Critérios de publicação e cuidados de interpretação." title="Consultar detalhes" />
+          <div className="platform-support-disclosure__body">{children}</div>
+        </details>
+      ) : null}
+    </footer>
+  )
+}
+
+function DisclosureSummary({ description, title }) {
+  return (
+    <summary className="platform-support-disclosure__summary">
+      <div>
+        <h3>{title}</h3>
+        <p>{description}</p>
+      </div>
+    </summary>
   )
 }

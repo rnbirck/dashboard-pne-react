@@ -38,7 +38,49 @@ const {
   resolveActivePageFromHash,
 } = await import(compiledModule('src/app/appRoutes.js'))
 const { resolveEducationNavigation } = await import(compiledModule('src/data/educationIndicatorCatalog.js'))
-const { getHashContext, setHashContext } = await import(compiledModule('src/utils/hashNavigation.js'))
+const {
+  getHashContext,
+  mergeHashContext,
+  replaceHashContext,
+  setHashContext,
+} = await import(compiledModule('src/utils/hashNavigation.js'))
+
+test('merges educational navigation without losing municipality or compatible parameters', () => {
+  const fakeLocation = {
+    hash: '#educacao?municipio=sapucaia-do-sul&secao=atendimento&detalhe=mat-infantil&tema=matriculas',
+  }
+
+  mergeHashContext('educacao', { municipio: 'alto-feliz', detalhe: null }, fakeLocation)
+  assert.equal(
+    fakeLocation.hash,
+    '#educacao?municipio=alto-feliz&secao=atendimento&tema=matriculas',
+  )
+
+  replaceHashContext('educacao', { municipio: 'sapucaia-do-sul' }, fakeLocation)
+  assert.equal(
+    fakeLocation.hash,
+    '#educacao?municipio=sapucaia-do-sul&secao=atendimento&tema=matriculas',
+  )
+})
+
+test('builds detail links with the canonical municipal slug', () => {
+  assert.equal(
+    buildAppHash('educacao', {
+      municipio: 'sapucaia-do-sul',
+      secao: 'atendimento',
+      detalhe: 'mat-infantil',
+    }),
+    '#educacao?municipio=sapucaia-do-sul&secao=atendimento&detalhe=mat-infantil',
+  )
+  assert.equal(
+    buildAppHash('educacao', {
+      municipio: 'sapucaia-do-sul',
+      secao: 'atendimento',
+      detalhe: 'mat-fundamental',
+    }),
+    '#educacao?municipio=sapucaia-do-sul&secao=atendimento&detalhe=mat-fundamental',
+  )
+})
 
 const ROUTE_CASES = [
   ['', 'home'],

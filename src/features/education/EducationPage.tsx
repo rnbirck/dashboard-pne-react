@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ContentState } from '../../components/ContentState.jsx'
 import { ErrorState } from '../../components/ErrorState.jsx'
 import { loadEducationMunicipio, loadEducationMunicipiosIndex } from '../../data/educationData.js'
@@ -9,13 +9,14 @@ import {
   getEducationThemeForSection,
   resolveEducationSection,
 } from '../../data/educationIndicatorCatalog.js'
-import { setHashContext } from '../../utils/hashNavigation'
+import { mergeHashContext } from '../../utils/hashNavigation'
 import { useAsyncData } from '../../utils/useAsyncData.js'
 import '../../styles/education-pages.css'
 import { EducationCompactHeader } from './components/EducationCompactHeader'
 import { EducationDemandSection } from './components/EducationDemandSection'
 import { EducationIndicatorsSection } from './components/EducationIndicatorsSection'
 import { EducationMethodologySection } from './components/EducationMethodologySection'
+import { MunicipalEducationOverviewPrintReport } from './components/MunicipalEducationOverviewPrintReport'
 import { EducationOverviewSection } from './components/EducationOverviewSection'
 import {
   filterEducationIndicators,
@@ -30,6 +31,10 @@ import {
   buildPneComplementaryTheme,
 } from './educationViewModels'
 import { useEducationPageState } from './hooks/useEducationPageState'
+import {
+  useMunicipalEducationOverview,
+  type MunicipalEducationOverviewState,
+} from './hooks/useMunicipalEducationOverview'
 import { normalizeEducationIndicatorLabel } from './educationFormatters'
 import type { EducationIndicatorKey, EducationPageProps } from './educationTypes'
 
@@ -45,6 +50,8 @@ const EDUCATION_PAGE_COPY = {
   title: 'Indicadores de Educação',
 }
 
+const printDateFormatter = new Intl.DateTimeFormat('pt-BR')
+
 function latestEducationYear(items: ReadonlyArray<Record<string, unknown>>) {
   const years = items
     .map((item) => Number(item.currentYear ?? item.year))
@@ -52,7 +59,13 @@ function latestEducationYear(items: ReadonlyArray<Record<string, unknown>>) {
   return years.length ? Math.max(...years) : null
 }
 
-export function EducationPage({ indicadores, municipioData, navigationContext, selectedMunicipio }: EducationPageProps) {
+export function EducationPage({
+  indicadores,
+  municipioData,
+  municipalitySlug,
+  navigationContext,
+  selectedMunicipio,
+}: EducationPageProps) {
   const pageCopy = EDUCATION_PAGE_COPY
   const eduIndexState = useAsyncData(() => loadEducationMunicipiosIndex(), [])
   const eduMunMap = useMemo(() => {
@@ -82,6 +95,15 @@ export function EducationPage({ indicadores, municipioData, navigationContext, s
     setSelectedIndicatorKey,
     setSelectedThemeKey,
   } = useEducationPageState(currentNavigation)
+  const isMunicipalOverviewRoute = selectedSectionKey === EDUCATION_SECTION_KEYS.overview
+    && selectedThemeKey !== PANORAMA_THEME_KEYS.escolasSistemaS
+  const loadedMunicipalitySlug = typeof municipioData?.slug === 'string' ? municipioData.slug : null
+  const municipalOverviewState = useMunicipalEducationOverview(
+    municipalitySlug ?? loadedMunicipalitySlug,
+    isMunicipalOverviewRoute,
+  )
+  const [printEmissionDate, setPrintEmissionDate] = useState(() => printDateFormatter.format(new Date()))
+  const printButtonRef = useRef<HTMLButtonElement>(null)
   const dados = munDataState.data
   const sistemaS = dados?.blocos?.sistema_s ?? {}
   const hasSistemaS =
@@ -192,7 +214,28 @@ export function EducationPage({ indicadores, municipioData, navigationContext, s
   const sectionLatestYear = latestEducationYear(sectionItems)
   const overviewLatestYear = latestEducationYear(model.overview)
 
-  const standardHeader = isShowingIndicatorDetail && activeIndicator ? (
+  const standardHeader = isMunicipalOverviewRoute ? (
+    <EducationCompactHeader
+      action={municipalOverviewState.status === 'ready' && municipalOverviewState.data ? (
+        <button
+          className="platform-navigation-button municipal-education-print-action"
+          onClick={handlePrintOverview}
+          ref={printButtonRef}
+          type="button"
+        >
+          Imprimir relatório
+        </button>
+      ) : undefined}
+      contextItems={[
+        { icon: 'municipality', label: 'Município', value: municipalOverviewState.data?.municipality.name ?? selectedMunicipio },
+        { icon: 'period', label: 'Ano de referência', value: String(municipalOverviewState.data?.reference.year ?? 2025) },
+      ]}
+      description="Retrato das matrículas e da oferta educacional no município."
+      eyebrow="Educação municipal"
+      title="Visão geral municipal da educação"
+      variant="section"
+    />
+  ) : isShowingIndicatorDetail && activeIndicator ? (
     <EducationCompactHeader
       backLink={{ onClick: handleBackToIndicators }}
       contextItems={[
@@ -239,11 +282,8 @@ export function EducationPage({ indicadores, municipioData, navigationContext, s
     detailNavigation.prepareDetail(indicatorKey, { captureGridPosition: true })
     setSelectedIndicatorKey(indicatorKey)
     setIsDetailOpen(true)
-    const params = navigationContext?.params ?? new URLSearchParams()
-    setHashContext(navigationContext?.rawRoute || 'educacao', {
-      tema: params.get('tema'),
-      secao: params.get('secao') ?? resolveEducationSection({ detailKey: indicatorKey }),
-      modulo: params.get('modulo'),
+    mergeHashContext(navigationContext?.rawRoute || 'educacao', {
+      secao: navigationContext?.params.get('secao') ?? resolveEducationSection({ detailKey: indicatorKey }),
       detalhe: indicatorKey,
     })
   }
@@ -252,11 +292,9 @@ export function EducationPage({ indicadores, municipioData, navigationContext, s
     const returnKey = selectedIndicatorKey
     setIsDetailOpen(false)
     setSelectedIndicatorKey('')
-    const params = navigationContext?.params ?? new URLSearchParams()
-    setHashContext(navigationContext?.rawRoute || 'educacao', {
-      tema: params.get('tema'),
-      secao: params.get('secao') ?? selectedSectionKey,
-      modulo: params.get('modulo'),
+    mergeHashContext(navigationContext?.rawRoute || 'educacao', {
+      secao: navigationContext?.params.get('secao') ?? selectedSectionKey,
+      detalhe: null,
     })
     detailNavigation.restoreGrid(returnKey)
   }
@@ -265,11 +303,8 @@ export function EducationPage({ indicadores, municipioData, navigationContext, s
     detailNavigation.prepareDetail(indicatorKey)
     setSelectedIndicatorKey(indicatorKey)
     setIsDetailOpen(true)
-    const params = navigationContext?.params ?? new URLSearchParams()
-    setHashContext(navigationContext?.rawRoute || 'educacao', {
-      tema: params.get('tema'),
-      secao: params.get('secao') ?? resolveEducationSection({ detailKey: indicatorKey }),
-      modulo: params.get('modulo'),
+    mergeHashContext(navigationContext?.rawRoute || 'educacao', {
+      secao: navigationContext?.params.get('secao') ?? resolveEducationSection({ detailKey: indicatorKey }),
       detalhe: indicatorKey,
     })
   }
@@ -277,8 +312,12 @@ export function EducationPage({ indicadores, municipioData, navigationContext, s
   function handleBackToEducationOverview() {
     setSelectedIndicatorKey('')
     setIsDetailOpen(false)
-    setHashContext(navigationContext?.rawRoute || 'educacao', {
+    mergeHashContext(navigationContext?.rawRoute || 'educacao', {
       secao: EDUCATION_SECTION_KEYS.overview,
+      tema: null,
+      theme: null,
+      detalhe: null,
+      modulo: null,
     })
   }
 
@@ -286,8 +325,8 @@ export function EducationPage({ indicadores, municipioData, navigationContext, s
     <div className={`page-stack educacao-page educacao-page--${selectedSectionKey}${isShowingCompactEducationPage ? ' educacao-page--detail' : ''}`}>
       {!isDemandSection ? standardHeader : null}
 
-      {isOverviewSection && !isSistemaSTheme ? (
-        <EducationOverviewSection overview={model.overview} sections={EDUCATION_SECTION_CATALOG} />
+      {isMunicipalOverviewRoute ? (
+        <MunicipalEducationOverviewContent state={municipalOverviewState} />
       ) : isDemandSection && !isSistemaSTheme ? (
         <EducationDemandSection
           municipioData={municipioData}
@@ -325,6 +364,82 @@ export function EducationPage({ indicadores, municipioData, navigationContext, s
           />
         </section>
       )}
+
+      {isMunicipalOverviewRoute && municipalOverviewState.status === 'ready' && municipalOverviewState.data ? (
+        <MunicipalEducationOverviewPrintReport
+          data={municipalOverviewState.data}
+          emissionDate={printEmissionDate}
+        />
+      ) : null}
     </div>
   )
+
+  function handlePrintOverview() {
+    if (municipalOverviewState.status !== 'ready' || !municipalOverviewState.data || !globalThis.window) return
+
+    const emissionDate = printDateFormatter.format(new Date())
+    const originalTitle = document.title
+    const temporaryTitle = `visao-geral-educacao-${municipalOverviewState.data.municipality.slug}-${municipalOverviewState.data.reference.year}`
+    const restoreDocument = () => {
+      document.title = originalTitle
+      globalThis.window?.removeEventListener('afterprint', restoreDocument)
+      globalThis.window?.requestAnimationFrame(() => printButtonRef.current?.focus())
+    }
+
+    setPrintEmissionDate(emissionDate)
+    globalThis.window.addEventListener('afterprint', restoreDocument, { once: true })
+    globalThis.window.setTimeout(() => {
+      document.title = temporaryTitle
+      try {
+        globalThis.window?.print()
+        globalThis.window?.setTimeout(restoreDocument, 1500)
+      } catch {
+        restoreDocument()
+      }
+    }, 0)
+  }
+}
+
+function MunicipalEducationOverviewContent({
+  state,
+}: {
+  state: MunicipalEducationOverviewState
+}) {
+  if (state.status === 'idle' || state.status === 'loading') {
+    return (
+      <section className="municipal-education-overview-state">
+        <ContentState kind="loading" className="state-box state-box--loading">
+          <span className="state-box__loading-heading">
+            <span className="state-spinner" aria-hidden="true" />
+            <strong>Carregando a visão geral municipal...</strong>
+          </span>
+          <span className="state-skeleton" aria-hidden="true"><span /><span /><span /></span>
+        </ContentState>
+      </section>
+    )
+  }
+
+  if (state.status === 'absent') {
+    return (
+      <section className="municipal-education-overview-state">
+        <ContentState kind="unavailable" className="state-box">
+          <strong>Visão geral municipal indisponível</strong>
+          <span>As informações desta visão ainda não estão disponíveis para este município.</span>
+        </ContentState>
+      </section>
+    )
+  }
+
+  if (state.status === 'error' || !state.data) {
+    return (
+      <section className="municipal-education-overview-state">
+        <ErrorState
+          title="Não foi possível carregar a visão geral municipal"
+          message="Tente novamente em instantes. Os demais indicadores educacionais permanecem disponíveis."
+        />
+      </section>
+    )
+  }
+
+  return <EducationOverviewSection data={state.data} />
 }

@@ -1,10 +1,10 @@
 export const FUNDEB_INDICATORS = [
   {
     key: 'receitas',
-    label: 'Receitas do FUNDEB',
+    label: 'Receita do Fundeb declarada',
     tipo: 'financeiro',
-    cardDescription: 'Recursos do FUNDEB registrados para o município no ano.',
-    description: 'Total de recursos do FUNDEB registrados para o município no ano.',
+    cardDescription: 'Receita do Fundeb declarada pelo município no ano.',
+    description: 'Total da receita do Fundeb declarada pelo município no demonstrativo do exercício.',
   },
   {
     key: 'despesa_remuneracao_profissionais',
@@ -64,10 +64,10 @@ export const FUNDEB_INDICATORS = [
   },
   {
     key: 'ingresso_recursos_ate_bimestre',
-    label: 'Recursos recebidos no ano',
+    label: 'Ingressos do Fundeb declarados no ano',
     tipo: 'financeiro',
-    cardDescription: 'Recursos do FUNDEB recebidos ao longo do ano.',
-    description: 'Total de recursos do FUNDEB recebidos pelo município ao longo do ano.',
+    cardDescription: 'Ingressos do Fundeb declarados pelo município ao longo do ano.',
+    description: 'Total de ingressos do Fundeb declarados pelo município ao longo do exercício.',
   },
   {
     key: 'pagamentos_efetuados_ate_bimestre',

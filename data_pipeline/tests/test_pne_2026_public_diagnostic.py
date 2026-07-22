@@ -47,6 +47,30 @@ EXPECTED_GOAL_IDS = [
     "11.c",
 ]
 
+EXPECTED_PUBLISHED_GOAL_IDS = [
+    "4.b",
+    "4.c",
+    "4.d",
+    "6.a",
+    "8.b",
+    "8.c",
+    "11.a",
+    "11.b",
+    "11.c",
+    "12.a",
+    "12.b",
+    "17.a",
+    "17.d",
+    "17.f",
+    "18.b",
+    "19.c",
+]
+
+
+def goal_sort_key(goal_id):
+    number, letter = goal_id.split(".", maxsplit=1)
+    return int(number), letter
+
 
 def synthetic_indicator(
     *,
@@ -191,6 +215,20 @@ class PublicDiagnosticConfigurationTest(unittest.TestCase):
 
 
 class PublicDiagnosticBuilderTest(unittest.TestCase):
+    def test_public_goals_use_integer_then_letter_order(self):
+        public = build_pne_2026_public_diagnostic(
+            contract_with(
+                synthetic_indicator(indicator_id="alfabetizacao_pop_15_mais"),
+                synthetic_indicator(indicator_id="educacao_ambiental"),
+                synthetic_indicator(indicator_id="idade_regular_quinto"),
+            )
+        )
+        self.assertEqual(
+            [goal["goalId"] for goal in public["goals"]],
+            ["4.b", "8.c", "11.a"],
+        )
+        self.assertEqual([goal["order"] for goal in public["goals"]], [1, 2, 3])
+
     def test_at_least_maintain_distance_and_partial_component_language(self):
         public = build_pne_2026_public_diagnostic(
             contract_with(synthetic_indicator(current=80, target=70))
@@ -367,6 +405,10 @@ class PublicDiagnosticBuilderTest(unittest.TestCase):
         self.assertEqual(len(public["sources"]), 1)
         self.assertEqual(len(public["goals"]), 1)
         self.assertEqual(len(public["goals"][0]["results"]), 2)
+        self.assertEqual(
+            [result["indicatorId"] for result in public["goals"][0]["results"]],
+            ["basico_integral", "escolas_integral"],
+        )
 
         for field in ("rawValue", "currentYear"):
             with self.subTest(missing=field):
@@ -462,6 +504,16 @@ class PublicDiagnosticPayloadAuditTest(unittest.TestCase):
                 ).read_text(encoding="utf-8")
             )
             public = build_pne_2026_public_diagnostic(contract)
+            self.assertEqual(contract["pne2026PublicDiagnostic"], public)
+            goal_ids = [goal["goalId"] for goal in public["goals"]]
+            self.assertEqual(goal_ids, sorted(goal_ids, key=goal_sort_key))
+            self.assertEqual(len(goal_ids), len(set(goal_ids)))
+            self.assertTrue(set(goal_ids) <= set(EXPECTED_PUBLISHED_GOAL_IDS))
+            self.assertEqual(
+                [goal["order"] for goal in public["goals"]],
+                list(range(1, len(goal_ids) + 1)),
+            )
+            self.assertTrue(all(goal["results"] for goal in public["goals"]))
             results = [
                 result for goal in public["goals"] for result in goal["results"]
             ]

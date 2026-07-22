@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
+import { parseAppHash } from '../app/appHash'
 import { getNavigationContextFromLocation, resolveActivePage } from '../app/appRoutes'
 import { resolveEducationNavigation } from '../data/educationIndicatorCatalog'
 import type { AppPageKey } from '../types/app'
 import type { LocationLike, Navigate, ParsedAppLocation } from '../types/navigation'
-import { setHashContext } from '../utils/hashNavigation'
+import { mergeHashContext, setHashContext } from '../utils/hashNavigation'
 
 interface EducationNavigation {
   section?: string
@@ -47,6 +48,18 @@ export function useAppHashNavigation(): AppHashNavigation {
   }, [refreshNavigation])
 
   const navigate = useCallback<Navigate>((page) => {
+    const nextNavigation = parseAppHash(`#${page}`)
+    if (nextNavigation.route === 'educacao' && nextNavigation.hashParams.has('secao')) {
+      mergeHashContext(nextNavigation.rawRoute || 'educacao', {
+        secao: nextNavigation.hashParams.get('secao'),
+        tema: null,
+        theme: null,
+        detalhe: null,
+        modulo: null,
+      })
+      return
+    }
+
     const nextHash = `#${page}`
     if (window.location.hash !== nextHash) {
       setHashContext(page)

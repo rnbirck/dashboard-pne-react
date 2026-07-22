@@ -9,116 +9,6 @@
     gap: var(--space-6);
   }
 
-  .cycle-page .cycle-hero {
-    display: grid;
-    grid-template-columns: minmax(330px, 0.85fr) minmax(0, 1.35fr);
-    gap: var(--space-8);
-    align-items: stretch;
-    min-height: 176px;
-    padding: var(--space-8);
-    border-color: var(--border-card);
-    background: var(--surface-card);
-    box-shadow: var(--shadow-sm);
-  }
-
-  .cycle-page .cycle-hero__copy {
-    display: grid;
-    align-content: center;
-    gap: var(--space-2);
-  }
-
-  .cycle-page .cycle-hero h1 {
-    margin: 0;
-    font-family: var(--font-serif);
-    font-size: var(--font-size-3xl);
-    font-weight: var(--font-weight-semibold);
-    letter-spacing: -0.02em;
-    line-height: 1.1;
-  }
-
-  .cycle-page .cycle-hero__copy > p:not(.cycle-hero__context) {
-    max-width: 58ch;
-    margin: var(--space-1) 0 0;
-    color: var(--text-body);
-    font-size: var(--font-size-sm);
-    line-height: var(--line-height-normal);
-  }
-
-  .cycle-page .cycle-hero__context {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-2);
-    margin: var(--space-3) 0 0;
-  }
-
-  .cycle-page .cycle-hero__context span {
-    color: var(--text-soft);
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-semibold);
-  }
-
-  .cycle-page .cycle-hero__context strong {
-    color: var(--text-strong);
-    font-size: var(--font-size-sm);
-  }
-
-  .cycle-page .cycle-hero-meta-group {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0;
-    overflow: hidden;
-    border: var(--border-default);
-    border-radius: var(--radius-md);
-    background: var(--surface-soft);
-  }
-
-  .cycle-page .cycle-hero-meta {
-    min-width: 0;
-    padding: var(--space-5);
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-    align-content: center;
-    gap: var(--space-2);
-  }
-
-  .cycle-page .cycle-hero-meta + .cycle-hero-meta {
-    border-left: var(--border-divider);
-  }
-
-  .cycle-page .cycle-hero-meta > .cycle-hero-meta__label {
-    color: var(--text-soft);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    letter-spacing: 0;
-    line-height: var(--line-height-snug);
-    text-transform: none;
-  }
-
-  .cycle-page .cycle-hero-meta__value {
-    color: var(--text-strong);
-    font-size: var(--font-size-2xl);
-    font-weight: var(--font-weight-bold);
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-  }
-
-  .cycle-page .cycle-hero-meta--success .cycle-hero-meta__value {
-    color: var(--status-ok-ink);
-  }
-
-  .cycle-page .cycle-hero-meta--attention .cycle-hero-meta__value {
-    color: var(--status-far-ink);
-  }
-
-  .cycle-page .cycle-hero-meta__detail {
-    color: var(--text-body);
-    font-size: var(--font-size-xs);
-    font-style: normal;
-    font-weight: var(--font-weight-regular);
-    line-height: var(--line-height-snug);
-  }
-
   .cycle-page .cycle-filter-panel {
     padding: var(--space-6);
     gap: var(--space-4);
@@ -371,10 +261,6 @@
 }
 
 /* PNE goal detail: clear hierarchy, asymmetric analysis and visible support grid. */
-.cycle-page--detail > .cycle-hero {
-  display: none;
-}
-
 .cycle-page--detail .cycle-detail-nav--bottom {
   margin-top: var(--space-1);
 }
@@ -1604,7 +1490,7 @@
   .cycle-page--detail .indicator-goal-tracking {
     align-items: flex-start;
     flex-direction: column;
-    gap: var(--space-2);
+    gap: var(--space-1);
   }
 
   .cycle-page--detail .indicator-goal-tracking > strong {

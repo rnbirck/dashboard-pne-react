@@ -1,9 +1,9 @@
 export const PNATE_INDICATORS = [
   {
     key: 'repasse_total',
-    label: 'Repasse total',
+    label: 'Valor informado pelo PNATE no exercício',
     tipo: 'financeiro',
-    description: 'Valor total previsto ou registrado para o PNATE no município no exercício.',
+    description: 'Valor anual informado pelo PNATE para o município.',
   },
   {
     key: 'repasse_autorizado_apos_desconto',
@@ -13,7 +13,7 @@ export const PNATE_INDICATORS = [
   },
   {
     key: 'resultado_per_capita',
-    label: 'Valor per capita',
+    label: 'Parâmetro per capita',
     tipo: 'financeiro',
     description: 'Resultado per capita usado no cálculo do atendimento do PNATE.',
   },

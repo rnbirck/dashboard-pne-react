@@ -1,5 +1,6 @@
 import { InteractionChevron } from '../components/InteractionChevron'
 import { EditorialExpandableGrid } from '../components/EditorialExpandableGrid'
+import { PnePageHeader } from '../components/PnePageHeader'
 import { pneOverviewContent } from '../data/pneOverviewContent'
 
 export function PneOverviewPage({ onNavigate }) {
@@ -22,26 +23,26 @@ export function PneOverviewPage({ onNavigate }) {
 
   return (
     <div className="page-stack pne-overview-page">
-      <section className="page-card pne-overview-hero">
-        <div className="pne-overview-hero__copy">
-          <span className="eyebrow">{hero.eyebrow}</span>
-          <h1>{hero.title}</h1>
-          <p>{hero.description}</p>
-        </div>
-
-        <aside className="pne-legal-card" aria-label="Resumo da base legal do PNE">
-          <span className="pne-legal-card__eyebrow">Base legal</span>
-          <strong>Lei nº 15.388/2026</strong>
-          <dl>
-            {hero.legalFacts.map((fact) => (
-              <div key={`${fact.label}-${fact.value}`}>
-                <dt>{fact.label}</dt>
-                <dd>{fact.value}</dd>
-              </div>
-            ))}
-          </dl>
-        </aside>
-      </section>
+      <PnePageHeader
+        asideLabel="Resumo da base legal do PNE"
+        asideContent={(
+          <>
+            <span className="pne-page-header__aside-title">Base legal</span>
+            <strong className="pne-page-header__aside-highlight">Lei nº 15.388/2026</strong>
+            <dl className="pne-page-header__facts">
+              {hero.legalFacts.slice(1).map((fact) => (
+                <div key={`${fact.label}-${fact.value}`}>
+                  <dt>{fact.label}</dt>
+                  <dd>{fact.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </>
+        )}
+        description={hero.description}
+        eyebrow={hero.eyebrow}
+        title={hero.title}
+      />
 
       <section className="page-card pne-overview-intro">
         <div className="pne-overview-intro__heading">

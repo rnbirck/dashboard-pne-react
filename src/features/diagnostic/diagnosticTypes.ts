@@ -542,6 +542,133 @@ export interface Pne2026PublicDiagnosticV1 {
   sources: Pne2026PublicSourceV1[]
 }
 
+export type Pne2026PublicResultClassificationV2 = 'maintain' | 'advance' | null
+export type Pne2026PublicRelationshipV2 = 'direct' | 'partial_component' | 'contextual_proxy'
+export type Pne2026PublicTierV2 = 'essential' | 'complementary'
+
+export interface Pne2026PublicStateComparisonV2 {
+  state: 'above' | 'near' | 'below'
+  municipalityValue: number
+  stateValue: number
+  year: number
+  unit: 'percent' | 'index' | 'count' | 'years'
+  difference: number
+  favorableDifference: number
+  reading: string
+  valueReading: string
+}
+
+export interface Pne2026PublicSimilarMunicipalitiesV2 {
+  year?: number | null
+  median: number
+  unit: 'percent' | 'index' | 'count' | 'years'
+  title: 'Municípios com oferta educacional de tamanho semelhante'
+  reading: string
+}
+
+export interface Pne2026PublicTrajectoryV2 {
+  estimatedAchievementYear?: number
+  historicalReading?: string
+  achievementReading?: string
+}
+
+export interface Pne2026PublicResultV2 {
+  resultOrder: number
+  goalId: string
+  indicatorId: string
+  themeId: string
+  tier: Pne2026PublicTierV2
+  priorityOrder: number | null
+  publicName: string
+  publicDescription: string
+  relationshipType: Pne2026PublicRelationshipV2
+  relationshipReading: string
+  direction: DiagnosticDirection
+  current: {
+    value: number
+    displayValue: number
+    displayText?: string
+    year: number
+    unit: 'percent' | 'index' | 'count' | 'years'
+  }
+  indicatorReference: {
+    value: number
+    year: number
+    direction?: DiagnosticDirection
+    label?: string
+    kind?: string
+    validationStatus?: string
+  }
+  finalReference?: { value: number; year: number; dimension?: string }
+  legalGoal: { target?: number; deadline: number; [key: string]: unknown }
+  classification: Pne2026PublicResultClassificationV2
+  remainingGap: number | null
+  favorableDifference: number | null
+  distance: number | null
+  publicReading?: string | null
+  status?: string | null
+  stateComparison?: Pne2026PublicStateComparisonV2
+  statewidePosition?: { reading: string }
+  similarMunicipalities?: Pne2026PublicSimilarMunicipalitiesV2
+  trajectory?: Pne2026PublicTrajectoryV2
+  sourceIds: string[]
+}
+
+export interface Pne2026PublicGoalV2 {
+  goalId: string
+  title: string
+  order: number
+  results: Pne2026PublicResultV2[]
+}
+
+export interface Pne2026PublicThemeV2 {
+  id: string
+  order: number
+  label: string
+}
+
+export interface Pne2026PublicSourceV2 {
+  id: string
+  organization?: string
+  publicTitle: string
+  period?: string
+  officialUrl?: string
+}
+
+export interface Pne2026PublicDiagnosticV2 {
+  version: 'pne2026-public-diagnostic-v2'
+  schemaVersion: 'municipal-diagnostic-v2'
+  cycleId: 'pne_2026_2036'
+  presentationCatalogVersion: string
+  publicationReady: boolean
+  municipalityId: string
+  municipalityName: string
+  summary: {
+    authorizedResultCount: 34
+    availableResultCount: number
+    unavailableResultCount: number
+    essentialAvailableCount: number
+    complementaryAvailableCount: number
+    advanceCount: number
+    maintainCount: number
+    unclassifiedCount: number
+    relationshipCounts: Record<Pne2026PublicRelationshipV2, number>
+    stateComparisonCount: number
+    statewidePositionCount: number
+    similarMunicipalitiesCount: number
+    trajectoryCount: number
+    estimatedAchievementYearCount: number
+    stateAboveOrNearCount: number
+    stateBelowCount: number
+  }
+  presentation: {
+    themes: Pne2026PublicThemeV2[]
+    resultDefinitions: Array<Record<string, unknown>>
+  }
+  goals: Pne2026PublicGoalV2[]
+  sources: Pne2026PublicSourceV2[]
+}
+
 export interface MunicipalDiagnosticContractV2 {
   schemaVersion: 'municipal-diagnostic-v2'
   methodologyVersion: 'municipal-diagnostic-p3c-v1'
@@ -572,6 +699,7 @@ export interface MunicipalDiagnosticContractV2 {
   excludedItems: DiagnosticExcludedItemV2[]
   warnings: Array<DiagnosticReason & { indicatorIds: string[] }>
   pne2026PublicDiagnostic?: Pne2026PublicDiagnosticV1
+  pne2026PublicDiagnosticV2?: Pne2026PublicDiagnosticV2
   generationMetadata: {
     generator: 'build_municipal_diagnostic_v2'
     catalogVersion: string

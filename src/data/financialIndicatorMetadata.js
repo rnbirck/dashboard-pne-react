@@ -166,11 +166,11 @@ export const FINANCIAL_INDICATOR_METADATA = Object.freeze({
   fundeb: Object.freeze({
     receitas: indicatorMetadata({
       ...FUNDEB_COMMON,
-      definition: 'Total de recursos do FUNDEB registrados para o município no ano.',
-      measures: 'As receitas do fundo atribuídas ao município no exercício.',
+      definition: 'Total da receita do FUNDEB declarada pelo município no ano.',
+      measures: 'As receitas do fundo registradas no demonstrativo municipal do exercício.',
       calculation: 'Soma das receitas do FUNDEB registradas no demonstrativo anual.',
-      relevance: 'Mostra a escala de recursos redistribuídos que sustenta a oferta da educação básica.',
-      referenceRule: 'Compare anos, estrutura do fundo e matrículas; o valor não é o orçamento total da educação municipal.',
+      relevance: 'Mostra a escala da receita do fundo declarada para sustentar a oferta da educação básica.',
+      referenceRule: 'Compare anos e matrículas; o valor é uma declaração municipal, não confirmação de transferência nem o orçamento total da educação.',
     }),
     despesa_remuneracao_profissionais: indicatorMetadata({
       ...FUNDEB_COMMON,
@@ -273,10 +273,10 @@ export const FINANCIAL_INDICATOR_METADATA = Object.freeze({
     repasse_total: indicatorMetadata({
       ...PNATE_COMMON,
       definition: 'Valor total previsto ou registrado para o PNATE no município no exercício.',
-      measures: 'O montante de repasse associado ao atendimento informado.',
+      measures: 'O montante associado ao atendimento informado no leiaute do exercício.',
       calculation: 'Valor de repasse calculado ou registrado pelo FNDE para o exercício.',
-      relevance: 'Mostra o apoio federal suplementar disponível para o transporte escolar rural.',
-      referenceRule: 'Não representa necessariamente o custo total do transporte municipal.',
+      relevance: 'Dimensiona o apoio federal suplementar informado para o transporte escolar rural.',
+      referenceRule: 'O campo pode representar previsão, plano ou registro anual e não comprova recebimento efetivo; também não representa necessariamente o custo total do transporte municipal.',
     }),
     repasse_autorizado_apos_desconto: indicatorMetadata({
       ...PNATE_COMMON,

@@ -2,10 +2,13 @@ import type { MunicipalFinanceCatalog, MunicipalFinanceSourceCatalogEntry } from
 import type {
   CompactDerivedRate,
   CompactFinancialValue,
-  MunicipalFinanceCoverageStatus,
   MunicipalFinanceDocumentV1,
   ProgramFinancialStatus,
 } from '../diagnostic/municipalFinanceTypes'
+import {
+  hasPublishableFinancialContent,
+  isPublishableFinancialValue,
+} from '../../utils/financialPresentation'
 
 export interface FinancePresentationContext {
   indicatorIds: readonly string[]
@@ -36,7 +39,7 @@ export interface FundebComponentPresentation {
   key: 'total' | 'vaaf' | 'vaat' | 'vaar'
   title: string
   amount: CompactFinancialValue
-  statusLabel: string
+  statusLabel: string | null
   calculationStatusLabel: string | null
   natureLabel: string
   stageLabel: string
@@ -150,11 +153,12 @@ export function amountNatureLabel(nature: CompactFinancialValue['amountNature'])
     confirmed: 'Evidência confirmada na fonte',
     municipal_declared: 'Execução declarada pelo município',
     panel_displayed: 'Valor exibido em painel oficial',
-    local_calculation: 'Cálculo publicado no contrato',
+    local_calculation: 'Cálculo informado',
   }[nature]
 }
 
-export function programStatusLabel(status: ProgramFinancialStatus): string {
+export function programStatusLabel(status: ProgramFinancialStatus): string | null {
+  if (status === 'not_verified') return null
   return {
     confirmed_beneficiary: 'Beneficiário',
     confirmed_non_beneficiary: 'Não beneficiário',
@@ -165,20 +169,7 @@ export function programStatusLabel(status: ProgramFinancialStatus): string {
     agreement_signed: 'Termo assinado',
     transferred: 'Transferência identificada',
     balance_available: 'Disponibilidade registrada pela fonte',
-    not_verified: 'Não verificado',
-  }[status] ?? 'Indisponível'
-}
-
-export function coverageStatusLabel(status: MunicipalFinanceCoverageStatus): string {
-  return {
-    complete: 'Completa',
-    partial: 'Parcial',
-    unavailable: 'Indisponível',
-    pending_source: 'Fonte pendente',
-    mapping_pending: 'Mapeamento pendente',
-    source_missing: 'Fonte ausente',
-    divergent: 'Divergente',
-  }[status]
+  }[status] ?? null
 }
 
 export function buildMunicipalFinancePresentation(
@@ -198,44 +189,53 @@ export function buildMunicipalFinancePresentation(
 
   const summaryCards = [
     {
-      key: 'qse',
-      title: 'QSE distribuída',
-      amount: fundeb.qseDistributedClosedYear,
-      supportingText: '2024 · valor distribuído pelo FNDE',
+      key: 'paid',
+      title: 'Despesa paga em educação',
+      amount: execution.paid,
+      supportingText: 'Realizado · 2024',
+    },
+    {
+      key: 'mde',
+      title: 'Aplicação em MDE',
+      amount: document.constitutionalApplication.mdeAppliedRate.canonical,
+      supportingText: 'Realizado · 2024',
     },
     {
       key: 'fundeb',
-      title: 'Fundeb previsto',
+      title: 'Fundeb total previsto',
       amount: fundeb.fundebTotalAnnualForecast,
-      supportingText: 'Previsão oficial anual · não representa recebimento',
-    },
-    {
-      key: 'paid',
-      title: 'Despesa paga em Educação',
-      amount: execution.paid,
-      supportingText: 'DCA/SICONFI · função 12 · 2024',
+      supportingText: 'Previsão oficial · 2026',
     },
     {
       key: 'vaar',
-      title: 'VAAR 2026',
-      statusLabel: programStatusLabel(vaarStatus),
+      title: 'VAAR previsto',
       amount: vaarStatus === 'confirmed_beneficiary' ? fundeb.fundebVaarAnnualForecast : null,
-      supportingText: vaarStatus === 'confirmed_beneficiary'
-        ? 'Previsão oficial separada · não comprova transferência'
-        : 'Status nominal na publicação do FNDE',
+      supportingText: 'Previsão oficial · 2026',
     },
-  ] as const
+  ].filter((card) => isPublishableFinancialValue(card.amount))
 
   const executionStages = [
     { key: 'committed', label: 'Empenhado', value: execution.committed, progress: execution.committed.value === null ? null : 100 },
-    { key: 'liquidated', label: 'Liquidado', value: execution.liquidated, progress: execution.derivedRates.liquidatedToCommittedRate.value },
-    { key: 'paid', label: 'Pago', value: execution.paid, progress: execution.derivedRates.paidToCommittedRate.value },
-  ] as const
+    {
+      key: 'liquidated',
+      label: 'Liquidado',
+      value: execution.liquidated,
+      progress: isPublishableDerivedRate(execution.derivedRates.liquidatedToCommittedRate, document)
+        ? execution.derivedRates.liquidatedToCommittedRate.value : null,
+    },
+    {
+      key: 'paid',
+      label: 'Pago',
+      value: execution.paid,
+      progress: isPublishableDerivedRate(execution.derivedRates.paidToCommittedRate, document)
+        ? execution.derivedRates.paidToCommittedRate.value : null,
+    },
+  ].filter((stage) => isPublishableFinancialValue(stage.value))
 
   const executionOutstanding: readonly AmountPresentation[] = [
     { label: 'Restos a pagar não processados', value: execution.outstandingNonProcessed },
     { label: 'Restos a pagar processados', value: execution.outstandingProcessed },
-  ]
+  ].filter((item) => isPublishableFinancialValue(item.value))
 
   const executionRates = [
     { key: 'liquidatedToCommitted', label: 'Percentual liquidado sobre o empenhado', value: execution.derivedRates.liquidatedToCommittedRate },
@@ -243,15 +243,15 @@ export function buildMunicipalFinancePresentation(
     { key: 'paidToLiquidated', label: 'Percentual pago sobre o liquidado', value: execution.derivedRates.paidToLiquidatedRate },
     { key: 'outstandingToCommitted', label: 'Restos registrados em relação ao empenhado', value: execution.derivedRates.outstandingToCommittedRate },
   ].filter((item): item is { key: string; label: string; value: CompactDerivedRate & { value: number } } => (
-    item.value.value !== null
+    isPublishableDerivedRate(item.value, document)
   ))
 
-  const fundebComponents: readonly FundebComponentPresentation[] = [
+  const allFundebComponents: readonly FundebComponentPresentation[] = [
     buildFundebComponent(
       'total',
       'Fundeb total',
       fundeb.fundebTotalAnnualForecast,
-      fundeb.fundebTotalAnnualForecast.value === null ? 'Indisponível' : 'Previsão disponível',
+      null,
       null,
       source(fundeb.fundebTotalAnnualForecast.sourceId),
     ),
@@ -271,7 +271,7 @@ export function buildMunicipalFinancePresentation(
       {
         habilitated_for_calculation: 'Habilitado para o cálculo da condição de beneficiário; isso não confirma benefício.',
         not_habilitated_for_calculation: 'Não habilitado para o cálculo da condição de beneficiário.',
-        not_verified: 'Habilitação para cálculo não verificada.',
+        not_verified: null,
       }[document.programStatuses.fundebVaat.calculationStatus],
       source(fundeb.fundebVaatAnnualForecast.sourceId),
     ),
@@ -285,6 +285,14 @@ export function buildMunicipalFinancePresentation(
       'Benefício nominal não significa recebimento; previsão não significa transferência.',
     ),
   ]
+  const fundebComponents = allFundebComponents.filter((component) => (
+    component.key === 'total'
+      ? isPublishableFinancialValue(component.amount)
+      : component.statusLabel === 'Beneficiário' && isPublishableFinancialValue(component.amount)
+  ))
+  const fundebNonBeneficiaryLabels = allFundebComponents
+    .filter((component) => component.key !== 'total' && component.statusLabel === 'Não beneficiário')
+    .map((component) => component.title)
 
   const qseMetrics: readonly AmountPresentation[] = [
     { label: 'Valor distribuído em 2024', value: fundeb.qseDistributedClosedYear },
@@ -295,69 +303,36 @@ export function buildMunicipalFinancePresentation(
     { label: 'Valor distribuído por matrícula', value: document.perStudent.qseDistributedPerEnrollment },
   ]
 
-  const qseGroups: readonly QseGroupPresentation[] = [
+  const qseGroups: readonly QseGroupPresentation[] = ([
     {
       key: 'distribution',
       title: 'Distribuição de 2024',
-      metrics: [qseMetrics[0], qseMetrics[5]],
+      metrics: [
+        qseMetrics[0],
+        ...(isPublishableDerivedRate(document.perStudent.qseDistributedPerEnrollment, document) ? [qseMetrics[5]] : []),
+      ].filter((metric) => isPublishableFinancialValue(metric.value)),
       comparison: null,
     },
     {
       key: 'estimate',
       title: 'Estimativa de 2026',
-      metrics: [qseMetrics[1], qseMetrics[4]],
+      metrics: [qseMetrics[1]].filter((metric) => isPublishableFinancialValue(metric.value)),
       comparison: null,
     },
     {
       key: 'calculationBase',
       title: 'Base do cálculo',
-      metrics: [qseMetrics[2], qseMetrics[3]],
-      comparison: describeQseCoefficientComparison(
-        document.qse.distributionCoefficientClosedYear,
-        document.qse.distributionCoefficientCurrentYear,
-      ),
+      metrics: [qseMetrics[2]].filter((metric) => isPublishableFinancialValue(metric.value)),
+      comparison: null,
     },
-  ]
-
-  const coverageDefinitions = [
-    ['confirmedTransfers', 'Transferências confirmadas cobertas'],
-    ['officialForecasts', 'Previsões oficiais'],
-    ['programStatuses', 'Status dos programas'],
-    ['budgetExecution', 'Execução orçamentária'],
-    ['constitutionalApplication', 'Aplicação constitucional'],
-    ['perStudentMetrics', 'Indicadores por matrícula'],
-    ['reconciliation', 'Reconciliação'],
-  ] as const
-  const coverage = coverageDefinitions.map(([key, label]) => {
-    const dimension = document.dataQuality.coverageByDimension[key]
-    return {
-      key,
-      label,
-      status: dimension.status,
-      statusLabel: coverageStatusLabel(dimension.status),
-      reason: dimension.reasonCodes[0]
-        ? catalog?.reasonMessages[dimension.reasonCodes[0]] ?? null
-        : null,
-    }
-  })
-  const coverageSummary = coverage.reduce((summary, dimension) => {
-    if (dimension.status === 'complete') summary.complete += 1
-    else if (dimension.status === 'unavailable') summary.unavailable += 1
-    else summary.pending += 1
-    return summary
-  }, { complete: 0, pending: 0, unavailable: 0 })
-  const coverageHighlightKeys = new Set<string>([
-    'budgetExecution',
-    'constitutionalApplication',
-    'reconciliation',
-  ])
-  const coverageHighlights = coverage.filter((dimension) => coverageHighlightKeys.has(dimension.key))
+  ] satisfies QseGroupPresentation[]).filter((group) => group.metrics.length)
 
   const contextIndicatorIds = new Set(context.indicatorIds)
   const contextProgramIds = new Set(context.programIds)
   const hasContext = contextIndicatorIds.size > 0 || contextProgramIds.size > 0
   const relatedLinks = document.educationLinks.filter((link) => (
-    !hasContext || contextIndicatorIds.has(link.indicatorId) || contextProgramIds.has(link.programId)
+    (!hasContext || contextIndicatorIds.has(link.indicatorId) || contextProgramIds.has(link.programId))
+    && isPublishableFinancialValue(resolveDocumentReference(document, link.amountReferenceId))
   ))
   const relations: readonly FinanceRelationPresentation[] = relatedLinks.map((link) => ({
     key: `${link.indicatorId}-${link.programId}-${link.relationType}`,
@@ -367,7 +342,7 @@ export function buildMunicipalFinancePresentation(
       general_mde: 'Fonte geral de MDE',
       conditional_support: 'Apoio condicionado',
       accounting_context: 'Contexto contábil',
-      direct_cost_driver: 'Relação direta documentada',
+      direct_cost_driver: 'Relação direta registrada',
     }[link.relationType],
     reading: relationReading(link, programById.get(link.programId)?.title ?? link.programId),
   }))
@@ -379,27 +354,38 @@ export function buildMunicipalFinancePresentation(
 
   const sources = [
     buildSourceGroup('fundeb', 'FNDE — Fundeb', [
-      fundeb.fundebTotalAnnualForecast.sourceId,
-      fundeb.fundebVaafAnnualForecast.sourceId,
-      fundeb.fundebVaatAnnualForecast.sourceId,
-      fundeb.fundebVaarAnnualForecast.sourceId,
-      ...document.programStatuses.fundebVaat.sourceIds,
-      ...document.programStatuses.fundebVaar.sourceIds,
+      ...sourceIdsForPublishableValues([
+        fundeb.fundebTotalAnnualForecast,
+        fundeb.fundebVaafAnnualForecast,
+        fundeb.fundebVaatAnnualForecast,
+        fundeb.fundebVaarAnnualForecast,
+      ]),
     ], sourceById),
     buildSourceGroup('constitutional', 'FNDE — SIOPE e RREO', [
-      ...document.constitutionalApplication.mdeAppliedAmount.reconciliation.sourceIds,
-      ...document.constitutionalApplication.mdeAppliedRate.reconciliation.sourceIds,
-      ...document.constitutionalApplication.fundebProfessionalRemunerationRate.reconciliation.sourceIds,
-      document.constitutionalApplication.fundebRevenueReceivedDeclared.sourceId,
+      ...(isPublishableFinancialValue(document.constitutionalApplication.mdeAppliedAmount.canonical)
+        ? document.constitutionalApplication.mdeAppliedAmount.reconciliation.sourceIds : []),
+      ...(isPublishableFinancialValue(document.constitutionalApplication.mdeAppliedRate.canonical)
+        ? document.constitutionalApplication.mdeAppliedRate.reconciliation.sourceIds : []),
+      ...(isPublishableFinancialValue(document.constitutionalApplication.fundebProfessionalRemunerationRate.canonical)
+        ? document.constitutionalApplication.fundebProfessionalRemunerationRate.reconciliation.sourceIds : []),
+      ...sourceIdsForPublishableValues([document.constitutionalApplication.fundebRevenueReceivedDeclared]),
     ], sourceById),
     buildSourceGroup('qse', 'FNDE — Salário-Educação', [
-      fundeb.qseDistributedClosedYear.sourceId,
-      fundeb.qseOfficialEstimateCurrentYear.sourceId,
+      ...sourceIdsForPublishableValues([
+        fundeb.qseDistributedClosedYear,
+        fundeb.qseOfficialEstimateCurrentYear,
+      ]),
     ], sourceById),
     buildSourceGroup('siconfi', 'Tesouro Nacional — SICONFI/DCA', [
-      execution.sourceId,
+      ...hasPublishableFinancialContent([
+        execution.committed,
+        execution.liquidated,
+        execution.paid,
+        execution.outstandingNonProcessed,
+        execution.outstandingProcessed,
+      ]) ? [execution.sourceId] : [],
     ], sourceById),
-  ]
+  ].filter((group) => group.links.length)
 
   return {
     summaryCards,
@@ -407,28 +393,25 @@ export function buildMunicipalFinancePresentation(
     executionOutstanding,
     executionRates,
     fundebComponents,
-    qseMetrics,
+    fundebNonBeneficiaryLabels,
     qseGroups,
-    coverage,
-    coverageHighlights,
-    coverageSummary,
     relations,
     contextLabels,
     sources,
-    qualityLabel: {
-      high: 'Cobertura alta',
-      medium: 'Cobertura média',
-      low: 'Cobertura baixa',
-      insufficient: 'Cobertura de evidência insuficiente',
-    }[document.dataQuality.level],
   }
+}
+
+function sourceIdsForPublishableValues(values: readonly CompactFinancialValue[]): string[] {
+  return values
+    .filter((value) => isPublishableFinancialValue(value))
+    .map((value) => value.sourceId)
 }
 
 function buildFundebComponent(
   key: FundebComponentPresentation['key'],
   title: string,
   amount: MunicipalFinanceDocumentV1['amounts']['fundebTotalAnnualForecast'],
-  statusLabel: string,
+  statusLabel: string | null,
   calculationStatusLabel: string | null,
   source: MunicipalFinanceSourceCatalogEntry | null,
   caution: string | null = null,
@@ -449,38 +432,41 @@ function buildFundebComponent(
       ? null
       : 'Já incluído no total ou composição não reconciliada.',
     caution,
-    observation: fundebObservation(key, statusLabel, calculationStatusLabel, amount),
+    observation: fundebObservation(key, statusLabel),
     source,
   }
 }
 
 function fundebObservation(
   key: FundebComponentPresentation['key'],
-  statusLabel: string,
-  calculationStatusLabel: string | null,
-  amount: MunicipalFinanceDocumentV1['amounts']['fundebTotalAnnualForecast'],
+  statusLabel: string | null,
 ): string {
   if (key === 'total') return 'Total anual previsto.'
-  if (key === 'vaat' && calculationStatusLabel) {
-    return calculationStatusLabel.replace(/; isso não confirma benefício\.$/, ' não confirma benefício.')
-  }
-  if (statusLabel === 'Não beneficiário') return 'Não beneficiário.'
-  if (amount.compositionStatus === 'included_in_total') return 'Previsão já incluída no total.'
-  if (amount.compositionStatus === 'composition_not_reconciled') return 'Composição não reconciliada.'
+  if (statusLabel === 'Não beneficiário') return 'Município não beneficiário em 2026.'
   return statusLabel === 'Beneficiário'
-    ? 'Benefício nominal com previsão separada.'
-    : 'Situação publicada na fonte nominal.'
+    ? 'Previsão separada; não comprova recebimento efetivo.'
+    : statusLabel ? `${statusLabel} em 2026.` : ''
 }
 
-function describeQseCoefficientComparison(
-  closedYear: CompactFinancialValue,
-  currentYear: CompactFinancialValue,
-): string {
-  if (closedYear.value === null || currentYear.value === null) {
-    return 'A comparação entre os coeficientes não está disponível; a ausência publicada foi preservada.'
-  }
-  return `Coeficiente publicado para ${closedYear.referenceYear}: ${formatCoefficient(closedYear.value)}; `
-    + `estimativa para ${currentYear.referenceYear}: ${formatCoefficient(currentYear.value)}. Os exercícios permanecem separados.`
+function resolveDocumentReference(document: MunicipalFinanceDocumentV1, path: string): unknown {
+  return path.split('.').reduce<unknown>((value, key) => {
+    if (!value || typeof value !== 'object') return null
+    return (value as Record<string, unknown>)[key]
+  }, document)
+}
+
+function isPublishableDerivedRate(
+  rate: CompactDerivedRate,
+  document: MunicipalFinanceDocumentV1,
+): rate is CompactDerivedRate & { value: number } {
+  if (!isPublishableFinancialValue(rate)) return false
+  const denominator = resolveDocumentReference(document, rate.calculation.denominatorReferenceId)
+  if (!isPublishableFinancialValue(denominator)) return false
+  const denominatorValue = (denominator as CompactFinancialValue).value
+  if (denominatorValue === 0) return false
+  return rate.calculation.numeratorReferenceIds.every((referenceId) => (
+    isPublishableFinancialValue(resolveDocumentReference(document, referenceId))
+  ))
 }
 
 function relationReading(
@@ -488,21 +474,21 @@ function relationReading(
   programLabel: string,
 ): string {
   if (link.relationType === 'general_mde') {
-    return `${programLabel} é fonte geral de MDE. O contrato não confirma destinação específica para este indicador.`
+    return `${programLabel} é fonte geral de MDE. Não há confirmação de destinação específica para este indicador.`
   }
   if (link.relationType === 'accounting_context') {
     return 'A evidência oferece contexto contábil de execução e não representa fonte adicional de recurso.'
   }
   if (link.relationType === 'direct_cost_driver') {
-    return 'A relação direta está documentada no contrato; ela não altera a prioridade educacional nem comprova aplicação do valor.'
+    return 'A relação direta está registrada; ela não altera a prioridade educacional nem comprova aplicação do valor.'
   }
   if (link.municipalStatus === 'confirmed_beneficiary' && link.programId === 'fundeb_vaar') {
     return 'O município é beneficiário nominal do VAAR em 2026, mas o valor apresentado é previsão e não comprova recebimento ou aplicação.'
   }
   if (link.municipalStatus === 'confirmed_non_beneficiary') {
-    return `A fonte nominal registra o município como não beneficiário de ${programLabel} no período; nenhum valor potencial é apresentado.`
+    return `O município está registrado como não beneficiário de ${programLabel} no período; nenhum valor potencial é apresentado.`
   }
-  return `${programLabel} é apoio condicionado. O contrato não confirma recebimento, aplicação ou efeito sobre o indicador.`
+  return `${programLabel} é apoio condicionado. Não há confirmação de recebimento, aplicação ou efeito sobre o indicador.`
 }
 
 function buildSourceGroup(
@@ -527,7 +513,7 @@ function buildSourceGroup(
         url: entry.url,
         agency: entry.agency ?? 'Órgão não informado',
         referenceYear: entry.referenceYear ?? null,
-        natureLabel: entry.status === 'integrated' ? 'Fonte integrada' : `Situação da fonte: ${entry.status}`,
+        natureLabel: 'Fonte oficial',
       })),
   }
 }

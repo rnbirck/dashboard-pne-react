@@ -115,6 +115,7 @@ const LOCATION_COLORS = {
 }
 
 const STAGE_FILTER_ORDER = ['total', 'infantil', 'fundamental', 'fundamental_anos_iniciais', 'fundamental_anos_finais', 'medio', 'eja', 'profissional']
+const TOTAL_ENROLLMENT_STAGE_KEYS = ['infantil', 'fundamental', 'medio', 'eja', 'profissional']
 const ALUNOS_TURMA_STAGE_ORDER = ['infantil', 'fundamental', 'medio']
 const ATU_TOTAL_SERIE_BY_STAGE = {
   infantil: 'infantil_total',
@@ -933,8 +934,11 @@ function buildMatriculasExplore(mat, cut = { cutKey: 'total', cutLabel: 'Total d
   const latestYear = mat.ultimo_ano ? ` — ${mat.ultimo_ano}` : ''
 
   if (cut.cutKey === 'total') {
+    const totalByStage = Object.fromEntries(
+      TOTAL_ENROLLMENT_STAGE_KEYS.map((key) => [key, resumo.por_etapa?.[key]]),
+    )
     return [
-      { key: 'mat-etapa', type: 'bar', title: `Composição por etapa${latestYear}${titleSuffix}`, color: '#16713a', data: entriesToRows(resumo.por_etapa, etapaLabel), formatLabel: formatNumber },
+      { key: 'mat-etapa', type: 'bar', title: `Composição por etapa${latestYear}${titleSuffix}`, color: '#16713a', data: entriesToRows(totalByStage, etapaLabel), formatLabel: formatNumber },
       { key: 'mat-dep', type: 'stacked', title: `Composição por rede${titleSuffix}`, categories: categoryDefinitions(dependencyKeys, depLabel, DEPENDENCY_COLORS), data: seriesMapToStackedRows(series.por_dependencia, dependencyKeys), formatLabel: formatNumber },
       { key: 'mat-loc', type: 'stacked', title: `Composição por localização${titleSuffix}`, categories: categoryDefinitions(['urbana', 'rural'], locLabel, LOCATION_COLORS), data: seriesMapToStackedRows(series.por_localizacao, ['urbana', 'rural']), formatLabel: formatNumber },
     ]

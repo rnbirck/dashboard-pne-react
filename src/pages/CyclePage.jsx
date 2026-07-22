@@ -14,7 +14,7 @@ import { normalizePopulationPercentResults } from '../utils/indicatorValues'
 import { getPneCycleCopy } from '../utils/pneCycleCopy'
 import { filterPneComparableCategories } from '../utils/pneDisplayRules'
 import { resolveDetailSequence, useDetailViewNavigation } from '../hooks/useDetailViewNavigation'
-import { PageHeadingText } from '../components/HeadingText'
+import { PnePageHeader } from '../components/PnePageHeader'
 import { getHashContext, setHashContext } from '../utils/hashNavigation'
 import { useAsyncData } from '../utils/useAsyncData'
 import { buildPne2026AccumulativePresentationModel } from '../utils/pneAccumulativeCycle'
@@ -229,22 +229,16 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
   return (
     <div className={`page-stack cycle-page${isShowingDetail ? ' cycle-page--detail' : ''}`}>
       {isShowingDetail ? <h1 className="u-sr-only">{title}</h1> : null}
-      {!isShowingDetail ? <section className="page-card cycle-hero">
-        <div className="cycle-hero__copy">
-          <PageHeadingText eyebrow={cycleCopy.eyebrow} title={title} description={cycleCopy.supportText} />
-          <p className="cycle-hero__context">
-            <span>Município em foco</span>
-            <strong>{selectedMunicipio}</strong>
-          </p>
-        </div>
-        <div className="cycle-hero-meta-group" aria-label="Resumo dos indicadores do ciclo">
-          <ManagementMetricCard
+      {!isShowingDetail ? <PnePageHeader
+        asideLabel="Resumo dos indicadores do ciclo"
+        asideContent={<dl className="pne-page-header__metrics">
+          <PneHeaderMetric
             detail={cycleCopy.summary.totalDetail}
             label={cycleCopy.summary.totalLabel}
             tone="info"
             value={cycleManagementStats.monitorableTotal}
           />
-          <ManagementMetricCard
+          <PneHeaderMetric
             detail={cycleManagementStats.monitorableTotal
               ? `${cycleManagementStats.achievedPercent}% ${cycleCopy.summary.detailLabel}`
               : cycleCopy.summary.emptyDetail}
@@ -254,7 +248,7 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
               ? cycleManagementStats.achieved
               : '-'}
           />
-          <ManagementMetricCard
+          <PneHeaderMetric
             detail={cycleManagementStats.monitorableTotal
               ? `${cycleManagementStats.attentionPercent}% ${cycleCopy.summary.detailLabel}`
               : cycleCopy.summary.emptyDetail}
@@ -264,8 +258,12 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
               ? cycleManagementStats.attention
               : '-'}
           />
-        </div>
-      </section> : null}
+        </dl>}
+        context={<>Município em foco: <strong>{selectedMunicipio}</strong></>}
+        description={cycleCopy.supportText}
+        eyebrow={cycleCopy.eyebrow}
+        title={title}
+      /> : null}
 
       <section className="cycle-workspace cycle-card-workspace">
         {isShowingDetail ? (
@@ -409,12 +407,12 @@ function enrichGoalRefs(categories, cycle) {
   }))
 }
 
-function ManagementMetricCard({ detail, label, tone, value }) {
+function PneHeaderMetric({ detail, label, tone, value }) {
   return (
-    <div className={`cycle-hero-meta interaction-card--informative cycle-hero-meta--${tone}`}>
-      <span className="cycle-hero-meta__label">{label}</span>
-      <strong className="cycle-hero-meta__value">{value}</strong>
-      <small className="cycle-hero-meta__detail">{detail}</small>
+    <div className={`pne-page-header__metric pne-page-header__metric--${tone}`}>
+      <dt>{label}</dt>
+      <dd>{value}</dd>
+      <small>{detail}</small>
     </div>
   )
 }

@@ -4,6 +4,7 @@ import './styles/pne-cycle-experience.css'
 import './styles/platform-ui.css'
 import './styles/financial-pages.css'
 import './styles/navigation-shell.css'
+import { Agentation } from 'agentation'
 import { AppContent } from './app/AppContent'
 import { Layout } from './components/Layout'
 import { MunicipalityProvider } from './context/MunicipalityContext'
@@ -34,6 +35,7 @@ function App() {
           onNavigate={navigate}
         />
       </Layout>
+      {import.meta.env.DEV && <Agentation />}
     </MunicipalityProvider>
   )
 }

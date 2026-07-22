@@ -2801,6 +2801,14 @@ def _public_source_is_official(source: Mapping[str, Any]) -> bool:
     )
 
 
+def _public_goal_sort_key(goal: Mapping[str, Any]) -> tuple[int, str]:
+    goal_id = str(goal.get("goalId") or "")
+    number, separator, letter = goal_id.partition(".")
+    if not separator or not number.isdigit() or not letter.isalpha():
+        raise ValueError(f"Identificador de meta pública inválido: {goal_id}")
+    return int(number), letter.casefold()
+
+
 def build_pne_2026_public_diagnostic(
     municipal_diagnostic_contract: Mapping[str, Any],
     *,
@@ -2979,6 +2987,10 @@ def build_pne_2026_public_diagnostic(
         if goal_id not in existing["goalIds"]:
             existing["goalIds"].append(goal_id)
 
+    ordered_public_goals = sorted(public_goals, key=_public_goal_sort_key)
+    for order, goal in enumerate(ordered_public_goals, start=1):
+        goal["order"] = order
+
     return {
         "version": str(resolved_config["version"]),
         "cycleId": str(resolved_config["cycleId"]),
@@ -3004,7 +3016,7 @@ def build_pne_2026_public_diagnostic(
             ),
         },
         "themes": themes,
-        "goals": public_goals,
+        "goals": ordered_public_goals,
         "sources": [source_registry[source_id] for source_id in used_source_ids],
     }
 

@@ -73,7 +73,8 @@ Os três gates foram executados em sequência, com lint, build, E2E e `git diff 
 - **CSS removido:** somente as cópias equivalentes em `App.css` após a transferência; nenhum seletor ativo foi eliminado sem destino.
 - **CSS mantido:** `DataSourceNote` e overrides de domínio, `IndicatorChartHeader`, cards exploráveis, gráficos PNE/Financeiro, layouts, breakpoints estruturais e exceções responsivas. A justificativa é dependência de especificidade, ordem de cascata ou composição ainda local.
 - **Hash financeiro final:** a visão geral usa `#financeiros`; os módulos usam `#financeiros-aplicacao-recursos?detalhe=<key>`, `#financeiros-fundeb?detalhe=<key>` e `#financeiros-pnate?detalhe=<key>` quando há detalhamento. `#financeiros-vaar` preserva o módulo sem índice individual. Os hashes legados com `?modulo=` continuam aceitos e são normalizados para a rota independente correspondente.
-- **Visão geral financeira editorial:** `#financeiros` foi simplificada em hero com quadro legal, três blocos sobre a organização do financiamento, uma única grade navegável dos quatro módulos, conceitos em acordeão e fontes oficiais compactas no rodapé. O fluxo detalhado, os blocos repetidos e os cards grandes de referências foram removidos. No desktop, o submenu lateral permanece a navegação principal; em larguras reduzidas, a navegação financeira usa um seletor compacto sem duplicar o submenu visível.
+- **Visão geral financeira editorial:** `#financeiros` é a porta de entrada compacta de Financiamento: cabeçalho curto, Panorama financeiro destacado, quatro acessos sem contagens ou numeração, três mecanismos compactos, conceitos recolhidos e fontes oficiais no rodapé. No desktop, o submenu lateral permanece a navegação principal; em larguras reduzidas, a navegação financeira usa um seletor compacto sem duplicar o submenu visível. O registro desta etapa está em `docs/FINANCIAMENTO_VISAO_GERAL_VISUAL_DGF5E.md`.
+- **Padrão final de Financiamento:** Visão geral, Panorama, Aplicação e execução, Fundeb, VAAR e PNATE agora usam cabeçalhos e retornos coerentes, resumos de até quatro itens, fontes progressivas e responsividade 4→2→1. Deduplicações de Fundeb e PNATE dependem de valor e exercício compatíveis; detalhes mantêm uma única navegação e disclosures fechados. Evidências e limitações: `docs/FINANCIAMENTO_PADRAO_FINAL_DGF5F.md`.
 
 ### Encerramento da reorganização de Indicadores da Educação
 
@@ -1474,3 +1475,101 @@ homologada. Cópia, filtros, teclado, foco, loading, erro, retry, quatro viewpor
 e impressão A4 foram validados sem alterar dados, pipeline, JSONs, regras de
 negócio, Panorama financeiro ou baselines. Registro completo:
 `docs/DIAGNOSTICO_MUNICIPAL_INTERFACE_DGP3.md`.
+
+## Validação final do Diagnóstico municipal DGP4 (2026-07-21)
+
+DGP4 aprovada após a auditoria dos 497 municípios e a validação funcional,
+responsiva, acessível e A4. Registro completo:
+`docs/DIAGNOSTICO_MUNICIPAL_INTERFACE_DGP4.md`.
+
+## Redesign do Panorama financeiro DGF5-A (2026-07-21)
+
+O Panorama financeiro passou a usar cabeçalho compacto, síntese de até cinco
+valores, seções lineares, execução com leitura rápida, QSE em composição 65/35 e
+Fundeb restrito ao total e às complementações aplicáveis. Não beneficiários não
+geram cards financeiros, previsões foram separadas dos realizados e detalhes de
+cálculo permanecem recolhidos. A composição introduz primitivas financeiras
+reutilizáveis sem alterar `App.css`, contratos, dados, fórmulas, produtores,
+rotas, shell ou as demais páginas financeiras. Registro e evidências:
+`docs/FINANCIAMENTO_PANORAMA_VISUAL_DGF5A.md` e
+`artifacts/municipal-finance-dgf5a-2026-07-21/`.
+
+## Refinamento final do Panorama financeiro DGF5-A.1 (2026-07-21)
+
+O cabeçalho interno deixou de duplicar o município e recebeu retorno explícito
+à visão geral de financiamento. A síntese limita o desktop a quatro colunas,
+mantém valores monetários e unidades sem quebra e diferencia realizados de 2024
+de previsões de 2026 por sinalização discreta. Em telas estreitas, seletor,
+cabeçalho e intervalos foram compactados sem alterar os indicadores ou as
+seções posteriores. Evidências:
+`artifacts/municipal-finance-dgf5a1-2026-07-21/`.
+
+## Aplicação e execução da educação (2026-07-21)
+
+A rota financeira existente passou a apresentar uma leitura pública orientada
+à aplicação e à execução: cabeçalho compacto, quatro valores com períodos
+próprios, aplicação em hierarquia principal/secundária, etapas da despesa sem
+soma, valores ainda a pagar e catálogo final em linhas. Os indicadores do Fundeb
+saíram da leitura principal e receberam acesso à página específica. O Panorama
+mantém somente o valor pago, uma leitura curta do avanço e o acesso à página
+reorganizada. Rotas, identificadores, dados, cálculos, fontes e regras de nulo e
+zero foram preservados.
+
+## Comparações e evolução no Diagnóstico municipal v2 (2026-07-21)
+
+Os cards do Diagnóstico passaram a mostrar a comparação com o RS e a
+reunir posição estadual, municípios com oferta de tamanho semelhante e
+evolução em disclosure nativo. A síntese recebeu duas contagens estaduais
+sem alterar resultados, filtros ou regras de negócio. Evidências responsivas:
+`artifacts/diagnostico-comparacoes-v2-2026-07-21/`.
+
+## Resultados do Diagnóstico agrupados por tema (2026-07-21)
+
+O seletor entre resultados essenciais e todos os resultados e o filtro de tema
+foram removidos. A leitura passou a seguir diretamente a ordem dos temas da
+apresentação pública, com um resumo compacto de total, avanço, manutenção e
+acompanhamento antes dos cards de cada tema. O filtro de situação atua sobre a
+página inteira e omite temas sem resultados compatíveis; cards, comparações com
+o RS, posição e evolução, cópia, impressão e fontes foram preservados.
+
+O build passou. A inspeção de Novo Hamburgo em 1366×768 e 390×844 confirmou os
+oito temas, os 34 resultados, ausência do seletor e do filtro removidos e zero
+overflow horizontal. Com “Resultados a manter”, somente os dois temas com
+resultados compatíveis permaneceram visíveis; o console não apresentou erros.
+
+## Reformulação editorial e visual do PNATE DGF5-C (2026-07-22)
+
+O PNATE deixou a grade de dez cards equivalentes e passou a usar cabeçalho
+financeiro compacto, resumo de até quatro indicadores, blocos de valor,
+estudantes e ajustes, disclosure de dados usados no cálculo e fonte/metodologia
+ao final. Valores coincidentes são hierarquizados sem soma, o valor estadual
+permanece contexto territorial e zeros oficiais continuam disponíveis. O
+detalhe mantém quatro KPIs, gráfico anual em barras, Leitura rápida 70/30 e
+referência técnica recolhida. Evidências e validações:
+`docs/FINANCIAMENTO_PNATE_VISUAL_DGF5C.md` e
+`artifacts/municipal-finance-dgf5c-2026-07-22/`.
+
+## Ampliação final da Visão geral municipal da educação (2026-07-22)
+
+A visão geral municipal passou a publicar a composição aditiva completa das
+matrículas de 2025, mantendo `QT_MAT_BAS` como total autoritativo, e apresenta
+Educação Especial como recorte transversal. A seção de rendimento usa as taxas
+municipais oficiais `total/total` de 2025 para Ensino Fundamental, anos iniciais,
+anos finais e Ensino Médio. O relatório documental foi reorganizado para quatro
+páginas A4 e a impressão passou a ser direta, sem o campo de responsável.
+
+A composição reutiliza tokens e superfícies existentes, com grade 3→2→1; no
+celular, o rendimento preserva a matriz sem rolagem horizontal por meio de linhas
+hierárquicas rotuladas. Ivoti, Sapucaia do Sul, Alto Feliz e São Pedro da Serra
+foram inspecionados em 1366×768, 1024×768 e 390×844, sem overflow. São Pedro da
+Serra preservou Ensino Médio como não aplicável e Alto Feliz manteve o contrato
+parcial. Nenhuma outra página educacional foi alterada.
+
+O acabamento final separou a composição em etapas regulares e modalidades,
+manteve a Educação Especial como bloco autônomo e incluiu a seção completa de
+Ensino Médio entre o Ensino Fundamental e o rendimento. O novo recorte publica
+total, participações, técnico integrado, dependência administrativa e
+localização escolar a partir de `censo.mat_medio`, com reconciliação para os 497
+municípios e acesso canônico ao detalhe `mat-medio`. A impressão distribui
+cabeçalho/composição/Especial, Infantil, Fundamental/Médio e
+rendimento/fontes/metodologia nas quatro páginas previstas.

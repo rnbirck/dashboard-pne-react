@@ -1,0 +1,331 @@
+import type {
+  BreakdownValue,
+  MunicipalEducationOverviewV1,
+  SnapshotPercentage,
+  SnapshotValue,
+  StageSnapshot,
+} from '../municipalEducationOverviewTypes'
+import {
+  describeOverviewMatrixValue,
+  formatOverviewEnrollments,
+  formatOverviewPercentage,
+  formatSchoolPerformanceRate,
+  getMunicipalOverviewMethodologyHighlights,
+} from '../municipalEducationOverviewPresentation'
+
+interface MunicipalEducationOverviewPrintReportProps {
+  data: MunicipalEducationOverviewV1
+  emissionDate: string
+}
+
+interface PrintMatrixRow {
+  label: string
+  select: (stage: StageSnapshot) => BreakdownValue
+  subtotal?: boolean
+}
+
+const NETWORK_ROWS: ReadonlyArray<PrintMatrixRow> = [
+  { label: 'Pública (subtotal)', subtotal: true, select: (stage) => stage.byNetwork.publicSubtotal },
+  { label: 'Municipal', select: (stage) => stage.byNetwork.municipal },
+  { label: 'Estadual', select: (stage) => stage.byNetwork.state },
+  { label: 'Federal', select: (stage) => stage.byNetwork.federal },
+  { label: 'Privada', select: (stage) => stage.byNetwork.private },
+]
+
+const LOCATION_ROWS: ReadonlyArray<PrintMatrixRow> = [
+  { label: 'Urbana', select: (stage) => stage.bySchoolLocation.urban },
+  { label: 'Rural', select: (stage) => stage.bySchoolLocation.rural },
+]
+
+export function MunicipalEducationOverviewPrintReport({
+  data,
+  emissionDate,
+}: MunicipalEducationOverviewPrintReportProps) {
+  const methodology = getMunicipalOverviewMethodologyHighlights(data)
+
+  return (
+    <article className="municipal-education-print-report">
+      <header className="municipal-education-print-report__header">
+        <p className="municipal-education-print-report__institution">Painel SESI-RS de Inteligência Municipal</p>
+        <h1>Visão geral municipal da educação</h1>
+        <p className="municipal-education-print-report__subtitle">Retrato das matrículas e da oferta educacional no município</p>
+        <dl className="municipal-education-print-report__identity">
+          <div><dt>Município</dt><dd>{data.municipality.name}</dd></div>
+          <div><dt>Código IBGE</dt><dd>{data.municipality.idMunicipality}</dd></div>
+          <div><dt>Ano de referência</dt><dd>{data.reference.year}</dd></div>
+          <div><dt>Data de emissão</dt><dd>{emissionDate}</dd></div>
+        </dl>
+      </header>
+
+      <PrintOverviewSummary data={data} />
+      <PrintSpecialEducation data={data} />
+      <PrintStageSection
+        snapshot={data.earlyChildhood}
+        stage="earlyChildhood"
+        title="Educação Infantil — 2025"
+      />
+      <PrintStageSection
+        snapshot={data.elementary}
+        stage="elementary"
+        title="Ensino Fundamental — 2025"
+      />
+      <PrintHighSchoolSection data={data} />
+      <PrintSchoolPerformance data={data} />
+
+      <section className="municipal-education-print-report__sources" aria-labelledby="municipal-education-print-sources-title">
+        <h2 id="municipal-education-print-sources-title">Fontes das informações</h2>
+        {data.sources.length ? (
+          <ul>
+            {data.sources.map((source) => (
+              <li key={source.id}>
+                <strong>{source.organization}</strong>
+                <span>{source.title} · {source.referenceYear}</span>
+                {source.url ? <span className="municipal-education-print-report__source-url">{source.url}</span> : null}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {methodology.length ? (
+          <div className="municipal-education-print-report__methodology">
+            <h3>Como ler estes dados</h3>
+            <ul>{methodology.map((note) => <li key={note}>{note}</li>)}</ul>
+          </div>
+        ) : null}
+      </section>
+
+      <footer className="municipal-education-print-report__footer">
+        <span>INEP — Censo Escolar 2025</span>
+        <span>{emissionDate}</span>
+        <span>{data.municipality.name}</span>
+      </footer>
+    </article>
+  )
+}
+
+function PrintOverviewSummary({ data }: { data: MunicipalEducationOverviewV1 }) {
+  const components = data.basicEducationComposition.components
+  const regularStages = [
+    ['Educação Infantil', components.earlyChildhood.total, [['Creche', components.earlyChildhood.details.creche], ['Pré-escola', components.earlyChildhood.details.preSchool]]],
+    ['Ensino Fundamental', components.elementary.total, [['Anos Iniciais', components.elementary.details.initialYears], ['Anos Finais', components.elementary.details.finalYears]]],
+    ['Ensino Médio', components.highSchool.total, [['Técnico integrado', components.highSchool.details.integratedTechnical]]],
+  ] as const
+  const modalities = [
+    ['Educação de Jovens e Adultos — EJA', components.youthAndAdultEducation.total, [['EJA — Ensino Fundamental', components.youthAndAdultEducation.details.elementary], ['EJA — Ensino Médio', components.youthAndAdultEducation.details.highSchool]]],
+    ['Educação profissional — outras ofertas', components.otherProfessionalOffers.total, [['Curso técnico concomitante', components.otherProfessionalOffers.details.concomitantTechnical], ['Curso técnico subsequente', components.otherProfessionalOffers.details.subsequentTechnical], ['Outras ofertas profissionais', components.otherProfessionalOffers.details.otherOffers]]],
+  ] as const
+  return (
+    <section className="municipal-education-print-summary" aria-labelledby="municipal-education-print-summary-title">
+      <h2 id="municipal-education-print-summary-title">Composição das matrículas da Educação Básica — 2025</h2>
+      <dl className="municipal-education-print-summary__primary">
+        <dt>Educação Básica</dt>
+        <dd>{formatOverviewEnrollments(data.basicEducationComposition.total)}</dd>
+        <span>Total oficial do Censo Escolar</span>
+      </dl>
+      <PrintCompositionCategory label="Etapas regulares" groups={regularStages} />
+      <PrintCompositionCategory label="Modalidades e outras ofertas" groups={modalities} />
+      <div className="municipal-education-print-summary__notes">
+        <p>As matrículas do técnico integrado já estão incluídas no total do Ensino Médio.</p>
+        <p>As outras ofertas profissionais apresentadas não estão incluídas no Ensino Médio ou na EJA.</p>
+        <p>Somente os cinco componentes principais participam da composição da Educação Básica; os detalhamentos não são somados novamente.</p>
+      </div>
+    </section>
+  )
+}
+
+function PrintCompositionCategory({
+  groups,
+  label,
+}: {
+  groups: ReadonlyArray<readonly [string, SnapshotValue, ReadonlyArray<readonly [string, SnapshotValue]>]>
+  label: string
+}) {
+  return (
+    <section className="municipal-education-print-summary__category">
+      <h3>{label}</h3>
+      <div className={`municipal-education-print-summary__grid municipal-education-print-summary__grid--${groups.length}`}>
+        {groups.map(([groupLabel, value, details]) => (
+          <div className="municipal-education-print-summary__group" key={groupLabel}>
+            <dl><dt>{groupLabel}</dt><dd>{formatOverviewEnrollments(value)}</dd></dl>
+            <div className="municipal-education-print-summary__details">
+              {details.map(([detailLabel, detailValue]) => <dl key={detailLabel}><dt>{detailLabel}</dt><dd>{formatOverviewEnrollments(detailValue)}</dd></dl>)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function PrintSpecialEducation({ data }: { data: MunicipalEducationOverviewV1 }) {
+  return <section className="municipal-education-print-special" aria-labelledby="municipal-education-print-special-title">
+    <h2 id="municipal-education-print-special-title">Educação Especial — 2025</h2>
+    <dl>
+      <div><dt>Educação Especial</dt><dd>{formatOverviewEnrollments(data.specialEducation.total)}</dd></div>
+      <div><dt>Classes comuns</dt><dd>{formatOverviewEnrollments(data.specialEducation.commonClasses)}</dd></div>
+      <div><dt>Classes exclusivas</dt><dd>{formatOverviewEnrollments(data.specialEducation.exclusiveClasses)}</dd></div>
+    </dl>
+    <p>As matrículas da Educação Especial já estão incluídas nas etapas e modalidades apresentadas acima.</p>
+  </section>
+}
+
+function PrintSchoolPerformance({ data }: { data: MunicipalEducationOverviewV1 }) {
+  const rows = [
+    ['Ensino Fundamental', data.schoolPerformance.stages.elementary],
+    ['Anos Iniciais', data.schoolPerformance.stages.initialYears],
+    ['Anos Finais', data.schoolPerformance.stages.finalYears],
+    ['Ensino Médio', data.schoolPerformance.stages.highSchool],
+  ] as const
+  return <section className="municipal-education-print-performance" aria-labelledby="municipal-education-print-performance-title">
+    <h2 id="municipal-education-print-performance-title">Rendimento escolar — 2025</h2>
+    <table>
+      <thead><tr><th scope="col">Etapa</th><th scope="col">Aprovação</th><th scope="col">Reprovação</th><th scope="col">Abandono</th></tr></thead>
+      <tbody>{rows.map(([label, stage]) => <tr key={label}><th scope="row">{label}</th><td>{formatSchoolPerformanceRate(stage.approval)}</td><td>{formatSchoolPerformanceRate(stage.failure)}</td><td>{formatSchoolPerformanceRate(stage.dropout)}</td></tr>)}</tbody>
+    </table>
+    <p>As taxas correspondem ao resultado escolar informado pelo INEP para o conjunto das redes do município. Aprovação, reprovação e abandono totalizam 100%.</p>
+  </section>
+}
+
+function PrintStageSection({
+  snapshot,
+  stage,
+  title,
+}: {
+  snapshot: MunicipalEducationOverviewV1['earlyChildhood'] | MunicipalEducationOverviewV1['elementary']
+  stage: 'earlyChildhood' | 'elementary'
+  title: string
+}) {
+  const isEarlyChildhood = stage === 'earlyChildhood'
+  const total = snapshot.total
+  const first = isEarlyChildhood
+    ? (snapshot as MunicipalEducationOverviewV1['earlyChildhood']).creche
+    : (snapshot as MunicipalEducationOverviewV1['elementary']).initialYears
+  const second = isEarlyChildhood
+    ? (snapshot as MunicipalEducationOverviewV1['earlyChildhood']).preSchool
+    : (snapshot as MunicipalEducationOverviewV1['elementary']).finalYears
+  const totalLabel = isEarlyChildhood ? 'Educação Infantil' : 'Ensino Fundamental'
+  const firstLabel = isEarlyChildhood ? 'Creche' : 'Anos Iniciais'
+  const secondLabel = isEarlyChildhood ? 'Pré-escola' : 'Anos Finais'
+  const sectionId = `municipal-education-print-${stage}-title`
+  const stages = [
+    { label: totalLabel, value: total },
+    { label: firstLabel, value: first },
+    { label: secondLabel, value: second },
+  ]
+
+  return (
+    <section className={`municipal-education-print-stage municipal-education-print-stage--${stage}`} aria-labelledby={sectionId}>
+      <h2 id={sectionId}>{title}</h2>
+      <dl className="municipal-education-print-stage__summary">
+        <PrintMetric
+          label={totalLabel}
+          share={total.shareOfBasicEducation}
+          shareLabel={`${totalLabel} em relação à Educação Básica`}
+          value={total.total}
+        />
+        <PrintMetric
+          label={firstLabel}
+          share={first.shareOfParentStage}
+          shareLabel={`${firstLabel} em relação ${isEarlyChildhood ? 'à Educação Infantil' : 'ao Ensino Fundamental'}`}
+          value={first.total}
+        />
+        <PrintMetric
+          label={secondLabel}
+          share={second.shareOfParentStage}
+          shareLabel={`${secondLabel} em relação ${isEarlyChildhood ? 'à Educação Infantil' : 'ao Ensino Fundamental'}`}
+          value={second.total}
+        />
+      </dl>
+      <PrintMatrix rows={NETWORK_ROWS} stages={stages} title="Dependência administrativa" />
+      <PrintMatrix rows={LOCATION_ROWS} stages={stages} title="Localização da escola" />
+    </section>
+  )
+}
+
+function PrintHighSchoolSection({ data }: { data: MunicipalEducationOverviewV1 }) {
+  const stages = [{ label: 'Ensino Médio', value: data.highSchool.total }]
+  return (
+    <section className="municipal-education-print-stage municipal-education-print-stage--highSchool" aria-labelledby="municipal-education-print-high-school-title">
+      <h2 id="municipal-education-print-high-school-title">Ensino Médio — 2025</h2>
+      <dl className="municipal-education-print-stage__summary municipal-education-print-stage__summary--two-columns">
+        <PrintMetric label="Ensino Médio" share={data.highSchool.total.shareOfBasicEducation} shareLabel="Ensino Médio em relação à Educação Básica" value={data.highSchool.total.total} />
+        <PrintMetric label="Técnico integrado" share={data.highSchool.integratedTechnical.shareOfHighSchool} shareLabel="Técnico integrado em relação ao Ensino Médio" value={data.highSchool.integratedTechnical.total} />
+      </dl>
+      <p className="municipal-education-print-stage__note">As matrículas do técnico integrado já estão incluídas no total do Ensino Médio.</p>
+      <PrintMatrix rows={NETWORK_ROWS} splitSingleStage stages={stages} title="Dependência administrativa" />
+      <PrintMatrix columnsLabel="Localização da escola" rows={LOCATION_ROWS} splitSingleStage stages={stages} title="Localização da escola" />
+    </section>
+  )
+}
+
+function PrintMetric({
+  label,
+  share,
+  shareLabel,
+  value,
+}: {
+  label: string
+  share?: SnapshotPercentage
+  shareLabel: string
+  value: SnapshotValue
+}) {
+  return (
+    <div>
+      <dt>{label}</dt>
+      <dd>{formatOverviewEnrollments(value)}</dd>
+      <p><strong>{formatOverviewPercentage(share)}</strong> {shareLabel}</p>
+    </div>
+  )
+}
+
+function PrintMatrix({
+  columnsLabel = 'Recorte',
+  rows,
+  splitSingleStage = false,
+  stages,
+  title,
+}: {
+  columnsLabel?: string
+  rows: ReadonlyArray<PrintMatrixRow>
+  splitSingleStage?: boolean
+  stages: ReadonlyArray<{ label: string; value: StageSnapshot }>
+  title: string
+}) {
+  const splitStage = splitSingleStage ? stages[0] : undefined
+  return (
+    <section className={`municipal-education-print-matrix${splitStage ? ' municipal-education-print-matrix--split' : ''}`}>
+      <h3>{title}</h3>
+      <table>
+        <caption>{title}: número de matrículas e participação em cada etapa</caption>
+        <thead>
+          <tr>
+            <th scope="col">{columnsLabel}</th>
+            {splitStage ? <><th scope="col">Matrículas</th><th scope="col">Participação</th></> : stages.map((stage) => <th scope="col" key={stage.label}>{stage.label}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr className={row.subtotal ? 'municipal-education-print-matrix__subtotal' : undefined} key={row.label}>
+              <th scope="row">{row.label}</th>
+              {splitStage ? (() => {
+                const value = row.select(splitStage.value)
+                return <><td>{formatOverviewEnrollments(value.enrollments)}</td><td className="municipal-education-print-matrix__percentage">{formatOverviewPercentage(value.share)}</td></>
+              })() : stages.map((stage) => {
+                const value = row.select(stage.value)
+                return (
+                  <td aria-label={`${stage.label}: ${describeOverviewMatrixValue(value)}`} key={stage.label}>
+                    {formatPrintMatrixValue(value)}
+                  </td>
+                )
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  )
+}
+
+function formatPrintMatrixValue(value: BreakdownValue): string {
+  const enrollments = formatOverviewEnrollments(value.enrollments)
+  return enrollments === '—' ? '—' : `${enrollments} · ${formatOverviewPercentage(value.share)}`
+}

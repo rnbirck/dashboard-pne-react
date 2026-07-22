@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { buildAppHash } from '../../app/appHash'
 import { ContentState } from '../../components/ContentState'
 import { FinancialCompactModuleSelector } from '../../components/FinancialCompactModuleSelector'
-import { StatusBadge } from '../../components/StatusBadge'
 import {
   loadMunicipalFinanceCatalog,
   municipalFinanceLoader,
@@ -15,6 +14,7 @@ import financingPrograms from '../../data/diagnostic/financingPrograms.json'
 import indicatorCatalog from '../../data/diagnostic/indicatorCatalog.json'
 import type { MunicipalFinanceDocumentV1, CompactFinancialValue } from '../diagnostic/municipalFinanceTypes'
 import type { ParsedAppLocation } from '../../types/navigation'
+import { isPublishableFinancialValue } from '../../utils/financialPresentation'
 import {
   buildMunicipalFinancePresentation,
   formatCoefficient,
@@ -24,6 +24,13 @@ import {
   formatPercent,
   splitFinanceContextIds,
 } from './municipalFinancePresentation'
+import { QseAnnualPanel } from './QseAnnualPanel'
+import {
+  FinancialCompactHeader,
+  FinancialDisclosure,
+  FinancialMetricCard,
+  type FinancialIconName,
+} from './FinancialPanoramaComponents'
 
 interface MunicipalFinancePanoramaPageProps {
   municipalityIdentifier: string | null
@@ -45,7 +52,6 @@ const INITIAL_STATE: PageLoadState = {
 
 export function MunicipalFinancePanoramaPage({
   municipalityIdentifier,
-  municipalityName,
   navigationContext,
 }: MunicipalFinancePanoramaPageProps) {
   const [loadAttempt, setLoadAttempt] = useState(0)
@@ -82,17 +88,9 @@ export function MunicipalFinancePanoramaPage({
     }
   }, [loadAttempt, municipalityIdentifier])
 
-  const returnParams = {
-    municipio: loadState.document?.municipality.slug ?? municipalityIdentifier,
-    indicatorId: context.indicatorIds.join(','),
-    programId: context.programIds.join(','),
-    tema: navigationContext.params.get('tema'),
-  }
-  const municipalityTitle = loadState.document?.municipality.name ?? municipalityName ?? 'Município'
-
   if (!municipalityIdentifier) {
     return (
-      <PageFrame municipalityName={municipalityTitle} returnHref={buildAppHash('diagnostico', returnParams)}>
+      <PageFrame returnHref={buildAppHash(FINANCIAL_PAGE_KEYS.overview, { municipio: municipalityIdentifier })}>
         <ContentState kind="unavailable" className="municipal-finance-state page-card">
           <h2>Selecione um município</h2>
           <p>Use o seletor da barra de contexto para abrir o panorama financeiro.</p>
@@ -103,7 +101,7 @@ export function MunicipalFinancePanoramaPage({
 
   if (loadState.status === 'idle' || loadState.status === 'loading') {
     return (
-      <PageFrame municipalityName={municipalityTitle} returnHref={buildAppHash('diagnostico', returnParams)}>
+      <PageFrame returnHref={buildAppHash(FINANCIAL_PAGE_KEYS.overview, { municipio: municipalityIdentifier })}>
         <MunicipalFinanceSkeleton />
       </PageFrame>
     )
@@ -112,12 +110,12 @@ export function MunicipalFinancePanoramaPage({
   if (loadState.status !== 'ready' || !loadState.document) {
     const stateCopies: Partial<Record<MunicipalFinanceLoadStatus, { title: string; body: string }>> = {
       absent: {
-        title: 'Panorama financeiro ainda não disponível para este município.',
-        body: 'O contrato municipal não foi localizado na publicação atual.',
+        title: 'Sem informações financeiras para este município.',
+        body: 'Não há informações financeiras publicáveis no momento.',
       },
       incompatible_version: {
-        title: 'Os dados financeiros precisam ser atualizados antes da apresentação.',
-        body: 'A versão publicada não é compatível com esta interface.',
+        title: 'Sem informações financeiras para este município.',
+        body: 'Não há informações financeiras publicáveis no momento.',
       },
       error: {
         title: 'Não foi possível carregar os dados financeiros.',
@@ -129,7 +127,7 @@ export function MunicipalFinancePanoramaPage({
       body: 'Tente novamente em instantes.',
     }
     return (
-      <PageFrame municipalityName={municipalityTitle} returnHref={buildAppHash('diagnostico', returnParams)}>
+      <PageFrame returnHref={buildAppHash(FINANCIAL_PAGE_KEYS.overview, { municipio: municipalityIdentifier })}>
         <ContentState
           kind={loadState.status === 'error' ? 'error' : 'unavailable'}
           className="municipal-finance-state page-card"
@@ -154,253 +152,230 @@ export function MunicipalFinancePanoramaPage({
     indicatorCatalog,
     context,
   )
+  const summaryCards = [
+    {
+      key: 'paid',
+      title: 'Recursos aplicados na educação',
+      amount: document.execution.dcaEducation.paid,
+      supportingText: `Valor executado em ${document.periods.closedFiscalYear}`,
+    },
+    {
+      key: 'mde',
+      title: 'Aplicação em MDE',
+      amount: document.constitutionalApplication.mdeAppliedRate.canonical,
+      supportingText: 'Mínimo constitucional: 25%',
+    },
+    {
+      key: 'remuneration',
+      title: 'Remuneração dos profissionais (Fundeb)',
+      amount: document.constitutionalApplication.fundebProfessionalRemunerationRate.canonical,
+      supportingText: 'Mínimo: 70% do Fundeb',
+    },
+    {
+      key: 'fundeb',
+      title: 'Fundeb total previsto',
+      amount: document.amounts.fundebTotalAnnualForecast,
+      supportingText: `Previsto oficial · ${document.periods.annualForecastYear}`,
+    },
+    {
+      key: 'vaar',
+      title: 'VAAR previsto',
+      amount: document.amounts.fundebVaarAnnualForecast,
+      supportingText: `Previsto oficial · ${document.periods.annualForecastYear}`,
+    },
+  ].filter((card) => isPublishableFinancialValue(card.amount))
 
   return (
-    <PageFrame
-      municipalityName={document.municipality.name}
-      returnHref={buildAppHash('diagnostico', {
-        ...returnParams,
-        municipio: document.municipality.slug,
-      })}
-    >
-      <ContextNotice labels={presentation.contextLabels} />
-
-      <section className="municipal-finance-summary-grid" aria-label="Resumo financeiro municipal">
-        {presentation.summaryCards.map((card) => (
-          <article className="page-card municipal-finance-summary-card" key={card.key}>
-            <span className="municipal-finance-summary-card__label">{card.title}</span>
-            {'statusLabel' in card ? (
-              <strong className="municipal-finance-summary-card__status">{card.statusLabel}</strong>
-            ) : (
+    <PageFrame returnHref={buildAppHash(FINANCIAL_PAGE_KEYS.overview, { municipio: document.municipality.slug })}>
+      {summaryCards.length ? (
+      <section className="municipal-finance-summary" aria-labelledby="municipal-finance-summary-title">
+        <h2 className="u-sr-only" id="municipal-finance-summary-title">Resumo financeiro municipal</h2>
+        <div className="municipal-finance-summary-grid">
+          {summaryCards.map((card) => (
+            <FinancialMetricCard
+              icon={summaryIconFor(card.key)}
+              key={card.key}
+              label={card.title}
+              meta={card.supportingText}
+              tone={card.key === 'fundeb' || card.key === 'vaar' ? 'forecast' : 'observed'}
+            >
               <FinanceValue value={card.amount} label={card.title} emphasized />
-            )}
-            {'statusLabel' in card && card.amount ? (
-              <p className="municipal-finance-summary-card__secondary">
-                Previsão VAAR: <FinanceValue value={card.amount} label="Previsão VAAR 2026" />
-              </p>
-            ) : null}
-            <p>{card.supportingText}</p>
-          </article>
-        ))}
+            </FinancialMetricCard>
+          ))}
+        </div>
       </section>
+      ) : null}
 
       <ConstitutionalApplicationSection document={document} catalog={loadState.catalog} />
 
-      <div className="municipal-finance-primary-grid">
-        <div className="municipal-finance-primary-column municipal-finance-primary-column--left">
-          <section className="page-card municipal-finance-section municipal-finance-execution" aria-labelledby="municipal-finance-execution-title">
-            <SectionHeading
-              eyebrow="Execução declarada"
-              title="Execução da função Educação em 2024"
-              titleId="municipal-finance-execution-title"
-              description="Estágios da despesa informados na DCA/SICONFI para a função 12."
-            />
-            <ol className="municipal-finance-execution-flow" aria-label="Empenhado, liquidado e pago">
-              {presentation.executionStages.map((stage) => (
-                <li key={stage.key}>
-                  <span>{stage.label}</span>
-                  <FinanceValue value={stage.value} label={`${stage.label} em 2024`} emphasized />
-                  {stage.progress !== null ? (
-                    <progress
-                      aria-label={`${stage.label}: ${formatPercent(stage.progress)}`}
-                      max="100"
-                      value={stage.progress}
-                    />
-                  ) : null}
-                </li>
-              ))}
-            </ol>
-            <dl className="municipal-finance-execution-detail-grid">
-              {presentation.executionOutstanding.map((item) => (
-                <div key={item.label}>
-                  <dt>{item.label}</dt>
-                  <dd><FinanceValue value={item.value} label={item.label} catalog={loadState.catalog} /></dd>
-                </div>
-              ))}
-              {presentation.executionRates.map((rate) => (
-                <div key={rate.key}>
-                  <dt>{rate.label}</dt>
-                  <dd>{formatPercent(rate.value.value)}</dd>
-                </div>
-              ))}
-            </dl>
-            <p className="municipal-finance-method-note">
-              Percentuais descritivos já calculados no contrato; não representam eficiência ou qualidade da gestão.
-            </p>
-          </section>
+      <BudgetExecutionSection document={document} />
 
-          <section className="page-card municipal-finance-section municipal-finance-qse" aria-labelledby="municipal-finance-qse-title">
-            <SectionHeading
-              eyebrow="Transferência e estimativa separadas"
-              title="Quota municipal do salário-educação"
-              titleId="municipal-finance-qse-title"
-              description="A distribuição de 2024 não é saldo e não é somada à estimativa de 2026."
-            />
-            <div className="municipal-finance-qse-groups">
-              {presentation.qseGroups.map((group) => (
-                <article key={group.key}>
-                  <h3>{group.title}</h3>
-                  <dl>
-                    {group.metrics.map((metric) => (
-                      <div key={metric.label}>
-                        <dt>{metric.label}</dt>
-                        <dd><FinanceValue value={metric.value} label={metric.label} catalog={loadState.catalog} emphasized /></dd>
-                        <small>{metric.value.referenceYear} · {metric.value.amountNature === 'official_estimate' ? 'estimativa oficial' : 'fonte nominal'}</small>
-                      </div>
-                    ))}
-                  </dl>
-                  {group.comparison ? <p>{group.comparison}</p> : null}
-                </article>
-              ))}
-            </div>
-          </section>
+      <FundebOverviewPanel
+        document={document}
+        nonBeneficiaryLabels={presentation.fundebNonBeneficiaryLabels}
+      />
+
+      {presentation.qseGroups.length ? <QseAnnualPanel document={document} /> : null}
+
+      <RelatedProgramsSection
+        document={document}
+        relations={presentation.relations}
+      />
+
+    </PageFrame>
+  )
+}
+
+function BudgetExecutionSection({ document }: { document: MunicipalFinanceDocumentV1 }) {
+  const execution = document.execution.dcaEducation
+  const stages = [
+    {
+      key: 'committed',
+      label: 'Empenhado',
+      value: execution.committed,
+      rate: 100,
+    },
+    {
+      key: 'liquidated',
+      label: 'Liquidado',
+      value: execution.liquidated,
+      rate: execution.derivedRates.liquidatedToCommittedRate.value,
+    },
+    {
+      key: 'paid',
+      label: 'Pago',
+      value: execution.paid,
+      rate: execution.derivedRates.paidToCommittedRate.value,
+    },
+  ].filter((stage) => isPublishableFinancialValue(stage.value))
+  const paidRate = execution.derivedRates.paidToCommittedRate.value
+
+  if (!stages.length) return null
+
+  return (
+    <section className="page-card municipal-finance-budget" aria-labelledby="municipal-finance-execution-title">
+      <div className="municipal-finance-reference-heading">
+        <h2 id="municipal-finance-execution-title">Execução orçamentária — {execution.referenceYear} <small>(SICONFI)</small></h2>
+      </div>
+      <div className="municipal-finance-budget__layout">
+        <ol className="municipal-finance-budget__bars">
+          {stages.map((stage) => (
+            <li key={stage.key}>
+              <strong>{stage.label}</strong>
+              <progress
+                aria-label={`${stage.label}: ${stage.rate === null ? 'percentual indisponível' : formatPercent(stage.rate)}`}
+                max="100"
+                value={stage.rate ?? 0}
+              />
+              <b>{stage.rate === null ? '—' : formatPercent(stage.rate)}</b>
+              <FinanceValue value={stage.value} label={`${stage.label} em ${execution.referenceYear}`} />
+            </li>
+          ))}
+        </ol>
+        <aside className="municipal-finance-budget__reading" aria-label="Leitura rápida da execução">
+          <div className="municipal-finance-budget__total">
+            <span>Total empenhado</span>
+            <FinanceValue value={execution.committed} label={`Total empenhado em ${execution.referenceYear}`} emphasized />
+          </div>
+          <div><span>Base da despesa</span><strong>Empenhado</strong></div>
+          <div>
+            <span>Leitura rápida</span>
+            <p>{paidRate === null
+              ? 'A relação entre o valor pago e o empenhado não está disponível.'
+              : `${formatPercent(paidRate)} do valor empenhado em ${execution.referenceYear} já foi pago.`}</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+  )
+}
+
+function FundebOverviewPanel({
+  document,
+  nonBeneficiaryLabels,
+}: {
+  document: MunicipalFinanceDocumentV1
+  nonBeneficiaryLabels: readonly string[]
+}) {
+  const components = [
+    { key: 'vaaf', label: 'VAAF', amount: document.amounts.fundebVaafAnnualForecast },
+    { key: 'vaat', label: 'VAAT', amount: document.amounts.fundebVaatAnnualForecast },
+    { key: 'vaar', label: 'VAAR', amount: document.amounts.fundebVaarAnnualForecast },
+  ]
+
+  return (
+    <section className="page-card municipal-finance-fundeb-overview" aria-labelledby="municipal-finance-fundeb-overview-title">
+      <header className="municipal-finance-fundeb-overview__header">
+        <div>
+          <span className="eyebrow">Previsão oficial — {document.periods.annualForecastYear}</span>
+          <h2 id="municipal-finance-fundeb-overview-title">Fundeb e complementações</h2>
+          <p>Síntese das previsões aplicáveis ao município, sem somar componentes novamente ao total.</p>
         </div>
+        <div className="municipal-finance-fundeb-overview__total">
+          <span>Fundeb total previsto</span>
+          <FinanceValue value={document.amounts.fundebTotalAnnualForecast} label="Fundeb total previsto" emphasized />
+          <small>Previsão total · {document.periods.annualForecastYear}</small>
+        </div>
+      </header>
+      <div className="municipal-finance-fundeb-overview__grid">
+        {components.map((component) => (
+          <article key={component.key}>
+            <span>{component.label} (previsto)</span>
+            {isPublishableFinancialValue(component.amount)
+              ? <FinanceValue value={component.amount} label={`${component.label} previsto`} emphasized />
+              : <strong>Não beneficiário</strong>}
+            <small>{isPublishableFinancialValue(component.amount) ? 'Valor anual total' : 'Sem previsão nominal'}</small>
+          </article>
+        ))}
+      </div>
+      <div className="municipal-finance-fundeb-overview__footer">
+        <div>
+          <p>Os valores de complementação dependem do cumprimento dos critérios oficiais de cada modalidade.</p>
+          {nonBeneficiaryLabels.length ? <p>Sem previsão para {nonBeneficiaryLabels.join(' e ')}.</p> : null}
+        </div>
+        <a className="municipal-finance-row-link" href={buildAppHash(FINANCIAL_PAGE_KEYS.fundeb, { municipio: document.municipality.slug })}>
+          Ver detalhes do Fundeb <span aria-hidden="true">→</span>
+        </a>
+      </div>
+    </section>
+  )
+}
 
-        <div className="municipal-finance-primary-column municipal-finance-primary-column--right">
-          <section className="page-card municipal-finance-section municipal-finance-fundeb" aria-labelledby="municipal-finance-fundeb-title">
-            <SectionHeading
-              eyebrow="Previsão oficial anual"
-              title="Fundeb e complementações — previsão 2026"
-              titleId="municipal-finance-fundeb-title"
-              description="Total e componentes são apresentados separadamente, sem nova soma."
-            />
-            <ol className="municipal-finance-fundeb-list">
-              {presentation.fundebComponents.map((component) => (
-                <li key={component.key}>
-                  <div className="municipal-finance-fundeb-list__identity">
-                    <h3>{component.title}</h3>
-                    <StatusBadge
-                      displayStatus={undefined}
-                      marker={undefined}
-                      status={component.statusLabel}
-                      title={undefined}
-                      tone={component.statusLabel === 'Beneficiário' ? 'info' : 'muted'}
-                    />
-                  </div>
-                  <div className="municipal-finance-fundeb-list__amount">
-                    <FinanceValue value={component.amount} label={`${component.title} previsto em 2026`} catalog={loadState.catalog} emphasized />
-                    <span>Exercício {component.amount.referenceYear}</span>
-                  </div>
-                  <p>{component.observation}</p>
-                </li>
-              ))}
-            </ol>
-            <p className="municipal-finance-fundeb-note">
-              Os componentes não devem ser somados novamente ao total. Benefício e previsão não representam recebimento.
-            </p>
-            <details className="municipal-finance-disclosure municipal-finance-fundeb-disclosure">
-              <summary>Ver metadados do Fundeb</summary>
-              <div className="municipal-finance-fundeb-metadata">
-                {presentation.fundebComponents.map((component) => (
-                  <article key={component.key}>
-                    <h3>{component.title}</h3>
-                    <dl>
-                      <div><dt>Natureza</dt><dd>{component.natureLabel}</dd></div>
-                      <div><dt>Estágio</dt><dd>{component.stageLabel} · {component.amount.referenceYear}</dd></div>
-                      <div><dt>Composição</dt><dd>{component.inclusionLabel}</dd></div>
-                      <div><dt>Dupla contagem</dt><dd>{component.doubleCountingLabel}</dd></div>
-                    </dl>
-                    {component.calculationStatusLabel ? <p>{component.calculationStatusLabel}</p> : null}
-                    {component.summationNote ? <p className="municipal-finance-no-sum">{component.summationNote}</p> : null}
-                    {component.caution ? <p className="municipal-finance-method-note">{component.caution}</p> : null}
-                    <SourceReference source={component.source} />
-                  </article>
-                ))}
-              </div>
-            </details>
-          </section>
+function RelatedProgramsSection({
+  document,
+  relations,
+}: {
+  document: MunicipalFinanceDocumentV1
+  relations: readonly {
+    key: string
+    programLabel: string
+    relationLabel: string
+  }[]
+}) {
+  return (
+    <section className="page-card municipal-finance-programs municipal-finance-related-programs" aria-labelledby="municipal-finance-related-programs-title">
+      <header className="municipal-finance-related-programs__header">
+        <div>
+          <span className="eyebrow">Apoios relacionados</span>
+          <h2 id="municipal-finance-related-programs-title">Outros programas e repasses relacionados</h2>
+        </div>
+        <a className="municipal-finance-inline-action" href={buildAppHash(FINANCIAL_PAGE_KEYS.overview, { municipio: document.municipality.slug })}>
+          Ver todos os programas <span aria-hidden="true">→</span>
+        </a>
+      </header>
+      <div className="municipal-finance-programs__related">
+        <div className="municipal-finance-programs__rows">
+          {relations.slice(0, 3).map((relation) => (
+            <article key={relation.key}>
+              <strong>{relation.programLabel}</strong>
+              <div><small>{relation.relationLabel}</small></div>
+              <span aria-hidden="true">›</span>
+            </article>
+          ))}
+          {!relations.length ? <p>Nenhuma relação adicional documentada para este município.</p> : null}
         </div>
       </div>
-
-      <section className="page-card municipal-finance-section municipal-finance-coverage" aria-labelledby="municipal-finance-coverage-title">
-        <div className="municipal-finance-section__heading-with-status">
-          <SectionHeading
-            eyebrow="Transparência da evidência"
-            title="Cobertura e limitações dos dados"
-            titleId="municipal-finance-coverage-title"
-            description="O nível descreve a cobertura da evidência disponível e não o desempenho financeiro do município."
-          />
-          <StatusBadge
-            displayStatus={undefined}
-            marker={undefined}
-            status={presentation.qualityLabel}
-            title={undefined}
-            tone="muted"
-          />
-        </div>
-        <p className="municipal-finance-coverage-summary">
-          {presentation.coverageSummary.complete} dimensões completas · {presentation.coverageSummary.pending} pendentes · {presentation.coverageSummary.unavailable} indisponíveis
-        </p>
-        <dl className="municipal-finance-coverage-grid municipal-finance-coverage-grid--highlights">
-          {presentation.coverageHighlights.map((dimension) => (
-            <CoverageDimension key={dimension.key} dimension={dimension} />
-          ))}
-        </dl>
-        <details className="municipal-finance-disclosure municipal-finance-coverage-disclosure">
-          <summary>Ver cobertura detalhada</summary>
-          <dl className="municipal-finance-coverage-grid">
-            {presentation.coverage.map((dimension) => (
-              <CoverageDimension key={dimension.key} dimension={dimension} />
-            ))}
-          </dl>
-        </details>
-      </section>
-
-      <section className="page-card municipal-finance-section municipal-finance-relations" aria-labelledby="municipal-finance-relations-title">
-        <SectionHeading
-          eyebrow="Contexto educacional"
-          title="Relação com os pontos de atenção"
-          titleId="municipal-finance-relations-title"
-          description="Leitura contextual das relações documentadas no contrato, sem alterar a síntese educacional."
-        />
-        {presentation.relations.length ? (
-          <div className="municipal-finance-relation-list">
-            {presentation.relations.map((relation) => (
-              <article key={relation.key}>
-                <h3>{relation.relationLabel} — {relation.programLabel}</h3>
-                <p className="municipal-finance-relation-list__indicator">Relacionada a: {relation.indicatorLabel}</p>
-                <p>{relation.reading}</p>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <ContentState kind="empty" className="municipal-finance-relation-empty">
-            Nenhuma relação financeira documentada no contrato atual para este contexto.
-          </ContentState>
-        )}
-      </section>
-
-      <footer className="municipal-finance-sources" aria-labelledby="municipal-finance-sources-title">
-        <div className="municipal-finance-sources__heading">
-          <span className="eyebrow">Referências oficiais</span>
-          <h2 id="municipal-finance-sources-title">Fontes</h2>
-        </div>
-        <p className="municipal-finance-sources__line">
-          {presentation.sources.map((group) => group.label).join(' · ')}
-        </p>
-        <details className="municipal-finance-disclosure municipal-finance-sources__disclosure">
-          <summary>Consultar fontes e metodologia</summary>
-          <ul className="municipal-finance-sources__groups">
-            {presentation.sources.map((group) => (
-              <li key={group.key}>
-                <strong>{group.label}</strong>
-                {group.description ? <p>{group.description}</p> : <p>Detalhamento do catálogo indisponível.</p>}
-                <ul>
-                  {group.links.map((link) => (
-                    <li key={link.url}>
-                      <a href={link.url} rel="noreferrer" target="_blank">{link.label}</a>
-                      <small>
-                        {link.agency}{link.referenceYear ? ` · ${link.referenceYear}` : ''} · {link.natureLabel}
-                      </small>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ul>
-        </details>
-      </footer>
-    </PageFrame>
+    </section>
   )
 }
 
@@ -413,16 +388,12 @@ function ConstitutionalApplicationSection({
 }) {
   const application = document.constitutionalApplication
   const reconciliation = document.reconciliation
-  const coverage = document.dataQuality.coverageByDimension.constitutionalApplication
-  const reconciliationCoverage = document.dataQuality.coverageByDimension.reconciliation
   const metrics = [
     application.mdeAppliedAmount,
     application.mdeAppliedRate,
     application.fundebProfessionalRemunerationRate,
   ]
   const reasonCodes = [
-    ...coverage.reasonCodes,
-    ...reconciliationCoverage.reasonCodes,
     ...reconciliation.reasonCodes,
     ...metrics.flatMap((metric) => [
       ...metric.reconciliation.reasonCodes,
@@ -434,103 +405,83 @@ function ConstitutionalApplicationSection({
   ].filter((reasonCode): reasonCode is string => Boolean(reasonCode))
   const uniqueReasonCodes = Array.from(new Set(reasonCodes))
   const revisionBlocked = uniqueReasonCodes.includes('source_revision_detected')
-  const contractStatus = application.status !== 'reconciled'
-    ? application.status
-    : reconciliation.status !== 'reconciled'
-      ? reconciliation.status
-      : coverage.status !== 'complete'
-        ? coverage.status
-        : reconciliationCoverage.status !== 'complete'
-          ? reconciliationCoverage.status
-          : 'reconciled'
-  const status = getConstitutionalStatusPresentation(contractStatus, revisionBlocked)
-  const canPublishMainValues = contractStatus === 'reconciled' && !revisionBlocked
-  const reasonMessages = uniqueReasonCodes.map((reasonCode) => (
-    catalog?.reasonMessages[reasonCode] ?? reasonCode
-  ))
-  const unavailableReason = reasonMessages[0] ?? status.description
+  const canPublishMainValues = !revisionBlocked
+  const hasDivergence = metrics.some((metric) => metric.reconciliation.status.startsWith('divergent'))
+  const hasMdeRate = canPublishMainValues && isPublishableFinancialValue(application.mdeAppliedRate.canonical)
+  const hasMdeAmount = canPublishMainValues && isPublishableFinancialValue(application.mdeAppliedAmount.canonical)
+  const hasFundebRate = canPublishMainValues && isPublishableFinancialValue(application.fundebProfessionalRemunerationRate.canonical)
+  const hasFundebRevenue = canPublishMainValues && isPublishableFinancialValue(application.fundebRevenueReceivedDeclared)
   const sourceIds = Array.from(new Set([
     ...metrics.flatMap((metric) => metric.reconciliation.sourceIds),
     ...reconciliation.availableSourceIds,
-    ...reconciliation.pendingSourceIds,
     application.fundebRevenueReceivedDeclared.sourceId,
   ]))
   const sourceNames = sourceIds.map((sourceId) => (
     catalog?.sources.find((source) => source.sourceId === sourceId)?.name
   )).filter((name): name is string => Boolean(name))
+  if (!hasMdeRate && !hasMdeAmount && !hasFundebRate && !hasFundebRevenue) return null
 
   return (
     <section
       className="page-card municipal-finance-section municipal-finance-constitutional-application"
       aria-labelledby="municipal-finance-constitutional-title"
     >
-      <div className="municipal-finance-section__heading-with-status">
-        <SectionHeading
-          eyebrow="SIOPE × RREO · sexto bimestre"
-          title={`Aplicação constitucional da educação — ${application.referenceYear}`}
-          titleId="municipal-finance-constitutional-title"
-          description="Valores declarados pelo município e apresentados conforme a reconciliação publicada no contrato."
-        />
-        <StatusBadge
-          displayStatus={undefined}
-          marker={undefined}
-          status={status.label}
-          title={status.description}
-          tone="muted"
-        />
+      <div className="municipal-finance-reference-heading">
+        <h2 id="municipal-finance-constitutional-title">Aplicação constitucional da educação — {application.referenceYear}</h2>
+        <span>Valores de {application.referenceYear}</span>
       </div>
 
       <div className="municipal-finance-constitutional-primary-grid">
+        {hasMdeRate || hasMdeAmount ? (
         <article className="municipal-finance-constitutional-metric municipal-finance-constitutional-metric--mde">
-          <h3>Aplicado em MDE</h3>
-          <span className="municipal-finance-constitutional-metric__label">Percentual aplicado em MDE</span>
+          <h3>Aplicação em MDE</h3>
+          {hasMdeRate ? (
+          <>
           <ConstitutionalCanonicalValue
             canPublish={canPublishMainValues}
-            catalog={catalog}
             label="Percentual aplicado em MDE"
-            reason={unavailableReason}
             value={application.mdeAppliedRate.canonical}
           />
-          <dl>
+          </>
+          ) : null}
+          {hasMdeAmount ? <dl>
             <div>
-              <dt>Valor aplicado em MDE</dt>
+              <dt>Aplicados</dt>
               <dd>
                 <ConstitutionalCanonicalValue
                   canPublish={canPublishMainValues}
-                  catalog={catalog}
-                  label="Valor aplicado em MDE"
-                  reason={unavailableReason}
+                  label="Despesa computada em MDE"
                   value={application.mdeAppliedAmount.canonical}
                 />
               </dd>
             </div>
-          </dl>
+          </dl> : null}
+          <p className="municipal-finance-constitutional-rule">Mínimo: 25% da receita de impostos</p>
         </article>
+        ) : null}
 
+        {hasFundebRate ? (
         <article className="municipal-finance-constitutional-metric">
           <h3>Remuneração dos profissionais</h3>
-          <span className="municipal-finance-constitutional-metric__label">
-            Percentual dos recursos do Fundeb destinado à remuneração
-          </span>
           <ConstitutionalCanonicalValue
             canPublish={canPublishMainValues}
-            catalog={catalog}
             label="Percentual do Fundeb destinado à remuneração dos profissionais da educação"
-            reason={unavailableReason}
             value={application.fundebProfessionalRemunerationRate.canonical}
           />
+          <p className="municipal-finance-constitutional-rule">Mínimo: 70% do Fundeb</p>
         </article>
+        ) : null}
       </div>
 
+      {hasFundebRevenue ? (
       <div className="municipal-finance-constitutional-strip">
         <article className="municipal-finance-constitutional-revenue">
+          <span className="municipal-finance-constitutional-revenue__icon" aria-hidden="true">▣</span>
           <div>
             <span className="municipal-finance-constitutional-metric__label">Receita Fundeb declarada</span>
             <ConstitutionalCanonicalValue
               canPublish={canPublishMainValues}
-              catalog={catalog}
               label="Receita Fundeb recebida declarada em 2024"
-              reason={unavailableReason}
               value={application.fundebRevenueReceivedDeclared}
             />
           </div>
@@ -539,31 +490,15 @@ function ConstitutionalApplicationSection({
           </p>
         </article>
 
-        <article className="municipal-finance-constitutional-reconciliation">
-          <div className="municipal-finance-constitutional-reconciliation__status">
-            <span>Reconciliação das fontes</span>
-            <strong>{status.label}</strong>
-          </div>
-          <p>{status.description}</p>
-          <dl>
-            <div><dt>Período</dt><dd>{application.period}º bimestre de {application.referenceYear}</dd></div>
-            <div><dt>Base da despesa</dt><dd>{application.stageBasis}</dd></div>
-            <div><dt>Fontes</dt><dd>{sourceNames.length ? sourceNames.join(' · ') : 'Catálogo de fontes indisponível'}</dd></div>
-          </dl>
-          {!canPublishMainValues && reasonMessages.length ? (
-            <ul className="municipal-finance-constitutional-reasons" aria-label="Limitações informadas pelo contrato">
-              {reasonMessages.map((message) => <li key={message}>{message}</li>)}
-            </ul>
-          ) : null}
-        </article>
       </div>
+      ) : null}
 
       <div className="municipal-finance-constitutional-disclosures">
         <details className="platform-support-disclosure municipal-finance-constitutional-disclosure">
           <summary className="platform-support-disclosure__summary">
             <div>
-              <h3>Ver valores por fonte</h3>
-              <p>SIOPE e RREO permanecem separados, sem fonte preferencial.</p>
+              <h3>Fontes e metodologia</h3>
+              <p>Valores por fonte, competência e critérios de conciliação.</p>
             </div>
           </summary>
           <div className="platform-support-disclosure__body">
@@ -571,29 +506,27 @@ function ConstitutionalApplicationSection({
               <ConstitutionalSourceCard
                 application={application}
                 catalog={catalog}
-                revisionBlocked={revisionBlocked}
                 sourceKey="siope"
-                unavailableReason={unavailableReason}
               />
               <ConstitutionalSourceCard
                 application={application}
                 catalog={catalog}
-                revisionBlocked={revisionBlocked}
                 sourceKey="rreo"
-                unavailableReason={unavailableReason}
               />
             </div>
-          </div>
-        </details>
-
-        <details className="platform-support-disclosure municipal-finance-constitutional-disclosure">
-          <summary className="platform-support-disclosure__summary">
-            <div>
-              <h3>Nota metodológica</h3>
-              <p>Diferença entre MDE constitucional e DCA.</p>
-            </div>
-          </summary>
-          <div className="platform-support-disclosure__body">
+            <dl className="municipal-finance-constitutional-source-meta">
+              <div><dt>Período</dt><dd>{application.period}º bimestre de {application.referenceYear}</dd></div>
+              <div><dt>Base da despesa</dt><dd>{application.stageBasis}</dd></div>
+              {sourceNames.length ? <div><dt>Fontes</dt><dd>{sourceNames.join(' · ')}</dd></div> : null}
+            </dl>
+            <p className="municipal-finance-method-note">
+              A leitura canônica usa a média aritmética entre SIOPE e RREO quando a diferença fica dentro da tolerância de {formatFullCurrency(application.mdeAppliedAmount.reconciliation.tolerance)} para valores e de {formatCoefficient(application.mdeAppliedRate.reconciliation.tolerance)} ponto percentual para percentuais.
+            </p>
+            {hasDivergence ? (
+              <p className="municipal-finance-method-note">
+                Medidas com divergência acima da tolerância são omitidas da leitura principal e permanecem separadas por fonte neste detalhe.
+              </p>
+            ) : null}
             <p className="municipal-finance-method-note">
               MDE constitucional e despesa da função Educação na DCA representam universos contábeis e legais diferentes e não devem ser comparados diretamente.
             </p>
@@ -606,76 +539,46 @@ function ConstitutionalApplicationSection({
 
 function ConstitutionalCanonicalValue({
   canPublish,
-  catalog,
   label,
-  reason,
   value,
 }: {
   canPublish: boolean
-  catalog: MunicipalFinanceCatalog | null
   label: string
-  reason: string
   value: CompactFinancialValue
 }) {
-  if (!canPublish) {
-    return (
-      <span className="municipal-finance-value municipal-finance-value--missing">
-        <span>Valor não publicado</span>
-        <small>{reason}</small>
-      </span>
-    )
-  }
-  return <FinanceValue value={value} label={label} catalog={catalog} emphasized />
+  if (!canPublish || !isPublishableFinancialValue(value)) return null
+  return <FinanceValue value={value} label={label} emphasized />
 }
 
 function ConstitutionalSourceCard({
   application,
   catalog,
-  revisionBlocked,
   sourceKey,
-  unavailableReason,
 }: {
   application: MunicipalFinanceDocumentV1['constitutionalApplication']
   catalog: MunicipalFinanceCatalog | null
-  revisionBlocked: boolean
   sourceKey: 'siope' | 'rreo'
-  unavailableReason: string
 }) {
   const sourceValue = application.mdeAppliedAmount[sourceKey]
   const source = catalog?.sources.find((entry) => entry.sourceId === sourceValue.sourceId) ?? null
   const sourceLabel = sourceKey === 'siope' ? 'SIOPE' : 'RREO'
-  const sourceStatus = source?.status === 'integrated'
-    ? 'Integrada'
-    : source?.status === 'manual'
-      ? 'Consulta manual'
-      : source?.status === 'unavailable'
-        ? 'Indisponível'
-        : null
   const metrics = [
-    { label: 'Valor aplicado em MDE', value: application.mdeAppliedAmount[sourceKey] },
+    { label: 'Despesa computada em MDE', value: application.mdeAppliedAmount[sourceKey] },
     { label: 'Percentual aplicado em MDE', value: application.mdeAppliedRate[sourceKey] },
     { label: 'Remuneração dos profissionais', value: application.fundebProfessionalRemunerationRate[sourceKey] },
     ...(sourceKey === 'rreo'
       ? [{ label: 'Receita Fundeb declarada', value: application.fundebRevenueReceivedDeclared }]
       : []),
-  ]
+  ].filter((metric) => isPublishableFinancialValue(metric.value))
+  if (!metrics.length) return null
 
   return (
     <article>
       <header>
         <div>
           <span>{sourceLabel}</span>
-          <h4>{source?.name ?? 'Fonte não identificada no catálogo'}</h4>
+          {source?.name ? <h4>{source.name}</h4> : null}
         </div>
-        {sourceStatus ? (
-          <StatusBadge
-            displayStatus={undefined}
-            marker={undefined}
-            status={sourceStatus}
-            title={`Status da fonte: ${sourceStatus}`}
-            tone="muted"
-          />
-        ) : null}
       </header>
       <dl className="municipal-finance-constitutional-source-meta">
         <div><dt>Exercício</dt><dd>{source?.referenceYear ?? application.referenceYear}</dd></div>
@@ -685,16 +588,7 @@ function ConstitutionalSourceCard({
         {metrics.map((metric) => (
           <div key={metric.label}>
             <dt>{metric.label}</dt>
-            <dd>
-              {revisionBlocked ? (
-                <span className="municipal-finance-value municipal-finance-value--missing">
-                  <span>Valor bloqueado</span>
-                  <small>{unavailableReason}</small>
-                </span>
-              ) : (
-                <FinanceValue value={metric.value} label={`${metric.label} — ${sourceLabel}`} catalog={catalog} />
-              )}
-            </dd>
+            <dd><FinanceValue value={metric.value} label={`${metric.label} — ${sourceLabel}`} /></dd>
           </div>
         ))}
       </dl>
@@ -703,86 +597,34 @@ function ConstitutionalSourceCard({
   )
 }
 
-function getConstitutionalStatusPresentation(status: string, revisionBlocked: boolean) {
-  if (revisionBlocked) {
-    return {
-      label: 'Fonte em revisão',
-      description: 'A publicação permanece bloqueada enquanto a revisão ou retificação da fonte estiver pendente.',
-    }
-  }
-  if (status === 'reconciled') {
-    return {
-      label: 'Reconciliado',
-      description: 'Valores reconciliados entre SIOPE e RREO.',
-    }
-  }
-  if (['divergent', 'divergent_explained', 'divergent_unexplained', 'reconciliation_required'].includes(status)) {
-    return {
-      label: 'Divergente',
-      description: 'Os valores declarados no SIOPE e no RREO apresentam divergência e devem ser analisados separadamente.',
-    }
-  }
-  if (status === 'source_missing') {
-    return {
-      label: 'Fonte ausente',
-      description: 'A reconciliação está parcial porque uma das fontes previstas no contrato está ausente.',
-    }
-  }
-  if (status === 'partial') {
-    return {
-      label: 'Parcial',
-      description: 'A reconciliação está parcial; somente as informações disponíveis no contrato são apresentadas.',
-    }
-  }
-  if (status === 'unavailable') {
-    return {
-      label: 'Indisponível',
-      description: 'O contrato não disponibiliza informações suficientes para publicar os valores reconciliados.',
-    }
-  }
-  return {
-    label: 'Reconciliação parcial',
-    description: 'A reconciliação não está concluída; somente as informações disponibilizadas pelo contrato são apresentadas.',
-  }
-}
-
 function PageFrame({
   children,
-  municipalityName,
   returnHref,
 }: {
   children: ReactNode
-  municipalityName: string
   returnHref: string
 }) {
   return (
     <div className="page-stack financial-page municipal-finance-panorama">
       <FinancialCompactModuleSelector activePageKey={FINANCIAL_PAGE_KEYS.panorama} />
-      <section className="page-card municipal-finance-hero">
-        <a className="municipal-finance-back-link" href={returnHref}>
-          <span aria-hidden="true">←</span> Voltar ao Diagnóstico municipal
-        </a>
-        <span className="eyebrow">Financiamento · evidências municipais</span>
-        <h1>{municipalityName}: panorama financeiro da educação</h1>
-        <p>Receitas, previsões e execução identificadas nas fontes oficiais disponíveis.</p>
-        <p className="municipal-finance-hero__note">
-          Os valores apresentados possuem períodos, estágios e fontes diferentes e não devem ser somados automaticamente.
-        </p>
-      </section>
+      <FinancialCompactHeader
+        backHref={returnHref}
+        description="Visão geral dos recursos e da aplicação na educação do município."
+      />
       {children}
     </div>
   )
 }
 
-function ContextNotice({ labels }: { labels: { indicators: readonly string[]; programs: readonly string[] } }) {
-  if (!labels.indicators.length && !labels.programs.length) return null
-  return (
-    <aside className="municipal-finance-context" aria-label="Contexto recebido do Diagnóstico municipal">
-      <strong>Contexto recebido do Diagnóstico municipal</strong>
-      {labels.indicators.length ? <p><span>Indicadores:</span> {labels.indicators.join('; ')}</p> : null}
-      {labels.programs.length ? <p><span>Programas:</span> {labels.programs.join('; ')}</p> : null}
-    </aside>
-  )
+function summaryIconFor(key: string): FinancialIconName {
+  const icons: Record<string, FinancialIconName> = {
+    fundeb: 'fundeb',
+    mde: 'allocation',
+    paid: 'payment',
+    remuneration: 'resources',
+    vaar: 'trend',
+  }
+  return icons[key] ?? 'budget'
 }
 
 function SectionHeading({ eyebrow, title, titleId, description }: {
@@ -803,7 +645,6 @@ function SectionHeading({ eyebrow, title, titleId, description }: {
 function FinanceValue({
   value,
   label,
-  catalog = null,
   emphasized = false,
 }: {
   value: CompactFinancialValue
@@ -811,17 +652,7 @@ function FinanceValue({
   catalog?: MunicipalFinanceCatalog | null
   emphasized?: boolean
 }) {
-  if (value.value === null) {
-    const reason = value.nullReasonCode
-      ? catalog?.reasonMessages[value.nullReasonCode] ?? 'Dado não publicado para este componente.'
-      : 'Dado indisponível.'
-    return (
-      <span className="municipal-finance-value municipal-finance-value--missing">
-        <span>Não disponível</span>
-        <small>{reason}</small>
-      </span>
-    )
-  }
+  if (!isPublishableFinancialValue(value)) return null
 
   const formatted = formatFinanceValue(value, true)
   const full = formatFinanceValue(value, false)
@@ -845,34 +676,8 @@ function formatFinanceValue(value: CompactFinancialValue, compact: boolean): str
   return formatCoefficient(numericValue)
 }
 
-function CoverageDimension({ dimension }: {
-  dimension: {
-    key: string
-    label: string
-    status: string
-    statusLabel: string
-    reason: string | null
-  }
-}) {
-  return (
-    <div>
-      <dt>{dimension.label}</dt>
-      <dd>
-        <StatusBadge
-          displayStatus={undefined}
-          marker={undefined}
-          status={dimension.statusLabel}
-          title={undefined}
-          tone={dimension.status === 'complete' ? 'info' : 'muted'}
-        />
-        {dimension.reason ? <small>{dimension.reason}</small> : null}
-      </dd>
-    </div>
-  )
-}
-
 function SourceReference({ source }: { source: MunicipalFinanceSourceCatalogEntry | null }) {
-  if (!source?.name) return <p className="municipal-finance-source-reference">Fonte do catálogo indisponível.</p>
+  if (!source?.name) return null
   return (
     <p className="municipal-finance-source-reference">
       <span>Fonte:</span>{' '}

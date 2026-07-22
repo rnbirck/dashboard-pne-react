@@ -7,6 +7,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import Input, Output, State, callback, ctx, dcc, html
 
+from src.pne2026_public_diagnostic_v2 import apply_pne2026_diagnostic_presentation
 from src.data_loader import (
     get_data_cache_ttl_seconds,
     load_adequacao_docente_data,
@@ -1767,6 +1768,8 @@ INDICADORES = {
         ],
     },
 }
+
+apply_pne2026_diagnostic_presentation(INDICADORES)
 
 CATEGORY_ORDER = [
     "atendimento",

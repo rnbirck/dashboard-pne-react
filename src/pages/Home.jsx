@@ -1,5 +1,4 @@
 import { NavigationEntryCard } from '../components/NavigationEntryCard'
-import { SourceLine } from '../components/SourceLine'
 import { StatCard } from '../components/StatCard'
 
 const ENTRY_CARDS = [
@@ -187,11 +186,6 @@ export function Home({ onNavigate, selectedMunicipio }) {
         </div>
       </section>
 
-      <SourceLine>
-        INEP, Censo Escolar, FNDE, SIOPE e IBGE. Indicadores organizados a partir
-        das bases oficiais consolidadas no painel.
-      </SourceLine>
-
       <section className="home-about-panel" aria-labelledby="home-about-title">
         <div className="home-about-panel__heading">
           <span className="home-section__label">Sobre o painel</span>
@@ -214,9 +208,10 @@ export function Home({ onNavigate, selectedMunicipio }) {
 function TargetIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="8" />
-      <circle cx="12" cy="12" r="4" />
-      <path d="m14.5 9.5 4-4M18.5 5.5h-4v4" />
+      <circle cx="12" cy="12" r="8.5" />
+      <circle cx="12" cy="12" r="4.5" />
+      <circle cx="12" cy="12" r="1" />
+      <path d="m15.2 8.8 4.8-4.8M16 4h4v4" />
     </svg>
   )
 }
@@ -224,8 +219,9 @@ function TargetIcon() {
 function EducationIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M22 10 12 5 2 10l10 5 10-5z" />
-      <path d="M6 12v5c0 1 3 2.5 6 2.5s6-1.5 6-2.5v-5" />
+      <path d="m2.5 9.4 9.5-4.8 9.5 4.8-9.5 4.8-9.5-4.8Z" />
+      <path d="M6.5 11.5v4.2c0 1.4 2.5 2.8 5.5 2.8s5.5-1.4 5.5-2.8v-4.2" />
+      <path d="M21.5 9.6v5" />
     </svg>
   )
 }
@@ -233,9 +229,9 @@ function EducationIcon() {
 function FinanceIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 18h16" />
-      <path d="M7 18V9h3v9M12 18V5h3v13M17 18v-6h3v6" />
-      <path d="M4 6h3" />
+      <path d="M3 19.5h18" />
+      <path d="m4 15 5-5 4 3 7-8" />
+      <path d="M16.5 5H20v3.5" />
     </svg>
   )
 }

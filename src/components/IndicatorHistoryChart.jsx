@@ -25,6 +25,7 @@ const LEGACY_PADDING = { bottom: 44, left: 64, right: 86, top: 38 }
 export function IndicatorHistoryChart({
   adaptiveDomain = false,
   chartHeight,
+  chartType = 'line',
   chartWidth,
   domainOverride,
   endYear,
@@ -57,12 +58,13 @@ export function IndicatorHistoryChart({
   const responsiveChartHeight = pneLayout
     ? measuredWidth < 480
       ? PNE_CHART_GEOMETRY.main.mobileHeight
-      : PNE_CHART_GEOMETRY.main.desktopHeight
+      : chartHeight ?? PNE_CHART_GEOMETRY.main.desktopHeight
     : chartHeight
   const chart = useMemo(
     () =>
       buildChartModel({
         endYear,
+        chartType,
         formatDataLabel: formatDataLabelProp,
         formatYAxis: formatYAxisProp,
         labelMode,
@@ -84,7 +86,7 @@ export function IndicatorHistoryChart({
         domainOverride,
         paddingOverride: pneLayout ? PNE_CHART_GEOMETRY.main.padding : LEGACY_PADDING,
       }),
-    [adaptiveDomain, domainOverride, endYear, essentialLabels, floorNegativeValues, formatDataLabelProp, formatYAxisProp, labelMode, meta, missingLabel, pneLayout, resolvedUnit, responsiveChartHeight, responsiveChartWidth, series, showMetaLine, showMissingPoints, startYear, yTickCount],
+    [adaptiveDomain, chartType, domainOverride, endYear, essentialLabels, floorNegativeValues, formatDataLabelProp, formatYAxisProp, labelMode, meta, missingLabel, pneLayout, resolvedUnit, responsiveChartHeight, responsiveChartWidth, series, showMetaLine, showMissingPoints, startYear, yTickCount],
   )
 
   const validCount = chart.points.filter(p => p.valid !== false).length
@@ -93,7 +95,7 @@ export function IndicatorHistoryChart({
   }
 
   return (
-    <section className={`history-chart${chart.hasNegativeValues ? ' history-chart--with-negatives' : ''}${chart.isInformative ? ' history-chart--informative' : ''}`}>
+    <section className={`history-chart${chart.hasNegativeValues ? ' history-chart--with-negatives' : ''}${chart.isInformative ? ' history-chart--informative' : ''}${chartType === 'bar' ? ' history-chart--bars' : ''}`}>
       <div className="history-chart__heading">
         <div>
           <span className="eyebrow">Histórico do indicador</span>
@@ -106,7 +108,7 @@ export function IndicatorHistoryChart({
         <svg
           viewBox={`0 0 ${chart.width} ${chart.height}`}
           role="img"
-          aria-label={`${title}: linha histórica por ano`}
+          aria-label={`${title}: ${chartType === 'bar' ? 'barras anuais' : 'linha histórica por ano'}`}
         >
           <defs>
             <clipPath id={clipId}>
@@ -186,11 +188,33 @@ export function IndicatorHistoryChart({
           </g>
 
           <g clipPath={`url(#${clipId})`}>
-            {chart.areaPath ? <path className="chart-area" d={chart.areaPath} /> : null}
-            <path className="chart-line" d={chart.linePath} />
+            {chartType === 'bar'
+              ? chart.points.filter((point) => point.valid !== false).map((point) => (
+                <rect
+                  className={`chart-bar${point.isLast ? ' is-last' : ''}`}
+                  height={Math.max(1, chart.barBaselineY - point.y)}
+                  key={point.year}
+                  onBlur={() => setActivePoint(null)}
+                  onFocus={() => setActivePoint(point)}
+                  onKeyDown={(event) => closeChartTooltipOnEscape(event, () => setActivePoint(null))}
+                  onMouseEnter={() => setActivePoint(point)}
+                  onMouseLeave={() => setActivePoint(null)}
+                  rx="4"
+                  tabIndex="0"
+                  width={chart.barWidth}
+                  x={point.x - chart.barWidth / 2}
+                  y={Math.min(point.y, chart.barBaselineY)}
+                >
+                  <title>{`${point.year}: ${chart.formatValue(point.value)}`}</title>
+                </rect>
+              ))
+              : <>
+                  {chart.areaPath ? <path className="chart-area" d={chart.areaPath} /> : null}
+                  <path className="chart-line" d={chart.linePath} />
+                </>}
           </g>
 
-          <g className="chart-points">
+          {chartType !== 'bar' ? <g className="chart-points">
             {chart.points.filter(p => p.valid !== false).map((point) => (
               <circle
                 aria-label={`Município, ${point.year}: ${chart.formatValue(point.value)}`}
@@ -209,7 +233,7 @@ export function IndicatorHistoryChart({
                 <title>{`${point.year}: ${chart.formatValue(point.value)}`}</title>
               </circle>
             ))}
-          </g>
+          </g> : null}
 
           {showMissingPoints && chart.missingPointLabels && (
             <g className="chart-missing-labels">
@@ -246,7 +270,9 @@ export function IndicatorHistoryChart({
               <text
                 key={tick.year}
                 x={
-                  i === 0
+                  chartType === 'bar'
+                    ? tick.x
+                    : i === 0
                     ? tick.x + 4
                     : i === arr.length - 1
                       ? tick.x - 4
@@ -254,7 +280,9 @@ export function IndicatorHistoryChart({
                 }
                 y={chart.height - 12}
                 textAnchor={
-                  i === 0 ? 'start' : i === arr.length - 1 ? 'end' : 'middle'
+                  chartType === 'bar'
+                    ? 'middle'
+                    : i === 0 ? 'start' : i === arr.length - 1 ? 'end' : 'middle'
                 }
               >
                 {tick.year}
@@ -286,6 +314,7 @@ export function IndicatorHistoryChart({
 
 function buildChartModel({
   adaptiveDomain,
+  chartType,
   endYear,
   essentialLabels,
   formatDataLabel,
@@ -366,10 +395,14 @@ function buildChartModel({
   const maxYear = Math.max(...allYears)
   const plotWidth = chartWidth - padding.left - padding.right
   const plotHeight = chartHeight - padding.top - padding.bottom
+  const barWidth = Math.max(20, Math.min(76, plotWidth / Math.max(validPoints.length * 2.25, 3)))
+  const barEdgeGap = chartType === 'bar' ? Math.max(12, barWidth * 0.25) : 0
+  const barEdgeInset = chartType === 'bar' ? barWidth / 2 + barEdgeGap : 0
+  const effectivePlotWidth = Math.max(0, plotWidth - barEdgeInset * 2)
 
   const xScale = (year) => {
     if (maxYear === minYear) return padding.left + plotWidth / 2
-    return padding.left + ((year - minYear) / (maxYear - minYear)) * plotWidth
+    return padding.left + barEdgeInset + ((year - minYear) / (maxYear - minYear)) * effectivePlotWidth
   }
   const yScale = (value) => {
     if (domain.max === domain.min) return padding.top + plotHeight / 2
@@ -382,6 +415,9 @@ function buildChartModel({
     y: point.valid !== false ? yScale(point.value) : padding.top + plotHeight / 2,
   }))
   const scaledValidPoints = scaledPoints.filter((p) => p.valid !== false)
+  const barBaselineY = domain.min <= 0 && domain.max >= 0
+    ? yScale(0)
+    : chartHeight - padding.bottom
   const lastValidYear = scaledValidPoints[scaledValidPoints.length - 1]?.year
   const displayPoints = scaledPoints.map((point) => ({
     ...point,
@@ -459,7 +495,7 @@ function buildChartModel({
   const formatValue = (value) => formatIndicatorValue(value, resolvedUnit)
   const formatLabel = formatDataLabel || formatValue
   const labelsForCompute = labelMode === 'all' ? scaledValidPoints : scaledPoints
-  const dataLabels = computeDataLabels(labelsForCompute, metaLine, formatLabel, chartHeight, chartWidth, padding, labelMode, essentialLabels)
+  const dataLabels = computeDataLabels(labelsForCompute, metaLine, formatLabel, chartHeight, chartWidth, padding, labelMode, essentialLabels, chartType)
 
   const missingPointLabels = showMissingPoints
     ? scaledPoints.filter((p) => p.valid === false).map((p) => ({ year: p.year, x: p.x, y: chartHeight - padding.bottom + 18 }))
@@ -467,6 +503,8 @@ function buildChartModel({
 
   return {
     areaPath,
+    barBaselineY,
+    barWidth,
     dataLabels,
     formatDataLabel,
     formatValue,
@@ -480,9 +518,11 @@ function buildChartModel({
     missingPointLabels,
     padding,
     points: displayPoints,
-    xTicks: showMissingPoints
-      ? selectPneYearTicks(pickAllYearTicks(scaledPoints), chartWidth < 420 ? 3 : 6)
-      : selectPneYearTicks(scaledPoints, chartWidth < 420 ? 3 : 6),
+    xTicks: chartType === 'bar' && chartWidth >= 520 && scaledPoints.length <= 8
+      ? scaledPoints.map((point) => ({ year: point.year, x: point.x }))
+      : showMissingPoints
+        ? selectPneYearTicks(pickAllYearTicks(scaledPoints), chartWidth < 420 ? 3 : 6)
+        : selectPneYearTicks(scaledPoints, chartWidth < 420 ? 3 : 6),
     yTicks,
     yearMarkers,
     zeroLine,
@@ -642,7 +682,7 @@ function computeMissingLabels(points, chartHeight) {
     .map((p) => ({ year: p.year, x: p.x, y }))
 }
 
-function computeDataLabels(points, metaLine, formatValue, chartHeight, chartWidth, padding, labelMode, essentialLabels = false) {
+function computeDataLabels(points, metaLine, formatValue, chartHeight, chartWidth, padding, labelMode, essentialLabels = false, chartType = 'line') {
   if (points.length === 0) return []
 
   const plotLeft = padding.left
@@ -666,6 +706,7 @@ function computeDataLabels(points, metaLine, formatValue, chartHeight, chartWidt
       plotLeft,
       plotRight,
       plotTop,
+      centerPointLabels: chartType === 'bar',
     })
   }
 
@@ -838,6 +879,7 @@ function computeDataLabels(points, metaLine, formatValue, chartHeight, chartWidt
 }
 
 function computeEssentialDataLabels({
+  centerPointLabels = false,
   firstPoint,
   lastPoint,
   metaLine,
@@ -862,10 +904,14 @@ function computeEssentialDataLabels({
     if (!point) return
     const isNearRight = point.x > plotRight - 30
     const isNearLeft = point.x < plotLeft + 30
-    const anchor = isLast
+    const anchor = centerPointLabels
+      ? 'middle'
+      : isLast
       ? isNearRight ? 'end' : 'start'
       : isNearLeft ? 'start' : 'middle'
-    const x = isLast
+    const x = centerPointLabels
+      ? point.x
+      : isLast
       ? isNearRight ? point.x - 10 : point.x + 10
       : isNearLeft ? point.x + 8 : point.x
     const y = isLast && metaIsNearLast

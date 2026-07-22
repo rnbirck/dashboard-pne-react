@@ -64,6 +64,7 @@ export interface EducationMunicipioData extends MunicipioData {
 export interface EducationPageProps {
   indicadores: IndicadoresPayload
   municipioData?: EducationMunicipioData | null
+  municipalitySlug?: string | null
   navigationContext: ParsedAppLocation
   selectedMunicipio: MunicipioName | null
 }

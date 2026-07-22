@@ -3,44 +3,30 @@ import { resolveDetailSequence, useDetailViewNavigation } from '../hooks/useDeta
 import { PNATE_INDICATORS, formatPnateValue } from '../data/pnateIndicators'
 import { getFinancialIndicatorMetadata } from '../data/financialIndicatorMetadata'
 import { DataSourceNote } from './DataSourceNote'
-import { FinancialIndicatorMetadata } from './FinancialIndicatorMetadata'
-import { ContentState } from './ContentState'
+import { FinancialIndicatorDisclosures } from './FinancialIndicatorMetadata'
 import { IndicatorHistoryChart } from '../components/IndicatorHistoryChart'
-import { ChartEmptyState } from './ChartPrimitives'
 import { EducationSummaryCard } from './EducationSummaryCard'
 import {
   FinancialChartFrame,
-  FinancialCatalogSectionBar,
   FinancialDetailHeader,
   FinancialDetailNavigation,
-  FinancialIndicatorGroup,
   FinancialSection,
   FinancialMetricStrip,
   FinancialMetricGrid,
   FinancialQuickReading,
   FinancialPrimaryAnalysis,
+  FinancialSourcesFooter,
 } from './FinancialIndicatorPrimitives'
-
-const PNATE_READING_CARDS = [
-  {
-    title: 'Transporte escolar rural',
-    text: 'Apoio suplementar ao transporte de estudantes da educação básica pública residentes em áreas rurais.',
-  },
-  {
-    title: 'Base de atendimento',
-    text: 'Acompanhe estudantes considerados por rede e etapa de ensino no cálculo anual.',
-  },
-  {
-    title: 'Repasse financeiro',
-    text: 'Consulte valores totais, descontos, saldo e parcelas informadas pelo FNDE.',
-  },
-]
+import {
+  isPublishableFinancialIndicator,
+  isPublishableFinancialValue,
+} from '../utils/financialPresentation'
 
 const PNATE_INDICATOR_GROUPS = [
   {
     key: 'repasses',
-    label: 'Repasses e valores',
-    description: 'Valores previstos, autorizados e distribuídos entre as redes atendidas.',
+    label: 'Valores do programa',
+    description: 'Valores informados, autorizações e parâmetros das redes consideradas.',
     indicators: new Set([
       'repasse_total',
       'repasse_autorizado_apos_desconto',
@@ -140,32 +126,25 @@ function buildSeriesForIndicator(historico, indicator) {
     .map((entry) => ({ ano: entry.ano, valor: entry[indicator.key] ?? null }))
 }
 
-function getPnateStatus(latest, variation) {
-  if (latest?.valor === null || latest?.valor === undefined || !Number.isFinite(Number(latest.valor))) {
-    return { label: 'Sem dados', tone: 'muted' }
-  }
-  if (variation === null) return { label: 'Com dados', tone: 'info' }
-  if (variation > 0) return { label: 'Alta', tone: 'success' }
-  if (variation < 0) return { label: 'Queda', tone: 'warning' }
-  return { label: 'Estável', tone: 'muted' }
-}
-
 function buildPnateHistorySummary(model) {
   if (!model.initialYear || !model.currentYear || model.initialYear === model.currentYear) return ''
   return `Série de ${model.initialYear} a ${model.currentYear}: ${model.initialDisplay} no início e ${model.currentDisplay} no dado mais recente.`
 }
 
 function buildPnateQuickReading(model) {
-  if (!model.currentYear || model.currentDisplay === '—') {
-    return 'O município não possui dado disponível para este indicador no período carregado.'
+  if (!model.currentYear || model.currentDisplay === '—') return ''
+  if (model.variationDisplay === '—') return `Não há dois anos com valores disponíveis para calcular a variação.`
+  if (model.variation > 0) return `Aumentou ${Math.abs(model.variation).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% entre ${model.initialYear} e ${model.currentYear}.`
+  if (model.variation < 0) return `Reduziu ${Math.abs(model.variation).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% entre ${model.initialYear} e ${model.currentYear}.`
+  return `Permaneceu próximo ao valor de ${model.initialYear}.`
+}
+
+function getPnatePublicLabel(key, fallback) {
+  const labels = {
+    repasse_autorizado_apos_desconto: 'Valor autorizado após desconto',
+    total_alunos: 'Estudantes considerados',
   }
-  if (model.variationDisplay === '—') return `O indicador mais recente disponível é de ${model.currentYear}.`
-  const movement = model.variationTone === 'success'
-    ? 'alta'
-    : model.variationTone === 'warning'
-      ? 'queda'
-      : 'estabilidade'
-  return `O indicador mais recente disponível é de ${model.currentYear}; a série aponta ${movement} no período observado.`
+  return labels[key] ?? fallback
 }
 
 function buildPnateIndicatorModel(indicator, historico) {
@@ -173,7 +152,6 @@ function buildPnateIndicatorModel(indicator, historico) {
   const first = firstAvailable(series)
   const latest = latestAvailable(series)
   const variation = calcVariation(latest?.valor, first?.valor)
-  const status = getPnateStatus(latest, variation)
   const model = {
     description: indicator.description,
     initialDisplay: first ? formatPnateValue(first.valor, indicator.tipo) : '—',
@@ -190,12 +168,13 @@ function buildPnateIndicatorModel(indicator, historico) {
       : '—',
     currentYear: latest?.ano ?? null,
     sourceLabel: latest?.ano ? `PNATE ${latest.ano}` : 'PNATE',
-    statusLabel: status.label,
-    statusTone: status.tone,
+    statusLabel: null,
+    statusTone: 'default',
     unitLabel: indicator.tipo === 'numero' ? 'Contagem' : 'Financeiro',
     variationDisplay: variation === null ? '—' : formatVariation(variation, indicator.tipo),
     variationLabel: first?.ano ? `Variação desde ${first.ano}` : 'Variação no período',
-    variationTone: variation === null ? 'muted' : variation > 0 ? 'success' : variation < 0 ? 'warning' : 'muted',
+    variationTone: 'default',
+    variation,
     series,
     raw: indicator,
   }
@@ -207,20 +186,81 @@ function buildPnateIndicatorModel(indicator, historico) {
   }
 }
 
-function PnateInfoIcon() {
+function getCurrentNumericValue(model) {
+  const latest = latestAvailable(model?.series ?? [])
+  const value = Number(latest?.valor)
+  return Number.isFinite(value) ? value : null
+}
+
+function hasSamePnateValue(left, right) {
+  if (!left || !right || left.currentYear !== right.currentYear) return false
+  const leftValue = getCurrentNumericValue(left)
+  const rightValue = getCurrentNumericValue(right)
+  return Number.isFinite(leftValue) && Number.isFinite(rightValue) && leftValue === rightValue
+}
+
+function formatPeriod(year) {
+  return year ? `Período: ${year}` : 'Período não informado'
+}
+
+function PnateDetailButton({ model, onSelect, registerButton }) {
+  if (!model) return null
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M5 16V8.5A2.5 2.5 0 0 1 7.5 6h9A2.5 2.5 0 0 1 19 8.5V16" />
-      <path d="M4 16h16v2H4z" />
-      <path d="M8 18v1.5m8-1.5v1.5M8 10h8M8 13h3m2 0h3" />
-    </svg>
+    <button
+      aria-label={`Ver detalhe de ${model.label}`}
+      ref={(node) => registerButton?.(model.key, node)}
+      type="button"
+      onClick={() => onSelect(model.key)}
+    >
+      Ver detalhe
+    </button>
   )
 }
 
-export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDetailChange }) {
+function PnateDataRow({ label, model, onSelect, registerButton }) {
+  if (!model) return null
+  return (
+    <article className="pnate-data-row">
+      <div>
+        <span>{label}</span>
+        <strong>{model.currentDisplay}</strong>
+        <small>{formatPeriod(model.currentYear)}</small>
+      </div>
+      <PnateDetailButton model={model} onSelect={onSelect} registerButton={registerButton} />
+    </article>
+  )
+}
+
+function PnateStudentMetric({ className = '', label, model, onSelect, registerButton }) {
+  if (!model) return null
+  return (
+    <article className={`pnate-student-metric${className ? ` ${className}` : ''}`}>
+      <span>{label}</span>
+      <strong>{model.currentDisplay}</strong>
+      <small>{formatPeriod(model.currentYear)}</small>
+      <PnateDetailButton model={model} onSelect={onSelect} registerButton={registerButton} />
+    </article>
+  )
+}
+
+function PnateAdjustmentRow({ explanation, model, onSelect, registerButton }) {
+  if (!model) return null
+  return (
+    <article className="pnate-adjustment-row">
+      <div>
+        <span>{model.label}</span>
+        <strong>{model.currentDisplay}</strong>
+        <small>{formatPeriod(model.currentYear)}</small>
+        <p>{explanation}</p>
+      </div>
+      <PnateDetailButton model={model} onSelect={onSelect} registerButton={registerButton} />
+    </article>
+  )
+}
+
+export function PnatePanel({ pnateData, detailKey = '', onDetailChange }) {
   const hasPnateData = Boolean(pnateData?.historico?.length)
   const [selectedKey, setSelectedKey] = useState(detailKey || PNATE_INDICATORS[0].key)
-  const [searchQuery, setSearchQuery] = useState('')
   const [isDetailOpen, setIsDetailOpen] = useState(Boolean(detailKey))
   const detailNavigation = useDetailViewNavigation({
     activeKey: selectedKey,
@@ -232,7 +272,7 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
     [selectedKey],
   )
 
-  const { resumo_ultimo_ano, ultimo_ano, historico = [], avisos = [] } = pnateData ?? {}
+  const { ultimo_ano, historico = [] } = pnateData ?? {}
   const ultimoRegistro = useMemo(
     () => findUltimoRegistro(historico, ultimo_ano),
     [historico, ultimo_ano],
@@ -245,28 +285,17 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
       .map((h) => ({ ano: h.ano, valor: h[selectedIndicator.key] ?? null }))
   }, [selectedIndicator, historico])
 
-  const validSeries = useMemo(() => series.filter((s) => s.valor !== null), [series])
+  const validSeries = useMemo(() => series.filter((s) => isPublishableFinancialValue(s.valor)), [series])
   const chartUnit = selectedIndicator?.tipo === 'numero' ? 'count' : 'currency'
 
-  const filteredItems = useMemo(() => {
-    const query = searchQuery.trim().toLocaleLowerCase('pt-BR')
-    if (!query) return PNATE_INDICATORS
-    return PNATE_INDICATORS.filter((ind) => {
-      const text = `${ind.label} ${ind.description ?? ''}`.toLocaleLowerCase('pt-BR')
-      return text.includes(query)
-    })
-  }, [searchQuery])
   const indicatorModels = useMemo(
-    () => filteredItems.map((indicator) => buildPnateIndicatorModel(indicator, historico)),
-    [filteredItems, historico],
+    () => PNATE_INDICATORS
+      .map((indicator) => buildPnateIndicatorModel(indicator, historico))
+      .filter(isPublishableFinancialIndicator),
+    [historico],
   )
-  const visibleIndicatorGroups = useMemo(
-    () => PNATE_INDICATOR_GROUPS
-      .map((group) => ({
-        ...group,
-        indicators: indicatorModels.filter((indicator) => group.indicators.has(indicator.key)),
-      }))
-      .filter((group) => group.indicators.length),
+  const publicModelByKey = useMemo(
+    () => new Map(indicatorModels.map((indicator) => [indicator.key, indicator])),
     [indicatorModels],
   )
   const selectedIndicatorModel = indicatorModels.find((indicator) => indicator.key === selectedKey) ?? indicatorModels[0] ?? null
@@ -274,6 +303,30 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
     ? getFinancialIndicatorMetadata('pnate', selectedIndicatorModel.key)
     : null
   const { activeIndex: selectedIndex, previousItem: previousIndicator, nextItem: nextIndicator } = resolveDetailSequence(indicatorModels, selectedIndicatorModel?.key)
+  const reportedModel = publicModelByKey.get('repasse_total')
+  const authorizedModel = publicModelByKey.get('repasse_autorizado_apos_desconto')
+  const perCapitaModel = publicModelByKey.get('resultado_per_capita')
+  const totalStudentsModel = publicModelByKey.get('total_alunos')
+  const municipalStudentsModel = publicModelByKey.get('total_alunos_rede_municipal')
+  const stateStudentsModel = publicModelByKey.get('total_alunos_rede_estadual')
+  const discountModel = publicModelByKey.get('desconto')
+  const disregardedBalanceModel = publicModelByKey.get('saldo_desconsiderado')
+  const municipalAmountModel = publicModelByKey.get('valor_total_municipal')
+  const stateAmountModel = publicModelByKey.get('valor_total_estadual')
+  const reportedAndAuthorizedMatch = hasSamePnateValue(reportedModel, authorizedModel)
+  const reportedAndMunicipalAmountMatch = hasSamePnateValue(reportedModel, municipalAmountModel)
+  const summaryModels = [
+    reportedModel,
+    reportedAndAuthorizedMatch ? null : authorizedModel,
+    totalStudentsModel,
+    perCapitaModel,
+  ].filter(Boolean)
+  const hasSummary = summaryModels.length > 0
+  const equalProgramValues = reportedAndAuthorizedMatch && reportedAndMunicipalAmountMatch
+  const adjustmentModels = [discountModel, disregardedBalanceModel].filter(Boolean)
+  const noProgramAdjustments = adjustmentModels.length === 2
+    && adjustmentModels.every((model) => getCurrentNumericValue(model) === 0)
+  const programLead = reportedModel ?? authorizedModel ?? municipalAmountModel ?? stateAmountModel
 
   useEffect(() => {
     if (!detailKey) return setIsDetailOpen(false)
@@ -307,7 +360,7 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
     return (
       <div className="fundeb-panel-embedded">
         <div className="fundeb-empty">
-          <p>Dados do PNATE não disponíveis para este município.</p>
+          <p>Não há informações financeiras do PNATE para este município.</p>
         </div>
       </div>
     )
@@ -315,52 +368,26 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
 
   return (
     <div className="fundeb-panel-embedded">
-      <section className="page-card fundeb-info-box financial-intro-panel" aria-labelledby="pnate-info-title">
-        <div className="fundeb-info-box__header">
-          <h2 id="pnate-info-title">O que é o PNATE</h2>
-          <p>
-            O PNATE apoia o transporte dos estudantes das redes públicas de educação básica
-            residentes em áreas rurais, por meio de assistência técnica e financeira
-            suplementar a estados e municípios.
-          </p>
-        </div>
-        <div className="fundeb-info-box__cards" aria-label="Eixos de leitura do PNATE">
-          {PNATE_READING_CARDS.map((card) => (
-            <article className="fundeb-info-card" key={card.title}>
-              <span className="fundeb-info-card__icon">
-                <PnateInfoIcon />
-              </span>
-              <div>
-                <strong>{card.title}</strong>
-                <p>{card.text}</p>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <FinancialSection
-        className="fundeb-summary financial-metric-strip"
-        eyebrow="Resumo financeiro"
-        meta={`Município em foco: ${selectedMunicipio}. Dados do ano de referência: ${ultimo_ano}.`}
-        title="Visão geral"
-        titleId="pnate-summary-title"
-      >
-        <FinancialMetricStrip className="pnate-summary-grid">
-          <EducationSummaryCard label="Repasse total" value={formatPnateValue(resumo_ultimo_ano?.repasse_total, 'financeiro')} year={ultimo_ano} valueSize="compact" />
-          <EducationSummaryCard label="Repasse autorizado após desconto" value={formatPnateValue(resumo_ultimo_ano?.repasse_autorizado_apos_desconto, 'financeiro')} year={ultimo_ano} valueSize="compact" />
-          <EducationSummaryCard label="Estudantes atendidos" value={formatPnateValue(resumo_ultimo_ano?.total_alunos, 'numero')} year={ultimo_ano} />
-          <EducationSummaryCard label="Valor per capita" value={formatPnateValue(resumo_ultimo_ano?.resultado_per_capita, 'financeiro')} year={ultimo_ano} />
-          <EducationSummaryCard label="Redes consideradas" value={`${formatPnateValue(resumo_ultimo_ano?.total_alunos_rede_municipal, 'numero')} mun. / ${formatPnateValue(resumo_ultimo_ano?.total_alunos_rede_estadual, 'numero')} est.`} year={ultimo_ano} valueSize="compact" />
-        </FinancialMetricStrip>
-      </FinancialSection>
-
-      {avisos.length > 0 && (
-        <aside className="financial-methodology-note" aria-label="Nota metodológica do PNATE">
-          <span className="eyebrow">Nota metodológica</span>
-          <p>{avisos[0]}</p>
-        </aside>
-      )}
+      {hasSummary ? (
+        <FinancialSection
+          className="pnate-summary financial-metric-strip"
+          eyebrow="Resumo principal"
+          title="Os principais valores do exercício"
+          titleId="pnate-summary-title"
+        >
+          <FinancialMetricStrip className="pnate-summary-grid">
+            {summaryModels.map((model) => (
+              <EducationSummaryCard
+                key={model.key}
+                label={getPnatePublicLabel(model.key, model.label)}
+                value={model.currentDisplay}
+                year={model.currentYear}
+                valueSize={model.raw.tipo === 'financeiro' ? 'compact' : 'default'}
+              />
+            ))}
+          </FinancialMetricStrip>
+        </FinancialSection>
+      ) : null}
 
       {isDetailOpen && selectedIndicatorModel ? (
         <div className="financial-detail-view education-detail-view" ref={detailNavigation.detailViewRef}>
@@ -379,6 +406,7 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
             <FinancialDetailHeader indicator={selectedIndicatorModel} />
             <FinancialMetricGrid indicator={selectedIndicatorModel} />
             <FinancialPrimaryAnalysis>
+              {validSeries.length >= 2 ? (
               <FinancialChartFrame
                 subtitle={selectedIndicatorModel.description}
                 source={(
@@ -393,28 +421,26 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
                   />
                 )}
               >
-                {validSeries.length >= 2 ? (
-                  <IndicatorHistoryChart
+                <IndicatorHistoryChart
+                    chartType="bar"
                     chartHeight={300}
-                    endYear={series[series.length - 1].ano}
+                    endYear={validSeries[validSeries.length - 1].ano}
                     formatDataLabel={(v) => formatCompactDataLabel(v, selectedIndicator.tipo)}
                     formatYAxis={selectedIndicator.tipo === 'numero' ? formatCompactNumber : formatCompactCurrency}
                     item={{ label: selectedIndicator.label }}
                     labelMode="all"
                     missingLabel="—"
                     result={null}
-                    series={series}
+                    series={validSeries}
                     showMetaLine={false}
-                    showMissingPoints={true}
-                    startYear={series[0].ano}
+                    showMissingPoints={false}
+                    startYear={validSeries[0].ano}
                     title={selectedIndicator.label}
                     unit={chartUnit}
                     yTickCount={5}
                   />
-                ) : (
-                  <ChartEmptyState message="Histórico não disponível." />
-                )}
               </FinancialChartFrame>
+              ) : null}
               <FinancialQuickReading
                 description={selectedIndicatorModel.description}
                 indicator={selectedIndicatorModel}
@@ -423,7 +449,12 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
               />
             </FinancialPrimaryAnalysis>
 
-            <FinancialIndicatorMetadata metadata={selectedMetadata} />
+            <FinancialIndicatorDisclosures
+              formatValue={(value) => formatPnateValue(value, selectedIndicator?.tipo)}
+              indicator={selectedIndicatorModel}
+              metadata={selectedMetadata}
+              series={selectedIndicatorModel.series}
+            />
 
             {ultimoRegistro?.repasse_autorizado === false && (
               <p className="fundeb-indicator-note">
@@ -431,160 +462,109 @@ export function PnatePanel({ pnateData, selectedMunicipio, detailKey = '', onDet
               </p>
             )}
           </section>
-          <FinancialDetailNavigation
-            activeIndex={selectedIndex}
-            isBottom
-            nextIndicator={nextIndicator}
-            onBack={handleBackToGrid}
-            onNext={handleIndicatorSelect}
-            onPrevious={handleIndicatorSelect}
-            previousIndicator={previousIndicator}
-            statusLabel={selectedIndicatorModel.statusLabel}
-            statusTone={selectedIndicatorModel.statusTone}
-            total={indicatorModels.length}
-          />
         </div>
       ) : (
-      <div className="financial-catalog-workspace fundeb-workspace financial-grid-workspace">
-        <FinancialCatalogSectionBar
-          count={indicatorModels.length}
-          description="Transporte escolar rural, estudantes atendidos, repasses e ajustes do programa."
-          onSearchChange={setSearchQuery}
-          searchQuery={searchQuery}
-          title="PNATE"
-          titleId="pnate-indicators-title"
-        />
-        {indicatorModels.length === 0 ? (
-          <div className="financial-indicator-grid-empty">
-            <ContentState as="p" kind="noResults">Nenhum indicador encontrado.</ContentState>
-          </div>
-        ) : (
-          <div className="education-indicator-groups financial-indicator-groups">
-            {visibleIndicatorGroups.map((group) => (
-              <FinancialIndicatorGroup
-                description={group.description}
-                groupKey={`pnate-${group.key}`}
-                indicators={group.indicators}
-                key={group.key}
-                label={group.label}
-                onSelect={handleIndicatorSelect}
-                registerCard={detailNavigation.registerCard}
-              />
-            ))}
-          </div>
-        )}
-
-          <div className="fundeb-detail fundeb-detail--legacy">
-            <div className="fundeb-detail-header">
-              <div>
-                <span className="eyebrow">Indicador selecionado</span>
-                <h3>{selectedIndicator.label}</h3>
-                <p className="fundeb-indicator-description">{selectedIndicator.description}</p>
-              </div>
-              <span className="indicator-stage-badge">
-                {selectedIndicator.tipo === 'numero' ? 'Contagem' : 'Financeiro'}
-              </span>
+        <>
+          <section className="page-card pnate-public-section pnate-program-section" aria-labelledby="pnate-program-title">
+            <div className="pnate-section-heading">
+              <span className="eyebrow">Valor do programa</span>
+              <h2 id="pnate-program-title">Quanto foi considerado para o município?</h2>
             </div>
-
-            {(validSeries.length >= 2 || series.length >= 1) && (
-              <div className="fundeb-visual-grid">
-                {validSeries.length >= 2 && (
-                  <div className="fundeb-chart-card">
-                    <IndicatorHistoryChart
-                      chartHeight={224}
-                      endYear={series[series.length - 1].ano}
-                      formatDataLabel={(v) => formatCompactDataLabel(v, selectedIndicator.tipo)}
-                      formatYAxis={selectedIndicator.tipo === 'numero' ? formatCompactNumber : formatCompactCurrency}
-                      item={{ label: selectedIndicator.label }}
-                      labelMode="all"
-                      missingLabel="—"
-                      result={null}
-                      series={series}
-                      showMetaLine={false}
-                      showMissingPoints={true}
-                      startYear={series[0].ano}
-                      title={selectedIndicator.label}
-                      unit={chartUnit}
-                      yTickCount={5}
-                    />
-                  </div>
-                )}
-
-                {validSeries.length <= 1 && series.length >= 2 && (
-                  <ChartEmptyState message="Histórico não disponível." />
-                )}
-
-                {series.length >= 1 && (
-                  <div className="fundeb-table-card">
-                    <div className="fundeb-table-card__header">
-                      <div>
-                        <h4>Histórico do indicador</h4>
-                      </div>
-                    </div>
-                    <div className="fundeb-table-wrap" role="region" aria-label="Série histórica do indicador do PNATE. Role horizontalmente para consultar todas as colunas quando necessário." tabIndex={0}>
-                      <table className="fundeb-table">
-                        <caption className="u-sr-only">Série histórica do indicador do PNATE</caption>
-                        <thead>
-                          <tr>
-                            <th scope="col">Ano</th>
-                            <th scope="col">Valor</th>
-                            <th scope="col">Variação anual</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {historico
-                            .filter((h) => h.ano != null)
-                            .map((entry, index) => {
-                              const prev = index > 0 ? historico[index - 1] : null
-                              const currentVal = entry[selectedIndicator.key]
-                              const prevVal = prev?.[selectedIndicator.key]
-                              const vari = prev != null ? calcVariation(currentVal, prevVal) : null
-                              return (
-                                <tr key={entry.ano}>
-                                  <td>{entry.ano}</td>
-                                  <td>{formatPnateValue(currentVal, selectedIndicator.tipo)}</td>
-                                  <td><span className={
-                                    index === 0 || vari == null
-                                      ? 'fundeb-variation-missing'
-                                      : vari > 0
-                                        ? 'fundeb-variation-positive'
-                                        : vari < 0
-                                          ? 'fundeb-variation-negative'
-                                          : 'fundeb-variation-neutral'
-                                  } aria-label={index === 0 || vari == null ? 'Variação indisponível' : undefined}>{index === 0 ? '—' : formatVariation(vari, selectedIndicator.tipo)}</span></td>
-                                </tr>
-                              )
-                            })}
-                        </tbody>
-                      </table>
-                    </div>
-                    <DataSourceNote
-                      className="fundeb-data-source"
-                      context={{
-                        block: 'pnate',
-                        detailType: 'table',
-                        indicatorKey: selectedIndicator?.key,
-                        indicatorName: selectedIndicator?.label,
-                      }}
-                    />
-                  </div>
-                )}
+            {programLead ? (
+              <div className="pnate-program-layout">
+                <article className="pnate-program-lead">
+                  <span>{programLead.label}</span>
+                  <strong>{programLead.currentDisplay}</strong>
+                  <small>{formatPeriod(programLead.currentYear)}</small>
+                  <PnateDetailButton model={programLead} onSelect={handleIndicatorSelect} registerButton={detailNavigation.registerCard} />
+                </article>
+                <div className="pnate-program-rows" aria-label="Outros valores informados pelo programa">
+                  <PnateDataRow label="Valor autorizado após desconto" model={authorizedModel?.key === programLead.key ? null : authorizedModel} onSelect={handleIndicatorSelect} registerButton={detailNavigation.registerCard} />
+                  <PnateDataRow label="Valor associado à rede municipal" model={municipalAmountModel?.key === programLead.key ? null : municipalAmountModel} onSelect={handleIndicatorSelect} registerButton={detailNavigation.registerCard} />
+                  <PnateDataRow label="Valor associado à rede estadual (contexto territorial)" model={stateAmountModel?.key === programLead.key ? null : stateAmountModel} onSelect={handleIndicatorSelect} registerButton={detailNavigation.registerCard} />
+                </div>
               </div>
-            )}
-
-            {series.length === 0 && (
-              <div className="fundeb-empty">
-                <p>Este indicador não possui série histórica disponível para este município.</p>
-              </div>
-            )}
-
-            {ultimoRegistro?.repasse_autorizado === false && (
-              <p className="fundeb-indicator-note">
-                <strong>Atenção:</strong> o último registro indica repasse não autorizado para este município.
+            ) : null}
+            {reportedAndAuthorizedMatch ? (
+              <p className="pnate-section-note">
+                {equalProgramValues
+                  ? 'O valor informado, o autorizado e o associado à rede municipal coincidem neste exercício, mas são campos com funções distintas no registro do programa.'
+                  : 'O valor informado e o valor autorizado coincidem neste exercício; o autorizado permanece como linha secundária porque tem função própria no registro do programa.'}
               </p>
+            ) : null}
+          </section>
+
+          <section className="page-card pnate-public-section pnate-students-section" aria-labelledby="pnate-students-title">
+            <div className="pnate-section-heading">
+              <span className="eyebrow">Estudantes considerados</span>
+              <h2 id="pnate-students-title">Quem entrou no cálculo?</h2>
+            </div>
+            <div className="pnate-students-layout">
+              <PnateStudentMetric className="pnate-student-total" label="Total de estudantes considerados" model={totalStudentsModel} onSelect={handleIndicatorSelect} registerButton={detailNavigation.registerCard} />
+              <div className="pnate-student-networks" aria-label="Estudantes por rede">
+                <PnateStudentMetric label="Estudantes da rede municipal" model={municipalStudentsModel} onSelect={handleIndicatorSelect} registerButton={detailNavigation.registerCard} />
+                <PnateStudentMetric label="Estudantes da rede estadual" model={stateStudentsModel} onSelect={handleIndicatorSelect} registerButton={detailNavigation.registerCard} />
+              </div>
+            </div>
+            <p className="pnate-section-note">Os estudantes da rede estadual compõem a base territorial do programa e não representam automaticamente despesa executada pelo município.</p>
+          </section>
+
+          <section className="page-card pnate-public-section pnate-adjustments-section" aria-labelledby="pnate-adjustments-title">
+            <div className="pnate-section-heading">
+              <span className="eyebrow">Ajustes do programa</span>
+              <h2 id="pnate-adjustments-title">Houve descontos ou saldos desconsiderados?</h2>
+            </div>
+            {noProgramAdjustments ? (
+              <p className="pnate-adjustments-empty">Não houve descontos nem saldo desconsiderado no exercício.</p>
+            ) : adjustmentModels.length ? (
+              <div className="pnate-adjustment-list">
+                <PnateAdjustmentRow explanation="Desconto registrado no cálculo; reduz o valor considerado na autorização." model={discountModel} onSelect={handleIndicatorSelect} registerButton={detailNavigation.registerCard} />
+                <PnateAdjustmentRow explanation="Saldo informado que foi desconsiderado no cálculo do valor autorizado." model={disregardedBalanceModel} onSelect={handleIndicatorSelect} registerButton={detailNavigation.registerCard} />
+              </div>
+            ) : (
+              <p className="pnate-adjustments-empty">Não há ajustes informados para o exercício.</p>
             )}
-          </div>
-      </div>
+          </section>
+
+          <details className="page-card pnate-calculation-disclosure">
+            <summary>
+              <span>
+                <span className="eyebrow">Detalhamento</span>
+                <strong>Dados usados no cálculo</strong>
+              </span>
+              <span>{indicatorModels.length} indicadores</span>
+            </summary>
+            <div className="pnate-calculation-disclosure__body">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Indicador</th>
+                    <th scope="col">Valor mais recente</th>
+                    <th scope="col">Período</th>
+                    <th scope="col"><span className="sr-only">Ação</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {indicatorModels.map((model) => (
+                    <tr key={model.key}>
+                      <th scope="row">{model.label}</th>
+                      <td>{model.currentDisplay}</td>
+                      <td>{formatPeriod(model.currentYear)}</td>
+                      <td><PnateDetailButton model={model} onSelect={handleIndicatorSelect} registerButton={detailNavigation.registerCard} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+
+          <FinancialSourcesFooter
+            periods={`Exercícios exibidos: ${ultimo_ano ? `até ${ultimo_ano}` : 'conforme o registro disponível'}.`}
+            source="FNDE/PNATE."
+          >
+            Os valores informados podem representar previsão, plano de atendimento ou registro anual. A autorização e os estudantes considerados não comprovam, por si só, o recebimento ou a execução. Valores ausentes são omitidos; zeros oficiais permanecem visíveis nos dados usados no cálculo.
+          </FinancialSourcesFooter>
+        </>
       )}
     </div>
   )
