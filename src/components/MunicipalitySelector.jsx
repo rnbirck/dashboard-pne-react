@@ -1,7 +1,5 @@
 import { forwardRef, useEffect, useId, useImperativeHandle, useMemo, useRef, useState } from 'react'
 
-const MAX_VISIBLE_MUNICIPALITIES = 100
-
 function normalizeText(value) {
   return String(value ?? '')
     .normalize('NFD')
@@ -34,20 +32,24 @@ export const MunicipalitySelector = forwardRef(function MunicipalitySelector(
 
   const inputRef = useRef(null)
   const containerRef = useRef(null)
+  const listboxRef = useRef(null)
 
   useImperativeHandle(ref, () => ({
     focus: () => inputRef.current?.focus(),
     click: () => inputRef.current?.click(),
   }))
 
-  const list = useMemo(() => (Array.isArray(municipios) ? municipios : []), [municipios])
+  const list = useMemo(() => (
+    Array.isArray(municipios)
+      ? [...municipios].sort((left, right) => left.localeCompare(right, 'pt-BR', { sensitivity: 'base' }))
+      : []
+  ), [municipios])
 
   const filtered = useMemo(() => {
     const q = normalizeText(query)
-    const matches = q
+    return q
       ? list.filter((municipio) => normalizeText(municipio).includes(q))
       : list
-    return matches.slice(0, MAX_VISIBLE_MUNICIPALITIES)
   }, [list, query])
 
   const optionId = (municipio) => `municipio-option-${instanceId}-${normalizeText(municipio).replace(/[^a-z0-9]+/g, '-')}`
@@ -57,6 +59,11 @@ export const MunicipalitySelector = forwardRef(function MunicipalitySelector(
       setActiveIndex(Math.max(0, filtered.length - 1))
     }
   }, [activeIndex, filtered.length])
+
+  useEffect(() => {
+    if (!isOpen || filtered.length === 0) return
+    listboxRef.current?.children[activeIndex]?.scrollIntoView({ block: 'nearest' })
+  }, [activeIndex, filtered.length, isOpen])
 
   useEffect(() => {
     if (!isOpen) return undefined
@@ -127,10 +134,6 @@ export const MunicipalitySelector = forwardRef(function MunicipalitySelector(
     >
       <span className="municipio-selector__label">Município</span>
       <div className="municipio-selector__field">
-        <svg className="municipio-selector__pin" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 21s7-6.3 7-12a7 7 0 1 0-14 0c0 5.7 7 12 7 12Z" />
-          <circle cx="12" cy="9" r="2.4" />
-        </svg>
         <input
           id={inputId}
           ref={inputRef}
@@ -182,6 +185,7 @@ export const MunicipalitySelector = forwardRef(function MunicipalitySelector(
         {isOpen && (
           <ul
             id={listboxId}
+            ref={listboxRef}
             role="listbox"
             className="municipio-selector__listbox"
           >
@@ -201,6 +205,10 @@ export const MunicipalitySelector = forwardRef(function MunicipalitySelector(
                   }
                   onMouseDown={(event) => {
                     event.preventDefault()
+                  }}
+                  onClick={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
                     commit(municipio)
                   }}
                   onMouseEnter={() => setActiveIndex(index)}
