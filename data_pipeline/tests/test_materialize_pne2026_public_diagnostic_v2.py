@@ -81,10 +81,9 @@ class MaterializePne2026PublicDiagnosticV2PayloadTest(unittest.TestCase):
     def setUpClass(cls):
         cls.audit = materializer.audit_materialized()
 
-    def test_all_canonical_contracts_and_aliases_are_deterministic(self):
+    def test_all_canonical_contracts_are_deterministic(self):
         self.assertEqual(self.audit["canonicalCount"], 497)
-        self.assertEqual(self.audit["aliasCount"], 497)
-        self.assertEqual(self.audit["physicalFileCount"], 994)
+        self.assertEqual(self.audit["physicalFileCount"], 497)
         self.assertEqual(self.audit["changedPaths"], [])
         self.assertEqual(self.audit["existingV2ContractCount"], 497)
 

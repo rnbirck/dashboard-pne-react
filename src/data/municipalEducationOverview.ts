@@ -27,21 +27,21 @@ interface MunicipalEducationOverviewLoadState {
   data: MunicipalEducationOverviewV1 | null
 }
 
-export function normalizeMunicipalEducationOverviewSlug(slug: string): string {
-  const normalized = slug.trim().toLocaleLowerCase('pt-BR')
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalized)) {
+export function normalizeMunicipalEducationOverviewId(idMunicipality: string): string {
+  const normalized = idMunicipality.trim()
+  if (!/^43\d{5}$/.test(normalized)) {
     throw new MunicipalEducationOverviewLoadError('invalid_identifier', 'Município inválido para a visão geral da educação.')
   }
   return normalized
 }
 
-export function resolveMunicipalEducationOverviewPath(slug: string): string {
-  return `/data/educacao/visao-geral-municipal/${normalizeMunicipalEducationOverviewSlug(slug)}.json`
+export function resolveMunicipalEducationOverviewPath(idMunicipality: string): string {
+  return `/data/educacao/visao-geral-municipal/${normalizeMunicipalEducationOverviewId(idMunicipality)}.json`
 }
 
 export function isMunicipalEducationOverviewDocument(
   payload: unknown,
-  expectedSlug: string,
+  expectedId: string,
 ): payload is MunicipalEducationOverviewV1 {
   if (!payload || typeof payload !== 'object') return false
 
@@ -51,7 +51,7 @@ export function isMunicipalEducationOverviewDocument(
     && Boolean(candidate.municipality)
     && typeof candidate.municipality?.idMunicipality === 'string'
     && typeof candidate.municipality?.name === 'string'
-    && candidate.municipality?.slug === expectedSlug
+    && candidate.municipality?.idMunicipality === expectedId
     && Boolean(candidate.basicEducationComposition?.components)
     && Boolean(candidate.specialEducation)
     && Boolean(candidate.highSchool?.total?.byNetwork)
@@ -63,20 +63,20 @@ export function createMunicipalEducationOverviewLoader(fetchImpl: FetchLike = fe
   const cache = new Map<string, Promise<MunicipalEducationOverviewV1>>()
   const states = new Map<string, MunicipalEducationOverviewLoadState>()
 
-  function getState(slug: string): MunicipalEducationOverviewLoadState {
-    const normalizedSlug = normalizeMunicipalEducationOverviewSlug(slug)
-    return states.get(normalizedSlug) ?? { status: 'idle', data: null }
+  function getState(idMunicipality: string): MunicipalEducationOverviewLoadState {
+    const normalizedId = normalizeMunicipalEducationOverviewId(idMunicipality)
+    return states.get(normalizedId) ?? { status: 'idle', data: null }
   }
 
-  function load(slug: string): Promise<MunicipalEducationOverviewV1> {
-    const normalizedSlug = normalizeMunicipalEducationOverviewSlug(slug)
-    const cached = cache.get(normalizedSlug)
+  function load(idMunicipality: string): Promise<MunicipalEducationOverviewV1> {
+    const normalizedId = normalizeMunicipalEducationOverviewId(idMunicipality)
+    const cached = cache.get(normalizedId)
     if (cached) return cached
 
-    states.set(normalizedSlug, { status: 'loading', data: null })
+    states.set(normalizedId, { status: 'loading', data: null })
     const request = (async () => {
       try {
-        const response = await fetchImpl(resolveMunicipalEducationOverviewPath(normalizedSlug))
+        const response = await fetchImpl(resolveMunicipalEducationOverviewPath(normalizedId))
         if (response.status === 404) {
           throw new MunicipalEducationOverviewLoadError('contract_absent', 'Visão geral municipal indisponível.')
         }
@@ -91,18 +91,18 @@ export function createMunicipalEducationOverviewLoader(fetchImpl: FetchLike = fe
           throw new MunicipalEducationOverviewLoadError('invalid_contract', 'A visão geral municipal não contém JSON válido.')
         }
 
-        if (!isMunicipalEducationOverviewDocument(payload, normalizedSlug)) {
+        if (!isMunicipalEducationOverviewDocument(payload, normalizedId)) {
           throw new MunicipalEducationOverviewLoadError('invalid_contract', 'A visão geral municipal é incompatível.')
         }
 
-        states.set(normalizedSlug, { status: 'ready', data: payload })
+        states.set(normalizedId, { status: 'ready', data: payload })
         return payload
       } catch (error) {
-        cache.delete(normalizedSlug)
+        cache.delete(normalizedId)
         const normalizedError = error instanceof MunicipalEducationOverviewLoadError
           ? error
           : new MunicipalEducationOverviewLoadError('http_error', 'Falha ao carregar a visão geral municipal.')
-        states.set(normalizedSlug, {
+        states.set(normalizedId, {
           status: normalizedError.code === 'contract_absent' ? 'absent' : 'error',
           data: null,
         })
@@ -110,7 +110,7 @@ export function createMunicipalEducationOverviewLoader(fetchImpl: FetchLike = fe
       }
     })()
 
-    cache.set(normalizedSlug, request)
+    cache.set(normalizedId, request)
     return request
   }
 

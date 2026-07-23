@@ -61,7 +61,7 @@ const idleState = (): MunicipalFinanceLoadState => ({ status: 'idle', data: null
 
 export const normalizeMunicipalFinanceIdentifier = (identifier: string): string => {
   const normalized = identifier.trim().toLowerCase();
-  if (!/^(?:43\d{5}|[a-z0-9]+(?:-[a-z0-9]+)*)$/.test(normalized)) {
+  if (!/^43\d{5}$/.test(normalized)) {
     throw new MunicipalFinanceLoadError('invalid_identifier', `Identificador municipal inválido: ${identifier}`);
   }
   return normalized;

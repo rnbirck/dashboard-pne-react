@@ -463,7 +463,9 @@ class Pne2026PublicDiagnosticV2AuditTest(unittest.TestCase):
 
         def payloads():
             for municipality in registry["municipios"]:
-                directory = PUBLIC_DATA / "municipios" / municipality["slug"]
+                directory = (
+                    PUBLIC_DATA / "municipios" / municipality["id_municipio"]
+                )
                 diagnostic = json.loads(
                     (directory / "diagnostico.json").read_text(encoding="utf-8")
                 )

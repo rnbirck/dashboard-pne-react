@@ -91,7 +91,7 @@ test('summary uses only advance, maintain, and unclassified public counters', ()
 })
 
 test('initial page renders the public diagnostic grouped by theme', async () => {
-  const contract = await readContract('restinga-seca')
+  const contract = await readContract('4315503')
   const diagnostic = contract.pne2026PublicDiagnosticV2
   const essentials = flatten(diagnostic)
     .filter((result) => result.tier === 'essential')
@@ -115,7 +115,7 @@ test('initial page renders the public diagnostic grouped by theme', async () => 
 })
 
 test('unclassified results and relationships use the approved neutral language', async () => {
-  const contract = await readContract('restinga-seca')
+  const contract = await readContract('4315503')
   const results = flatten(contract.pne2026PublicDiagnosticV2)
   const proxy = results.find((result) => result.relationshipType === 'contextual_proxy')
   const partial = results.find((result) => result.relationshipType === 'partial_component')
@@ -139,7 +139,7 @@ test('unclassified results and relationships use the approved neutral language',
 })
 
 test('public comparisons and trajectories render without technical terms', async () => {
-  const contract = await readContract('restinga-seca')
+  const contract = await readContract('4315503')
   const results = flatten(contract.pne2026PublicDiagnosticV2)
   assert.ok(results.some((result) => result.stateComparison?.reading))
   assert.ok(results.some((result) => getPublicSupportingReadings(result).length > 0))
@@ -158,7 +158,7 @@ test('public comparisons and trajectories render without technical terms', async
 })
 
 test('copy is complete, v2-only, independent of filters, and does not duplicate essentials', async () => {
-  const contract = await readContract('restinga-seca')
+  const contract = await readContract('4315503')
   const diagnostic = contract.pne2026PublicDiagnosticV2
   const text = buildPublicDiagnosticCopy(diagnostic, 'Restinga Seca')
   const results = flatten(diagnostic)
@@ -183,7 +183,7 @@ test('copy is complete, v2-only, independent of filters, and does not duplicate 
 })
 
 test('only complete official sources from v2 are rendered with distinct names', async () => {
-  const contract = await readContract('restinga-seca')
+  const contract = await readContract('4315503')
   const diagnostic = contract.pne2026PublicDiagnosticV2
   const officialSources = getPublicOfficialSources(diagnostic.sources)
   const markup = renderDiagnostic(contract, 'Restinga Seca')
@@ -245,7 +245,7 @@ test('read-only audit confirms all 497 v2 contracts and representative special v
   const rows = []
 
   for (const municipality of index.municipios) {
-    const contract = await readContract(municipality.slug)
+    const contract = await readContract(municipality.id_municipio)
     const diagnostic = contract.pne2026PublicDiagnosticV2
     assert.equal(diagnostic?.version, PUBLIC_VERSION, municipality.slug)
     const results = flatten(diagnostic)
@@ -334,11 +334,11 @@ test('read-only audit confirms all 497 v2 contracts and representative special v
 
 test('diagnostic remains lazy and outside the initial payload', async () => {
   const [initialPayload, pageSource, routerSource] = await Promise.all([
-    readFile(new URL('../../public/data/municipios/agudo/index.json', import.meta.url), 'utf8').then(JSON.parse),
+    readFile(new URL('../../public/data/municipios/4300109/index.json', import.meta.url), 'utf8').then(JSON.parse),
     readFile(new URL('../../src/pages/Diagnostico.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../../src/app/AppPageRouter.tsx', import.meta.url), 'utf8'),
   ])
   assert.equal('diagnostico_v2' in initialPayload.pne_2026_2036, false)
-  assert.match(pageSource, /useMunicipioDiagnostic\(slug\)/)
+  assert.match(pageSource, /useMunicipioDiagnostic\(idMunicipio\)/)
   assert.match(routerSource, /const LazyDiagnostico = lazy/)
 })

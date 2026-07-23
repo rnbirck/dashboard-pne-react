@@ -403,15 +403,13 @@ class MunicipalDiagnosticPayloadTest(unittest.TestCase):
         self.assertTrue(no_published_rural_offer)
         self.assertTrue(suppressed_rural)
 
-    def test_slug_and_code_aliases_are_identical_for_index_and_diagnostic(self):
+    def test_index_and_diagnostic_use_only_the_canonical_code_path(self):
         for entry in self.index["municipios"]:
-            slug_index = PUBLIC_DATA / entry["path"].removeprefix("/data/")
-            code_index = PUBLIC_DATA / entry["id_path"].removeprefix("/data/")
-            self.assertEqual(slug_index.read_bytes(), code_index.read_bytes())
-            self.assertEqual(
-                slug_index.with_name("diagnostico.json").read_bytes(),
-                code_index.with_name("diagnostico.json").read_bytes(),
-            )
+            code_index = PUBLIC_DATA / entry["path"].removeprefix("/data/")
+            self.assertEqual(code_index.parent.name, entry["id_municipio"])
+            self.assertTrue(code_index.is_file())
+            self.assertTrue(code_index.with_name("diagnostico.json").is_file())
+            self.assertFalse((PUBLIC_DATA / "municipios" / entry["slug"]).exists())
 
     def test_aee_and_postgraduate_above_100_keep_their_own_domain_rules(self):
         aee_case = None

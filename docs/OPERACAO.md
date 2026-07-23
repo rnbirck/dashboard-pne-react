@@ -9,41 +9,36 @@ python -m pip install -r data_pipeline\requirements.txt
 Copy-Item data_pipeline\.env.example data_pipeline\.env
 ```
 
-Preencha apenas `data_pipeline/.env`, que é ignorado pelo Git. O repositório suporta acesso PostgreSQL/Supabase conforme `data_pipeline/src/data/repository.py`.
+Preencha apenas `data_pipeline/.env`, ignorado pelo Git. O acesso PostgreSQL/Supabase fica em `data_pipeline/src/data/repository.py`. Caminhos externos compartilhados, inclusive `SENAI_DB_DIR`, ficam centralizados em `data_pipeline/src/config.py`.
 
 ## Atualização principal
 
-```powershell
-npm run update:data
-```
+`npm run update:data` executa:
 
-O orquestrador executa, em ordem:
-
-1. `data_pipeline/scripts/export_static_data.py --include-derived`;
-2. `data_pipeline/scripts/partition_static_data.py`;
-3. sincronização para `public/data`, preservando o conjunto educacional especializado;
+1. `export_static_data.py --include-derived`;
+2. `partition_static_data.py`;
+3. sincronização para `public/data`;
 4. `refresh_municipal_inequality_pilot.py`;
-5. `validate_static_details.py`;
-6. `npm run build`.
+5. `export_education_indicators.py`;
+6. `validate_static_details.py`;
+7. `npm run build`.
 
-O comando bloqueia a atualização quando existem alterações fora de `public/data`. Use `--dry-run`, `--validate-only`, `--skip-export`, `--skip-partition`, `--skip-build` e `--profile` conforme a ajuda do script.
+O comando bloqueia atualização com alterações fora de `public/data`. Use `--dry-run`, `--validate-only`, `--skip-export`, `--skip-partition`, `--skip-education`, `--skip-build` e `--profile` conforme a ajuda. `--education-only` regenera somente Educação, valida e, salvo `--skip-build`, recompila.
 
 ## Fluxos especializados
 
-- `npm run update:education-data`: regenera `public/data/educacao`; exige o módulo externo `utils_educacao` sob `SENAI_DB_DIR`.
-- `generate_municipal_finance.py`: atualiza contratos financeiros e, com `--sync-public`, publica a saída.
+- `npm run update:education-data`: chama o orquestrador com `--education-only`.
+- `generate_municipal_finance.py`: atualiza os contratos financeiros canônicos por código IBGE.
 - `generate_qse_annual.py`: atualiza as séries anuais da QSE.
-- `materialize_municipal_education_overview.py`: materializa a visão geral educacional municipal.
-- `materialize_pne2026_public_diagnostic_v2.py`: materializa o diagnóstico público atual.
+- `materialize_municipal_education_overview.py`: materializa a visão geral educacional por código IBGE.
+- `materialize_pne2026_public_diagnostic_v2.py`: materializa o diagnóstico público.
 - `refresh_municipal_decision_summary.py`: atualiza a síntese decisória.
-- `sync_eja_integrada_from_sinopse.py` e `sync_ept_nivel_medio_from_sinopse.py`: importam edições oficiais da Sinopse quando solicitadas.
-- `npm run generate:diagnostic-catalog`: recompõe o catálogo do diagnóstico a partir dos indicadores publicados e do mapa legal.
+- `sync_eja_integrada_from_sinopse.py` e `sync_ept_nivel_medio_from_sinopse.py`: importam edições oficiais da Sinopse.
+- `npm run generate:diagnostic-catalog`: recompõe o catálogo do diagnóstico.
 
-Use `--help` em cada script antes de executar. Downloads intermediários devem ficar em `data_pipeline/cache`, e saídas intermediárias em `data_pipeline/export`; ambos são ignorados.
+Downloads intermediários ficam em `data_pipeline/cache`; saídas intermediárias, em `data_pipeline/export`. Ambos são ignorados.
 
-## Validação e publicação
-
-Execute antes de publicar:
+## Validação
 
 ```powershell
 npm ci
@@ -57,10 +52,25 @@ npm run test:data-sources
 npm run test:ui-architecture
 npm run test:python
 npm run validate:details
+npm run check:hygiene
 ```
 
-Com o servidor local ativo, execute também os três comandos E2E descritos no README. Publique somente `dist` após todas as validações aplicáveis.
+Com o servidor local ativo, execute `npm run test:e2e`.
+
+## Matriz de jornadas permanentes
+
+| Jornada atual | Proteção permanente |
+| --- | --- |
+| selecionar e trocar município | `test:e2e` em desktop e celular |
+| navegação por hash e contexto da URL | `test:app-routing` e `test:e2e` |
+| lazy loading dos dois ciclos do PNE | `test:e2e` e `test:pne-cycle` |
+| Educação e visão geral municipal | `test:education`, testes Python do contrato e `test:e2e` |
+| Financeiro, Fundeb, PNATE, VAAR e QSE | `test:municipal-finance`, testes de fontes e `test:e2e` |
+| Diagnóstico municipal | `test:diagnostic`, testes de contrato e `test:e2e` |
+| menu, foco, hover e overflow em 390×844 | `test:e2e` |
+| vazio, carregando e erro | roteamento e testes de componentes |
+| impressão aplicável | componentes e CSS de impressão preservados; cobertura Chromium serve apenas como auditoria |
 
 ## Política de arquivos
 
-Versione código, configurações, testes permanentes, documentação canônica, `public/data` e fontes não regeneráveis de `data_pipeline/data`. Não versione caches, logs, screenshots, relatórios de auditoria, planilhas geradas, resultados Playwright ou diretórios de build.
+Versione código, configurações, testes permanentes, os seis documentos canônicos, `public/data` e fontes não regeneráveis de `data_pipeline/data`. Não versione caches, logs, screenshots, relatórios, planilhas geradas, resultados Playwright ou builds.

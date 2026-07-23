@@ -8,17 +8,17 @@ import type { MunicipalEducationOverviewV1 } from '../municipalEducationOverview
 export interface MunicipalEducationOverviewState {
   status: MunicipalEducationOverviewLoadStatus
   data: MunicipalEducationOverviewV1 | null
-  slug: string | null
+  idMunicipality: string | null
 }
 
 const INACTIVE_STATE: MunicipalEducationOverviewState = {
   status: 'idle',
   data: null,
-  slug: null,
+  idMunicipality: null,
 }
 
 export function useMunicipalEducationOverview(
-  slug: string | null | undefined,
+  idMunicipality: string | null | undefined,
   active: boolean,
 ): MunicipalEducationOverviewState {
   const [state, setState] = useState<MunicipalEducationOverviewState>(INACTIVE_STATE)
@@ -33,33 +33,35 @@ export function useMunicipalEducationOverview(
       }
     }
 
-    if (!slug) {
-      setState({ status: 'absent', data: null, slug: null })
+    if (!idMunicipality) {
+      setState({ status: 'absent', data: null, idMunicipality: null })
       return () => {
         cancelled = true
       }
     }
 
-    setState({ status: 'loading', data: null, slug })
-    void municipalEducationOverviewLoader.load(slug).then((data) => {
-      if (!cancelled) setState({ status: 'ready', data, slug })
+    setState({ status: 'loading', data: null, idMunicipality })
+    void municipalEducationOverviewLoader.load(idMunicipality).then((data) => {
+      if (!cancelled) setState({ status: 'ready', data, idMunicipality })
     }).catch(() => {
       if (cancelled) return
       try {
-        const nextState = municipalEducationOverviewLoader.getState(slug)
-        setState({ status: nextState.status, data: null, slug })
+        const nextState = municipalEducationOverviewLoader.getState(idMunicipality)
+        setState({ status: nextState.status, data: null, idMunicipality })
       } catch {
-        setState({ status: 'error', data: null, slug })
+        setState({ status: 'error', data: null, idMunicipality })
       }
     })
 
     return () => {
       cancelled = true
     }
-  }, [active, slug])
+  }, [active, idMunicipality])
 
   if (!active) return INACTIVE_STATE
-  if (!slug) return { status: 'absent', data: null, slug: null }
-  if (state.slug !== slug) return { status: 'loading', data: null, slug }
+  if (!idMunicipality) return { status: 'absent', data: null, idMunicipality: null }
+  if (state.idMunicipality !== idMunicipality) {
+    return { status: 'loading', data: null, idMunicipality }
+  }
   return state
 }

@@ -13,7 +13,7 @@ const municipalityIndex = JSON.parse(readFileSync(join(publicData, 'municipios_i
 const municipalities = [...municipalityIndex.municipios].sort((a, b) => a.id_municipio.localeCompare(b.id_municipio));
 const contracts = municipalities.map((municipality) => ({
   municipality,
-  document: JSON.parse(readFileSync(join(publicData, 'municipios', municipality.slug, 'financeiro.json'), 'utf8')),
+  document: JSON.parse(readFileSync(join(publicData, 'municipios', municipality.id_municipio, 'financeiro.json'), 'utf8')),
 }));
 const manifest = JSON.parse(readFileSync(join(publicData, 'financeiro', 'manifest.json'), 'utf8'));
 const catalogs = JSON.parse(readFileSync(join(publicData, 'financeiro', 'catalogos.json'), 'utf8'));
@@ -31,7 +31,7 @@ function contractByCode(code) {
 function calculateContractsHash() {
   const digest = createHash('sha256');
   for (const municipality of municipalities) {
-    const bytes = readFileSync(join(publicData, 'municipios', municipality.slug, 'financeiro.json'));
+    const bytes = readFileSync(join(publicData, 'municipios', municipality.id_municipio, 'financeiro.json'));
     digest.update(municipality.id_municipio, 'ascii');
     digest.update(bytes);
   }
@@ -46,21 +46,23 @@ async function loadTypeScriptModule(path) {
   return import(`data:text/javascript;base64,${Buffer.from(output).toString('base64')}`);
 }
 
-test('1. existem 497 contratos lógicos e 994 arquivos-alias', () => {
+test('1. existem 497 contratos lógicos em caminhos canônicos por código IBGE', () => {
   assert.equal(municipalities.length, 497);
   assert.equal(manifest.logicalContracts, 497);
-  assert.equal(manifest.aliasFiles, 994);
+  assert.equal(manifest.contractFiles, 497);
   const financeFiles = readdirSync(join(publicData, 'municipios'), { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .filter((entry) => existsSync(join(publicData, 'municipios', entry.name, 'financeiro.json')));
-  assert.equal(financeFiles.length, 994);
+  assert.equal(financeFiles.length, 497);
 });
 
-test('2. aliases por slug e código IBGE são byte a byte idênticos', () => {
+test('2. não existem aliases físicos por slug', () => {
   municipalities.forEach((municipality) => {
-    const slug = readFileSync(join(publicData, 'municipios', municipality.slug, 'financeiro.json'));
-    const code = readFileSync(join(publicData, 'municipios', municipality.id_municipio, 'financeiro.json'));
-    assert.deepEqual(slug, code, municipality.id_municipio);
+    assert.equal(
+      existsSync(join(publicData, 'municipios', municipality.slug, 'financeiro.json')),
+      false,
+      municipality.slug,
+    );
   });
 });
 
@@ -269,25 +271,25 @@ test('21. loader lazy mantém cache e estados de loading, ausência, erro e vers
     return new Promise((resolve) => { release = resolve; });
   });
   assert.equal(calls, 0);
-  const pending = loader.load('agudo');
-  assert.equal(loader.getState('agudo').status, 'loading');
+  const pending = loader.load('4300109');
+  assert.equal(loader.getState('4300109').status, 'loading');
   release(new Response(JSON.stringify(fixture), { status: 200, headers: { 'content-type': 'application/json' } }));
   assert.equal((await pending).municipality.ibgeCode, '4300109');
-  assert.equal(loader.getState('agudo').status, 'ready');
-  await loader.load('agudo');
+  assert.equal(loader.getState('4300109').status, 'ready');
+  await loader.load('4300109');
   assert.equal(calls, 1);
 
   const absent = module.createMunicipalFinanceLoader(async () => new Response('', { status: 404 }));
-  await assert.rejects(absent.load('agudo'), { code: 'contract_absent' });
-  assert.equal(absent.getState('agudo').status, 'absent');
+  await assert.rejects(absent.load('4300109'), { code: 'contract_absent' });
+  assert.equal(absent.getState('4300109').status, 'absent');
 
   const http = module.createMunicipalFinanceLoader(async () => new Response('', { status: 503 }));
-  await assert.rejects(http.load('agudo'), { code: 'http_error' });
-  assert.equal(http.getState('agudo').status, 'error');
+  await assert.rejects(http.load('4300109'), { code: 'http_error' });
+  assert.equal(http.getState('4300109').status, 'error');
 
   const incompatible = module.createMunicipalFinanceLoader(async () => new Response(JSON.stringify({ schemaVersion: 'future' }), { status: 200 }));
-  await assert.rejects(incompatible.load('agudo'), { code: 'incompatible_version' });
-  assert.equal(incompatible.getState('agudo').status, 'incompatible_version');
+  await assert.rejects(incompatible.load('4300109'), { code: 'incompatible_version' });
+  assert.equal(incompatible.getState('4300109').status, 'incompatible_version');
 });
 
 test('22. geração publicada corresponde ao hash determinístico do manifesto', () => {
@@ -298,9 +300,7 @@ test('22. geração publicada corresponde ao hash determinístico do manifesto',
 
 test('23. financeiro não foi incorporado a nenhum index.json municipal', () => {
   municipalities.forEach((municipality) => {
-    const slugIndex = JSON.parse(readFileSync(join(publicData, 'municipios', municipality.slug, 'index.json'), 'utf8'));
     const codeIndex = JSON.parse(readFileSync(join(publicData, 'municipios', municipality.id_municipio, 'index.json'), 'utf8'));
-    assert.equal(Object.hasOwn(slugIndex, 'financeiro'), false, municipality.slug);
     assert.equal(Object.hasOwn(codeIndex, 'financeiro'), false, municipality.id_municipio);
   });
 });

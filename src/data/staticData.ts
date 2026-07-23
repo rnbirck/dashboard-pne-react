@@ -57,36 +57,36 @@ export function loadMunicipiosIndex(): Promise<MunicipiosIndexPayload> {
   return loadJson<MunicipiosIndexPayload>('/data/municipios_index.json')
 }
 
-export function loadMunicipioData(slug: string): Promise<MunicipioData> {
-  return loadJson<MunicipioData>(`/data/municipios/${slug}/index.json`)
+export function loadMunicipioData(idMunicipio: string): Promise<MunicipioData> {
+  return loadJson<MunicipioData>(`/data/municipios/${idMunicipio}/index.json`)
 }
 
-export function loadMunicipioDiagnostic(slug: string): Promise<MunicipalDiagnosticContractV2> {
-  return loadJson<MunicipalDiagnosticContractV2>(`/data/municipios/${slug}/diagnostico.json`)
+export function loadMunicipioDiagnostic(idMunicipio: string): Promise<MunicipalDiagnosticContractV2> {
+  return loadJson<MunicipalDiagnosticContractV2>(`/data/municipios/${idMunicipio}/diagnostico.json`)
 }
 
-export function loadMunicipioDetails(slug: string): Promise<JsonObject> {
-  if (!slug) return Promise.resolve({})
-  return loadJson<JsonObject>(`/data/municipios/${slug}/details.json`).catch(() => ({}))
+export function loadMunicipioDetails(idMunicipio: string): Promise<JsonObject> {
+  if (!idMunicipio) return Promise.resolve({})
+  return loadJson<JsonObject>(`/data/municipios/${idMunicipio}/details.json`).catch(() => ({}))
 }
 
-export function loadIndicatorDetail(slug: string, indicatorKey: string): Promise<unknown | null> {
+export function loadIndicatorDetail(idMunicipio: string, indicatorKey: string): Promise<unknown | null> {
   if (!indicatorKey) return Promise.resolve(null)
-  return loadMunicipioDetails(slug).then((details) => details[indicatorKey] ?? null)
+  return loadMunicipioDetails(idMunicipio).then((details) => details[indicatorKey] ?? null)
 }
 
 export function loadPneStateReference(cycle = 'pne_2026_2036'): Promise<unknown> {
   return loadJson<unknown>(`/data/${cycle}/referencia_estadual.json`)
 }
 
-export function primeMunicipioCache(slug: string, data: MunicipioData): void {
-  if (!slug) return
-  dataCache.set(`/data/municipios/${slug}/index.json`, data)
+export function primeMunicipioCache(idMunicipio: string, data: MunicipioData): void {
+  if (!idMunicipio) return
+  dataCache.set(`/data/municipios/${idMunicipio}/index.json`, data)
 }
 
-export function loadMunicipioSharedInfo(slug: string, sectionKey: string): Promise<unknown | null> {
-  if (!slug || !sectionKey) return Promise.resolve(null)
-  return loadJson<JsonObject>(`/data/municipios/${slug}/details.json`).then(
+export function loadMunicipioSharedInfo(idMunicipio: string, sectionKey: string): Promise<unknown | null> {
+  if (!idMunicipio || !sectionKey) return Promise.resolve(null)
+  return loadJson<JsonObject>(`/data/municipios/${idMunicipio}/details.json`).then(
     (details) => {
       const shared = details._shared
       return shared && typeof shared === 'object'

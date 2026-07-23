@@ -1567,10 +1567,10 @@ def generate_contracts(
         "dataVersion": DATA_VERSION,
         "generatedAt": GENERATED_AT,
         "logicalContracts": len(contracts),
-        "aliasFiles": len(contracts) * 2,
+        "contractFiles": len(contracts),
         "contractsSha256": logical_hash,
         "sourceSnapshotSha256": sha256_payload(snapshot),
-        "municipalPathTemplate": "/data/municipios/<slug-or-ibge>/financeiro.json",
+        "municipalPathTemplate": "/data/municipios/<ibge>/financeiro.json",
         "includedInMunicipalIndex": False,
         "lazyLoadOnly": True,
     }
@@ -1585,9 +1585,11 @@ def generate_contracts(
             stats[action] += 1
         for municipality, contract in zip(municipalities, contracts, strict=True):
             content = canonical_json(contract)
-            for identifier in (municipality["slug"], municipality["ibgeCode"]):
-                action = write_text_if_changed(root / "municipios" / identifier / "financeiro.json", content)
-                stats[action] += 1
+            action = write_text_if_changed(
+                root / "municipios" / municipality["ibgeCode"] / "financeiro.json",
+                content,
+            )
+            stats[action] += 1
     return {
         "contracts": contracts,
         "coverageRows": coverage_rows,
@@ -1761,28 +1763,24 @@ def validate_generated_contracts(root: Path, municipalities: list[dict[str, str]
     sizes = []
     digest = hashlib.sha256()
     for municipality in municipalities:
-        slug_path = root / "municipios" / municipality["slug"] / "financeiro.json"
         code_path = root / "municipios" / municipality["ibgeCode"] / "financeiro.json"
-        if not slug_path.exists() or not code_path.exists():
+        if not code_path.exists():
             raise AssertionError(f"Contrato ausente: {municipality['ibgeCode']}")
-        slug_bytes = slug_path.read_bytes()
         code_bytes = code_path.read_bytes()
-        if slug_bytes != code_bytes:
-            raise AssertionError(f"Aliases divergentes: {municipality['ibgeCode']}")
-        contract = json.loads(slug_bytes)
+        contract = json.loads(code_bytes)
         validate_contract(contract)
-        sizes.append(len(slug_bytes))
+        sizes.append(len(code_bytes))
         digest.update(municipality["ibgeCode"].encode("ascii"))
-        digest.update(slug_bytes)
-        index_payload = json.loads((root / "municipios" / municipality["slug"] / "index.json").read_text(encoding="utf-8"))
+        digest.update(code_bytes)
+        index_payload = json.loads((root / "municipios" / municipality["ibgeCode"] / "index.json").read_text(encoding="utf-8"))
         if "financeiro" in index_payload:
             raise AssertionError(f"financeiro incluído no index.json: {municipality['ibgeCode']}")
     return {
         "logicalContracts": len(municipalities),
-        "aliasFiles": len(municipalities) * 2,
+        "contractFiles": len(municipalities),
         "averageBytes": round(sum(sizes) / len(sizes)),
         "largestBytes": max(sizes),
         "totalLogicalBytes": sum(sizes),
-        "totalAliasBytes": sum(sizes) * 2,
+        "totalBytes": sum(sizes),
         "contractsSha256": digest.hexdigest(),
     }

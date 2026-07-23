@@ -14,7 +14,7 @@ from src.eja_integrada_indicator import (
     calculate_eja_integrada_series,
     validate_dependency_totals,
 )
-from src.views.pne_shared import _build_eja_integrada_percentual_result
+from src.pne.common import _build_eja_integrada_percentual_result
 
 
 def row(**overrides):

@@ -62,17 +62,19 @@ function latestEducationYear(items: ReadonlyArray<Record<string, unknown>>) {
 export function EducationPage({
   indicadores,
   municipioData,
-  municipalitySlug,
   navigationContext,
   selectedMunicipio,
 }: EducationPageProps) {
   const pageCopy = EDUCATION_PAGE_COPY
   const eduIndexState = useAsyncData(() => loadEducationMunicipiosIndex(), [])
-  const eduMunMap = useMemo(() => {
+  const eduMunMap = useMemo<Map<string, string>>(() => {
     const list = eduIndexState.data?.municipios ?? []
-    return new Map(list.map((m: { municipio: string; id_municipio: string | number }) => [m.municipio, m.id_municipio]))
+    return new Map(list.map((m: { municipio: string; id_municipio: string | number }) => [
+      m.municipio,
+      String(m.id_municipio),
+    ]))
   }, [eduIndexState.data])
-  const selectedId = eduMunMap.get(selectedMunicipio) ?? null
+  const selectedId = selectedMunicipio ? eduMunMap.get(selectedMunicipio) ?? null : null
   const previousSelectedIdRef = useRef(selectedId)
   const munDataState = useAsyncData(async () => {
     if (!selectedId) return null
@@ -97,9 +99,11 @@ export function EducationPage({
   } = useEducationPageState(currentNavigation)
   const isMunicipalOverviewRoute = selectedSectionKey === EDUCATION_SECTION_KEYS.overview
     && selectedThemeKey !== PANORAMA_THEME_KEYS.escolasSistemaS
-  const loadedMunicipalitySlug = typeof municipioData?.slug === 'string' ? municipioData.slug : null
+  const loadedMunicipalityId = typeof municipioData?.id_municipio === 'string'
+    ? municipioData.id_municipio
+    : null
   const municipalOverviewState = useMunicipalEducationOverview(
-    municipalitySlug ?? loadedMunicipalitySlug,
+    selectedId ?? loadedMunicipalityId,
     isMunicipalOverviewRoute,
   )
   const [printEmissionDate, setPrintEmissionDate] = useState(() => printDateFormatter.format(new Date()))

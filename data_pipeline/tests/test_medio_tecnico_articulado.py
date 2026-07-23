@@ -13,7 +13,7 @@ from src.medio_tecnico_articulado import (  # noqa: E402
     MedioTecnicoArticuladoValidationError,
     calculate_medio_tecnico_articulado_series,
 )
-from src.views.pne_shared import _build_result, _select_reference_rows  # noqa: E402
+from src.pne.common import _build_result, _select_reference_rows  # noqa: E402
 
 
 def row(**overrides):

@@ -81,7 +81,9 @@ export function AppPageRouter({
       || item.nome.toLocaleLowerCase('pt-BR') === normalized
     )) ?? null
   }, [municipiosIndex, requestedMunicipalityValue])
-  const loadedMunicipalitySlug = typeof municipioData?.slug === 'string' ? municipioData.slug : null
+  const loadedMunicipalityId = typeof municipioData?.id_municipio === 'string'
+    ? municipioData.id_municipio
+    : null
   const educationUrlSyncRef = useRef<{ pending: boolean; slug: string } | null>(null)
 
   useEffect(() => {
@@ -176,7 +178,7 @@ export function AppPageRouter({
     return (
       <LazyPageBoundary page={activePage}>
         <LazyMunicipalFinancePanoramaPage
-          municipalityIdentifier={requestedMunicipalityEntry?.slug ?? loadedMunicipalitySlug}
+          municipalityIdentifier={requestedMunicipalityEntry?.id_municipio ?? loadedMunicipalityId}
           municipalityName={requestedMunicipalityEntry?.nome ?? selectedMunicipio}
           navigationContext={navigationContext}
         />

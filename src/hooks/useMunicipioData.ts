@@ -22,14 +22,14 @@ export function useMunicipioData(
 
   return useAsyncData(
     async () => {
-      if (!selectedMunicipioEntry?.slug) {
+      if (!selectedMunicipioEntry?.id_municipio) {
         return null
       }
 
-      const data = await loadMunicipioData(selectedMunicipioEntry.slug)
-      primeMunicipioCache(selectedMunicipioEntry.slug, data)
+      const data = await loadMunicipioData(selectedMunicipioEntry.id_municipio)
+      primeMunicipioCache(selectedMunicipioEntry.id_municipio, data)
       return data
     },
-    [selectedMunicipioEntry?.slug],
+    [selectedMunicipioEntry?.id_municipio],
   )
 }

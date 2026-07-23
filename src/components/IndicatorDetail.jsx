@@ -60,18 +60,18 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
 
   useEffect(() => {
     let isMounted = true
-    const slug = municipioData?.slug
+    const idMunicipio = municipioData?.id_municipio
     const indicatorKey = item?.key
 
     setLoadedDetails(null)
 
-    if (!slug || !indicatorKey) {
+    if (!idMunicipio || !indicatorKey) {
       return () => {
         isMounted = false
       }
     }
 
-    loadIndicatorDetail(slug, indicatorKey)
+    loadIndicatorDetail(idMunicipio, indicatorKey)
       .then((data) => {
         if (isMounted) {
           setLoadedDetails(data)
@@ -86,7 +86,7 @@ export const IndicatorDetail = forwardRef(function IndicatorDetail(
     return () => {
       isMounted = false
     }
-  }, [municipioData?.slug, item?.key])
+  }, [municipioData?.id_municipio, item?.key])
 
   if (!item) {
     return (

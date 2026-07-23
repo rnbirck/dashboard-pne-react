@@ -368,10 +368,9 @@ def validate_contract_directory(
     require_expected_distribution: bool,
 ) -> dict[str, Any]:
     entries_list = list(entries)
-    expected_by_slug = {entry["slug"]: entry for entry in entries_list}
     expected_by_id = {entry["idMunicipality"]: entry for entry in entries_list}
     paths = sorted(directory.glob("*.json"))
-    expected_names = set(expected_by_slug) | set(expected_by_id)
+    expected_names = set(expected_by_id)
     actual_names = {path.stem for path in paths}
     if actual_names != expected_names or len(paths) != len(expected_names):
         missing = sorted(expected_names - actual_names)
@@ -391,15 +390,9 @@ def validate_contract_directory(
     performance_coverage: Counter[str] = Counter()
     performance_states: Counter[str] = Counter()
 
-    for slug, entry in expected_by_slug.items():
-        canonical_path = directory / f"{slug}.json"
-        alias_path = directory / f"{entry['idMunicipality']}.json"
+    for municipality_id, entry in expected_by_id.items():
+        canonical_path = directory / f"{municipality_id}.json"
         canonical_content = canonical_path.read_bytes()
-        alias_content = alias_path.read_bytes()
-        if canonical_content != alias_content:
-            raise RuntimeError(
-                f"{entry['idMunicipality']}: alias IBGE difere do arquivo canônico."
-            )
         contract = json.loads(
             canonical_content.decode("utf-8"), object_pairs_hook=_reject_duplicate_keys
         )
@@ -497,8 +490,7 @@ def validate_contract_directory(
         raise RuntimeError("São Pedro da Serra: Ensino Médio precisa ser not_applicable.")
 
     return {
-        "canonicalCount": len(expected_by_slug),
-        "aliasCount": len(expected_by_id),
+        "contractCount": len(expected_by_id),
         "publicationStates": publication_distribution,
         "dataStates": dict(sorted(data_states.items())),
         "reconciliations": reconciliation_distribution,
@@ -526,7 +518,6 @@ def _write_contracts(
     directory.mkdir(parents=True, exist_ok=False)
     for municipality_id, entry in entries_by_id.items():
         content = _serialize(contracts[municipality_id])
-        (directory / f"{entry['slug']}.json").write_bytes(content)
         (directory / f"{municipality_id}.json").write_bytes(content)
 
 

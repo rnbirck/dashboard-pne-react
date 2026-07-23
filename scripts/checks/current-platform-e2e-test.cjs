@@ -4,15 +4,17 @@ const { chromium } = require('playwright')
 const BASE_URL = process.env.BASE_URL ?? 'http://127.0.0.1:5173'
 const MUNICIPALITY = 'Agudo'
 const MUNICIPALITY_SLUG = 'agudo'
+const MUNICIPALITY_ID = '4300109'
+const SECOND_MUNICIPALITY = 'Alegria'
 const VIEWPORTS = [
   { width: 1366, height: 768 },
   { width: 390, height: 844 },
 ]
 
-async function selectMunicipality(page) {
+async function selectMunicipality(page, municipality = MUNICIPALITY) {
   const input = page.locator('input[role="combobox"]:visible').first()
-  await input.fill(MUNICIPALITY)
-  await page.getByRole('option', { name: MUNICIPALITY, exact: true }).first().click()
+  await input.fill(municipality)
+  await page.getByRole('option', { name: municipality, exact: true }).first().click()
   await page.getByRole('button', { name: 'Limpar seleção' }).first().waitFor({ state: 'visible' })
 }
 
@@ -48,7 +50,28 @@ async function verifyViewport(browser, viewport) {
     await page.goto(`${BASE_URL}/#home`, { waitUntil: 'domcontentloaded' })
     await page.getByRole('heading', { level: 1 }).waitFor({ state: 'visible' })
     await selectMunicipality(page)
+    await selectMunicipality(page, SECOND_MUNICIPALITY)
+    await page.getByText(SECOND_MUNICIPALITY, { exact: true }).first().waitFor({ state: 'visible' })
+    await selectMunicipality(page)
     await assertNoHorizontalOverflow(page, `Home ${label}`)
+
+    if (viewport.width < 700) {
+      await page.getByRole('button', { name: 'Menu', exact: true }).click()
+      await page.getByRole('button', { name: 'Fechar menu' }).first().waitFor({ state: 'visible' })
+      await page.getByRole('button', { name: 'Fechar menu' }).first().click()
+    }
+
+    for (const [route, heading] of [
+      ['pne2014', /PNE 2014/],
+      ['pne2026', /PNE 2026/],
+    ]) {
+      await page.goto(`${BASE_URL}/#${route}`, { waitUntil: 'domcontentloaded' })
+      await page.getByRole('heading', { level: 1, name: heading }).waitFor({ state: 'visible' })
+      await page.locator('button:visible, a:visible, input:visible').first().focus()
+      const hoverCandidate = page.locator('.meta-card:visible, .platform-entry-card:visible').first()
+      if (await hoverCandidate.count()) await hoverCandidate.hover()
+      await assertNoHorizontalOverflow(page, `${route} ${label}`)
+    }
 
     await page.goto(`${BASE_URL}/#educacao?secao=visao-geral`, { waitUntil: 'domcontentloaded' })
     await page.getByRole('heading', { level: 1, name: 'Visão geral municipal da educação' }).first().waitFor({ state: 'visible' })
@@ -68,7 +91,7 @@ async function verifyViewport(browser, viewport) {
     await page.getByRole('heading', { level: 1, name: 'Panorama financeiro' }).waitFor({ state: 'visible' })
     await page.getByRole('heading', { name: 'Fundeb e complementações' }).waitFor({ state: 'visible' })
     await page.getByRole('heading', { name: 'QSE — Quota Salário Educação' }).waitFor({ state: 'visible' })
-    assert.ok(financeRequests.some((url) => url.includes(`/${MUNICIPALITY_SLUG}/financeiro.json`)))
+    assert.ok(financeRequests.some((url) => url.includes(`/${MUNICIPALITY_ID}/financeiro.json`)))
     await assertNoHorizontalOverflow(page, `Panorama financeiro ${label}`)
 
     assert.deepEqual(browserErrors, [], `${label}: erros no navegador`)

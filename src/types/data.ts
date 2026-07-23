@@ -5,7 +5,6 @@ export interface MunicipioIndexEntry {
   id_municipio: string
   slug: string
   path?: string
-  id_path?: string
 }
 
 export interface MunicipiosPayload {

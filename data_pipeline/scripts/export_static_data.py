@@ -850,7 +850,7 @@ def _export_fundeb_data(
     errors: list[dict[str, Any]],
 ) -> dict[str, Any]:
     from src.data_loader import load_fundeb_data
-    from src.views import fundeb_export
+    from src import fundeb_export
 
     exported = 0
     municipio_payloads: dict[str, Any] = {}
@@ -908,7 +908,7 @@ def _export_pnate_data(
     errors: list[dict[str, Any]],
 ) -> dict[str, Any]:
     from src.data_loader import load_pnate_data
-    from src.views import pnate_export
+    from src import pnate_export
 
     exported = 0
     municipio_payloads: dict[str, Any] = {}
@@ -967,7 +967,7 @@ def _export_projections(
     municipio_ids: dict[str, str] | None,
     errors: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    from src.views.pne_2026_projections import build_all_projections
+    from src.pne_2026_projections import build_all_projections
 
     print("\nProcessando projeções tendenciais...")
     try:
@@ -1060,7 +1060,7 @@ def _export_state_reference(
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Exporta dados finais do dashboard Dash para JSON estático."
+        description="Exporta os dados calculados da plataforma para JSON estático."
     )
     parser.add_argument(
         "--limit",
@@ -1245,15 +1245,13 @@ def main() -> int:
     if stale_error_file.exists():
         stale_error_file.unlink()
 
-    # Dash pages call dash.register_page() at import time, so the Dash app must
-    # exist before importing view modules used by the static exporter.
-    import app as _dash_app  # noqa: F401
+    from src import fundeb_export
     from src.data_loader import load_municipios
-    from src.views import fundeb_export, pne_2014_2024, pne_2026_2036, pne_shared
+    from src.pne import calculations_2014, calculations_2026, common
 
     cycle_modules = {
-        "pne_2014_2024": pne_2014_2024,
-        "pne_2026_2036": pne_2026_2036,
+        "pne_2014_2024": calculations_2014,
+        "pne_2026_2036": calculations_2026,
     }
     try:
         selected_cycle_modules, selected_indicators = _select_cycles_and_indicators(
@@ -1365,7 +1363,7 @@ def main() -> int:
                 cycle_key=cycle_key,
                 cycle_module=cycle_module,
                 municipios=municipios,
-                shared=pne_shared,
+                shared=common,
                 errors=errors,
                 results_cache=results_cache,
                 indicator_keys=selected_indicators[cycle_key]
@@ -1396,7 +1394,7 @@ def main() -> int:
     with profile.measure("detalhes complementares"):
         indicator_details_payload = _export_indicator_details(
             municipios=municipios,
-            shared=pne_shared,
+            shared=common,
             errors=errors,
         )
     indicator_details_path = EXPORT_DIR / "indicator_details_por_municipio.json"
@@ -1416,8 +1414,6 @@ def main() -> int:
         _write_json(state_reference_path, state_reference_payload, profile)
         generated_files.append(state_reference_path)
         state_reference_payloads[state_reference_cycle] = state_reference_payload
-
-    from src.views.pne_2026_projections import build_all_projections
 
     with profile.measure("projeções"):
         projections_payload = _export_projections(
@@ -1478,7 +1474,7 @@ def main() -> int:
                     cycle_key=cycle_key,
                     cycle_module=cycle_module,
                     municipios=municipios,
-                    shared=pne_shared,
+                    shared=common,
                     errors=errors,
                     results_cache=results_cache,
                 )
@@ -1489,8 +1485,8 @@ def main() -> int:
         with profile.measure("diagnóstico"):
             diagnostic_payload = _export_diagnostics(
                 municipios=municipios,
-                cycle_module=pne_2026_2036,
-                shared=pne_shared,
+                cycle_module=calculations_2026,
+                shared=common,
                 errors=errors,
                 results_cache=results_cache,
                 generated_at=generated_at,

@@ -142,16 +142,28 @@ class EducationAttendanceTests(unittest.TestCase):
             self.assertIn("sum(t1.pop_estimada)", denominator)
 
     def test_generated_artifact_matches_simplified_contract(self):
-        aggregate_path = REPO_ROOT / "data_pipeline" / "export" / "data" / "pne_2026_2036" / "atendimento_cenarios_por_municipio.json"
-        payload = json.loads(aggregate_path.read_text(encoding="utf-8"))
-        self.assertEqual(payload["contractVersion"], "education-attendance-v2")
-        self.assertEqual(payload["municipalityCount"], 497)
-        self.assertEqual(len(payload["municipios"]), 497)
-        serialized = json.dumps(payload, ensure_ascii=False).lower()
-        self.assertNotIn("enrollmentscenarios", serialized)
-        self.assertNotIn("last_value", serialized)
-        self.assertNotIn('"type": "maintenance"', serialized)
-        for contract in payload["municipios"].values():
+        index = json.loads(
+            (REPO_ROOT / "public" / "data" / "municipios_index.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(len(index["municipios"]), 497)
+        for municipality in index["municipios"]:
+            municipal_path = (
+                REPO_ROOT
+                / "public"
+                / "data"
+                / "municipios"
+                / municipality["id_municipio"]
+                / "index.json"
+            )
+            payload = json.loads(municipal_path.read_text(encoding="utf-8"))
+            contract = payload["educacao"]["atendimento_cenarios"]
+            self.assertEqual(contract["contractVersion"], "education-attendance-v2")
+            serialized = json.dumps(contract, ensure_ascii=False).lower()
+            self.assertNotIn("enrollmentscenarios", serialized)
+            self.assertNotIn("last_value", serialized)
+            self.assertNotIn('"type": "maintenance"', serialized)
             self.assertEqual(set(contract["ageCoverage"]), set(attendance.AGE_INDICATORS))
             self.assertEqual(set(contract["integral"]), {"overall"})
 

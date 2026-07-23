@@ -5,8 +5,8 @@ import { selectMunicipalDiagnosticContract } from '../features/diagnostic/diagno
 import { useMunicipioDiagnostic } from '../hooks/useMunicipioDiagnostic'
 
 export function Diagnostico({ municipioData, selectedMunicipio }) {
-  const slug = municipioData?.slug
-  const { data, error, loading } = useMunicipioDiagnostic(slug)
+  const idMunicipio = municipioData?.id_municipio
+  const { data, error, loading } = useMunicipioDiagnostic(idMunicipio)
 
   if (loading) {
     return <LoadingState message={`Carregando o diagnóstico de ${selectedMunicipio}…`} />

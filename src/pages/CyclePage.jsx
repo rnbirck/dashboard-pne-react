@@ -49,8 +49,8 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     [cycle],
   )
   const { data: municipioDetails } = useAsyncData(
-    () => municipioData?.slug ? loadMunicipioDetails(municipioData.slug) : null,
-    [municipioData?.slug],
+    () => municipioData?.id_municipio ? loadMunicipioDetails(municipioData.id_municipio) : null,
+    [municipioData?.id_municipio],
   )
   const allCycleItems = useMemo(
     () => categories.flatMap((category) => category.items ?? []),
@@ -137,10 +137,10 @@ export function CyclePage({ cycle, indicadores, municipioData, selectedMunicipio
     data: inequalityDiagnostic,
     loading: inequalityPilotLoading,
   } = useAsyncData(
-    () => shouldLoadInequalityPilot && municipioData?.slug
-      ? loadMunicipioDiagnostic(municipioData.slug)
+    () => shouldLoadInequalityPilot && municipioData?.id_municipio
+      ? loadMunicipioDiagnostic(municipioData.id_municipio)
       : null,
-    [municipioData?.slug, shouldLoadInequalityPilot],
+    [municipioData?.id_municipio, shouldLoadInequalityPilot],
   )
   const activeThemeLabel = selectedGroup?.shortLabel ?? selectedGroup?.label ?? null
   const detailNavigation = useDetailViewNavigation({

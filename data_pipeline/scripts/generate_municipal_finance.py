@@ -90,7 +90,7 @@ def verify_determinism(municipalities: list[dict[str, str]], snapshot: dict) -> 
 def measure_local_loading(root: Path, municipalities: list[dict[str, str]]) -> float:
     started = time.perf_counter()
     for municipality in municipalities:
-        path = root / "municipios" / municipality["slug"] / "financeiro.json"
+        path = root / "municipios" / municipality["ibgeCode"] / "financeiro.json"
         json.loads(path.read_text(encoding="utf-8"))
     return round((time.perf_counter() - started) * 1000, 3)
 

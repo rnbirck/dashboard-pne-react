@@ -29,31 +29,20 @@ npm run test:data-sources
 npm run test:ui-architecture
 npm run test:python
 npm run validate:details
+npm run check:hygiene
 ```
 
-Os testes E2E esperam uma aplicação ativa. Em um terminal:
-
-```powershell
-npm run dev -- --host 127.0.0.1 --port 5173
-```
-
-Em outro:
-
-```powershell
-npm run test:e2e
-```
-
-Defina `BASE_URL` para testar outro endereço.
+Os testes E2E esperam uma aplicação ativa. Execute `npm run dev -- --host 127.0.0.1 --port 5173` em um terminal e `npm run test:e2e` em outro. Defina `BASE_URL` para testar outro endereço.
 
 ## Dados estáticos
 
-`public/data` é parte do produto e deve continuar versionado. O fluxo principal de atualização é:
+`public/data` é parte do produto e deve continuar versionado. O fluxo principal é:
 
 ```powershell
 npm run update:data
 ```
 
-Ele exporta os dados agregados, particiona por município, sincroniza os JSONs para `public/data`, atualiza o piloto de desigualdades, valida os detalhes e executa o build. Para omitir apenas o build final:
+Ele exporta e particiona os dados, sincroniza `public/data`, atualiza o piloto de desigualdades e o conjunto especializado de Educação, valida os detalhes e executa o build. Para omitir apenas o build:
 
 ```powershell
 npm run update:data:skip-build
@@ -65,25 +54,26 @@ Para validar um indicador sem publicar dados:
 npm run verify:indicator -- --cycle pne_2026_2036 --indicator creche --municipio "São Leopoldo"
 ```
 
-O conjunto educacional complementar em `public/data/educacao` tem fluxo próprio. Defina `SENAI_DB_DIR` para o projeto que fornece `utils_educacao` e execute:
+Para regenerar somente `public/data/educacao`, defina `SENAI_DB_DIR` para o projeto que fornece `utils_educacao` e execute:
 
 ```powershell
 npm run update:education-data
 ```
 
-Credenciais do pipeline ficam em `data_pipeline/.env`, criado a partir de `data_pipeline/.env.example`. Nunca inclua segredos em `public/data`.
+Credenciais ficam em `data_pipeline/.env`, criado a partir de `data_pipeline/.env.example`. Nunca inclua segredos em `public/data`.
 
 ## Estrutura
 
 - `src`: aplicação React, rotas, componentes, features, modelos e estilos.
 - `public/data`: dados públicos servidos diretamente ao navegador.
 - `data_pipeline/src`: cálculo, acesso às fontes e contratos de dados.
+- `data_pipeline/src/pne`: regras puras dos ciclos do PNE, sem framework web.
 - `data_pipeline/scripts`: atualização, materialização e validação permanentes.
 - `data_pipeline/data`: snapshots e contratos-fonte necessários para regeneração.
 - `data_pipeline/tests`: testes de domínio e do pipeline.
-- `scripts/checks`: testes e verificações permanentes do frontend.
+- `scripts/checks`: testes e verificações permanentes do frontend e do repositório.
 
-Saídas de build, caches, relatórios de execução, screenshots e auditorias locais não são versionados.
+Saídas de build, caches, relatórios, screenshots, logs e arquivos de inspeção local não são versionados.
 
 ## Documentação canônica
 
@@ -95,8 +85,4 @@ Saídas de build, caches, relatórios de execução, screenshots e auditorias lo
 
 ## Publicação
 
-```powershell
-npm run build
-```
-
-Publique o conteúdo de `dist` em hospedagem estática com fallback para `index.html`. A aplicação usa navegação por hash e carrega os JSONs por caminhos absolutos sob `/data`.
+Execute `npm run build` e publique `dist` em hospedagem estática com fallback para `index.html`. A aplicação usa navegação por hash e carrega os JSONs por caminhos absolutos sob `/data`.

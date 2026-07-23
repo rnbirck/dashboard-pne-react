@@ -499,7 +499,7 @@ class PublicDiagnosticPayloadAuditTest(unittest.TestCase):
                 (
                     public_data
                     / "municipios"
-                    / entry["slug"]
+                    / entry["id_municipio"]
                     / "diagnostico.json"
                 ).read_text(encoding="utf-8")
             )

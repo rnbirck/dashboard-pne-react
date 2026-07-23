@@ -44,7 +44,7 @@ test('visão geral municipal preserva zero, ausência e contrato ampliado', () =
     highSchool: { total: { byNetwork: {}, bySchoolLocation: {} }, integratedTechnical: {} },
     specialEducation: {},
     schoolPerformance: { referenceYear: 2025 },
-  }, 'sao-pedro-da-serra'), true)
+  }, '4319356'), true)
 })
 
 test('agrupa itens na ordem declarada da seção', () => {

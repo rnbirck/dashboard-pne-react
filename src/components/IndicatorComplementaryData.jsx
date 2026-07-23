@@ -53,17 +53,17 @@ const EJA_AUXILIARY_HISTORY_FORMATTER = (value) => {
 }
 
 export function IndicatorComplementaryData({ cycle, domainOverride, indicatorKey, item, municipioData, presentationMode, result }) {
-  const slug = municipioData?.slug
+  const idMunicipio = municipioData?.id_municipio
   const fallbackDetails = municipioData?.indicator_details?.[indicatorKey] ?? null
   const [details, setDetails] = useState(null)
   const [sharedPrivadas, setSharedPrivadas] = useState(null)
   const [educationData, setEducationData] = useState(null)
 
   useEffect(() => {
-    loadMunicipioSharedInfo(slug, 'privadas_conveniadas').then((data) => {
+    loadMunicipioSharedInfo(idMunicipio, 'privadas_conveniadas').then((data) => {
       setSharedPrivadas(data)
     })
-  }, [slug])
+  }, [idMunicipio])
 
   useEffect(() => {
     let isMounted = true
@@ -75,14 +75,14 @@ export function IndicatorComplementaryData({ cycle, domainOverride, indicatorKey
       }
     }
 
-    if (!slug) {
+    if (!idMunicipio) {
       setDetails(fallbackDetails)
       return () => {
         isMounted = false
       }
     }
 
-    loadIndicatorDetail(slug, indicatorKey)
+    loadIndicatorDetail(idMunicipio, indicatorKey)
       .then((data) => {
         if (isMounted) {
           setDetails(data)
@@ -97,7 +97,7 @@ export function IndicatorComplementaryData({ cycle, domainOverride, indicatorKey
     return () => {
       isMounted = false
     }
-  }, [slug, indicatorKey, fallbackDetails])
+  }, [idMunicipio, indicatorKey, fallbackDetails])
 
   useEffect(() => {
     let isMounted = true

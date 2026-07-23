@@ -80,15 +80,15 @@ class MaterializeMunicipalEducationOverviewTests(unittest.TestCase):
             supplemental=SUPPLEMENTAL,
         )
 
-    def test_writes_canonical_slug_and_identical_ibge_alias(self):
+    def test_writes_single_canonical_ibge_contract(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary) / "visao-geral-municipal"
             _write_contracts(directory, {"4320008": self.materialize()}, [ENTRY])
-            canonical = directory / "sapucaia-do-sul.json"
-            alias = directory / "4320008.json"
+            canonical = directory / "4320008.json"
+            slug_alias = directory / "sapucaia-do-sul.json"
 
             self.assertTrue(canonical.is_file())
-            self.assertEqual(canonical.read_bytes(), alias.read_bytes())
+            self.assertFalse(slug_alias.exists())
             payload = json.loads(canonical.read_text(encoding="utf-8"))
             self.assertEqual(payload["schemaVersion"], "municipal-education-overview-v1")
             self.assertEqual(payload["reference"]["year"], 2025)

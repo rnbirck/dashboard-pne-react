@@ -230,15 +230,13 @@ class MunicipalFinanceP5B2B1Test(unittest.TestCase):
             validate_contract(contract)
             self.assertIsNone(contract["educationalScoreIsolation"]["priorityScore"])
 
-    def test_13_public_aliases_are_byte_identical_and_finance_is_absent_from_index(self) -> None:
+    def test_13_public_contracts_use_only_code_paths_and_finance_is_absent_from_index(self) -> None:
         for municipality in self.municipalities:
             slug_root = PUBLIC_DATA / "municipios" / municipality["slug"]
             code_root = PUBLIC_DATA / "municipios" / municipality["ibgeCode"]
-            self.assertEqual(
-                (slug_root / "financeiro.json").read_bytes(),
-                (code_root / "financeiro.json").read_bytes(),
-            )
-            index = json.loads((slug_root / "index.json").read_text(encoding="utf-8"))
+            self.assertFalse(slug_root.exists())
+            self.assertTrue((code_root / "financeiro.json").is_file())
+            index = json.loads((code_root / "index.json").read_text(encoding="utf-8"))
             self.assertNotIn("financeiro", index)
 
     def test_15_barra_do_quarai_uses_2024_without_zero_imputation(self) -> None:

@@ -9,10 +9,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-DATA_PIPELINE_DIR = REPO_ROOT / "data_pipeline"
-PARTITIONED_DATA_DIR = DATA_PIPELINE_DIR / "export" / "data_partitioned"
-PUBLIC_DATA_DIR = REPO_ROOT / "public" / "data"
+DATA_PIPELINE_DIR = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(DATA_PIPELINE_DIR))
+
+from src.config import PARTITIONED_DATA_DIR, PUBLIC_DATA_DIR, REPO_ROOT  # noqa: E402
 
 PYTHON = sys.executable
 NPM = "npm.cmd" if os.name == "nt" else "npm"
@@ -216,6 +216,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dry-run", action="store_true", help="Mostra as etapas sem alterar arquivos.")
     parser.add_argument("--skip-export", action="store_true", help="Pula a etapa de export.")
     parser.add_argument("--skip-partition", action="store_true", help="Pula partition e sync para public/data.")
+    parser.add_argument(
+        "--skip-education",
+        action="store_true",
+        help="Pula a exportacao dos indicadores de Educacao.",
+    )
+    parser.add_argument(
+        "--education-only",
+        action="store_true",
+        help="Exporta somente Educacao, valida e, salvo --skip-build, recompila a aplicacao.",
+    )
     parser.add_argument("--skip-build", action="store_true", help="Pula npm run build.")
     parser.add_argument("--validate-only", action="store_true", help="Roda apenas npm run validate:details.")
     parser.add_argument(
@@ -233,6 +243,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    if args.education_only and args.skip_education:
+        raise SystemExit("--education-only e --skip-education sao mutuamente exclusivos.")
     results: list[StepResult] = []
     skipped: list[str] = []
 
@@ -242,6 +254,10 @@ def main() -> int:
     if args.profile:
         export_command.append("--profile")
     partition_command = [PYTHON, "data_pipeline/scripts/partition_static_data.py"]
+    education_command = [
+        PYTHON,
+        "data_pipeline/scripts/export_education_indicators.py",
+    ]
     inequality_pilot_command = [
         PYTHON,
         "data_pipeline/scripts/refresh_municipal_inequality_pilot.py",
@@ -256,16 +272,17 @@ def main() -> int:
         run_command("validate", validate_command, results)
         print_summary(
             results,
-            ["export", "partition", "sync", "inequality-pilot", "build"],
+            ["export", "partition", "sync", "inequality-pilot", "education", "build"],
             validate_ok=True,
             build_ok=None,
             profile=args.profile,
         )
         return 0
 
-    run_export = not args.skip_export
-    run_partition = not args.skip_partition
+    run_export = not args.skip_export and not args.education_only
+    run_partition = not args.skip_partition and not args.education_only
     run_sync = run_partition
+    run_education = not args.skip_education
     run_build = not args.skip_build
 
     planned_commands: list[tuple[str, list[str]]] = []
@@ -275,13 +292,15 @@ def main() -> int:
         planned_commands.append(("partition", partition_command))
     if run_export or run_partition:
         planned_commands.append(("inequality-pilot", inequality_pilot_command))
+    if run_education:
+        planned_commands.append(("education", education_command))
     planned_commands.append(("validate", validate_command))
 
     if args.dry_run:
         print_dry_run(planned_commands, run_sync=run_sync, run_build=run_build)
         return 0
 
-    if run_export or run_partition or run_sync:
+    if run_export or run_partition or run_sync or run_education:
         ensure_git_update_safe()
 
     if run_export:
@@ -299,6 +318,11 @@ def main() -> int:
         run_command("inequality-pilot", inequality_pilot_command, results)
     else:
         skipped.append("inequality-pilot")
+
+    if run_education:
+        run_command("education", education_command, results)
+    else:
+        skipped.append("education")
 
     run_command("validate", validate_command, results)
     validate_ok = True

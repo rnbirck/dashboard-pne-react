@@ -31,7 +31,7 @@ from src.pne2026_public_diagnostic_v2 import (  # noqa: E402
 PROPERTY_NAME = "pne2026PublicDiagnosticV2"
 V1_PROPERTY_NAME = "pne2026PublicDiagnostic"
 EXPECTED_MUNICIPALITIES = 497
-EXPECTED_PHYSICAL_FILES = 994
+EXPECTED_PHYSICAL_FILES = 497
 EXPECTED_V2_OCCURRENCES = 15_896
 EXPECTED_V2_ABSENCES = 1_002
 EXPECTED_V1_OCCURRENCES = 9_119
@@ -173,16 +173,14 @@ def _registry(public_data_dir: Path) -> list[dict[str, Any]]:
 
 def _expected_paths(
     public_data_dir: Path, entry: Mapping[str, Any]
-) -> tuple[Path, Path, Path]:
-    slug = str(entry["slug"])
+) -> tuple[Path, Path]:
     municipality_id = str(entry["id_municipio"])
-    canonical = public_data_dir / "municipios" / slug / "diagnostico.json"
-    alias = public_data_dir / "municipios" / municipality_id / "diagnostico.json"
-    pne = public_data_dir / "municipios" / slug / "index.json"
-    for path in (canonical, alias, pne):
+    diagnostic = public_data_dir / "municipios" / municipality_id / "diagnostico.json"
+    pne = public_data_dir / "municipios" / municipality_id / "index.json"
+    for path in (diagnostic, pne):
         if not path.is_file():
             raise RuntimeError(f"Arquivo municipal ausente: {path}")
-    return canonical, alias, pne
+    return diagnostic, pne
 
 
 def _insert_parallel_v2(
@@ -302,22 +300,14 @@ def prepare_materialization(public_data_dir: Path = PUBLIC_DATA_DIR) -> dict[str
     physical_paths = list((public_data_dir / "municipios").glob("*/diagnostico.json"))
     if len(physical_paths) != EXPECTED_PHYSICAL_FILES:
         raise RuntimeError(
-            f"Esperados 994 diagnostico.json físicos; encontrados {len(physical_paths)}."
+            f"Esperados {EXPECTED_PHYSICAL_FILES} diagnostico.json; encontrados {len(physical_paths)}."
         )
 
     for entry in entries:
         municipality_id = str(entry["id_municipio"])
-        canonical_path, alias_path, pne_path = _expected_paths(public_data_dir, entry)
+        canonical_path, pne_path = _expected_paths(public_data_dir, entry)
         canonical_content = canonical_path.read_bytes()
-        alias_content = alias_path.read_bytes()
-        if canonical_content != alias_content:
-            raise RuntimeError(
-                f"{municipality_id}: alias não é byte a byte idêntico ao canônico."
-            )
         contract = _loads(canonical_content, canonical_path)
-        alias_contract = _loads(alias_content, alias_path)
-        if alias_contract != contract:
-            raise RuntimeError(f"{municipality_id}: alias diverge semanticamente.")
         if str(contract.get("municipalityId")) != municipality_id:
             raise RuntimeError(f"{municipality_id}: identidade municipal divergente.")
         if contract.get("schemaVersion") != PUBLIC_SCHEMA_VERSION:
@@ -342,13 +332,14 @@ def prepare_materialization(public_data_dir: Path = PUBLIC_DATA_DIR) -> dict[str
         if output_without_v2 != original_without_v2:
             raise RuntimeError(f"{municipality_id}: propriedade preexistente seria alterada.")
         contents[canonical_path] = output_content
-        contents[alias_path] = output_content
         canonical_before.append((municipality_id, contract, canonical_content))
         canonical_after.append((municipality_id, output_contract, output_content))
         audit_inputs.append((contract, pne_payload))
 
     if len(contents) != EXPECTED_PHYSICAL_FILES:
-        raise RuntimeError(f"Conteúdos preparados: {len(contents)}; esperados 994.")
+        raise RuntimeError(
+            f"Conteúdos preparados: {len(contents)}; esperados {EXPECTED_PHYSICAL_FILES}."
+        )
     v1_before = _v1_audit(canonical_before)
     v1_after = _v1_audit(canonical_after)
     _assert_v1_baseline(v1_before)
@@ -366,7 +357,6 @@ def prepare_materialization(public_data_dir: Path = PUBLIC_DATA_DIR) -> dict[str
         "changedPaths": changed_paths,
         "existingV2ContractCount": existing_v2_count,
         "canonicalCount": len(entries),
-        "aliasCount": len(entries),
         "physicalFileCount": len(contents),
         "aggregateSha256": aggregate,
         "v1Before": v1_before,
@@ -420,10 +410,6 @@ def audit_materialized(public_data_dir: Path = PUBLIC_DATA_DIR) -> dict[str, Any
         raise RuntimeError(
             f"{len(prepared['changedPaths'])} arquivos divergem da geração determinística."
         )
-    for entry in _registry(public_data_dir):
-        canonical, alias, _ = _expected_paths(public_data_dir, entry)
-        if canonical.read_bytes() != alias.read_bytes():
-            raise RuntimeError(f"Alias divergente após escrita: {entry['id_municipio']}")
     return prepared
 
 
@@ -433,7 +419,6 @@ def _public_report(prepared: Mapping[str, Any], written: int) -> dict[str, Any]:
         "version": PUBLIC_VERSION,
         "schemaVersion": PUBLIC_SCHEMA_VERSION,
         "canonicalContracts": prepared["canonicalCount"],
-        "aliases": prepared["aliasCount"],
         "physicalFiles": prepared["physicalFileCount"],
         "writtenFiles": written,
         "aggregateSha256": prepared["aggregateSha256"],

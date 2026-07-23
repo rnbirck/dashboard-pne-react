@@ -732,12 +732,7 @@ def main() -> int:
             "nome": municipio,
             "id_municipio": id_map.get(municipio),
             "slug": slug_map[municipio],
-            "path": f"/data/municipios/{slug_map[municipio]}/index.json",
-            "id_path": (
-                f"/data/municipios/{id_map[municipio]}/index.json"
-                if id_map.get(municipio)
-                else None
-            ),
+            "path": f"/data/municipios/{id_map.get(municipio) or slug_map[municipio]}/index.json",
         }
         for municipio in municipios
     ]
@@ -756,7 +751,8 @@ def main() -> int:
     for position, municipio in enumerate(municipios, start=1):
         slug = slug_map[municipio]
         id_municipio = id_map.get(municipio)
-        print(f"[partition] {position}/{len(municipios)} {municipio} -> {slug}")
+        canonical_id = id_municipio or slug
+        print(f"[partition] {position}/{len(municipios)} {municipio} -> {canonical_id}")
         try:
             municipio_payload = build_municipio_payload(
                 payloads,
@@ -768,42 +764,23 @@ def main() -> int:
                 payloads, municipio, id_municipio
             )
             write_json(
-                OUTPUT_DIR / "municipios" / slug / "index.json",
+                OUTPUT_DIR / "municipios" / canonical_id / "index.json",
                 municipio_payload,
                 stats,
                 expected_paths,
             )
             write_json(
-                OUTPUT_DIR / "municipios" / slug / "diagnostico.json",
+                OUTPUT_DIR / "municipios" / canonical_id / "diagnostico.json",
                 diagnostic_contract,
                 stats,
                 expected_paths,
             )
             write_json(
-                OUTPUT_DIR / "municipios" / slug / "details.json",
+                OUTPUT_DIR / "municipios" / canonical_id / "details.json",
                 extract_indicator_details(payloads["indicator_details"], municipio),
                 stats,
                 expected_paths,
             )
-            if id_municipio and id_municipio != slug:
-                write_json(
-                    OUTPUT_DIR / "municipios" / id_municipio / "index.json",
-                    municipio_payload,
-                    stats,
-                    expected_paths,
-                )
-                write_json(
-                    OUTPUT_DIR / "municipios" / id_municipio / "diagnostico.json",
-                    diagnostic_contract,
-                    stats,
-                    expected_paths,
-                )
-                write_json(
-                    OUTPUT_DIR / "municipios" / id_municipio / "details.json",
-                    extract_indicator_details(payloads["indicator_details"], municipio),
-                    stats,
-                    expected_paths,
-                )
         except Exception as exc:  # noqa: BLE001 - keep processing other municipalities.
             errors.append({"municipio": municipio, "slug": slug, "erro": str(exc)})
             print(f"[partition] ERRO em {municipio}: {exc}")
