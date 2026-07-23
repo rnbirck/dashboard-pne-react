@@ -98,6 +98,7 @@ class MunicipalEducationOverviewTests(unittest.TestCase):
             MUNICIPALITY,
             "2026-07-22T12:00:00-03:00",
             completeness=COMPLETE_EVIDENCE,
+            comparison_completeness={**COMPLETE_EVIDENCE, "referenceYear": 2015},
             supplemental=supplemental(rows),
             performance_rows=performance_rows(),
         )
@@ -302,6 +303,28 @@ class MunicipalEducationOverviewTests(unittest.TestCase):
 
         self.assertTrue(evidence["isCompleteForDerivedZero"])
         self.assertEqual(evidence["municipalitiesPresent"], 1)
+
+    def test_historical_comparison_calculates_growth_reduction_and_stability(self):
+        contract = self.materialize([
+            row(2015, "municipal", "urbana", mat_basico=80, mat_infantil=40, mat_infantil_creche=20, mat_infantil_pre=20),
+            row(2025, "municipal", "urbana", mat_basico=100, mat_infantil=30, mat_infantil_creche=20, mat_infantil_pre=10),
+        ])
+
+        stages = contract["enrollmentComparison"]["stages"]
+        self.assertEqual(stages["basicEducation"]["total"]["percentageChange"]["value"], 25)
+        self.assertEqual(stages["earlyChildhood"]["total"]["percentageChange"]["value"], -25)
+        self.assertEqual(stages["creche"]["total"]["percentageChange"]["value"], 0)
+
+    def test_historical_comparison_handles_zero_denominator_and_unavailable_value(self):
+        contract = self.materialize([
+            row(2015, "municipal", "urbana", mat_medio=0, mat_eja=None),
+            row(2025, "municipal", "urbana", mat_medio=10, mat_eja=5),
+        ])
+
+        stages = contract["enrollmentComparison"]["stages"]
+        self.assertEqual(stages["highSchool"]["total"]["percentageChange"]["state"], "not_applicable")
+        self.assertIsNone(stages["highSchool"]["total"]["percentageChange"]["value"])
+        self.assertEqual(stages["youthAndAdultEducation"]["total"]["percentageChange"]["state"], "unavailable")
 
 
 if __name__ == "__main__":

@@ -26,6 +26,7 @@ PERFORMANCE_SOURCE_URL = (
 )
 VIEW_NAME = "vw_educacao_visao_geral_municipal"
 REFERENCE_YEAR = 2025
+COMPARISON_YEAR = 2015
 EXPECTED_MUNICIPALITIES = 497
 
 NETWORKS = ("municipal", "estadual", "federal", "privada")
@@ -245,6 +246,58 @@ def _breakdown(value: Mapping[str, Any], total: Mapping[str, Any], year: int) ->
     return {"enrollments": dict(value), "share": _percentage(value, total, year)}
 
 
+def _comparison_value(
+    value_2015: Mapping[str, Any], value_2025: Mapping[str, Any]
+) -> dict[str, Any]:
+    resolved_2015 = value_2015["state"] in RESOLVED_STATES
+    resolved_2025 = value_2025["state"] in RESOLVED_STATES
+    first = value_2015["value"] if resolved_2015 else None
+    last = value_2025["value"] if resolved_2025 else None
+    if not resolved_2015 or not resolved_2025:
+        state = "unavailable"
+        percentage = None
+    elif first == 0:
+        state = "not_applicable"
+        percentage = None
+    else:
+        state = "observed"
+        percentage = (last - first) / first * 100
+    return {
+        "value2015": dict(value_2015),
+        "value2025": dict(value_2025),
+        "absoluteChange": None if first is None or last is None else last - first,
+        "percentageChange": {
+            "value": percentage,
+            "numerator": None if first is None or last is None else last - first,
+            "denominator": first,
+            "state": state,
+            "year": REFERENCE_YEAR,
+            "sourceId": SOURCE_ID,
+        },
+    }
+
+
+def _historical_stage_comparison(
+    stage_2015: Mapping[str, Any], stage_2025: Mapping[str, Any]
+) -> dict[str, Any]:
+    result = {"total": _comparison_value(stage_2015["total"], stage_2025["total"])}
+    result["byNetwork"] = {
+        key: _comparison_value(
+            stage_2015["byNetwork"][key]["enrollments"],
+            stage_2025["byNetwork"][key]["enrollments"],
+        )
+        for key in ("publicSubtotal", "municipal", "state", "federal", "private")
+    }
+    result["bySchoolLocation"] = {
+        key: _comparison_value(
+            stage_2015["bySchoolLocation"][key]["enrollments"],
+            stage_2025["bySchoolLocation"][key]["enrollments"],
+        )
+        for key in ("urban", "rural")
+    }
+    return result
+
+
 def _duplicate_grains(rows: Iterable[Mapping[str, Any]]) -> list[tuple[int, str, str]]:
     seen: set[tuple[int, str, str]] = set()
     duplicates: list[tuple[int, str, str]] = []
@@ -256,11 +309,13 @@ def _duplicate_grains(rows: Iterable[Mapping[str, Any]]) -> list[tuple[int, str,
     return duplicates
 
 
-def build_2025_completeness_evidence(
-    rows: Iterable[Mapping[str, Any]], expected_municipalities: int = EXPECTED_MUNICIPALITIES
+def build_year_completeness_evidence(
+    rows: Iterable[Mapping[str, Any]],
+    year: int,
+    expected_municipalities: int = EXPECTED_MUNICIPALITIES,
 ) -> dict[str, Any]:
-    """Formaliza a evidência global exigida para inferir zeros em 2025."""
-    selected_rows = [dict(row) for row in rows if int(row["ano"]) == REFERENCE_YEAR]
+    """Formaliza a evidência global exigida para inferir zeros em um ano."""
+    selected_rows = [dict(row) for row in rows if int(row["ano"]) == year]
     municipality_ids = {str(row["id_municipio"]) for row in selected_rows}
     grain_seen: set[tuple[str, str, str]] = set()
     duplicate_count = 0
@@ -281,7 +336,7 @@ def build_2025_completeness_evidence(
 
     annual_load_present = bool(selected_rows) and len(municipality_ids) == expected_municipalities
     return {
-        "referenceYear": REFERENCE_YEAR,
+        "referenceYear": year,
         "expectedMunicipalities": expected_municipalities,
         "municipalitiesPresent": len(municipality_ids),
         "annualLoadPresent": annual_load_present,
@@ -296,6 +351,12 @@ def build_2025_completeness_evidence(
             and negative_count == 0
         ),
     }
+
+
+def build_2025_completeness_evidence(
+    rows: Iterable[Mapping[str, Any]], expected_municipalities: int = EXPECTED_MUNICIPALITIES
+) -> dict[str, Any]:
+    return build_year_completeness_evidence(rows, REFERENCE_YEAR, expected_municipalities)
 
 
 def audit_fully_null_rows(rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
@@ -492,6 +553,7 @@ def materialize_municipal_education_overview(
     municipality: Mapping[str, str],
     generated_at: str,
     completeness: Mapping[str, Any] | None = None,
+    comparison_completeness: Mapping[str, Any] | None = None,
     supplemental: Mapping[str, Any] | None = None,
     performance_rows: Iterable[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
@@ -530,6 +592,7 @@ def materialize_municipal_education_overview(
         raise ValueError("Localização da escola fora do contrato VGM-1.")
 
     selected_rows = [row for row in source_rows if int(row["ano"]) == REFERENCE_YEAR]
+    comparison_rows = [row for row in source_rows if int(row["ano"]) == COMPARISON_YEAR]
     duplicate_grains = _duplicate_grains(selected_rows)
     audit = audit_fully_null_rows(source_rows)
     negative_fields = [
@@ -583,6 +646,9 @@ def materialize_municipal_education_overview(
     high_school = _stage(
         selected_rows, REFERENCE_YEAR, "mat_medio", basic_total, completeness_evidence
     )
+    eja_stage = _stage(
+        selected_rows, REFERENCE_YEAR, "mat_eja", basic_total, completeness_evidence
+    )
     eja_total = _direct_value(supplemental_values, REFERENCE_YEAR, "mat_eja")
     eja_elementary = _direct_value(supplemental_values, REFERENCE_YEAR, "mat_eja_fundamental")
     eja_high_school = _direct_value(supplemental_values, REFERENCE_YEAR, "mat_eja_medio")
@@ -622,6 +688,48 @@ def materialize_municipal_education_overview(
     special_exclusive = _direct_value(
         supplemental_values, REFERENCE_YEAR, "mat_educacao_especial_classes_exclusivas"
     )
+
+    comparison_completeness = dict(comparison_completeness or {
+        "referenceYear": COMPARISON_YEAR,
+        "isCompleteForDerivedZero": False,
+    })
+    basic_2015 = _observed_value(
+        comparison_rows, COMPARISON_YEAR, "mat_basico", ignore_fully_null_rows=True
+    )
+    historical_2015 = {
+        "earlyChildhood": _stage(comparison_rows, COMPARISON_YEAR, "mat_infantil", basic_2015, comparison_completeness),
+        "creche": _stage(comparison_rows, COMPARISON_YEAR, "mat_infantil_creche", basic_2015, comparison_completeness),
+        "preSchool": _stage(comparison_rows, COMPARISON_YEAR, "mat_infantil_pre", basic_2015, comparison_completeness),
+        "elementary": _stage(comparison_rows, COMPARISON_YEAR, "mat_fundamental", basic_2015, comparison_completeness),
+        "initialYears": _stage(comparison_rows, COMPARISON_YEAR, "mat_fundamental_anos_iniciais", basic_2015, comparison_completeness),
+        "finalYears": _stage(comparison_rows, COMPARISON_YEAR, "mat_fundamental_anos_finais", basic_2015, comparison_completeness),
+        "highSchool": _stage(comparison_rows, COMPARISON_YEAR, "mat_medio", basic_2015, comparison_completeness),
+        "youthAndAdultEducation": _stage(comparison_rows, COMPARISON_YEAR, "mat_eja", basic_2015, comparison_completeness),
+    }
+    historical_2025 = {
+        "earlyChildhood": early_total,
+        "creche": creche,
+        "preSchool": pre_school,
+        "elementary": elementary_total,
+        "initialYears": initial_years,
+        "finalYears": final_years,
+        "highSchool": high_school,
+        "youthAndAdultEducation": eja_stage,
+    }
+    enrollment_comparison = {
+        "years": [COMPARISON_YEAR, REFERENCE_YEAR],
+        "stages": {
+            "basicEducation": {"total": _comparison_value(basic_2015, basic_total)},
+            **{
+                key: _historical_stage_comparison(historical_2015[key], historical_2025[key])
+                for key in historical_2015
+            },
+        },
+        "methodologyNote": (
+            "A variação é (matrículas de 2025 − matrículas de 2015) / matrículas de 2015 × 100. "
+            "Base zero em 2015 e valores indisponíveis não produzem taxa."
+        ),
+    }
 
     composition_sum = _sum_values(
         [
@@ -931,9 +1039,17 @@ def materialize_municipal_education_overview(
             },
         },
         "schoolPerformance": school_performance,
+        "enrollmentComparison": enrollment_comparison,
         "earlyChildhood": {"total": early_total, "creche": creche, "preSchool": pre_school},
         "elementary": {"total": elementary_total, "initialYears": initial_years, "finalYears": final_years},
         "sources": [
+            {
+                "id": f"{SOURCE_ID}_2015",
+                "organization": "Instituto Nacional de Estudos e Pesquisas Educacionais Anísio Teixeira (INEP)",
+                "title": "Censo Escolar da Educação Básica",
+                "referenceYear": COMPARISON_YEAR,
+                "url": SOURCE_URL,
+            },
             {
                 "id": SOURCE_ID,
                 "organization": "Instituto Nacional de Estudos e Pesquisas Educacionais Anísio Teixeira (INEP)",

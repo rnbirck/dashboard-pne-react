@@ -44,6 +44,7 @@ test('visão geral municipal preserva zero, ausência e contrato ampliado', () =
     highSchool: { total: { byNetwork: {}, bySchoolLocation: {} }, integratedTechnical: {} },
     specialEducation: {},
     schoolPerformance: { referenceYear: 2025 },
+    enrollmentComparison: { years: [2015, 2025], stages: {} },
   }, '4319356'), true)
 })
 

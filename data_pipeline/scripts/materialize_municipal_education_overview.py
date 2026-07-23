@@ -30,6 +30,7 @@ from src.municipal_education_overview import (  # noqa: E402
     VIEW_NAME,
     audit_fully_null_rows,
     build_2025_completeness_evidence,
+    build_year_completeness_evidence,
     materialize_municipal_education_overview,
 )
 
@@ -87,11 +88,9 @@ FORBIDDEN_CONTRACT_FIELDS = {
     "historical",
     "history",
     "annualComparison",
-    "yearComparison",
     "annualFallback",
     "fallbackYear",
     "trend",
-    "variation",
     "projection",
     "comparability",
 }
@@ -162,7 +161,7 @@ def load_view_rows(engine: Any) -> list[dict[str, Any]]:
         "v.ano, v.id_municipio, v.dependencia, v.localizacao, "
         "v.mat_basico, v.mat_infantil, v.mat_infantil_creche, v.mat_infantil_pre, "
         "v.mat_fundamental, v.mat_fundamental_anos_iniciais, v.mat_fundamental_anos_finais, "
-        "c.mat_medio"
+        "c.mat_medio, c.mat_eja"
     )
     query = text(
         f"""
@@ -173,7 +172,7 @@ def load_view_rows(engine: Any) -> list[dict[str, Any]]:
          AND c.id_municipio = v.id_municipio
          AND c.dependencia = v.dependencia
          AND c.localizacao = v.localizacao
-        WHERE v.ano = :reference_year
+        WHERE v.ano IN (:comparison_year, :reference_year)
         ORDER BY v.id_municipio, v.dependencia, v.localizacao
         """
     )
@@ -182,7 +181,7 @@ def load_view_rows(engine: Any) -> list[dict[str, Any]]:
             rows = [
                 dict(row)
                 for row in connection.execute(
-                    query, {"reference_year": REFERENCE_YEAR}
+                    query, {"comparison_year": 2015, "reference_year": REFERENCE_YEAR}
                 ).mappings()
             ]
     except Exception as exc:  # noqa: BLE001 - no fallback source is allowed.
@@ -203,6 +202,7 @@ def load_view_rows(engine: Any) -> list[dict[str, Any]]:
         "mat_fundamental_anos_iniciais",
         "mat_fundamental_anos_finais",
         "mat_medio",
+        "mat_eja",
     }
     if not rows:
         raise RuntimeError(
@@ -213,8 +213,8 @@ def load_view_rows(engine: Any) -> list[dict[str, Any]]:
         raise RuntimeError(
             f"A view obrigatória {VIEW_NAME} não retornou a estrutura esperada: {sorted(missing)}."
         )
-    if any(int(row["ano"]) != REFERENCE_YEAR for row in rows):
-        raise RuntimeError("A leitura da view retornou ano diferente de 2025.")
+    if {int(row["ano"]) for row in rows} != {2015, REFERENCE_YEAR}:
+        raise RuntimeError("A leitura da view precisa retornar somente 2015 e 2025.")
     return rows
 
 
@@ -326,12 +326,9 @@ def _validate_contract(
         for key in value
     ):
         raise RuntimeError(f"{municipality_id}: contrato inclui campo temporal proibido.")
-    if any(
-        key == "year" and value != REFERENCE_YEAR
-        for mapping in _walk_values(contract)
-        for key, value in mapping.items()
-    ):
-        raise RuntimeError(f"{municipality_id}: contrato inclui ano diferente de 2025.")
+    comparison = contract.get("enrollmentComparison") or {}
+    if comparison.get("years") != [2015, 2025] or not comparison.get("stages"):
+        raise RuntimeError(f"{municipality_id}: comparação histórica incompleta.")
     for path in CORE_TOTAL_PATHS:
         value = _value_at(contract, path)
         if not isinstance(value, Mapping) or "state" not in value:
@@ -352,10 +349,7 @@ def _validate_contract(
             raise RuntimeError(
                 f"{municipality_id}: localizações incompletas em {'.'.join(stage_path)}."
             )
-    if not contract.get("sources") or any(
-        source.get("referenceYear") != REFERENCE_YEAR
-        for source in contract["sources"]
-    ):
+    if not contract.get("sources"):
         raise RuntimeError(f"{municipality_id}: fontes incompatíveis.")
     return _validate_snapshot_value_states(contract, municipality_id)
 
@@ -573,7 +567,14 @@ def materialize_contracts(
         raise RuntimeError(
             f"A carga 2025 não é completa para zeros derivados: {completeness}."
         )
-    global_null_audit = audit_fully_null_rows(rows_list)
+    comparison_completeness = build_year_completeness_evidence(rows_list, 2015)
+    if not comparison_completeness["isCompleteForDerivedZero"]:
+        raise RuntimeError(
+            f"A carga 2015 não é completa para zeros derivados: {comparison_completeness}."
+        )
+    global_null_audit = audit_fully_null_rows(
+        row for row in rows_list if int(row["ano"]) == REFERENCE_YEAR
+    )
     if global_null_audit["affectedMunicipalityYears"] != 71:
         raise RuntimeError(
             "A auditoria de nullCoreRows divergiu do baseline VGM-2.1: "
@@ -588,7 +589,7 @@ def materialize_contracts(
         view_basic = sum(
             int(row["mat_basico"])
             for row in rows_by_municipality[municipality_id]
-            if row.get("mat_basico") is not None
+            if int(row["ano"]) == REFERENCE_YEAR and row.get("mat_basico") is not None
         )
         if official and official.get("mat_basico_oficial") != view_basic:
             raise RuntimeError(
@@ -597,7 +598,7 @@ def materialize_contracts(
         view_high_school = sum(
             int(row["mat_medio"])
             for row in rows_by_municipality[municipality_id]
-            if row.get("mat_medio") is not None
+            if int(row["ano"]) == REFERENCE_YEAR and row.get("mat_medio") is not None
         )
         if official and official.get("mat_medio") != view_high_school:
             raise RuntimeError(
@@ -608,6 +609,7 @@ def materialize_contracts(
             entry,
             generated_at,
             completeness=completeness,
+            comparison_completeness=comparison_completeness,
             supplemental=official,
             performance_rows=performance.get(municipality_id, []),
         )

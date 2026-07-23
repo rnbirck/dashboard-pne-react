@@ -58,16 +58,21 @@ export function DiagnosticPrintReport({ description, municipio, publicDiagnostic
       <div className="diagnostic-print-report__themes">
         {themeGroups.map(({ results, theme }) => (
           <section className="diagnostic-print-theme" key={theme.id}>
-            <header className="diagnostic-print-theme__header">
-              <div>
-                <p>Tema {theme.order}</p>
-                <h2>{theme.label}</h2>
-              </div>
-              <p>{results.length} {results.length === 1 ? 'indicador' : 'indicadores'}</p>
-            </header>
-
             <div className="diagnostic-print-theme__indicators">
-              {results.map(({ goal, result }) => (
+              <div className="diagnostic-print-theme__opening">
+                <header className="diagnostic-print-theme__header">
+                  <div>
+                    <p>Tema {theme.order}</p>
+                    <h2>{theme.label}</h2>
+                  </div>
+                  <p>{results.length} {results.length === 1 ? 'indicador' : 'indicadores'}</p>
+                </header>
+                <DiagnosticPrintIndicator
+                  goal={results[0].goal}
+                  result={results[0].result}
+                />
+              </div>
+              {results.slice(1).map(({ goal, result }) => (
                 <DiagnosticPrintIndicator
                   goal={goal}
                   key={`${goal.goalId}-${result.indicatorId}`}
@@ -107,6 +112,10 @@ function DiagnosticPrintIndicator({ goal, result }) {
   const supportingReadings = getPublicSupportingReadings(result)
   const publicReading = getPublicResultReading(result)
   const status = getPublicResultStatus(result)
+  const contextReadings = supportingReadings.filter(({ kind }) => kind !== 'trajectory')
+  const trajectoryReading = supportingReadings.find(({ kind }) => kind === 'trajectory')
+  const comparisonItemCount = Number(Boolean(stateComparison?.reading)) + contextReadings.length
+  const closingItemCount = Number(Boolean(trajectoryReading)) + Number(Boolean(publicReading))
   const measures = [
     {
       label: 'Município',
@@ -137,44 +146,66 @@ function DiagnosticPrintIndicator({ goal, result }) {
 
   return (
     <article className="diagnostic-print-indicator">
-      <header className="diagnostic-print-indicator__header">
-        <p>Meta {goal.goalId} — {goal.title}</p>
-        <h3>{result.publicName}</h3>
-        <span>{status.label}</span>
-      </header>
+      <div className="diagnostic-print-indicator__top-row">
+        <header className="diagnostic-print-indicator__header">
+          <p>Meta {goal.goalId} — {goal.title}</p>
+          <h3>{result.publicName}</h3>
+          <span>{status.label}</span>
+        </header>
 
-      {measures.length ? (
-        <dl className={`diagnostic-print-indicator__measures diagnostic-print-indicator__measures--count-${measures.length}`}>
-          {measures.map(({ detail, label, value }) => (
-            <div key={label}>
-              <dt>{label}</dt>
-              <dd>
-                <strong>{value}</strong>
-                {detail ? <span>{detail}</span> : null}
-              </dd>
-            </div>
+        {measures.length ? (
+          <dl className={`diagnostic-print-indicator__measures diagnostic-print-indicator__measures--count-${measures.length}`}>
+            {measures.map(({ detail, label, value }) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>
+                  <strong>{value}</strong>
+                  {detail ? <span>{detail}</span> : null}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        ) : null}
+      </div>
+
+      {comparisonItemCount ? (
+        <section className={`diagnostic-print-indicator__comparison-row diagnostic-print-indicator__comparison-row--count-${comparisonItemCount}`}>
+          {stateComparison?.reading ? (
+            <DiagnosticPrintReading title="Comparação com o RS">
+              <p>{stateComparison.reading}</p>
+            </DiagnosticPrintReading>
+          ) : null}
+          {contextReadings.map((reading) => (
+            <DiagnosticPrintReading key={`${reading.kind}-${reading.title}`} title={reading.title}>
+              {reading.lines.map((line) => <p key={line}>{line}</p>)}
+            </DiagnosticPrintReading>
           ))}
-        </dl>
+        </section>
       ) : null}
 
-      {publicReading ? (
-        <p className="diagnostic-print-indicator__reading">
-          <strong>Leitura:</strong> {publicReading}
-        </p>
+      {closingItemCount ? (
+        <section className={`diagnostic-print-indicator__closing-row diagnostic-print-indicator__closing-row--count-${closingItemCount}`}>
+          {trajectoryReading ? (
+            <DiagnosticPrintReading title={trajectoryReading.title}>
+              {trajectoryReading.lines.map((line) => <p key={line}>{line}</p>)}
+            </DiagnosticPrintReading>
+          ) : null}
+          {publicReading ? (
+            <DiagnosticPrintReading title="Leitura do indicador">
+              <p>{publicReading}</p>
+            </DiagnosticPrintReading>
+          ) : null}
+        </section>
       ) : null}
-
-      {stateComparison?.reading ? (
-        <p className="diagnostic-print-indicator__reading">
-          <strong>Comparação com o RS:</strong> {stateComparison.reading}
-        </p>
-      ) : null}
-
-      {supportingReadings.map((reading) => (
-        <div className="diagnostic-print-indicator__reading" key={`${reading.kind}-${reading.title}`}>
-          <strong>{reading.title}:</strong>
-          {reading.lines.map((line) => <p key={line}>{line}</p>)}
-        </div>
-      ))}
     </article>
+  )
+}
+
+function DiagnosticPrintReading({ children, title }) {
+  return (
+    <section className="diagnostic-print-indicator__reading">
+      <strong>{title}</strong>
+      <div>{children}</div>
+    </section>
   )
 }

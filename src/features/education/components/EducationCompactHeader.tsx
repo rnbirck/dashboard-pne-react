@@ -1,8 +1,8 @@
 import type { ReactNode, Ref } from 'react'
 
-export type EducationHeaderVariant = 'section' | 'detail' | 'scenarios' | 'methodology'
+type EducationHeaderVariant = 'section' | 'detail' | 'scenarios' | 'methodology'
 
-export type EducationContextIcon =
+type EducationContextIcon =
   | 'municipality'
   | 'section'
   | 'scope'
@@ -11,7 +11,7 @@ export type EducationContextIcon =
   | 'source'
   | 'projection'
 
-export interface EducationContextItem {
+interface EducationContextItem {
   icon?: EducationContextIcon
   label: string
   value: ReactNode

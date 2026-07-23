@@ -26,6 +26,18 @@ Não há backend de aplicação em produção. Toda informação disponível no 
 
 As rotas são resolvidas em `src/app/appRoutes.ts`. O município selecionado é mantido pelo `MunicipalityContext` e sincronizado com a URL quando necessário.
 
+## Mapa atual
+
+| Área | Rota principal | Componente principal | Dados | Gerador | Testes |
+| --- | --- | --- | --- | --- | --- |
+| Entrada | `#home` | `src/pages/Home.jsx` | `municipios.json`, `municipios_index.json`, `indicadores.json` | `data_pipeline/scripts/export_static_data.py` | `test:app-routing`, E2E |
+| PNE institucional | `#pne-overview`, `#pne-legal-goals` | `PneOverviewPage`, `PneLegalGoalsPage` | catálogos de indicadores, textos e relações legais em `src/data` | `export_static_data.py`, `scripts/generate-diagnostic-catalog.mjs` | `test:unit`, `test:data-sources` |
+| Ciclos PNE | `#pne2014`, `#pne2026` | `src/pages/CyclePage.jsx` | `municipios/<ibge>/index.json`, `details.json`, referências estaduais por ciclo | `data_pipeline/src/pne`, `export_static_data.py` | `test:unit`, `test:python` |
+| Diagnóstico | `#diagnostico` | `src/pages/Diagnostico.jsx` | `municipios/<ibge>/diagnostico.json` | `materialize_pne2026_public_diagnostic_v2.py`, `refresh_municipal_decision_summary.py` | `test:diagnostic`, `test:python` |
+| Educação | `#educacao` com `secao` | `src/features/education/EducationPage.tsx` | `municipios/<ibge>/index.json`, `educacao/visao-geral-municipal/<ibge>.json` | `export_education_indicators.py`, `materialize_municipal_education_overview.py` | `test:education`, `test:python` |
+| Panorama financeiro | `#financeiros-panorama` | `MunicipalFinancePanoramaPage` | `municipios/<ibge>/financeiro.json`, histórico anual da QSE | `generate_municipal_finance.py`, `generate_qse_annual.py` | `test:municipal-finance`, `test:python` |
+| Módulos financeiros | `#financeiros`, `#financeiros-*` | `src/pages/FinancialPage.jsx` | contrato municipal, catálogos e metadados de `src/data` | exportadores de Fundeb/PNATE e geradores financeiros | `test:municipal-finance`, `test:data-sources` |
+
 ## Contratos de dados
 
 Os arquivos globais pequenos (`municipios.json`, `municipios_index.json` e `indicadores.json`) são carregados no início. O slug continua sendo o identificador legível da rota, mas os arquivos municipais são canônicos somente pelo código IBGE: `/data/municipios/<ibge>/...`.
@@ -35,18 +47,6 @@ Os arquivos globais pequenos (`municipios.json`, `municipios_index.json` e `indi
 ## Pipeline
 
 As regras dos ciclos ficam em `data_pipeline/src/pne`, os detalhes em `pne/indicator_details.py` e os exportadores especializados em módulos Python puros. O pipeline não inicializa aplicação web, páginas, layouts ou callbacks. O fluxo operacional está em [OPERACAO.md](OPERACAO.md).
-
-## Armazenamento versionado
-
-A auditoria estrutural de julho de 2026 calculou tamanho e SHA-256 de cada um dos 5.999 arquivos então existentes em `public/data` e `data_pipeline/data`.
-
-- `public/data`: 5.988 arquivos e 1.706.721.417 bytes antes da deduplicação;
-- `data_pipeline/data`: 11 snapshots/fontes e 23.153.309 bytes, sem duplicata exata com `public/data`;
-- aliases municipais por slug: 1.988 arquivos idênticos aos caminhos IBGE, 579.374.688 bytes;
-- aliases da visão geral educacional: 497 arquivos idênticos aos arquivos IBGE, 23.214.113 bytes;
-- repetição textual interna mantida: ganho bruto teórico de até 135.304.596 bytes, dos quais cerca de 21.769.710 bytes estão em títulos, unidades, fontes e textos metodológicos.
-
-Os 602.588.801 bytes de aliases regeneráveis foram removidos após comparação byte a byte. A repetição interna foi preservada porque transformá-la em catálogos compartilhados mudaria contratos, granularidade de cache e carregamento. Os 11 arquivos de `data_pipeline/data` foram preservados por serem snapshots ou fontes de regeneração.
 
 ## Publicação e segurança
 

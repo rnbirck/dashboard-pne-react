@@ -1,8 +1,6 @@
-import type { AppPageKey, FinancialPageKey } from './app'
+import type { AppPageKey } from './app'
 
-export type { AppPageKey, FinancialPageKey }
-
-export type HashParameterValue = string | number | boolean | null | undefined
+type HashParameterValue = string | number | boolean | null | undefined
 export type HashParameterMap = Record<string, HashParameterValue>
 
 export interface LocationLike {

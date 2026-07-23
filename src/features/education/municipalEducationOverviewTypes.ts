@@ -53,6 +53,28 @@ export interface StageSnapshot {
   bySchoolLocation: SchoolLocationBreakdown
 }
 
+export interface EnrollmentComparisonValue {
+  value2015: SnapshotValue
+  value2025: SnapshotValue
+  absoluteChange: number | null
+  percentageChange: SnapshotPercentage
+}
+
+export interface HistoricalBreakdownComparison {
+  total: EnrollmentComparisonValue
+  byNetwork?: {
+    publicSubtotal: EnrollmentComparisonValue
+    municipal: EnrollmentComparisonValue
+    state: EnrollmentComparisonValue
+    federal: EnrollmentComparisonValue
+    private: EnrollmentComparisonValue
+  }
+  bySchoolLocation?: {
+    urban: EnrollmentComparisonValue
+    rural: EnrollmentComparisonValue
+  }
+}
+
 export interface CompositionComponent<TDetails extends Record<string, SnapshotValue>> {
   total: SnapshotValue
   details: TDetails
@@ -155,6 +177,21 @@ export interface MunicipalEducationOverviewV1 {
       highSchool: SchoolPerformanceStage
     }
     sourceId: string
+  }
+  enrollmentComparison: {
+    years: [2015, 2025]
+    stages: {
+      basicEducation: HistoricalBreakdownComparison
+      earlyChildhood: HistoricalBreakdownComparison
+      creche: HistoricalBreakdownComparison
+      preSchool: HistoricalBreakdownComparison
+      elementary: HistoricalBreakdownComparison
+      initialYears: HistoricalBreakdownComparison
+      finalYears: HistoricalBreakdownComparison
+      highSchool: HistoricalBreakdownComparison
+      youthAndAdultEducation: HistoricalBreakdownComparison
+    }
+    methodologyNote: string
   }
   earlyChildhood: {
     total: StageSnapshot

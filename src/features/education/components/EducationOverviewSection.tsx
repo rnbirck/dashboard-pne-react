@@ -1,6 +1,8 @@
 import { buildAppHash } from '../../../app/appHash'
+import { hasRelevantNetworkComparison } from '../enrollmentComparisonPresentation'
 import type {
   BreakdownValue,
+  EnrollmentComparisonValue,
   MunicipalEducationOverviewV1,
   SnapshotPercentage,
   SnapshotValue,
@@ -24,7 +26,7 @@ interface SnapshotMatrixRow {
 }
 
 const NETWORK_ROWS: ReadonlyArray<SnapshotMatrixRow> = [
-  { label: 'Pública (subtotal)', select: (stage) => stage.byNetwork.publicSubtotal },
+  { label: 'Rede pública', select: (stage) => stage.byNetwork.publicSubtotal },
   { label: 'Municipal', select: (stage) => stage.byNetwork.municipal },
   { label: 'Estadual', select: (stage) => stage.byNetwork.state },
   { label: 'Federal', select: (stage) => stage.byNetwork.federal },
@@ -65,6 +67,7 @@ export function EducationOverviewSection({ data }: EducationOverviewSectionProps
       />
       <HighSchoolStageSnapshot data={data} />
       <SchoolPerformanceSection data={data} />
+      <EnrollmentComparisonSection data={data} />
       <EducationOverviewSources data={data} />
     </div>
   )
@@ -265,6 +268,128 @@ function SchoolPerformanceSection({ data }: Pick<EducationOverviewSectionProps, 
   )
 }
 
+const COMPARISON_STAGES = [
+  ['basicEducation', 'Educação Básica'],
+  ['earlyChildhood', 'Educação Infantil'],
+  ['creche', 'Creche'],
+  ['preSchool', 'Pré-escola'],
+  ['elementary', 'Ensino Fundamental'],
+  ['initialYears', 'Anos Iniciais'],
+  ['finalYears', 'Anos Finais'],
+  ['highSchool', 'Ensino Médio'],
+  ['youthAndAdultEducation', 'Educação de Jovens e Adultos — EJA'],
+] as const
+
+const COMPARISON_NETWORKS = [
+  ['publicSubtotal', 'Rede pública'],
+  ['municipal', 'Municipal'],
+  ['state', 'Estadual'],
+  ['federal', 'Federal'],
+  ['private', 'Privada'],
+] as const
+
+const COMPARISON_LOCATIONS = [
+  ['urban', 'Urbana'],
+  ['rural', 'Rural'],
+] as const
+
+function EnrollmentComparisonSection({ data }: Pick<EducationOverviewSectionProps, 'data'>) {
+  const stages = data.enrollmentComparison.stages
+  const breakdownStages = COMPARISON_STAGES.filter(([key]) => key !== 'basicEducation')
+  return (
+    <section className="municipal-education-overview__section municipal-enrollment-comparison" aria-labelledby="municipal-enrollment-comparison-title">
+      <div className="municipal-education-overview__section-heading">
+        <h2 id="municipal-enrollment-comparison-title">Comparação das matrículas — 2015 e 2025</h2>
+        <p>Os valores mostram as matrículas registradas em 2015 e 2025. A variação corresponde à mudança percentual entre os dois anos.</p>
+      </div>
+      <ComparisonTable
+        caption="Matrículas por etapa e modalidade em 2015 e 2025"
+        rows={COMPARISON_STAGES.map(([key, label]) => ({ label, value: stages[key].total }))}
+        title="Matrículas por etapa e modalidade"
+      />
+      <div className="municipal-enrollment-comparison__group">
+        <h3>Dependência administrativa por etapa</h3>
+        <p className="municipal-enrollment-comparison__note">Rede pública corresponde à soma das matrículas municipal, estadual e federal. Redes sem matrículas registradas em 2015 e 2025 não são exibidas.</p>
+        {breakdownStages.map(([key, label]) => {
+          const rows = COMPARISON_NETWORKS.map(([network, networkLabel]) => ({
+              label: networkLabel,
+              value: stages[key].byNetwork![network],
+            })).filter(({ value }) => hasRelevantNetworkComparison(value))
+          return rows.length ? (
+            <ComparisonTable
+              caption={`${label}: matrículas por dependência administrativa em 2015 e 2025`}
+              key={key}
+              rows={rows}
+              title={label}
+            />
+          ) : null
+        })}
+      </div>
+      <div className="municipal-enrollment-comparison__group">
+        <h3>Localização da escola por etapa</h3>
+        {breakdownStages.map(([key, label]) => (
+          <ComparisonTable
+            caption={`${label}: matrículas por localização da escola em 2015 e 2025`}
+            key={key}
+            rows={COMPARISON_LOCATIONS.map(([location, locationLabel]) => ({
+              label: locationLabel,
+              value: stages[key].bySchoolLocation![location],
+            }))}
+            title={label}
+          />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function ComparisonTable({
+  caption,
+  rows,
+  title,
+}: {
+  caption: string
+  rows: Array<{ label: string; value: EnrollmentComparisonValue }>
+  title: string
+}) {
+  return (
+    <section className="municipal-enrollment-comparison__table">
+      <h4>{title}</h4>
+      <table>
+        <caption>{caption}</caption>
+        <thead><tr><th scope="col">Etapa ou recorte</th><th scope="col">2015</th><th scope="col">2025</th><th scope="col">Variação 2015–2025</th></tr></thead>
+        <tbody>{rows.map(({ label, value }) => (
+          <tr key={label}>
+            <th scope="row">{label}</th>
+            <td data-label="2015">{formatOverviewEnrollments(value.value2015)}</td>
+            <td data-label="2025">{formatOverviewEnrollments(value.value2025)}</td>
+            <td className={`municipal-enrollment-comparison__variation municipal-enrollment-comparison__variation--${getComparisonVariationTone(value)}`} data-label="Variação">
+              {formatComparisonPercentage(value)}
+            </td>
+          </tr>
+        ))}</tbody>
+      </table>
+    </section>
+  )
+}
+
+function formatComparisonPercentage(value: EnrollmentComparisonValue): string {
+  const percentage = value.percentageChange
+  if (percentage.state !== 'observed' || percentage.value === null) return '—'
+  if (percentage.value === 0) return '0,0%'
+  const formatted = new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(Math.abs(percentage.value))
+  return `${percentage.value > 0 ? '+' : '−'}${formatted}%`
+}
+
+function getComparisonVariationTone(value: EnrollmentComparisonValue): 'positive' | 'negative' | 'neutral' {
+  const percentage = value.percentageChange
+  if (percentage.state !== 'observed' || percentage.value === null || percentage.value === 0) return 'neutral'
+  return percentage.value > 0 ? 'positive' : 'negative'
+}
+
 function EducationStageSnapshot({
   data,
   detailsHref,
@@ -401,7 +526,7 @@ function EducationSnapshotMatrix({
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr className={row.label === 'Pública (subtotal)' ? 'municipal-education-matrix__subtotal' : undefined} key={row.label}>
+              <tr className={row.label === 'Rede pública' ? 'municipal-education-matrix__subtotal' : undefined} key={row.label}>
                 <th scope="row">{row.label}</th>
                 {splitStage ? (() => {
                   const value = row.select(splitStage.value)
@@ -429,7 +554,7 @@ function EducationSnapshotMatrix({
             <dl className="municipal-education-matrix__mobile-split">
               {rows.map((row) => {
                 const value = row.select(splitStage.value)
-                return <div className={row.label === 'Pública (subtotal)' ? 'municipal-education-matrix__mobile-subtotal' : undefined} key={row.label}>
+                return <div className={row.label === 'Rede pública' ? 'municipal-education-matrix__mobile-subtotal' : undefined} key={row.label}>
                   <dt>{row.label}</dt>
                   <dd><span>Matrículas:</span><MatrixEnrollment value={value} /></dd>
                   <dd><span>Participação:</span><MatrixPercentage value={value} /></dd>
@@ -446,7 +571,7 @@ function EducationSnapshotMatrix({
                 {rows.map((row) => {
                   const value = row.select(stage.value)
                   return (
-                    <div className={row.label === 'Pública (subtotal)' ? 'municipal-education-matrix__mobile-subtotal' : undefined} key={row.label}>
+                    <div className={row.label === 'Rede pública' ? 'municipal-education-matrix__mobile-subtotal' : undefined} key={row.label}>
                       <dt>{row.label}</dt>
                       <dd aria-label={describeOverviewMatrixValue(value)}><MatrixValue value={value} /></dd>
                     </div>

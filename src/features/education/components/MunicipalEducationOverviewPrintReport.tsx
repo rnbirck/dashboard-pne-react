@@ -1,5 +1,6 @@
 import type {
   BreakdownValue,
+  EnrollmentComparisonValue,
   MunicipalEducationOverviewV1,
   SnapshotPercentage,
   SnapshotValue,
@@ -12,6 +13,7 @@ import {
   formatSchoolPerformanceRate,
   getMunicipalOverviewMethodologyHighlights,
 } from '../municipalEducationOverviewPresentation'
+import { hasRelevantNetworkComparison } from '../enrollmentComparisonPresentation'
 
 interface MunicipalEducationOverviewPrintReportProps {
   data: MunicipalEducationOverviewV1
@@ -25,7 +27,7 @@ interface PrintMatrixRow {
 }
 
 const NETWORK_ROWS: ReadonlyArray<PrintMatrixRow> = [
-  { label: 'Pública (subtotal)', subtotal: true, select: (stage) => stage.byNetwork.publicSubtotal },
+  { label: 'Rede pública', subtotal: true, select: (stage) => stage.byNetwork.publicSubtotal },
   { label: 'Municipal', select: (stage) => stage.byNetwork.municipal },
   { label: 'Estadual', select: (stage) => stage.byNetwork.state },
   { label: 'Federal', select: (stage) => stage.byNetwork.federal },
@@ -71,6 +73,7 @@ export function MunicipalEducationOverviewPrintReport({
       />
       <PrintHighSchoolSection data={data} />
       <PrintSchoolPerformance data={data} />
+      <PrintEnrollmentComparison data={data} />
 
       <section className="municipal-education-print-report__sources" aria-labelledby="municipal-education-print-sources-title">
         <h2 id="municipal-education-print-sources-title">Fontes das informações</h2>
@@ -183,6 +186,70 @@ function PrintSchoolPerformance({ data }: { data: MunicipalEducationOverviewV1 }
     </table>
     <p>As taxas correspondem ao resultado escolar informado pelo INEP para o conjunto das redes do município. Aprovação, reprovação e abandono totalizam 100%.</p>
   </section>
+}
+
+const PRINT_COMPARISON_STAGES = [
+  ['basicEducation', 'Educação Básica'],
+  ['earlyChildhood', 'Educação Infantil'],
+  ['creche', 'Creche'],
+  ['preSchool', 'Pré-escola'],
+  ['elementary', 'Ensino Fundamental'],
+  ['initialYears', 'Anos Iniciais'],
+  ['finalYears', 'Anos Finais'],
+  ['highSchool', 'Ensino Médio'],
+  ['youthAndAdultEducation', 'Educação de Jovens e Adultos — EJA'],
+] as const
+
+function PrintEnrollmentComparison({ data }: { data: MunicipalEducationOverviewV1 }) {
+  const stages = data.enrollmentComparison.stages
+  const breakdown = PRINT_COMPARISON_STAGES.filter(([key]) => key !== 'basicEducation')
+  return <section className="municipal-education-print-comparison">
+    <h2>Comparação das matrículas — 2015 e 2025</h2>
+    <p>Os valores mostram as matrículas registradas em 2015 e 2025. A variação corresponde à mudança percentual entre os dois anos.</p>
+    <PrintComparisonTable title="Matrículas por etapa e modalidade" rows={PRINT_COMPARISON_STAGES.map(([key, label]) => [label, stages[key].total])} />
+    <h3>Dependência administrativa por etapa</h3>
+    <p>Rede pública corresponde à soma das matrículas municipal, estadual e federal. Redes sem matrículas registradas em 2015 e 2025 não são exibidas.</p>
+    {breakdown.map(([key, label]) => {
+      const rows = [
+        ['Rede pública', stages[key].byNetwork!.publicSubtotal],
+        ['Municipal', stages[key].byNetwork!.municipal],
+        ['Estadual', stages[key].byNetwork!.state],
+        ['Federal', stages[key].byNetwork!.federal],
+        ['Privada', stages[key].byNetwork!.private],
+      ] as Array<readonly [string, EnrollmentComparisonValue]>
+      const visibleRows = rows.filter(([, value]) => hasRelevantNetworkComparison(value))
+      return visibleRows.length
+        ? <PrintComparisonTable key={`network-${key}`} title={label} rows={visibleRows} />
+        : null
+    })}
+    <h3>Localização da escola por etapa</h3>
+    {breakdown.map(([key, label]) => <PrintComparisonTable key={`location-${key}`} title={label} rows={[
+      ['Urbana', stages[key].bySchoolLocation!.urban],
+      ['Rural', stages[key].bySchoolLocation!.rural],
+    ]} />)}
+    <p>{data.enrollmentComparison.methodologyNote}</p>
+  </section>
+}
+
+function PrintComparisonTable({ rows, title }: {
+  rows: Array<readonly [string, EnrollmentComparisonValue]>
+  title: string
+}) {
+  return <section className="municipal-education-print-comparison__table">
+    <h4>{title}</h4>
+    <table>
+      <thead><tr><th scope="col">Etapa ou recorte</th><th scope="col">2015</th><th scope="col">2025</th><th scope="col">Variação 2015–2025</th></tr></thead>
+      <tbody>{rows.map(([label, value]) => <tr key={label}><th scope="row">{label}</th><td>{formatOverviewEnrollments(value.value2015)}</td><td>{formatOverviewEnrollments(value.value2025)}</td><td>{formatPrintComparisonPercentage(value)}</td></tr>)}</tbody>
+    </table>
+  </section>
+}
+
+function formatPrintComparisonPercentage(value: EnrollmentComparisonValue): string {
+  const percentage = value.percentageChange
+  if (percentage.state !== 'observed' || percentage.value === null) return '—'
+  if (percentage.value === 0) return '0,0%'
+  const formatted = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(Math.abs(percentage.value))
+  return `${percentage.value > 0 ? '+' : '−'}${formatted}%`
 }
 
 function PrintStageSection({

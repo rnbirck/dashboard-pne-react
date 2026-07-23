@@ -57,6 +57,9 @@ export function isMunicipalEducationOverviewDocument(
     && Boolean(candidate.highSchool?.total?.byNetwork)
     && Boolean(candidate.highSchool?.total?.bySchoolLocation)
     && candidate.schoolPerformance?.referenceYear === 2025
+    && candidate.enrollmentComparison?.years?.[0] === 2015
+    && candidate.enrollmentComparison?.years?.[1] === 2025
+    && Boolean(candidate.enrollmentComparison?.stages)
 }
 
 export function createMunicipalEducationOverviewLoader(fetchImpl: FetchLike = fetch) {

@@ -92,7 +92,7 @@ class MaterializeMunicipalEducationOverviewTests(unittest.TestCase):
             payload = json.loads(canonical.read_text(encoding="utf-8"))
             self.assertEqual(payload["schemaVersion"], "municipal-education-overview-v1")
             self.assertEqual(payload["reference"]["year"], 2025)
-            self.assertNotIn("historical", payload)
+            self.assertEqual(payload["enrollmentComparison"]["years"], [2015, 2025])
 
     def test_serialization_preserves_derived_zero_and_unavailable_null(self):
         published = self.materialize()
