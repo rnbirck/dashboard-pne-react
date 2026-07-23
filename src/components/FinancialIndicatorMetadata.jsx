@@ -21,7 +21,14 @@ function DisclosureSummary({ description, title }) {
   )
 }
 
-export function FinancialIndicatorDisclosures({ formatValue, indicator, metadata, series, source }) {
+export function FinancialIndicatorDisclosures({
+  formatValue,
+  indicator,
+  metadata,
+  series,
+  showDataDisclosure = true,
+  source,
+}) {
   const rows = getPublishedRows(series)
   const sourceText = source ?? metadata?.financingSource
   const period = rows.length
@@ -37,40 +44,42 @@ export function FinancialIndicatorDisclosures({ formatValue, indicator, metadata
 
   return (
     <div className="financial-detail-disclosures">
-      <details className="platform-support-disclosure financial-detail-disclosure">
-        <DisclosureSummary
-          description="Tabela anual, unidade e regra da variação exibida."
-          title="Dados usados no cálculo"
-        />
-        <div className="platform-support-disclosure__body financial-detail-disclosure__body">
-          {rows.length ? (
-            <div className="platform-data-table-region" role="region" aria-label={`Tabela anual de ${indicator?.label ?? 'dados usados no cálculo'}`} tabIndex="0">
-              <table className="platform-data-table">
-                <caption className="u-sr-only">Dados anuais usados no cálculo de {indicator?.label}</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Exercício</th>
-                    <th scope="col">Valor publicado</th>
-                    <th scope="col">Unidade</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row) => (
-                    <tr key={row.ano}>
-                      <th scope="row">{row.ano}</th>
-                      <td className="platform-data-cell--numeric">{renderValue(row.valor)}</td>
-                      <td>{indicator?.unitLabel ?? 'Conforme a fonte'}</td>
+      {showDataDisclosure ? (
+        <details className="platform-support-disclosure financial-detail-disclosure">
+          <DisclosureSummary
+            description="Tabela anual, unidade e regra da variação exibida."
+            title="Dados usados no cálculo"
+          />
+          <div className="platform-support-disclosure__body financial-detail-disclosure__body">
+            {rows.length ? (
+              <div className="platform-data-table-region" role="region" aria-label={`Tabela anual de ${indicator?.label ?? 'dados usados no cálculo'}`} tabIndex="0">
+                <table className="platform-data-table">
+                  <caption className="u-sr-only">Dados anuais usados no cálculo de {indicator?.label}</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Exercício</th>
+                      <th scope="col">Valor publicado</th>
+                      <th scope="col">Unidade</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : <p>Não há valores anuais publicados para este indicador.</p>}
-          <p className="financial-detail-disclosure__note">
-            Período exibido: {period}. A variação só é apresentada quando há dois exercícios comparáveis; zero oficial permanece visível.
-          </p>
-        </div>
-      </details>
+                  </thead>
+                  <tbody>
+                    {rows.map((row) => (
+                      <tr key={row.ano}>
+                        <th scope="row">{row.ano}</th>
+                        <td className="platform-data-cell--numeric">{renderValue(row.valor)}</td>
+                        <td>{indicator?.unitLabel ?? 'Conforme a fonte'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : <p>Não há valores anuais publicados para este indicador.</p>}
+            <p className="financial-detail-disclosure__note">
+              Período exibido: {period}. A variação só é apresentada quando há dois exercícios comparáveis; zero oficial permanece visível.
+            </p>
+          </div>
+        </details>
+      ) : null}
 
       <details className="platform-support-disclosure financial-detail-disclosure">
         <DisclosureSummary

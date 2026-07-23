@@ -27,6 +27,7 @@ import {
 import { QseAnnualPanel } from './QseAnnualPanel'
 import {
   FinancialCompactHeader,
+  FinancialIcon,
   FinancialMetricCard,
   type FinancialIconName,
 } from './FinancialPanoramaComponents'
@@ -155,19 +156,19 @@ export function MunicipalFinancePanoramaPage({
       key: 'paid',
       title: 'Recursos aplicados na educação',
       amount: document.execution.dcaEducation.paid,
-      supportingText: `Valor executado em ${document.periods.closedFiscalYear}`,
+      supportingText: `Valor executado em ${document.execution.dcaEducation.paid.referenceYear}`,
     },
     {
       key: 'mde',
       title: 'Aplicação em MDE',
       amount: document.constitutionalApplication.mdeAppliedRate.canonical,
-      supportingText: 'Mínimo constitucional: 25%',
+      supportingText: `Mínimo constitucional: 25% · ${document.constitutionalApplication.mdeAppliedRate.canonical.referenceYear}`,
     },
     {
       key: 'remuneration',
       title: 'Remuneração dos profissionais (Fundeb)',
       amount: document.constitutionalApplication.fundebProfessionalRemunerationRate.canonical,
-      supportingText: 'Mínimo: 70% do Fundeb',
+      supportingText: `Mínimo: 70% do Fundeb · ${document.constitutionalApplication.fundebProfessionalRemunerationRate.canonical.referenceYear}`,
     },
     {
       key: 'fundeb',
@@ -247,40 +248,42 @@ function BudgetExecutionSection({ document }: { document: MunicipalFinanceDocume
     },
   ].filter((stage) => isPublishableFinancialValue(stage.value))
   const paidRate = execution.derivedRates.paidToCommittedRate.value
+  const executionYears = Array.from(new Set(stages.map((stage) => stage.value.referenceYear)))
+  const sharedExecutionYear = executionYears.length === 1 ? executionYears[0] : null
 
   if (!stages.length) return null
 
   return (
     <section className="page-card municipal-finance-budget" aria-labelledby="municipal-finance-execution-title">
       <div className="municipal-finance-reference-heading">
-        <h2 id="municipal-finance-execution-title">Execução orçamentária — {execution.referenceYear} <small>(SICONFI)</small></h2>
+        <h2 id="municipal-finance-execution-title">Execução orçamentária{sharedExecutionYear ? ` — ${sharedExecutionYear}` : ''} <small>(SICONFI)</small></h2>
       </div>
       <div className="municipal-finance-budget__layout">
         <ol className="municipal-finance-budget__bars">
           {stages.map((stage) => (
             <li key={stage.key}>
-              <strong>{stage.label}</strong>
+              <strong>{stage.label}{sharedExecutionYear ? null : <small> · {stage.value.referenceYear}</small>}</strong>
               <progress
                 aria-label={`${stage.label}: ${stage.rate === null ? 'percentual indisponível' : formatPercent(stage.rate)}`}
                 max="100"
                 value={stage.rate ?? 0}
               />
               <b>{stage.rate === null ? '—' : formatPercent(stage.rate)}</b>
-              <FinanceValue value={stage.value} label={`${stage.label} em ${execution.referenceYear}`} />
+              <FinanceValue value={stage.value} label={`${stage.label} em ${stage.value.referenceYear}`} />
             </li>
           ))}
         </ol>
         <aside className="municipal-finance-budget__reading" aria-label="Leitura rápida da execução">
           <div className="municipal-finance-budget__total">
             <span>Total empenhado</span>
-            <FinanceValue value={execution.committed} label={`Total empenhado em ${execution.referenceYear}`} emphasized />
+            <FinanceValue value={execution.committed} label={`Total empenhado em ${execution.committed.referenceYear}`} emphasized />
           </div>
           <div><span>Base da despesa</span><strong>Empenhado</strong></div>
           <div>
             <span>Leitura rápida</span>
             <p>{paidRate === null
               ? 'A relação entre o valor pago e o empenhado não está disponível.'
-              : `${formatPercent(paidRate)} do valor empenhado em ${execution.referenceYear} já foi pago.`}</p>
+              : `${formatPercent(paidRate)} do valor empenhado em ${execution.paid.referenceYear} já foi pago.`}</p>
           </div>
         </aside>
       </div>
@@ -296,10 +299,10 @@ function FundebOverviewPanel({
   nonBeneficiaryLabels: readonly string[]
 }) {
   const components = [
-    { key: 'vaaf', label: 'VAAF', amount: document.amounts.fundebVaafAnnualForecast },
     { key: 'vaat', label: 'VAAT', amount: document.amounts.fundebVaatAnnualForecast },
     { key: 'vaar', label: 'VAAR', amount: document.amounts.fundebVaarAnnualForecast },
   ]
+  const visibleNonBeneficiaryLabels = nonBeneficiaryLabels.filter((label) => label !== 'VAAF')
 
   return (
     <section className="page-card municipal-finance-fundeb-overview" aria-labelledby="municipal-finance-fundeb-overview-title">
@@ -309,13 +312,13 @@ function FundebOverviewPanel({
           <h2 id="municipal-finance-fundeb-overview-title">Fundeb e complementações</h2>
           <p>Síntese das previsões aplicáveis ao município, sem somar componentes novamente ao total.</p>
         </div>
-        <div className="municipal-finance-fundeb-overview__total">
+      </header>
+      <div className="municipal-finance-fundeb-overview__grid">
+        <article className="municipal-finance-fundeb-overview__total">
           <span>Fundeb total previsto</span>
           <FinanceValue value={document.amounts.fundebTotalAnnualForecast} label="Fundeb total previsto" emphasized />
           <small>Previsão total · {document.periods.annualForecastYear}</small>
-        </div>
-      </header>
-      <div className="municipal-finance-fundeb-overview__grid">
+        </article>
         {components.map((component) => (
           <article key={component.key}>
             <span>{component.label} (previsto)</span>
@@ -329,7 +332,7 @@ function FundebOverviewPanel({
       <div className="municipal-finance-fundeb-overview__footer">
         <div>
           <p>Os valores de complementação dependem do cumprimento dos critérios oficiais de cada modalidade.</p>
-          {nonBeneficiaryLabels.length ? <p>Sem previsão para {nonBeneficiaryLabels.join(' e ')}.</p> : null}
+          {visibleNonBeneficiaryLabels.length ? <p>Sem previsão para {visibleNonBeneficiaryLabels.join(' e ')}.</p> : null}
         </div>
         <a className="municipal-finance-row-link" href={buildAppHash(FINANCIAL_PAGE_KEYS.fundeb, { municipio: document.municipality.slug })}>
           Ver detalhes do Fundeb <span aria-hidden="true">→</span>
@@ -409,6 +412,13 @@ function ConstitutionalApplicationSection({
   const hasMdeAmount = canPublishMainValues && isPublishableFinancialValue(application.mdeAppliedAmount.canonical)
   const hasFundebRate = canPublishMainValues && isPublishableFinancialValue(application.fundebProfessionalRemunerationRate.canonical)
   const hasFundebRevenue = canPublishMainValues && isPublishableFinancialValue(application.fundebRevenueReceivedDeclared)
+  const displayedYears = [
+    hasMdeRate ? application.mdeAppliedRate.canonical.referenceYear : null,
+    hasMdeAmount ? application.mdeAppliedAmount.canonical.referenceYear : null,
+    hasFundebRate ? application.fundebProfessionalRemunerationRate.canonical.referenceYear : null,
+    hasFundebRevenue ? application.fundebRevenueReceivedDeclared.referenceYear : null,
+  ].filter((year): year is number => year !== null)
+  const sharedDisplayedYear = new Set(displayedYears).size === 1 ? displayedYears[0] : null
   const sourceIds = Array.from(new Set([
     ...metrics.flatMap((metric) => metric.reconciliation.sourceIds),
     ...reconciliation.availableSourceIds,
@@ -425,14 +435,14 @@ function ConstitutionalApplicationSection({
       aria-labelledby="municipal-finance-constitutional-title"
     >
       <div className="municipal-finance-reference-heading">
-        <h2 id="municipal-finance-constitutional-title">Aplicação constitucional da educação — {application.referenceYear}</h2>
-        <span>Valores de {application.referenceYear}</span>
+        <h2 id="municipal-finance-constitutional-title">Aplicação constitucional da educação{sharedDisplayedYear ? ` — ${sharedDisplayedYear}` : ''}</h2>
+        <span>{sharedDisplayedYear ? `Valores de ${sharedDisplayedYear}` : 'Exercícios conforme indicador'}</span>
       </div>
 
       <div className="municipal-finance-constitutional-primary-grid">
         {hasMdeRate || hasMdeAmount ? (
         <article className="municipal-finance-constitutional-metric municipal-finance-constitutional-metric--mde">
-          <h3>Aplicação em MDE</h3>
+          <h3>Aplicação em MDE <small>· {application.mdeAppliedRate.canonical.referenceYear}</small></h3>
           {hasMdeRate ? (
           <>
           <ConstitutionalCanonicalValue
@@ -444,7 +454,7 @@ function ConstitutionalApplicationSection({
           ) : null}
           {hasMdeAmount ? <dl>
             <div>
-              <dt>Aplicados</dt>
+              <dt>Aplicados · {application.mdeAppliedAmount.canonical.referenceYear}</dt>
               <dd>
                 <ConstitutionalCanonicalValue
                   canPublish={canPublishMainValues}
@@ -460,7 +470,7 @@ function ConstitutionalApplicationSection({
 
         {hasFundebRate ? (
         <article className="municipal-finance-constitutional-metric">
-          <h3>Remuneração dos profissionais</h3>
+          <h3>Remuneração dos profissionais <small>· {application.fundebProfessionalRemunerationRate.canonical.referenceYear}</small></h3>
           <ConstitutionalCanonicalValue
             canPublish={canPublishMainValues}
             label="Percentual do Fundeb destinado à remuneração dos profissionais da educação"
@@ -474,12 +484,12 @@ function ConstitutionalApplicationSection({
       {hasFundebRevenue ? (
       <div className="municipal-finance-constitutional-strip">
         <article className="municipal-finance-constitutional-revenue">
-          <span className="municipal-finance-constitutional-revenue__icon" aria-hidden="true">▣</span>
+          <span className="municipal-finance-constitutional-revenue__icon" aria-hidden="true"><FinancialIcon name="fundeb" /></span>
           <div>
-            <span className="municipal-finance-constitutional-metric__label">Receita Fundeb declarada</span>
+            <span className="municipal-finance-constitutional-metric__label">Receita Fundeb declarada · {application.fundebRevenueReceivedDeclared.referenceYear}</span>
             <ConstitutionalCanonicalValue
               canPublish={canPublishMainValues}
-              label="Receita Fundeb recebida declarada em 2024"
+              label={`Receita Fundeb recebida declarada em ${application.fundebRevenueReceivedDeclared.referenceYear}`}
               value={application.fundebRevenueReceivedDeclared}
             />
           </div>
@@ -513,7 +523,7 @@ function ConstitutionalApplicationSection({
               />
             </div>
             <dl className="municipal-finance-constitutional-source-meta">
-              <div><dt>Período</dt><dd>{application.period}º bimestre de {application.referenceYear}</dd></div>
+              <div><dt>Período</dt><dd>{application.period}º bimestre</dd></div>
               <div><dt>Base da despesa</dt><dd>{application.stageBasis}</dd></div>
               {sourceNames.length ? <div><dt>Fontes</dt><dd>{sourceNames.join(' · ')}</dd></div> : null}
             </dl>
@@ -568,6 +578,7 @@ function ConstitutionalSourceCard({
       ? [{ label: 'Receita Fundeb declarada', value: application.fundebRevenueReceivedDeclared }]
       : []),
   ].filter((metric) => isPublishableFinancialValue(metric.value))
+  const metricYears = Array.from(new Set(metrics.map((metric) => metric.value.referenceYear)))
   if (!metrics.length) return null
 
   return (
@@ -579,13 +590,13 @@ function ConstitutionalSourceCard({
         </div>
       </header>
       <dl className="municipal-finance-constitutional-source-meta">
-        <div><dt>Exercício</dt><dd>{source?.referenceYear ?? application.referenceYear}</dd></div>
+        <div><dt>Exercício</dt><dd>{metricYears.join(' · ') || source?.referenceYear || application.referenceYear}</dd></div>
         <div><dt>Período</dt><dd>{application.period}º bimestre</dd></div>
       </dl>
       <dl className="municipal-finance-constitutional-source-values">
         {metrics.map((metric) => (
           <div key={metric.label}>
-            <dt>{metric.label}</dt>
+            <dt>{metric.label} · {metric.value.referenceYear}</dt>
             <dd><FinanceValue value={metric.value} label={`${metric.label} — ${sourceLabel}`} /></dd>
           </div>
         ))}

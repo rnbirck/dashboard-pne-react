@@ -8,6 +8,7 @@ import io
 import json
 import re
 import shutil
+import threading
 import time
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -15,6 +16,8 @@ from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 
 from pypdf import PdfReader
 
@@ -31,7 +34,7 @@ from .municipal_finance_p5b2 import (
 
 
 CONSTITUTIONAL_SNAPSHOT_VERSION = "municipal-finance-constitutional-p5b2b1-v1"
-CONSTITUTIONAL_DATA_VERSION = "p5b2b1-2024-p6-2026-07-20"
+CONSTITUTIONAL_DATA_VERSION = "p5b2b1-annual-fallback-v1-2026-07-23"
 CROSSWALK_VERSION = "siope-ibge-rs-2024-v1"
 REFERENCE_YEAR = 2024
 REFERENCE_PERIOD = 6
@@ -66,6 +69,30 @@ RREO_FIELDS = {
     "fundeb_professionals_remuneration_rate": "fundebProfessionalRemunerationRate",
     "fundeb_total_received": "fundebRevenueReceivedDeclared",
 }
+
+
+def constitutional_source_ids(reference_year: int) -> tuple[str, str, str]:
+    suffix = f"{reference_year}_p{REFERENCE_PERIOD}"
+    return (
+        f"fnde_siope_indicators_odata_{suffix}",
+        f"fnde_siope_rreo_annex8_{suffix}",
+        f"siope_rreo_constitutional_reconciliation_{suffix}",
+    )
+
+
+def siope_source_url(reference_year: int) -> str:
+    query = urlencode(
+        {
+            "@Ano_Consulta": reference_year,
+            "@Num_Peri": REFERENCE_PERIOD,
+            "@Sig_UF": "'RS'",
+        },
+    )
+    return (
+        "https://www.fnde.gov.br/olinda-ide/servico/DADOS_ABERTOS_SIOPE/versao/v1/odata/"
+        "Indicadores_Siope(Ano_Consulta=@Ano_Consulta,Num_Peri=@Num_Peri,Sig_UF=@Sig_UF)"
+        f"?{query}"
+    )
 
 
 def _json_text(payload: Any) -> str:
@@ -430,6 +457,8 @@ def apply_rreo_revision_policy(
     candidates: dict[str, dict[str, Any]],
     municipality_by_code: dict[str, dict[str, str]],
     revision_history: dict[str, Any],
+    *,
+    reference_year: int = REFERENCE_YEAR,
 ) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]]]:
     published_records: dict[str, dict[str, Any]] = {}
     new_events: list[dict[str, Any]] = []
@@ -447,7 +476,7 @@ def apply_rreo_revision_policy(
             "status": "source_revision_detected",
             "ibgeCode": code7,
             "municipality": municipality_by_code[code7]["name"],
-            "referenceYear": REFERENCE_YEAR,
+            "referenceYear": reference_year,
             "period": REFERENCE_PERIOD,
             "sourceUrl": candidate["sourceUrl"],
             "previousSha256": previous.get("sourceHash"),
@@ -600,14 +629,299 @@ def collect_constitutional_snapshot(
     return snapshot
 
 
+def _fetch_siope_rows_for_year(reference_year: int) -> tuple[list[dict[str, Any]], str, str]:
+    url = siope_source_url(reference_year)
+    pages: list[dict[str, Any]] = []
+    next_url: str | None = url
+    while next_url:
+        request = Request(next_url, headers={"User-Agent": "DASHBOARD-PNE-REACT/P5-B1"})
+        with urlopen(request, timeout=180) as response:
+            page = json.loads(response.read().decode("utf-8"))
+        pages.append(page)
+        next_url = page.get("@odata.nextLink") or page.get("odata.nextLink")
+    rows = [item for page in pages for item in page.get("value", [])]
+    if not rows:
+        raise SourceSchemaError(f"SIOPE: resposta vazia para {reference_year}/P{REFERENCE_PERIOD}")
+    for row in rows:
+        if int(row.get("NUM_ANO", -1)) != reference_year or int(row.get("NUM_PERI", -1)) != REFERENCE_PERIOD:
+            raise SourceSchemaError("SIOPE: exercício ou bimestre incompatível na consulta oficial")
+        if row.get("SIG_UF") != "RS":
+            raise SourceSchemaError("SIOPE: UF incompatível na consulta oficial")
+    normalized = canonical_json(
+        sorted(rows, key=lambda row: (str(row.get("COD_MUNI")), str(row.get("COD_EXIB"))))
+    )
+    return rows, url, sha256_bytes(normalized)
+
+
+def build_siope_source_for_year(
+    reference_year: int,
+    registry_by_siope_code: dict[str, dict[str, str]],
+) -> dict[str, Any]:
+    rows, source_url, raw_hash = _fetch_siope_rows_for_year(reference_year)
+    adapted = adapt_siope_rows(
+        rows,
+        registry_by_siope_code,
+        source_url=source_url,
+        source_hash=raw_hash,
+        accessed_at=ACCESSED_AT,
+        published_at=None,
+    )
+    records: dict[str, dict[str, Any]] = {}
+    for record in adapted:
+        definition = SIOPE_FIELDS.get(record["concept"])
+        if definition is None:
+            continue
+        field, stage, unit = definition
+        municipal_record = records.setdefault(record["ibgeCode"], {})
+        if field in municipal_record:
+            raise SourceSchemaError(f"SIOPE: campo duplicado {record['ibgeCode']}/{field}")
+        municipal_record[field] = {
+            "value": record["value"],
+            "financialStage": stage,
+            "amountNature": "municipal_declared",
+            "unit": unit,
+            "indicatorCode": record["dimensions"]["indicatorCode"],
+            "displayCode": record["dimensions"]["displayCode"],
+        }
+    expected_fields = {definition[0] for definition in SIOPE_FIELDS.values()}
+    complete_codes = {
+        code
+        for code, record in records.items()
+        if set(record) == expected_fields and all(value["value"] is not None for value in record.values())
+    }
+    source_id, _, _ = constitutional_source_ids(reference_year)
+    return {
+        "sourceId": source_id,
+        "referenceYear": reference_year,
+        "period": REFERENCE_PERIOD,
+        "accessedAt": ACCESSED_AT,
+        "sourceUrl": source_url,
+        "rawSha256": raw_hash,
+        "adapterVersion": ADAPTER_VERSION,
+        "quality": {
+            "municipalitiesExpected": EXPECTED_MUNICIPALITIES,
+            "municipalitiesFound": len(records),
+            "municipalitiesWithRequiredFields": len(complete_codes),
+            "municipalitiesNotFound": EXPECTED_MUNICIPALITIES - len(records),
+            "duplicateMunicipalityCodes": [],
+            "incompatibleMunicipalityKeys": 0,
+            "coverageRate": round(len(complete_codes) / EXPECTED_MUNICIPALITIES, 6),
+        },
+        "records": dict(sorted(records.items())),
+    }
+
+
+def build_rreo_source_for_year(
+    reference_year: int,
+    municipalities: list[dict[str, str]],
+    crosswalk_by_siope_code: dict[str, dict[str, str]],
+    previous_source: dict[str, Any] | None,
+    revision_history: dict[str, Any],
+    workers: int,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    if workers < 1:
+        raise ValueError("RREO: workers deve ser positivo")
+    municipality_by_code = {municipality["ibgeCode"]: municipality for municipality in municipalities}
+    connection_state = threading.local()
+
+    def close_connection() -> None:
+        ftp = getattr(connection_state, "ftp", None)
+        if ftp is not None:
+            try:
+                ftp.close()
+            except OSError:
+                pass
+        connection_state.ftp = None
+
+    def connection() -> ftplib.FTP:
+        ftp = getattr(connection_state, "ftp", None)
+        if ftp is None:
+            ftp = ftplib.FTP(RREO_FTP_HOST, timeout=180)
+            ftp.login()
+            ftp.cwd(RREO_FTP_PATH)
+            connection_state.ftp = ftp
+        return ftp
+
+    def fetch_one(code6: str) -> tuple[str, dict[str, Any] | None, str | None]:
+        municipality = municipality_by_code[crosswalk_by_siope_code[code6]["ibgeCode"]]
+        filename = f"RREO_Municipal_{code6}_{REFERENCE_PERIOD}_{reference_year}.pdf"
+        try:
+            ftp = connection()
+            modified_response = ftp.sendcmd(f"MDTM {filename}")
+            size_response = ftp.sendcmd(f"SIZE {filename}")
+            if not modified_response.startswith("213 ") or not size_response.startswith("213 "):
+                raise SourceSchemaError(f"RREO: metadados FTP inválidos para {filename}")
+            content_buffer = io.BytesIO()
+            ftp.retrbinary(f"RETR {filename}", content_buffer.write)
+            content = content_buffer.getvalue()
+            size = int(size_response[4:])
+            if len(content) != size:
+                raise SourceSchemaError(f"RREO: tamanho divergente para {filename}")
+            source_hash = sha256_bytes(content)
+            text = "\n".join(page.extract_text() or "" for page in PdfReader(BytesIO(content)).pages)
+            adapted = adapt_rreo_text(
+                text,
+                municipality=municipality["name"],
+                ibge_code=municipality["ibgeCode"],
+                reference_year=reference_year,
+                bimester=REFERENCE_PERIOD,
+                source_url=f"{RREO_FTP_DIRECTORY}{filename}",
+                source_hash=source_hash,
+                accessed_at=ACCESSED_AT,
+                published_at=modified_response[4:],
+            )
+            values: dict[str, Any] = {}
+            mappings: dict[str, Any] = {}
+            for record in adapted:
+                field = RREO_FIELDS.get(record["concept"])
+                if field is None:
+                    continue
+                values[field] = record["value"]
+                mappings[field] = {
+                    "line": record["dimensions"]["line"],
+                    "column": record["dimensions"]["column"],
+                    "unit": record["dimensions"]["unit"],
+                    "financialStage": record["financialStage"],
+                }
+            if set(values) != set(RREO_FIELDS.values()):
+                raise SourceSchemaError(f"RREO: campos incompletos para {municipality['ibgeCode']}")
+            modified = datetime.strptime(modified_response[4:], "%Y%m%d%H%M%S").replace(tzinfo=timezone.utc)
+            return municipality["ibgeCode"], {
+                **values,
+                "sourceUrl": f"{RREO_FTP_DIRECTORY}{filename}",
+                "sourceHash": source_hash,
+                "lastModified": modified.isoformat().replace("+00:00", "Z"),
+                "sizeBytes": size,
+                "accessedAt": ACCESSED_AT,
+                "parserVersion": RREO_PARSER_VERSION,
+                "layoutVersion": RREO_LAYOUT_VERSION,
+                "mappings": mappings,
+            }, None
+        except Exception as error:  # pragma: no cover - network variability
+            close_connection()
+            return municipality["ibgeCode"], None, f"{type(error).__name__}: {error}"
+
+    candidates: dict[str, dict[str, Any]] = {}
+    errors: dict[str, str] = {}
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = [executor.submit(fetch_one, code6) for code6 in sorted(crosswalk_by_siope_code)]
+        for future in as_completed(futures):
+            code7, record, error = future.result()
+            if record is None:
+                errors[code7] = error or "RREO: falha sem detalhe"
+            else:
+                candidates[code7] = record
+
+    previous_records = (previous_source or {}).get("records", {})
+    published_records, new_events = apply_rreo_revision_policy(
+        previous_records,
+        candidates,
+        municipality_by_code,
+        revision_history,
+        reference_year=reference_year,
+    )
+    combined_hash = hashlib.sha256()
+    for code7, record in sorted(published_records.items()):
+        combined_hash.update(code7.encode("ascii"))
+        combined_hash.update(record["sourceHash"].encode("ascii"))
+    _, source_id, _ = constitutional_source_ids(reference_year)
+    return {
+        "sourceId": source_id,
+        "referenceYear": reference_year,
+        "period": REFERENCE_PERIOD,
+        "accessedAt": ACCESSED_AT,
+        "sourceUrl": RREO_FTP_DIRECTORY,
+        "rawSha256": combined_hash.hexdigest(),
+        "parserVersion": RREO_PARSER_VERSION,
+        "layoutVersion": RREO_LAYOUT_VERSION,
+        "quality": {
+            "municipalitiesExpected": EXPECTED_MUNICIPALITIES,
+            "municipalitiesFound": len(published_records),
+            "municipalitiesWithRequiredFields": len(published_records),
+            "municipalitiesNotFound": EXPECTED_MUNICIPALITIES - len(published_records),
+            "duplicateMunicipalityCodes": [],
+            "incompatibleMunicipalityKeys": 0,
+            "coverageRate": round(len(published_records) / EXPECTED_MUNICIPALITIES, 6),
+            "sourceRevisionDetected": len(new_events),
+            "requestOrParseErrors": len(errors),
+            "requestOrParseErrorCodes": sorted(errors),
+        },
+        "records": dict(sorted(published_records.items())),
+        "pendingRevisionRecords": {
+            event["ibgeCode"]: candidates[event["ibgeCode"]]
+            for event in new_events
+        },
+    }, new_events
+
+
+def refresh_annual_constitutional_snapshot(
+    municipalities: list[dict[str, str]],
+    *,
+    registry_path: Path,
+    snapshot_path: Path,
+    crosswalk_path: Path,
+    revision_history_path: Path,
+    reference_year: int,
+    rreo_workers: int = 8,
+) -> dict[str, Any]:
+    if reference_year < 2000:
+        raise ValueError("O exercício constitucional deve ter quatro dígitos.")
+    crosswalk = build_crosswalk(municipalities, registry_path)
+    crosswalk_by_siope_code = validate_crosswalk(crosswalk)
+    previous_snapshot = load_constitutional_snapshot(snapshot_path) if snapshot_path.exists() else None
+    revision_history = _load_revision_history(revision_history_path)
+    siope_source_id, rreo_source_id, _ = constitutional_source_ids(reference_year)
+    siope_source = build_siope_source_for_year(reference_year, crosswalk_by_siope_code)
+    rreo_source, new_events = build_rreo_source_for_year(
+        reference_year,
+        municipalities,
+        crosswalk_by_siope_code,
+        (previous_snapshot or {}).get("sources", {}).get(rreo_source_id),
+        revision_history,
+        rreo_workers,
+    )
+    sources = copy.deepcopy((previous_snapshot or {}).get("sources", {}))
+    sources[siope_source_id] = siope_source
+    sources[rreo_source_id] = rreo_source
+    available_years = sorted(
+        {
+            int(source["referenceYear"])
+            for source in sources.values()
+            if source.get("referenceYear") is not None
+        }
+    )
+    snapshot = {
+        "snapshotVersion": CONSTITUTIONAL_SNAPSHOT_VERSION,
+        "dataVersion": CONSTITUTIONAL_DATA_VERSION,
+        "generatedAt": GENERATED_AT,
+        "referenceYear": max(available_years),
+        "referenceYears": available_years,
+        "period": REFERENCE_PERIOD,
+        "stageBasis": "empenhado",
+        "municipalities": EXPECTED_MUNICIPALITIES,
+        "crosswalk": {
+            "version": crosswalk["crosswalkVersion"],
+            "sourceId": crosswalk["sourceId"],
+            "sourceSha256": crosswalk["sourceSha256"],
+            "records": EXPECTED_MUNICIPALITIES,
+        },
+        "sources": sources,
+        "revisionEventsDetected": new_events,
+    }
+    _write_json_if_changed(crosswalk_path, crosswalk)
+    _write_json_if_changed(revision_history_path, revision_history)
+    _write_json_if_changed(snapshot_path, snapshot)
+    return snapshot
+
+
 def load_constitutional_snapshot(path: Path) -> dict[str, Any]:
     if not path.exists():
         raise RuntimeError(f"Snapshot constitucional ausente: {path}. Execute com --refresh-constitutional.")
     payload = json.loads(path.read_text(encoding="utf-8"))
     if payload.get("snapshotVersion") != CONSTITUTIONAL_SNAPSHOT_VERSION:
         raise RuntimeError(f"Versão do snapshot constitucional incompatível: {payload.get('snapshotVersion')}")
-    if payload.get("referenceYear") != REFERENCE_YEAR or payload.get("period") != REFERENCE_PERIOD:
-        raise RuntimeError("Snapshot constitucional fora de 2024/P6")
+    if payload.get("period") != REFERENCE_PERIOD:
+        raise RuntimeError("Snapshot constitucional fora do sexto bimestre")
     if payload.get("municipalities") != EXPECTED_MUNICIPALITIES:
         raise RuntimeError("Snapshot constitucional não cobre os 497 municípios")
     for source_id in (SIOPE_SOURCE_ID, RREO_SOURCE_ID):

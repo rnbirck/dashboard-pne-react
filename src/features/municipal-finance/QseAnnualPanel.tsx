@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ChartLegend } from '../../components/ChartPrimitives'
 import { IndicatorHistoryChart } from '../../components/IndicatorHistoryChart'
+import { QuickReadingHeading } from '../../components/QuickReadingHeading'
 import {
   calculateQseAnnualVariation,
   prepareQseAnnualSeries,
@@ -209,29 +210,31 @@ function QseAnnualReading({
     : null
 
   return (
-    <aside className="municipal-finance-qse-reading" aria-labelledby="municipal-finance-qse-reading-title">
-      <h3 id="municipal-finance-qse-reading-title">Leitura rápida</h3>
-      <ul>
+    <aside className="municipal-finance-qse-reading indicator-quick-reading" aria-label="Leitura rápida">
+      <QuickReadingHeading />
+      <ul className="indicator-quick-reading__list">
         {variation?.percentage !== null && variation?.percentage !== undefined && variation.percentage !== 0 ? (
           <li>
-            <strong>{variation.percentage > 0 ? 'Aumento' : 'Redução'} no último ano</strong>
-            <span>
-              {Math.abs(variation.percentage).toLocaleString('pt-BR', { maximumFractionDigits: 1, minimumFractionDigits: 1 })}% em relação a {variation.previous.year}. Diferença de {formatFullCurrency(absoluteDifference as number)}.
-            </span>
+            <div>
+              <span>{variation.percentage > 0 ? 'Aumento' : 'Redução'} no último ano</span>
+              <p>{Math.abs(variation.percentage).toLocaleString('pt-BR', { maximumFractionDigits: 1, minimumFractionDigits: 1 })}% em relação a {variation.previous.year}. Diferença de {formatFullCurrency(absoluteDifference as number)}.</p>
+            </div>
           </li>
         ) : null}
         {series.length > 1 ? (
           <li>
-            <strong>Faixa observada no período</strong>
-            <span>
-              De {formatCompactCurrency(minimum.distributedAmount)} em {minimum.year} a {formatCompactCurrency(maximum.distributedAmount)} em {maximum.year}.
-            </span>
+            <div>
+              <span>Faixa observada no período</span>
+              <p>De {formatCompactCurrency(minimum.distributedAmount)} em {minimum.year} a {formatCompactCurrency(maximum.distributedAmount)} em {maximum.year}.</p>
+            </div>
           </li>
         ) : null}
         {estimateValue !== null && estimateYear !== null ? (
           <li>
-            <strong>Planejamento para {estimateYear}</strong>
-            <span>{formatCompactCurrency(estimateValue)} estimados; ainda não representam recurso distribuído.</span>
+            <div>
+              <span>Planejamento para {estimateYear}</span>
+              <p>{formatCompactCurrency(estimateValue)} estimados; ainda não representam recurso distribuído.</p>
+            </div>
           </li>
         ) : null}
       </ul>

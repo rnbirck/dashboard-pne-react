@@ -61,7 +61,7 @@ export function FinancialDisclosure({
   )
 }
 
-function FinancialIcon({ name }: { name: FinancialIconName }) {
+export function FinancialIcon({ name }: { name: FinancialIconName }) {
   const paths: Record<FinancialIconName, ReactNode> = {
     allocation: <><path d="M4 19h16" /><path d="M6 16V9" /><path d="M12 16V5" /><path d="M18 16v-4" /></>,
     budget: <><path d="M5 5h14v14H5z" /><path d="M8 9h8" /><path d="M8 13h5" /></>,

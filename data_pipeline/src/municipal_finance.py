@@ -18,7 +18,7 @@ from urllib.request import Request, urlopen
 
 SCHEMA_VERSION = "municipal-finance-v1"
 METHODOLOGY_VERSION = "municipal-finance-p5b2b1-v1"
-DATA_VERSION = "p5b2b1-2024-p6-2026-07-20"
+DATA_VERSION = "p5b2b1-education-analysis-v1-2026-07-23"
 SNAPSHOT_VERSION = "municipal-finance-sources-p5b1-v1"
 GENERATED_AT = "2026-07-20T00:00:00-03:00"
 ACCESSED_AT = "2026-07-20"
@@ -136,6 +136,15 @@ INTEGRATED_SOURCE_CATALOG = {
         "municipalKey": "ibge_code",
         "uses": ["education_execution"],
     },
+    "siconfi_dca_function_2025": {
+        "name": "SICONFI DCA Anexo I-E — despesa por função",
+        "url": SICONFI_DCA_URL,
+        "agency": "Secretaria do Tesouro Nacional",
+        "referenceYear": 2025,
+        "status": "integrated",
+        "municipalKey": "ibge_code",
+        "uses": ["education_execution"],
+    },
     "fnde_siope_indicators_odata_2024_p6": {
         "name": "SIOPE OData — indicadores constitucionais municipais",
         "url": "https://www.fnde.gov.br/olinda-ide/servico/DADOS_ABERTOS_SIOPE/versao/v1/odata",
@@ -151,6 +160,31 @@ INTEGRATED_SOURCE_CATALOG = {
         "url": "ftp://ftp.fnde.gov.br/web/siope/RREO/",
         "agency": "FNDE",
         "referenceYear": 2024,
+        "period": 6,
+        "status": "integrated",
+        "municipalKey": "siope_code_crosswalk_ibge",
+        "uses": [
+            "mde_applied_amount",
+            "mde_applied_rate",
+            "fundeb_professional_remuneration_rate",
+            "fundeb_revenue_received_declared",
+        ],
+    },
+    "fnde_siope_indicators_odata_2025_p6": {
+        "name": "SIOPE OData — indicadores constitucionais municipais",
+        "url": "https://www.fnde.gov.br/olinda-ide/servico/DADOS_ABERTOS_SIOPE/versao/v1/odata",
+        "agency": "FNDE",
+        "referenceYear": 2025,
+        "period": 6,
+        "status": "integrated",
+        "municipalKey": "siope_code_crosswalk_ibge",
+        "uses": ["mde_applied_amount", "mde_applied_rate", "fundeb_professional_remuneration_rate"],
+    },
+    "fnde_siope_rreo_annex8_2025_p6": {
+        "name": "SIOPE/FNDE RREO Anexo 8 municipal",
+        "url": "ftp://ftp.fnde.gov.br/web/siope/RREO/",
+        "agency": "FNDE",
+        "referenceYear": 2025,
         "period": 6,
         "status": "integrated",
         "municipalKey": "siope_code_crosswalk_ibge",
@@ -200,6 +234,7 @@ REASON_MESSAGES = {
     "scores_not_applicable_to_financial_contract": "O contrato financeiro não altera escores educacionais.",
     "partial_automated_source_coverage": "Uma ou mais fontes automatizadas não cobrem a dimensão integralmente.",
     "dca_required_field_missing": "Ao menos um estágio esperado da DCA não foi publicado.",
+    "incompatible_execution_stage_order": "As etapas publicadas não permitem calcular uma pendência não negativa.",
 }
 
 SAMPLE_CODES = {
@@ -575,6 +610,7 @@ def parse_dca_items(items: list[dict[str, Any]]) -> dict[str, Any]:
 def fetch_dca_records(
     municipalities: list[dict[str, str]],
     checkpoint_path: Path,
+    reference_year: int,
     delay_seconds: float = 1.05,
     workers: int = 1,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -582,7 +618,7 @@ def fetch_dca_records(
     errors: dict[str, str] = {}
     if checkpoint_path.exists():
         checkpoint = json.loads(checkpoint_path.read_text(encoding="utf-8"))
-        if checkpoint.get("referenceYear") == 2024:
+        if checkpoint.get("referenceYear") == reference_year:
             records.update(checkpoint.get("records", {}))
             errors.update(checkpoint.get("errors", {}))
 
@@ -597,7 +633,7 @@ def fetch_dca_records(
         code = municipality["ibgeCode"]
         query = urlencode(
             {
-                "an_exercicio": 2024,
+                "an_exercicio": reference_year,
                 "no_anexo": "DCA-Anexo I-E",
                 "co_esfera": "M",
                 "id_ente": code,
@@ -635,14 +671,14 @@ def fetch_dca_records(
             if completed % 25 == 0 or completed == len(municipalities):
                 write_json_if_changed(
                     checkpoint_path,
-                    {"referenceYear": 2024, "records": records, "errors": errors},
+                    {"referenceYear": reference_year, "records": records, "errors": errors},
                 )
                 print(f"[municipal-finance] DCA {completed}/{len(municipalities)}", flush=True)
 
     if completed % 25:
         write_json_if_changed(
             checkpoint_path,
-            {"referenceYear": 2024, "records": records, "errors": errors},
+            {"referenceYear": reference_year, "records": records, "errors": errors},
         )
     if len(records) != len(municipalities):
         raise RuntimeError(
@@ -692,6 +728,7 @@ def refresh_source_snapshot(
     municipalities: list[dict[str, str]],
     snapshot_path: Path,
     checkpoint_path: Path,
+    annual_reference_year: int = 2025,
     dca_delay_seconds: float = 1.05,
     dca_workers: int = 1,
 ) -> dict[str, Any]:
@@ -714,7 +751,10 @@ def refresh_source_snapshot(
         "fnde_qse_realized_2024": parse_qse_realized,
         "fnde_qse_estimate_2026": parse_qse_estimate,
     }
-    sources: dict[str, Any] = {}
+    previous_sources = {}
+    if snapshot_path.exists():
+        previous_sources = load_source_snapshot(snapshot_path).get("sources", {})
+    sources: dict[str, Any] = dict(previous_sources)
     for source_id, raw in downloads.items():
         records, quality = parsers[source_id](raw, registry_codes)
         sources[source_id] = snapshot_source(source_id, raw, records, quality)
@@ -725,13 +765,19 @@ def refresh_source_snapshot(
 
     dca_records, dca_quality = fetch_dca_records(
         municipalities,
-        checkpoint_path=checkpoint_path,
+        checkpoint_path=checkpoint_path.with_name(
+            f"{checkpoint_path.stem}_{annual_reference_year}{checkpoint_path.suffix}"
+        ),
+        reference_year=annual_reference_year,
         delay_seconds=dca_delay_seconds,
         workers=dca_workers,
     )
     dca_content = canonical_json(dca_records).encode("utf-8")
-    sources["siconfi_dca_function_2024"] = snapshot_source(
-        "siconfi_dca_function_2024",
+    dca_source_id = f"siconfi_dca_function_{annual_reference_year}"
+    if dca_source_id not in INTEGRATED_SOURCE_CATALOG:
+        raise RuntimeError(f"Fonte DCA não catalogada para o exercício {annual_reference_year}.")
+    sources[dca_source_id] = snapshot_source(
+        dca_source_id,
         dca_content,
         dca_records,
         dca_quality,
@@ -800,6 +846,46 @@ def source_record(snapshot: dict[str, Any], source_id: str, code: str) -> dict[s
     return snapshot["sources"].get(source_id, {}).get("records", {}).get(code)
 
 
+def annual_source_candidates(
+    snapshot: dict[str, Any],
+    source_prefix: str,
+) -> list[tuple[int, str]]:
+    candidates = []
+    for source_id, source in snapshot.get("sources", {}).items():
+        if not source_id.startswith(source_prefix):
+            continue
+        reference_year = source.get("referenceYear")
+        if isinstance(reference_year, int):
+            candidates.append((reference_year, source_id))
+    return sorted(candidates, reverse=True)
+
+
+def select_latest_annual_record(
+    snapshot: dict[str, Any],
+    source_prefix: str,
+    code: str,
+    required_fields: tuple[str, ...],
+) -> tuple[int, str, dict[str, Any] | None]:
+    candidates = annual_source_candidates(snapshot, source_prefix)
+    for reference_year, source_id in candidates:
+        record = source_record(snapshot, source_id, code)
+        if record and all(record.get(field) is not None for field in required_fields):
+            return reference_year, source_id, record
+    if candidates:
+        reference_year, source_id = candidates[0]
+        return reference_year, source_id, None
+    raise RuntimeError(f"Nenhuma fonte anual disponível para {source_prefix}.")
+
+
+def constitutional_source_ids(reference_year: int) -> tuple[str, str, str]:
+    suffix = f"{reference_year}_p6"
+    return (
+        f"fnde_siope_indicators_odata_{suffix}",
+        f"fnde_siope_rreo_annex8_{suffix}",
+        f"siope_rreo_constitutional_reconciliation_{suffix}",
+    )
+
+
 def _canonical_reconciled_value(left: float, right: float, decimals: int) -> float:
     quantum = Decimal("1").scaleb(-decimals)
     average = (Decimal(str(left)) + Decimal(str(right))) / Decimal("2")
@@ -812,10 +898,9 @@ def reconciled_constitutional_metric(
     *,
     unit: str,
     financial_stage: str,
+    reference_year: int = 2024,
 ) -> dict[str, Any]:
-    siope_source_id = "fnde_siope_indicators_odata_2024_p6"
-    rreo_source_id = "fnde_siope_rreo_annex8_2024_p6"
-    reconciliation_source_id = "siope_rreo_constitutional_reconciliation_2024_p6"
+    siope_source_id, rreo_source_id, reconciliation_source_id = constitutional_source_ids(reference_year)
     monetary = unit == "BRL"
     tolerance = 0.01 if monetary else 0.005
     decimals = 2
@@ -854,7 +939,7 @@ def reconciled_constitutional_metric(
         "canonical": compact_value(
             canonical_value,
             unit,
-            2024,
+            reference_year,
             financial_stage,
             "municipal_declared",
             reconciliation_source_id,
@@ -863,7 +948,7 @@ def reconciled_constitutional_metric(
         "siope": compact_value(
             siope_value,
             unit,
-            2024,
+            reference_year,
             financial_stage,
             "municipal_declared",
             siope_source_id,
@@ -872,7 +957,7 @@ def reconciled_constitutional_metric(
         "rreo": compact_value(
             rreo_value,
             unit,
-            2024,
+            reference_year,
             financial_stage,
             "municipal_declared",
             rreo_source_id,
@@ -884,7 +969,7 @@ def reconciled_constitutional_metric(
             "absoluteDifference": compact_value(
                 absolute_difference,
                 unit,
-                2024,
+                reference_year,
                 "calculated_indicator",
                 "local_calculation",
                 reconciliation_source_id,
@@ -893,7 +978,7 @@ def reconciled_constitutional_metric(
             "percentageDifference": compact_value(
                 percentage_difference,
                 "percent",
-                2024,
+                reference_year,
                 "calculated_indicator",
                 "local_calculation",
                 reconciliation_source_id,
@@ -906,6 +991,54 @@ def reconciled_constitutional_metric(
             "reasonCodes": [] if status == "reconciled" else [canonical_reason],
         },
     }
+
+
+def select_latest_reconciled_constitutional_metric(
+    snapshot: dict[str, Any],
+    code: str,
+    *,
+    field: str,
+    unit: str,
+    financial_stage: str,
+) -> tuple[int, dict[str, Any]]:
+    siope_candidates = dict(annual_source_candidates(snapshot, "fnde_siope_indicators_odata_"))
+    rreo_candidates = dict(annual_source_candidates(snapshot, "fnde_siope_rreo_annex8_"))
+    shared_years = sorted(set(siope_candidates).intersection(rreo_candidates), reverse=True)
+    fallback: tuple[int, dict[str, Any]] | None = None
+    for reference_year in shared_years:
+        siope = source_record(snapshot, siope_candidates[reference_year], code) or {}
+        rreo = source_record(snapshot, rreo_candidates[reference_year], code) or {}
+        metric = reconciled_constitutional_metric(
+            siope.get(field, {}).get("value"),
+            rreo.get(field),
+            unit=unit,
+            financial_stage=financial_stage,
+            reference_year=reference_year,
+        )
+        if metric["reconciliation"]["status"] == "reconciled":
+            return reference_year, metric
+        fallback = fallback or (reference_year, metric)
+    if fallback is not None:
+        return fallback
+    if not shared_years:
+        raise RuntimeError("Não há fontes SIOPE e RREO comuns para a conciliação constitucional.")
+    raise AssertionError("A seleção constitucional não produziu resultado.")
+
+
+def select_latest_rreo_value(
+    snapshot: dict[str, Any],
+    code: str,
+    field: str,
+) -> tuple[int, str, float | None]:
+    candidates = annual_source_candidates(snapshot, "fnde_siope_rreo_annex8_")
+    for reference_year, source_id in candidates:
+        record = source_record(snapshot, source_id, code)
+        if record and record.get(field) is not None:
+            return reference_year, source_id, record[field]
+    if candidates:
+        reference_year, source_id = candidates[0]
+        return reference_year, source_id, None
+    raise RuntimeError("Não há fonte RREO anual disponível.")
 
 
 def composition_metadata(is_total: bool, reconciled: bool) -> dict[str, Any]:
@@ -974,6 +1107,134 @@ def derived_rate(
     return result
 
 
+def derived_difference(
+    minuend: float | None,
+    subtrahend: float | None,
+    *,
+    formula: str,
+    source_id: str,
+    reference_year: int,
+    unit: str = "BRL",
+    require_nonnegative: bool = False,
+) -> dict[str, Any]:
+    if minuend is None or subtrahend is None:
+        value = None
+        reason = "missing_calculation_component"
+    elif require_nonnegative and float(minuend) - float(subtrahend) < 0:
+        value = None
+        reason = "incompatible_execution_stage_order"
+    else:
+        value = float(minuend) - float(subtrahend)
+        reason = None
+    result = compact_value(
+        value,
+        unit,
+        reference_year,
+        "calculated_indicator",
+        "local_calculation",
+        source_id,
+        reason,
+    )
+    result["calculation"] = {
+        "formula": formula,
+        "sourceId": source_id,
+        "referenceYear": reference_year,
+    }
+    return result
+
+
+def build_execution_history(snapshot: dict[str, Any], code: str) -> list[dict[str, Any]]:
+    history = []
+    for reference_year, source_id in annual_source_candidates(snapshot, "siconfi_dca_function_"):
+        record = source_record(snapshot, source_id, code)
+        if not record or any(record.get(field) is None for field in ("committed", "liquidated", "paid")):
+            continue
+        committed = record["committed"]
+        liquidated = record["liquidated"]
+        paid = record["paid"]
+        state_records = snapshot["sources"][source_id]["records"].values()
+        state_committed = sum(
+            float(item["committed"])
+            for item in state_records
+            if item.get("committed") is not None and item.get("paid") is not None
+        )
+        state_paid = sum(
+            float(item["paid"])
+            for item in state_records
+            if item.get("committed") is not None and item.get("paid") is not None
+        )
+        history.append({
+            "referenceYear": reference_year,
+            "sourceId": source_id,
+            "committed": compact_value(committed, "BRL", reference_year, "empenhado", "municipal_declared", source_id),
+            "liquidated": compact_value(liquidated, "BRL", reference_year, "liquidado", "municipal_declared", source_id),
+            "paid": compact_value(paid, "BRL", reference_year, "paid", "municipal_declared", source_id),
+            "committedNotLiquidated": derived_difference(
+                committed,
+                liquidated,
+                formula="committed - liquidated",
+                source_id=source_id,
+                reference_year=reference_year,
+                require_nonnegative=True,
+            ),
+            "liquidatedNotPaid": derived_difference(
+                liquidated,
+                paid,
+                formula="liquidated - paid",
+                source_id=source_id,
+                reference_year=reference_year,
+                require_nonnegative=True,
+            ),
+            "derivedRates": {
+                "liquidatedToCommittedRate": derived_rate([liquidated], committed, "liquidated / committed * 100", ["liquidated"], "committed", source_id, reference_year),
+                "paidToCommittedRate": derived_rate([paid], committed, "paid / committed * 100", ["paid"], "committed", source_id, reference_year),
+                "paidToLiquidatedRate": derived_rate([paid], liquidated, "paid / liquidated * 100", ["paid"], "liquidated", source_id, reference_year),
+            },
+            "stateReference": {
+                "paidToCommittedRate": derived_rate(
+                    [state_paid],
+                    state_committed,
+                    "sum(paid for 497 municipalities) / sum(committed for 497 municipalities) * 100",
+                    ["state.paid"],
+                    "state.committed",
+                    source_id,
+                    reference_year,
+                ),
+            },
+        })
+    return sorted(history[:5], key=lambda item: item["referenceYear"])
+
+
+def build_mde_rate_history(snapshot: dict[str, Any], code: str) -> list[dict[str, Any]]:
+    siope_candidates = dict(annual_source_candidates(snapshot, "fnde_siope_indicators_odata_"))
+    rreo_candidates = dict(annual_source_candidates(snapshot, "fnde_siope_rreo_annex8_"))
+    history = []
+    for reference_year in sorted(set(siope_candidates).intersection(rreo_candidates), reverse=True):
+        siope = source_record(snapshot, siope_candidates[reference_year], code) or {}
+        rreo = source_record(snapshot, rreo_candidates[reference_year], code) or {}
+        metric = reconciled_constitutional_metric(
+            siope.get("mdeAppliedRate", {}).get("value"),
+            rreo.get("mdeAppliedRate"),
+            unit="percent",
+            financial_stage="calculated_indicator",
+            reference_year=reference_year,
+        )
+        if metric["canonical"]["value"] is not None:
+            history.append({
+                "referenceYear": reference_year,
+                "rate": metric["canonical"],
+                "marginFromMinimum": derived_difference(
+                    metric["canonical"]["value"],
+                    25,
+                    formula="mdeAppliedRate - 25",
+                    source_id=metric["canonical"]["sourceId"],
+                    reference_year=reference_year,
+                    unit="percent",
+                ),
+            })
+    return sorted(history[:5], key=lambda item: item["referenceYear"])
+
+
 def build_contract(municipality: dict[str, str], snapshot: dict[str, Any]) -> dict[str, Any]:
     code = municipality["ibgeCode"]
     fundeb_total = source_record(snapshot, "fnde_fundeb_total_forecast_2026", code)
@@ -983,9 +1244,12 @@ def build_contract(municipality: dict[str, str], snapshot: dict[str, Any]) -> di
     vaar_forecast = source_record(snapshot, "fnde_fundeb_vaar_forecast_2026", code)
     qse_realized = source_record(snapshot, "fnde_qse_realized_2024", code)
     qse_estimate = source_record(snapshot, "fnde_qse_estimate_2026", code)
-    dca = source_record(snapshot, "siconfi_dca_function_2024", code)
-    siope_constitutional = source_record(snapshot, "fnde_siope_indicators_odata_2024_p6", code)
-    rreo_constitutional = source_record(snapshot, "fnde_siope_rreo_annex8_2024_p6", code)
+    dca_year, dca_source_id, dca = select_latest_annual_record(
+        snapshot,
+        "siconfi_dca_function_",
+        code,
+        ("committed", "liquidated", "paid"),
+    )
 
     total_value = fundeb_total.get("totalForecast") if fundeb_total else None
     vaaf_value = fundeb_total.get("vaafComplement") if fundeb_total else None
@@ -1014,51 +1278,34 @@ def build_contract(municipality: dict[str, str], snapshot: dict[str, Any]) -> di
             "outstandingProcessed",
         )
     }
+    execution_history = build_execution_history(snapshot, code)
+    mde_rate_history = build_mde_rate_history(snapshot, code)
 
-    siope_mde_amount = (
-        siope_constitutional.get("mdeAppliedAmount", {}).get("value")
-        if siope_constitutional
-        else None
-    )
-    siope_mde_rate = (
-        siope_constitutional.get("mdeAppliedRate", {}).get("value")
-        if siope_constitutional
-        else None
-    )
-    siope_remuneration_rate = (
-        siope_constitutional.get("fundebProfessionalRemunerationRate", {}).get("value")
-        if siope_constitutional
-        else None
-    )
-    rreo_mde_amount = rreo_constitutional.get("mdeAppliedAmount") if rreo_constitutional else None
-    rreo_mde_rate = rreo_constitutional.get("mdeAppliedRate") if rreo_constitutional else None
-    rreo_remuneration_rate = (
-        rreo_constitutional.get("fundebProfessionalRemunerationRate")
-        if rreo_constitutional
-        else None
-    )
-    rreo_fundeb_received = (
-        rreo_constitutional.get("fundebRevenueReceivedDeclared")
-        if rreo_constitutional
-        else None
-    )
-    mde_applied_amount = reconciled_constitutional_metric(
-        siope_mde_amount,
-        rreo_mde_amount,
+    mde_amount_year, mde_applied_amount = select_latest_reconciled_constitutional_metric(
+        snapshot,
+        code,
+        field="mdeAppliedAmount",
         unit="BRL",
         financial_stage="empenhado",
     )
-    mde_applied_rate = reconciled_constitutional_metric(
-        siope_mde_rate,
-        rreo_mde_rate,
+    mde_rate_year, mde_applied_rate = select_latest_reconciled_constitutional_metric(
+        snapshot,
+        code,
+        field="mdeAppliedRate",
         unit="percent",
         financial_stage="calculated_indicator",
     )
-    fundeb_remuneration_rate = reconciled_constitutional_metric(
-        siope_remuneration_rate,
-        rreo_remuneration_rate,
+    remuneration_year, fundeb_remuneration_rate = select_latest_reconciled_constitutional_metric(
+        snapshot,
+        code,
+        field="fundebProfessionalRemunerationRate",
         unit="percent",
         financial_stage="calculated_indicator",
+    )
+    fundeb_revenue_year, fundeb_revenue_source_id, rreo_fundeb_received = select_latest_rreo_value(
+        snapshot,
+        code,
+        "fundebRevenueReceivedDeclared",
     )
     constitutional_metrics = (
         mde_applied_amount,
@@ -1076,32 +1323,25 @@ def build_contract(municipality: dict[str, str], snapshot: dict[str, Any]) -> di
         constitutional_status = "reconciled"
     constitutional_available_count = sum(
         value is not None
-        for value in (
-            siope_mde_amount,
-            siope_mde_rate,
-            siope_remuneration_rate,
-            rreo_mde_amount,
-            rreo_mde_rate,
-            rreo_remuneration_rate,
-            rreo_fundeb_received,
-        )
+        for metric in constitutional_metrics
+        for value in (metric["siope"]["value"], metric["rreo"]["value"])
+    ) + int(rreo_fundeb_received is not None)
+    constitutional_available_sources = sorted(
+        {
+            metric[source_key]["sourceId"]
+            for metric in constitutional_metrics
+            for source_key in ("siope", "rreo")
+            if metric[source_key]["value"] is not None
+        }
+        | ({fundeb_revenue_source_id} if rreo_fundeb_received is not None else set())
     )
-    constitutional_available_sources = [
-        source_id
-        for source_id, record in (
-            ("fnde_siope_indicators_odata_2024_p6", siope_constitutional),
-            ("fnde_siope_rreo_annex8_2024_p6", rreo_constitutional),
-        )
-        if record is not None
-    ]
-    constitutional_missing_sources = [
-        source_id
-        for source_id in (
-            "fnde_siope_indicators_odata_2024_p6",
-            "fnde_siope_rreo_annex8_2024_p6",
-        )
-        if source_id not in constitutional_available_sources
-    ]
+    constitutional_missing_sources: list[str] = []
+    constitutional_reference_year = max(
+        mde_amount_year,
+        mde_rate_year,
+        remuneration_year,
+        fundeb_revenue_year,
+    )
 
     confirmed_available = ["fnde_qse_realized_2024"] if qse_realized_value is not None else []
     forecast_pairs = [
@@ -1116,6 +1356,9 @@ def build_contract(municipality: dict[str, str], snapshot: dict[str, Any]) -> di
     ]
     status_available = [source_id for source_id, value in status_pairs if value is not None]
     dca_available_count = sum(value is not None for value in dca_values.values())
+    dca_core_available_count = sum(
+        dca_values[key] is not None for key in ("committed", "liquidated", "paid")
+    )
     per_student_available = qse_realized_value is not None and enrollments is not None and enrollments > 0
 
     coverage_by_dimension = {
@@ -1141,11 +1384,11 @@ def build_contract(municipality: dict[str, str], snapshot: dict[str, Any]) -> di
             [] if len(status_available) == 3 else ["partial_automated_source_coverage"],
         ),
         "budgetExecution": dimension(
-            dca_available_count / 5,
-            "complete" if dca_available_count == 5 else "partial" if dca_available_count else "unavailable",
-            ["siconfi_dca_function_2024"] if dca_available_count else [],
-            [] if dca_available_count == 5 else ["siconfi_dca_function_2024"],
-            [] if dca_available_count == 5 else ["dca_required_field_missing"],
+            dca_core_available_count / 3,
+            "complete" if dca_core_available_count == 3 else "partial" if dca_core_available_count else "unavailable",
+            [dca_source_id] if dca_core_available_count else [],
+            [] if dca_core_available_count == 3 else [dca_source_id],
+            [] if dca_core_available_count == 3 else ["dca_required_field_missing"],
         ),
         "constitutionalApplication": dimension(
             constitutional_available_count / 7,
@@ -1209,7 +1452,7 @@ def build_contract(municipality: dict[str, str], snapshot: dict[str, Any]) -> di
             if constitutional_status.startswith("divergent")
             else "constitutional_source_missing"
         )
-    if dca_available_count < 5:
+    if dca_core_available_count < 3:
         quality_level = "insufficient"
         quality_reasons.append("dca_required_field_missing")
     else:
@@ -1232,11 +1475,11 @@ def build_contract(municipality: dict[str, str], snapshot: dict[str, Any]) -> di
     vaar_amount.update(composition_metadata(is_total=False, reconciled=vaar_reconciled))
 
     dca_amounts = {
-        "committed": compact_value(dca_values["committed"], "BRL", 2024, "empenhado", "municipal_declared", "siconfi_dca_function_2024", "not_published"),
-        "liquidated": compact_value(dca_values["liquidated"], "BRL", 2024, "liquidado", "municipal_declared", "siconfi_dca_function_2024", "not_published"),
-        "paid": compact_value(dca_values["paid"], "BRL", 2024, "paid", "municipal_declared", "siconfi_dca_function_2024", "not_published"),
-        "outstandingNonProcessed": compact_value(dca_values["outstandingNonProcessed"], "BRL", 2024, "balance", "municipal_declared", "siconfi_dca_function_2024", "not_published"),
-        "outstandingProcessed": compact_value(dca_values["outstandingProcessed"], "BRL", 2024, "balance", "municipal_declared", "siconfi_dca_function_2024", "not_published"),
+        "committed": compact_value(dca_values["committed"], "BRL", dca_year, "empenhado", "municipal_declared", dca_source_id, "not_published"),
+        "liquidated": compact_value(dca_values["liquidated"], "BRL", dca_year, "liquidado", "municipal_declared", dca_source_id, "not_published"),
+        "paid": compact_value(dca_values["paid"], "BRL", dca_year, "paid", "municipal_declared", dca_source_id, "not_published"),
+        "outstandingNonProcessed": compact_value(dca_values["outstandingNonProcessed"], "BRL", dca_year, "balance", "municipal_declared", dca_source_id, "not_published"),
+        "outstandingProcessed": compact_value(dca_values["outstandingProcessed"], "BRL", dca_year, "balance", "municipal_declared", dca_source_id, "not_published"),
     }
 
     qse_distributed = compact_value(qse_realized_value, "BRL", 2024, "transferred", "confirmed", "fnde_qse_realized_2024", "source_record_not_found")
@@ -1259,7 +1502,7 @@ def build_contract(municipality: dict[str, str], snapshot: dict[str, Any]) -> di
         "generatedAt": GENERATED_AT,
         "municipality": {**municipality, "uf": "RS"},
         "periods": {
-            "closedFiscalYear": 2024,
+            "closedFiscalYear": dca_year,
             "annualForecastYear": 2026,
             "forecastCutoffDate": FORECAST_CUTOFF_DATE,
             "mixesPeriodsInTotals": False,
@@ -1316,37 +1559,47 @@ def build_contract(municipality: dict[str, str], snapshot: dict[str, Any]) -> di
         },
         "execution": {
             "dcaEducation": {
-                "referenceYear": 2024,
+                "referenceYear": dca_year,
                 "functionalClassification": "12 - Educação",
                 "amountNature": "municipal_declared",
-                "sourceId": "siconfi_dca_function_2024",
+                "sourceId": dca_source_id,
                 **dca_amounts,
-                "budgeted": compact_value(None, "BRL", 2024, "budgeted", "municipal_declared", "siconfi_dca_function_2024", "budget_not_available_in_dca_function"),
-                "currentExpense": compact_value(None, "BRL", 2024, "not_applicable", "municipal_declared", "siconfi_dca_function_2024", "economic_classification_not_mapped"),
-                "capitalExpense": compact_value(None, "BRL", 2024, "not_applicable", "municipal_declared", "siconfi_dca_function_2024", "economic_classification_not_mapped"),
+                "budgeted": compact_value(None, "BRL", dca_year, "budgeted", "municipal_declared", dca_source_id, "budget_not_available_in_dca_function"),
+                "currentExpense": compact_value(None, "BRL", dca_year, "not_applicable", "municipal_declared", dca_source_id, "economic_classification_not_mapped"),
+                "capitalExpense": compact_value(None, "BRL", dca_year, "not_applicable", "municipal_declared", dca_source_id, "economic_classification_not_mapped"),
                 "derivedRates": {
-                    "liquidatedToCommittedRate": derived_rate([dca_values["liquidated"]], dca_values["committed"], "liquidated / committed * 100", ["execution.dcaEducation.liquidated"], "execution.dcaEducation.committed", "siconfi_dca_function_2024", 2024),
-                    "paidToCommittedRate": derived_rate([dca_values["paid"]], dca_values["committed"], "paid / committed * 100", ["execution.dcaEducation.paid"], "execution.dcaEducation.committed", "siconfi_dca_function_2024", 2024),
-                    "paidToLiquidatedRate": derived_rate([dca_values["paid"]], dca_values["liquidated"], "paid / liquidated * 100", ["execution.dcaEducation.paid"], "execution.dcaEducation.liquidated", "siconfi_dca_function_2024", 2024),
-                    "outstandingToCommittedRate": derived_rate([dca_values["outstandingNonProcessed"], dca_values["outstandingProcessed"]], dca_values["committed"], "(outstandingNonProcessed + outstandingProcessed) / committed * 100", ["execution.dcaEducation.outstandingNonProcessed", "execution.dcaEducation.outstandingProcessed"], "execution.dcaEducation.committed", "siconfi_dca_function_2024", 2024),
+                    "liquidatedToCommittedRate": derived_rate([dca_values["liquidated"]], dca_values["committed"], "liquidated / committed * 100", ["execution.dcaEducation.liquidated"], "execution.dcaEducation.committed", dca_source_id, dca_year),
+                    "paidToCommittedRate": derived_rate([dca_values["paid"]], dca_values["committed"], "paid / committed * 100", ["execution.dcaEducation.paid"], "execution.dcaEducation.committed", dca_source_id, dca_year),
+                    "paidToLiquidatedRate": derived_rate([dca_values["paid"]], dca_values["liquidated"], "paid / liquidated * 100", ["execution.dcaEducation.paid"], "execution.dcaEducation.liquidated", dca_source_id, dca_year),
+                    "outstandingToCommittedRate": derived_rate([dca_values["outstandingNonProcessed"], dca_values["outstandingProcessed"]], dca_values["committed"], "(outstandingNonProcessed + outstandingProcessed) / committed * 100", ["execution.dcaEducation.outstandingNonProcessed", "execution.dcaEducation.outstandingProcessed"], "execution.dcaEducation.committed", dca_source_id, dca_year),
                 },
+                "history": execution_history,
             }
         },
         "constitutionalApplication": {
             "status": constitutional_status,
-            "referenceYear": 2024,
+            "referenceYear": constitutional_reference_year,
             "period": 6,
             "stageBasis": "empenhado",
             "mdeAppliedAmount": mde_applied_amount,
             "mdeAppliedRate": mde_applied_rate,
+            "mdeMarginFromMinimum": derived_difference(
+                mde_applied_rate["canonical"]["value"],
+                25,
+                formula="mdeAppliedRate - 25",
+                source_id=mde_applied_rate["canonical"]["sourceId"],
+                reference_year=mde_rate_year,
+                unit="percent",
+            ),
+            "mdeRateHistory": mde_rate_history,
             "fundebProfessionalRemunerationRate": fundeb_remuneration_rate,
             "fundebRevenueReceivedDeclared": compact_value(
                 rreo_fundeb_received,
                 "BRL",
-                2024,
+                fundeb_revenue_year,
                 "received",
                 "municipal_declared",
-                "fnde_siope_rreo_annex8_2024_p6",
+                fundeb_revenue_source_id,
                 "constitutional_source_missing" if rreo_fundeb_received is None else None,
             ),
         },
@@ -1429,22 +1682,25 @@ COVERAGE_FIELDS = [
     ("fnde_qse_realized_2024", "qse_distributed", 2024, "amounts.qseDistributedClosedYear"),
     ("fnde_qse_realized_2024", "qse_enrollments", 2024, "qse.enrollmentsClosedYear"),
     ("fnde_qse_estimate_2026", "qse_official_estimate", 2026, "amounts.qseOfficialEstimateCurrentYear"),
-    ("siconfi_dca_function_2024", "education_committed", 2024, "execution.dcaEducation.committed"),
-    ("siconfi_dca_function_2024", "education_liquidated", 2024, "execution.dcaEducation.liquidated"),
-    ("siconfi_dca_function_2024", "education_paid", 2024, "execution.dcaEducation.paid"),
-    ("siconfi_dca_function_2024", "outstanding_non_processed", 2024, "execution.dcaEducation.outstandingNonProcessed"),
-    ("siconfi_dca_function_2024", "outstanding_processed", 2024, "execution.dcaEducation.outstandingProcessed"),
-    ("siconfi_dca_function_2024", "liquidated_to_committed_rate", 2024, "execution.dcaEducation.derivedRates.liquidatedToCommittedRate"),
-    ("siconfi_dca_function_2024", "paid_to_committed_rate", 2024, "execution.dcaEducation.derivedRates.paidToCommittedRate"),
-    ("siconfi_dca_function_2024", "paid_to_liquidated_rate", 2024, "execution.dcaEducation.derivedRates.paidToLiquidatedRate"),
-    ("siconfi_dca_function_2024", "outstanding_to_committed_rate", 2024, "execution.dcaEducation.derivedRates.outstandingToCommittedRate"),
-    ("fnde_siope_indicators_odata_2024_p6", "mde_applied_amount_siope", 2024, "constitutionalApplication.mdeAppliedAmount.siope"),
-    ("fnde_siope_rreo_annex8_2024_p6", "mde_applied_amount_rreo", 2024, "constitutionalApplication.mdeAppliedAmount.rreo"),
-    ("fnde_siope_indicators_odata_2024_p6", "mde_applied_rate_siope", 2024, "constitutionalApplication.mdeAppliedRate.siope"),
-    ("fnde_siope_rreo_annex8_2024_p6", "mde_applied_rate_rreo", 2024, "constitutionalApplication.mdeAppliedRate.rreo"),
-    ("fnde_siope_indicators_odata_2024_p6", "fundeb_professional_remuneration_rate_siope", 2024, "constitutionalApplication.fundebProfessionalRemunerationRate.siope"),
-    ("fnde_siope_rreo_annex8_2024_p6", "fundeb_professional_remuneration_rate_rreo", 2024, "constitutionalApplication.fundebProfessionalRemunerationRate.rreo"),
-    ("fnde_siope_rreo_annex8_2024_p6", "fundeb_revenue_received_declared", 2024, "constitutionalApplication.fundebRevenueReceivedDeclared"),
+]
+
+DYNAMIC_COVERAGE_FIELDS = [
+    ("education_committed", "execution.dcaEducation.committed"),
+    ("education_liquidated", "execution.dcaEducation.liquidated"),
+    ("education_paid", "execution.dcaEducation.paid"),
+    ("outstanding_non_processed", "execution.dcaEducation.outstandingNonProcessed"),
+    ("outstanding_processed", "execution.dcaEducation.outstandingProcessed"),
+    ("liquidated_to_committed_rate", "execution.dcaEducation.derivedRates.liquidatedToCommittedRate"),
+    ("paid_to_committed_rate", "execution.dcaEducation.derivedRates.paidToCommittedRate"),
+    ("paid_to_liquidated_rate", "execution.dcaEducation.derivedRates.paidToLiquidatedRate"),
+    ("outstanding_to_committed_rate", "execution.dcaEducation.derivedRates.outstandingToCommittedRate"),
+    ("mde_applied_amount_siope", "constitutionalApplication.mdeAppliedAmount.siope"),
+    ("mde_applied_amount_rreo", "constitutionalApplication.mdeAppliedAmount.rreo"),
+    ("mde_applied_rate_siope", "constitutionalApplication.mdeAppliedRate.siope"),
+    ("mde_applied_rate_rreo", "constitutionalApplication.mdeAppliedRate.rreo"),
+    ("fundeb_professional_remuneration_rate_siope", "constitutionalApplication.fundebProfessionalRemunerationRate.siope"),
+    ("fundeb_professional_remuneration_rate_rreo", "constitutionalApplication.fundebProfessionalRemunerationRate.rreo"),
+    ("fundeb_revenue_received_declared", "constitutionalApplication.fundebRevenueReceivedDeclared"),
 ]
 
 
@@ -1481,6 +1737,28 @@ def build_coverage_rows(contracts: list[dict[str, Any]], snapshot: dict[str, Any
                 "municipalitiesWithDuplicate": len(quality.get("duplicateMunicipalityCodes", [])),
                 "municipalitiesWithIncompatibleKey": int(quality.get("incompatibleMunicipalityKeys", 0)),
                 "coverageRate": round(with_value / total, 6),
+            }
+        )
+    for field, path in DYNAMIC_COVERAGE_FIELDS:
+        values = [nested_get(contract, path) for contract in contracts]
+        financial_values = [value for value in values if isinstance(value, dict) and "value" in value]
+        with_value = sum(value["value"] is not None for value in financial_values)
+        source_ids = sorted({value["sourceId"] for value in financial_values})
+        reference_years = sorted({value["referenceYear"] for value in financial_values})
+        rows.append(
+            {
+                "sourceId": source_ids[0] if len(source_ids) == 1 else "latest_valid_per_municipality",
+                "field": field,
+                "referenceYear": reference_years[0] if len(reference_years) == 1 else None,
+                "sourceStatus": "integrated",
+                "municipalitiesTotal": total,
+                "municipalitiesWithValue": with_value,
+                "municipalitiesWithNull": total - with_value,
+                "municipalitiesNotFound": total - with_value,
+                "municipalitiesWithDuplicate": 0,
+                "municipalitiesWithIncompatibleKey": 0,
+                "coverageRate": round(with_value / total, 6),
+                "referenceYears": reference_years,
             }
         )
     return rows
@@ -1635,7 +1913,7 @@ def write_reconciliation_sample_csv(path: Path, contracts: list[dict[str, Any]])
             {
                 "municipalityId": code,
                 "municipalityName": expected_name,
-                "referenceYear": 2024,
+                "referenceYear": mde["canonical"]["referenceYear"],
                 "dcaCommitted": execution["committed"]["value"],
                 "siopeMdeApplied": mde["siope"]["value"],
                 "rreoMdeApplied": mde["rreo"]["value"],
@@ -1676,12 +1954,13 @@ def validate_contract(contract: dict[str, Any]) -> None:
     code = contract.get("municipality", {}).get("ibgeCode", "unknown")
     if contract.get("schemaVersion") != SCHEMA_VERSION:
         raise AssertionError(f"{code}: schema incompatível")
-    if contract.get("periods") != {
-        "closedFiscalYear": 2024,
-        "annualForecastYear": 2026,
-        "forecastCutoffDate": FORECAST_CUTOFF_DATE,
-        "mixesPeriodsInTotals": False,
-    }:
+    periods = contract.get("periods", {})
+    if (
+        not isinstance(periods.get("closedFiscalYear"), int)
+        or periods.get("annualForecastYear") != 2026
+        or periods.get("forecastCutoffDate") != FORECAST_CUTOFF_DATE
+        or periods.get("mixesPeriodsInTotals") is not False
+    ):
         raise AssertionError(f"{code}: períodos inválidos")
     for item in iter_objects(contract):
         if "value" in item and item["value"] is None and not item.get("nullReasonCode"):
@@ -1706,15 +1985,21 @@ def validate_contract(contract: dict[str, Any]) -> None:
         if component["summationAllowed"]:
             raise AssertionError(f"{code}: componente Fundeb autorizado para dupla soma")
     execution = contract["execution"]["dcaEducation"]
+    if periods["closedFiscalYear"] != execution["referenceYear"]:
+        raise AssertionError(f"{code}: exercício fechado não acompanha a execução DCA")
+    if not execution["sourceId"].startswith("siconfi_dca_function_"):
+        raise AssertionError(f"{code}: fonte DCA inválida")
     for key in ("committed", "liquidated", "paid", "outstandingNonProcessed", "outstandingProcessed"):
         if execution[key]["amountNature"] != "municipal_declared":
             raise AssertionError(f"{code}: natureza DCA inválida")
+        if execution[key]["referenceYear"] != execution["referenceYear"] or execution[key]["sourceId"] != execution["sourceId"]:
+            raise AssertionError(f"{code}: estágio DCA de exercício ou fonte diferente")
     for rate in execution["derivedRates"].values():
         calculation = rate["calculation"]
-        if calculation["sourceId"] != "siconfi_dca_function_2024" or calculation["referenceYear"] != 2024:
+        if calculation["sourceId"] != execution["sourceId"] or calculation["referenceYear"] != execution["referenceYear"]:
             raise AssertionError(f"{code}: memória de cálculo DCA inválida")
     constitutional = contract["constitutionalApplication"]
-    if constitutional["referenceYear"] != 2024 or constitutional["period"] != 6:
+    if not isinstance(constitutional["referenceYear"], int) or constitutional["period"] != 6:
         raise AssertionError(f"{code}: período constitucional inválido")
     if constitutional["stageBasis"] != "empenhado":
         raise AssertionError(f"{code}: base do sexto bimestre inválida")
@@ -1731,10 +2016,18 @@ def validate_contract(contract: dict[str, Any]) -> None:
         "fundebProfessionalRemunerationRate",
     ):
         metric = constitutional[field]
-        if metric["siope"]["sourceId"] != "fnde_siope_indicators_odata_2024_p6":
+        reference_year = metric["siope"]["referenceYear"]
+        expected_siope, expected_rreo, expected_reconciliation = constitutional_source_ids(reference_year)
+        if (
+            metric["siope"]["sourceId"] != expected_siope
+            or metric["siope"]["referenceYear"] != metric["rreo"]["referenceYear"]
+            or metric["siope"]["referenceYear"] != metric["canonical"]["referenceYear"]
+        ):
             raise AssertionError(f"{code}: fonte SIOPE perdida em {field}")
-        if metric["rreo"]["sourceId"] != "fnde_siope_rreo_annex8_2024_p6":
+        if metric["rreo"]["sourceId"] != expected_rreo:
             raise AssertionError(f"{code}: fonte RREO perdida em {field}")
+        if metric["canonical"]["sourceId"] != expected_reconciliation:
+            raise AssertionError(f"{code}: fonte de conciliação perdida em {field}")
         status = metric["reconciliation"]["status"]
         if status == "reconciled" and metric["canonical"]["value"] is None:
             raise AssertionError(f"{code}: valor canônico ausente em reconciliação válida")
@@ -1742,13 +2035,13 @@ def validate_contract(contract: dict[str, Any]) -> None:
             raise AssertionError(f"{code}: valor canônico publicado sem reconciliação")
     fundeb_received = constitutional["fundebRevenueReceivedDeclared"]
     if (
-        fundeb_received["sourceId"] != "fnde_siope_rreo_annex8_2024_p6"
+        fundeb_received["sourceId"] != constitutional_source_ids(fundeb_received["referenceYear"])[1]
         or fundeb_received["amountNature"] != "municipal_declared"
         or fundeb_received["financialStage"] != "received"
     ):
         raise AssertionError(f"{code}: receita Fundeb declarada com semântica inválida")
     summary = canonical_json(contract["summary"])
-    if "fnde_siope_rreo_annex8_2024_p6" in summary or "fundebRevenueReceivedDeclared" in summary:
+    if "fnde_siope_rreo_annex8_" in summary or "fundebRevenueReceivedDeclared" in summary:
         raise AssertionError(f"{code}: receita Fundeb declarada incluída no resumo somável")
     if contract["generationMetadata"] != {
         "interfacePublished": False,

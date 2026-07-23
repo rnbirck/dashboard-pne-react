@@ -102,3 +102,96 @@ export function loadSiopeDashboardData() {
     wide,
   }))
 }
+
+export function buildSiopeMdeAnalysis(municipality) {
+  const series = SIOPE_DASHBOARD_YEARS.map((year) => {
+    const rawValue = municipality?.anos?.[String(year)]?.indicadores?.aplicacao_mde_percentual?.valor
+    const rate = rawValue === null || rawValue === undefined || !Number.isFinite(Number(rawValue))
+      ? null
+      : Number(rawValue)
+    return {
+      year,
+      rate,
+      marginFromMinimum: rate === null ? null : rate - 25,
+    }
+  }).filter((point) => point.rate !== null)
+
+  if (!series.length) return null
+  const first = series[0]
+  const latest = series[series.length - 1]
+  const rates = series.map((point) => point.rate)
+  return {
+    series,
+    firstYear: first.year,
+    latestYear: latest.year,
+    latestRate: latest.rate,
+    latestMarginFromMinimum: latest.marginFromMinimum,
+    compliantYears: series.filter((point) => point.rate >= 25).length,
+    minimumRate: Math.min(...rates),
+    maximumRate: Math.max(...rates),
+    variationFromFirst: latest.rate - first.rate,
+  }
+}
+
+function formatPercentForReading(value) {
+  return `${Number(value).toLocaleString('pt-BR', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  })}%`
+}
+
+function formatPointsForReading(value) {
+  return `${Math.abs(Number(value)).toLocaleString('pt-BR', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  })} p.p.`
+}
+
+export function buildSiopeExerciseReading(mdeAnalysis, execution) {
+  const sentences = []
+
+  if (
+    mdeAnalysis
+    && Number.isFinite(mdeAnalysis.latestRate)
+    && Number.isFinite(mdeAnalysis.latestMarginFromMinimum)
+    && mdeAnalysis.series.length > 0
+  ) {
+    const years = mdeAnalysis.series.length
+    const marginDirection = mdeAnalysis.latestMarginFromMinimum >= 0 ? 'acima' : 'abaixo'
+    let complianceText
+    if (mdeAnalysis.compliantYears === years) {
+      complianceText = years === 1
+        ? 'cumpriu o mínimo no exercício analisado'
+        : `cumpriu o mínimo em todos os ${years} exercícios analisados`
+    } else {
+      complianceText = years === 1
+        ? 'não cumpriu o mínimo no exercício analisado'
+        : `cumpriu o mínimo em ${mdeAnalysis.compliantYears} dos ${years} exercícios analisados`
+    }
+    sentences.push(
+      `O município aplicou ${formatPercentForReading(mdeAnalysis.latestRate)} em MDE, `
+      + `${formatPointsForReading(mdeAnalysis.latestMarginFromMinimum)} ${marginDirection} do mínimo constitucional, `
+      + `e ${complianceText}.`,
+    )
+  }
+
+  const history = execution?.history ?? []
+  const latestExecution = history.at(-1)
+  const paidRate = latestExecution?.derivedRates?.paidToCommittedRate?.value
+  if (latestExecution && Number.isFinite(paidRate)) {
+    const stateRate = latestExecution.stateReference?.paidToCommittedRate?.value
+    let stateText = ''
+    if (Number.isFinite(stateRate)) {
+      const difference = paidRate - stateRate
+      stateText = Math.abs(difference) < 0.000001
+        ? ', resultado igual à referência do RS'
+        : `, resultado ${formatPointsForReading(difference)} ${difference > 0 ? 'acima' : 'abaixo'} da referência do RS`
+    }
+    sentences.push(
+      `Em ${latestExecution.referenceYear}, ${formatPercentForReading(paidRate)} das despesas empenhadas `
+      + `na função Educação foram pagas${stateText}.`,
+    )
+  }
+
+  return sentences.join(' ')
+}

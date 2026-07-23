@@ -69,7 +69,8 @@ test('2. não existem aliases físicos por slug', () => {
 test('3. todos os contratos usam o schema versionado esperado', () => {
   contracts.forEach(({ document }) => {
     assert.equal(document.schemaVersion, 'municipal-finance-v1');
-    assert.equal(document.dataVersion, 'p5b2b1-2024-p6-2026-07-20');
+    assert.equal(document.dataVersion, manifest.dataVersion);
+    assert.match(document.dataVersion, /^p5b2b1-education-analysis-v1-/);
     assert.equal(document.methodologyVersion, 'municipal-finance-p5b2b1-v1');
     assert.match(document.municipality.ibgeCode, /^43\d{5}$/);
   });
@@ -93,21 +94,24 @@ test('5. previsões permanecem separadas de transferências confirmadas', () => 
 
 test('6. execução DCA não é publicada como receita ou transferência', () => {
   contracts.forEach(({ document }) => {
-    assert.equal(document.summary.dcaEducationCommitted.sourceId, 'siconfi_dca_function_2024');
+    assert.match(document.summary.dcaEducationCommitted.sourceId, /^siconfi_dca_function_\d{4}$/);
     assert.equal(document.summary.dcaEducationCommitted.amountNature, 'municipal_declared');
     assert.notEqual(document.summary.dcaEducationCommitted.financialStage, 'transferred');
     assert.notEqual(document.summary.dcaEducationCommitted.financialStage, 'received');
   });
 });
 
-test('7. exercícios de 2024 e 2026 não são misturados', () => {
+test('7. execução realizada e previsões preservam exercícios e naturezas próprias', () => {
   contracts.forEach(({ document }) => {
-    assert.equal(document.periods.closedFiscalYear, 2024);
+    assert.equal(document.periods.closedFiscalYear, document.execution.dcaEducation.referenceYear);
     assert.equal(document.periods.annualForecastYear, 2026);
     assert.equal(document.periods.mixesPeriodsInTotals, false);
     assert.equal(document.summary.confirmedTransfersCoveredBySources.referenceYear, 2024);
     assert.equal(document.summary.officialAnnualForecastsCurrentYear.referenceYear, 2026);
-    assert.equal(document.summary.dcaEducationCommitted.referenceYear, 2024);
+    assert.equal(document.summary.dcaEducationCommitted.referenceYear, document.execution.dcaEducation.referenceYear);
+    assert.equal(document.execution.dcaEducation.committed.referenceYear, 2025);
+    assert.equal(document.execution.dcaEducation.liquidated.referenceYear, 2025);
+    assert.equal(document.execution.dcaEducation.paid.referenceYear, 2025);
   });
 });
 
@@ -173,15 +177,16 @@ test('13. todos os estágios da DCA preservam natureza municipal declarada', () 
     const execution = document.execution.dcaEducation;
     for (const field of ['committed', 'liquidated', 'paid', 'outstandingNonProcessed', 'outstandingProcessed']) {
       assert.equal(execution[field].amountNature, 'municipal_declared');
-      assert.equal(execution[field].sourceId, 'siconfi_dca_function_2024');
+      assert.equal(execution[field].sourceId, execution.sourceId);
+      assert.equal(execution[field].referenceYear, execution.referenceYear);
     }
   });
 });
 
 test('14. taxas derivadas guardam mesma fonte, ano e função', () => {
   contracts.forEach(({ document }) => Object.values(document.execution.dcaEducation.derivedRates).forEach((metric) => {
-    assert.equal(metric.calculation.sourceId, 'siconfi_dca_function_2024');
-    assert.equal(metric.calculation.referenceYear, 2024);
+    assert.equal(metric.calculation.sourceId, document.execution.dcaEducation.sourceId);
+    assert.equal(metric.calculation.referenceYear, document.execution.dcaEducation.referenceYear);
     assert.equal(metric.calculation.functionalClassification, '12 - Educação');
     assert.ok(metric.calculation.numeratorReferenceIds.length > 0);
     assert.ok(metric.calculation.denominatorReferenceId);
@@ -205,7 +210,6 @@ test('15. denominador zero produz null com razão explícita', () => {
 test('16. aplicação constitucional preserva SIOPE, RREO e canônico reconciliado', () => {
   contracts.forEach(({ document }) => {
     assert.equal(document.constitutionalApplication.status, 'reconciled');
-    assert.equal(document.constitutionalApplication.referenceYear, 2024);
     assert.equal(document.constitutionalApplication.period, 6);
     assert.equal(document.constitutionalApplication.stageBasis, 'empenhado');
     for (const key of ['mdeAppliedAmount', 'mdeAppliedRate', 'fundebProfessionalRemunerationRate']) {
@@ -214,8 +218,37 @@ test('16. aplicação constitucional preserva SIOPE, RREO e canônico reconcilia
       assert.notEqual(metric.rreo.value, null);
       assert.notEqual(metric.canonical.value, null);
       assert.equal(metric.reconciliation.status, 'reconciled');
+      assert.equal(metric.siope.referenceYear, metric.rreo.referenceYear);
+      assert.equal(metric.siope.referenceYear, metric.canonical.referenceYear);
+      assert.equal(metric.siope.sourceId, `fnde_siope_indicators_odata_${metric.siope.referenceYear}_p6`);
+      assert.equal(metric.rreo.sourceId, `fnde_siope_rreo_annex8_${metric.rreo.referenceYear}_p6`);
     }
   });
+});
+
+test('16.1 aplicação constitucional usa 2025 quando a conciliação é válida e 2024 somente como fallback', () => {
+  const distributions = {
+    mdeAmount: new Map(),
+    mdeRate: new Map(),
+    remuneration: new Map(),
+    fundebRevenue: new Map(),
+  };
+  contracts.forEach(({ document }) => {
+    const constitutional = document.constitutionalApplication;
+    const entries = [
+      ['mdeAmount', constitutional.mdeAppliedAmount.canonical],
+      ['mdeRate', constitutional.mdeAppliedRate.canonical],
+      ['remuneration', constitutional.fundebProfessionalRemunerationRate.canonical],
+      ['fundebRevenue', constitutional.fundebRevenueReceivedDeclared],
+    ];
+    entries.forEach(([key, value]) => {
+      distributions[key].set(value.referenceYear, (distributions[key].get(value.referenceYear) ?? 0) + 1);
+    });
+  });
+  assert.deepEqual(Object.fromEntries(distributions.mdeAmount), { 2024: 11, 2025: 486 });
+  assert.deepEqual(Object.fromEntries(distributions.mdeRate), { 2024: 10, 2025: 487 });
+  assert.deepEqual(Object.fromEntries(distributions.remuneration), { 2024: 13, 2025: 484 });
+  assert.deepEqual(Object.fromEntries(distributions.fundebRevenue), { 2024: 6, 2025: 491 });
 });
 
 test('17. SIOPE e RREO reconciliam sem alimentar os totais existentes', () => {

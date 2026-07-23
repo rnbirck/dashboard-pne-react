@@ -295,6 +295,38 @@ export interface CompactDerivedRate extends CompactFinancialValue {
   };
 }
 
+export interface CompactDerivedDifference extends CompactFinancialValue {
+  calculation: {
+    formula: string;
+    sourceId: string;
+    referenceYear: number;
+  };
+}
+
+export interface MunicipalFinanceExecutionHistoryEntry {
+  referenceYear: number;
+  sourceId: string;
+  committed: CompactFinancialValue;
+  liquidated: CompactFinancialValue;
+  paid: CompactFinancialValue;
+  committedNotLiquidated: CompactDerivedDifference;
+  liquidatedNotPaid: CompactDerivedDifference;
+  derivedRates: {
+    liquidatedToCommittedRate: CompactDerivedRate;
+    paidToCommittedRate: CompactDerivedRate;
+    paidToLiquidatedRate: CompactDerivedRate;
+  };
+  stateReference: {
+    paidToCommittedRate: CompactDerivedRate;
+  };
+}
+
+export interface MunicipalFinanceMdeHistoryEntry {
+  referenceYear: number;
+  rate: CompactFinancialValue;
+  marginFromMinimum: CompactDerivedDifference;
+}
+
 export interface MunicipalFinanceDocumentV1 {
   schemaVersion: MunicipalFinanceSchemaVersion;
   dataVersion: string;
@@ -307,7 +339,7 @@ export interface MunicipalFinanceDocumentV1 {
     uf: 'RS';
   };
   periods: {
-    closedFiscalYear: 2024;
+    closedFiscalYear: number;
     annualForecastYear: 2026;
     forecastCutoffDate: string;
     mixesPeriodsInTotals: false;
@@ -364,7 +396,7 @@ export interface MunicipalFinanceDocumentV1 {
   };
   execution: {
     dcaEducation: {
-      referenceYear: 2024;
+      referenceYear: number;
       functionalClassification: '12 - Educação';
       amountNature: 'municipal_declared';
       sourceId: string;
@@ -382,15 +414,18 @@ export interface MunicipalFinanceDocumentV1 {
         paidToLiquidatedRate: CompactDerivedRate;
         outstandingToCommittedRate: CompactDerivedRate;
       };
+      history: readonly MunicipalFinanceExecutionHistoryEntry[];
     };
   };
   constitutionalApplication: {
     status: 'reconciled' | 'source_missing' | 'divergent_explained' | 'divergent_unexplained';
-    referenceYear: 2024;
+    referenceYear: number;
     period: 6;
     stageBasis: 'empenhado';
     mdeAppliedAmount: ConstitutionalReconciledMetric;
     mdeAppliedRate: ConstitutionalReconciledMetric;
+    mdeMarginFromMinimum: CompactDerivedDifference;
+    mdeRateHistory: readonly MunicipalFinanceMdeHistoryEntry[];
     fundebProfessionalRemunerationRate: ConstitutionalReconciledMetric;
     fundebRevenueReceivedDeclared: CompactFinancialValue;
   };

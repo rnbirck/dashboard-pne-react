@@ -24,9 +24,9 @@ from src.municipal_finance import (  # noqa: E402
     write_reconciliation_sample_csv,
 )
 from src.municipal_finance_constitutional import (  # noqa: E402
-    collect_constitutional_snapshot,
     load_constitutional_snapshot,
     merge_constitutional_snapshot,
+    refresh_annual_constitutional_snapshot,
     write_constitutional_reports,
 )
 
@@ -42,14 +42,6 @@ DEFAULT_CONSTITUTIONAL_CROSSWALK = (
 DEFAULT_RREO_REVISIONS = (
     DATA_PIPELINE_DIR / "data" / "municipal_finance" / "rreo_source_revisions.json"
 )
-DEFAULT_SIOPE_CACHE = (
-    DATA_PIPELINE_DIR
-    / "cache"
-    / "siope_indicadores_financeiros_educacionais"
-    / "odata_json"
-    / "siope_indicadores_RS_2024_p6.json"
-)
-DEFAULT_RREO_CACHE = DATA_PIPELINE_DIR / "cache" / "municipal_finance_rreo_2024_p6"
 DEFAULT_CHECKPOINT = DATA_PIPELINE_DIR / "export" / "debug" / "municipal_finance_dca_checkpoint.json"
 DEFAULT_EXPORT_ROOT = DATA_PIPELINE_DIR / "export" / "data_partitioned"
 DEFAULT_PUBLIC_ROOT = REPO_ROOT / "public" / "data"
@@ -102,6 +94,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--constitutional-snapshot", type=Path, default=DEFAULT_CONSTITUTIONAL_SNAPSHOT)
     parser.add_argument("--refresh-sources", action="store_true")
     parser.add_argument("--refresh-constitutional", action="store_true")
+    parser.add_argument("--annual-reference-year", type=int, default=2025)
     parser.add_argument("--rreo-workers", type=int, default=8)
     parser.add_argument("--dca-delay", type=float, default=1.05)
     parser.add_argument("--dca-workers", type=int, default=1)
@@ -121,6 +114,7 @@ def main() -> None:
             municipalities,
             snapshot_path=args.source_snapshot,
             checkpoint_path=DEFAULT_CHECKPOINT,
+            annual_reference_year=args.annual_reference_year,
             dca_delay_seconds=args.dca_delay,
             dca_workers=args.dca_workers,
         )
@@ -128,14 +122,13 @@ def main() -> None:
         snapshot = load_source_snapshot(args.source_snapshot)
 
     if args.refresh_constitutional:
-        constitutional_snapshot = collect_constitutional_snapshot(
+        constitutional_snapshot = refresh_annual_constitutional_snapshot(
             municipalities,
             registry_path=args.municipality_index,
-            siope_cache_path=DEFAULT_SIOPE_CACHE,
             snapshot_path=args.constitutional_snapshot,
             crosswalk_path=DEFAULT_CONSTITUTIONAL_CROSSWALK,
             revision_history_path=DEFAULT_RREO_REVISIONS,
-            rreo_cache_dir=DEFAULT_RREO_CACHE,
+            reference_year=args.annual_reference_year,
             rreo_workers=args.rreo_workers,
         )
     else:

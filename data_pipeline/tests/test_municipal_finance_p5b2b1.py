@@ -79,8 +79,9 @@ class MunicipalFinanceP5B2B1Test(unittest.TestCase):
         self.assertEqual(len(crosswalk), 497)
         self.assertEqual(len({record["ibgeCode"] for record in crosswalk.values()}), 497)
 
-    def test_02_snapshot_is_strictly_2024_sixth_bimester(self) -> None:
-        self.assertEqual(self.constitutional_snapshot["referenceYear"], REFERENCE_YEAR)
+    def test_02_snapshot_keeps_annual_fallback_sources_at_the_sixth_bimester(self) -> None:
+        self.assertEqual(self.constitutional_snapshot["referenceYear"], 2025)
+        self.assertEqual(self.constitutional_snapshot["referenceYears"], [REFERENCE_YEAR, 2025])
         self.assertEqual(self.constitutional_snapshot["period"], REFERENCE_PERIOD)
         self.assertEqual(self.constitutional_snapshot["stageBasis"], "empenhado")
 
@@ -164,9 +165,10 @@ class MunicipalFinanceP5B2B1Test(unittest.TestCase):
 
     def test_07_siope_and_rreo_values_are_both_preserved(self) -> None:
         metric = self.contracts["4300109"]["constitutionalApplication"]["mdeAppliedAmount"]
-        self.assertEqual(metric["siope"]["value"], 19_159_995.28)
-        self.assertEqual(metric["rreo"]["value"], 19_159_995.28)
-        self.assertEqual(metric["canonical"]["value"], 19_159_995.28)
+        self.assertEqual(metric["siope"]["value"], 18_296_611.85)
+        self.assertEqual(metric["rreo"]["value"], 18_296_611.85)
+        self.assertEqual(metric["canonical"]["value"], 18_296_611.85)
+        self.assertEqual(metric["canonical"]["referenceYear"], 2025)
 
     def test_08_canonical_exists_only_when_reconciled(self) -> None:
         divergent = reconciled_constitutional_metric(
@@ -207,10 +209,10 @@ class MunicipalFinanceP5B2B1Test(unittest.TestCase):
 
     def test_10_dca_is_not_reconciled_as_mde(self) -> None:
         contract = self.contracts["4300109"]
-        self.assertEqual(contract["summary"]["dcaEducationCommitted"]["value"], 25_722_214.85)
+        self.assertEqual(contract["summary"]["dcaEducationCommitted"]["value"], 28_948_138.0)
         self.assertEqual(
             contract["constitutionalApplication"]["mdeAppliedAmount"]["canonical"]["value"],
-            19_159_995.28,
+            18_296_611.85,
         )
         self.assertEqual(contract["reconciliation"]["scope"], "siope_rreo_constitutional_application")
 
@@ -218,10 +220,10 @@ class MunicipalFinanceP5B2B1Test(unittest.TestCase):
         contract = self.contracts["4300109"]
         declared = contract["constitutionalApplication"]["fundebRevenueReceivedDeclared"]
         confirmed = contract["summary"]["confirmedTransfersCoveredBySources"]
-        self.assertEqual(declared["value"], 17_699_379.08)
+        self.assertEqual(declared["value"], 20_720_141.29)
         self.assertEqual(declared["amountNature"], "municipal_declared")
         self.assertEqual(declared["financialStage"], "received")
-        self.assertNotIn(RREO_SOURCE_ID, confirmed["coveredSourceIds"])
+        self.assertNotIn(declared["sourceId"], confirmed["coveredSourceIds"])
         self.assertEqual(confirmed["value"], contract["amounts"]["qseDistributedClosedYear"]["value"])
 
     def test_12_all_497_contracts_are_valid_and_scores_stay_null(self) -> None:
@@ -252,7 +254,15 @@ class MunicipalFinanceP5B2B1Test(unittest.TestCase):
 
     def test_16_snapshot_contains_only_homologated_constitutional_sources(self) -> None:
         source_ids = set(self.constitutional_snapshot["sources"])
-        self.assertEqual(source_ids, {SIOPE_SOURCE_ID, RREO_SOURCE_ID})
+        self.assertEqual(
+            source_ids,
+            {
+                SIOPE_SOURCE_ID,
+                RREO_SOURCE_ID,
+                "fnde_siope_indicators_odata_2025_p6",
+                "fnde_siope_rreo_annex8_2025_p6",
+            },
+        )
         serialized = json.dumps(self.constitutional_snapshot, ensure_ascii=False)
         self.assertNotIn("msc_orcamentaria", serialized)
         self.assertNotIn("fundeb_actual_transfers", serialized)

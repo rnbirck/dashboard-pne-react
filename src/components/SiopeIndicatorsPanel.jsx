@@ -14,6 +14,8 @@ import {
 import { IndicatorHistoryChart } from './IndicatorHistoryChart'
 import {
   getSiopeOfficialGroup,
+  buildSiopeExerciseReading,
+  buildSiopeMdeAnalysis,
   loadSiopeDashboardData,
   SIOPE_DASHBOARD_YEARS,
   SIOPE_INDICATOR_READING_GUIDES,
@@ -27,20 +29,29 @@ import { resolveDetailSequence, useDetailViewNavigation } from '../hooks/useDeta
 
 const EM = '\u2014'
 const SIOPE_SOURCE = 'SIOPE / FNDE'
-const MUNICIPALITY_2025_MISSING_NOTE =
-  'As informações de 2025 podem estar incompletas; os cartões usam o ano mais recente informado.'
 const APPLICATION_PRIMARY_KEYS = [
   'aplicacao_mde_percentual',
-  'valor_aplicado_mde_reais',
-  'despesas_educacao_total_percentual',
-  'investimento_aluno_basica_reais',
 ]
 const APPLICATION_SECONDARY_KEYS = [
   'investimento_aluno_infantil_reais',
   'investimento_aluno_fundamental_reais',
   'despesa_professores_aluno_basica_reais',
-  'receitas_impostos_total_percentual',
 ]
+const REMOVED_INDICATOR_KEYS = new Set([
+  'receitas_impostos_total_percentual',
+  'resultado_financeiro_exercicio_reais',
+])
+const METHOD_COMPLEMENTARY_KEYS = new Set([
+  'despesas_educacao_total_percentual',
+])
+const SUMMARY_ONLY_KEYS = new Set([
+  'valor_aplicado_mde_reais',
+  'investimento_aluno_basica_reais',
+])
+const NO_DETAIL_KEYS = new Set([
+  'despesas_educacao_total_percentual',
+  'despesa_professores_aluno_basica_reais',
+])
 const FUNDEB_KEYS = new Set([
   'fundeb_remuneracao_profissionais_percentual',
   'fundeb_nao_aplicado_percentual',
@@ -50,12 +61,12 @@ const FUNDEB_KEYS = new Set([
 ])
 const PUBLIC_LABELS = {
   aplicacao_mde_percentual: 'Aplicação em manutenção e desenvolvimento do ensino',
-  valor_aplicado_mde_reais: 'Valor declarado como aplicado em educação',
-  despesas_educacao_total_percentual: 'Participação da educação nas despesas municipais',
+  valor_aplicado_mde_reais: 'Valor aplicado em MDE — SIOPE',
+  despesas_educacao_total_percentual: 'Participação da função Educação nas despesas municipais',
   investimento_aluno_basica_reais: 'Gasto médio por estudante da educação básica',
   investimento_aluno_infantil_reais: 'Gasto médio por estudante da educação infantil',
   investimento_aluno_fundamental_reais: 'Gasto médio por estudante do ensino fundamental',
-  despesa_professores_aluno_basica_reais: 'Despesa média com professores por estudante',
+  despesa_professores_aluno_basica_reais: 'Despesa com professores por estudante da educação básica',
   receitas_impostos_total_percentual: 'Participação dos impostos na receita municipal',
   resultado_financeiro_exercicio_reais: 'Resultado financeiro do exercício',
 }
@@ -108,7 +119,7 @@ function formatSiopeValue(value, unidade, compact = false) {
     return numeric.toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL',
-      maximumFractionDigits: compact ? 0 : 2,
+      maximumFractionDigits: 0,
     })
   }
 
@@ -198,11 +209,6 @@ function buildIndicatorSeries(municipality, indicator) {
   })
 }
 
-function hasMunicipalityDataForYear(municipality, year) {
-  const indicators = Object.values(municipality?.anos?.[String(year)]?.indicadores ?? {})
-  return indicators.some((indicator) => hasNumber(indicator?.valor))
-}
-
 function latestAvailable(series) {
   return [...series]
     .filter((point) => hasNumber(point.valor))
@@ -282,6 +288,16 @@ function buildQuickReading(model) {
   return `Entre ${model.initialYear} e ${model.currentYear}, o valor não variou.`
 }
 
+function formatPercentagePoints(value, withSign = false) {
+  if (!hasNumber(value)) return EM
+  const numeric = Number(value)
+  const sign = withSign && numeric > 0 ? '+' : ''
+  return `${sign}${numeric.toLocaleString('pt-BR', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  })} p.p.`
+}
+
 function buildSiopeIndicatorModel(indicator, municipality, activeGroup) {
   const series = buildIndicatorSeries(municipality, indicator)
   const latest = latestAvailable(series)
@@ -294,7 +310,7 @@ function buildSiopeIndicatorModel(indicator, municipality, activeGroup) {
     initialDisplay: first ? formatSiopeValue(first.valor, indicator.unidade) : EM,
     initialYear: first?.ano ?? null,
     key: indicator.slug,
-    label: indicator.nome_dashboard,
+    label: PUBLIC_LABELS[indicator.slug] ?? indicator.nome_dashboard,
     moduleLabel: 'Aplicação e execução da educação',
     currentDisplay: latest ? formatSiopeValue(latest.valor, indicator.unidade) : EM,
     currentDisplayCompact: latest ? formatCompactDataLabel(latest.valor, indicator.unidade) : EM,
@@ -320,25 +336,46 @@ function buildSiopeIndicatorModel(indicator, municipality, activeGroup) {
   }
 }
 
-function PublicMetric({ label, model, onSelect, compact = false }) {
+function SiopeMetricIcon({ name = 'education' }) {
+  const paths = {
+    application: <><path d="M5 19h14" /><path d="M7 16V9h3v7m2 0V5h3v11m2 0v-4h2v4" /></>,
+    education: <><path d="m3 9 9-5 9 5-9 5z" /><path d="M7 12v4c2.7 2 7.3 2 10 0v-4" /></>,
+    payment: <><rect x="3" y="6" width="18" height="12" rx="2" /><path d="M3 10h18M7 15h4" /></>,
+    students: <><circle cx="8" cy="8" r="3" /><circle cx="17" cy="9" r="2" /><path d="M3 20c.5-4 2.5-6 5-6s4.5 2 5 6m2-5c3 0 5 1.5 6 4" /></>,
+    trend: <><path d="M4 18V6m0 12h16" /><path d="m7 14 4-4 3 2 5-6" /></>,
+    book: <><path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H12v17H7.5A3.5 3.5 0 0 0 4 22z" /><path d="M20 5.5A3.5 3.5 0 0 0 16.5 2H12v17h4.5A3.5 3.5 0 0 1 20 22z" /></>,
+  }
+  return (
+    <span className="siope-metric-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        {paths[name] ?? paths.education}
+      </svg>
+    </span>
+  )
+}
+
+function PublicMetric({ icon = null, label, model, compact = false }) {
   return (
     <article className={`siope-public-metric${compact ? ' siope-public-metric--compact' : ''}`}>
+      {icon ? <SiopeMetricIcon name={icon} /> : null}
       <div>
         <span>{label}</span>
         <strong>{model.currentDisplay}</strong>
-        <small>{model.currentYear ? `Período: ${model.currentYear}` : 'Período não informado'}</small>
+        {model.currentYear ? <small>Período: {model.currentYear}</small> : null}
       </div>
-      <button type="button" onClick={() => onSelect(model.key)}>Ver detalhe</button>
     </article>
   )
 }
 
-function SummaryMetric({ label, value, year }) {
+function SummaryMetric({ icon, label, value, year }) {
   return (
     <article className="siope-public-summary__item">
-      <span>{label}</span>
+      <div className="siope-public-summary__label">
+        <SiopeMetricIcon name={icon} />
+        <span>{label}</span>
+      </div>
       <strong>{value}</strong>
-      <small>{year ? `Período: ${year}` : 'Período não informado'}</small>
+      {year ? <small>Período: {year}</small> : null}
     </article>
   )
 }
@@ -349,30 +386,35 @@ function FinancialAmount({ value }) {
 }
 
 function ExecutionSection({ execution }) {
-  if (!execution) return (
-    <section className="page-card siope-public-section siope-execution" aria-labelledby="siope-execution-title">
-      <div className="siope-public-section-heading">
-        <span className="eyebrow">Execução das despesas</span>
-        <h2 id="siope-execution-title">Quanto das despesas avançou até o pagamento?</h2>
-      </div>
-      <p className="siope-execution__unavailable">Os valores de execução não estão disponíveis para este município.</p>
-    </section>
-  )
+  if (!execution) return null
 
   const stages = [
     { key: 'committed', label: 'Valor comprometido no orçamento', value: execution.committed },
     { key: 'liquidated', label: 'Despesa reconhecida', value: execution.liquidated },
-    { key: 'paid', label: 'Valor pago', value: execution.paid },
+    { key: 'paid', label: 'Despesas da função Educação pagas — Siconfi/DCA', value: execution.paid },
   ].filter((stage) => isPublishableFinancialValue(stage.value))
   const rates = [
     { key: 'liquidated', label: 'Do valor comprometido, quanto já foi reconhecido', value: execution.derivedRates.liquidatedToCommittedRate },
     { key: 'paidCommitted', label: 'Do valor comprometido, quanto já foi pago', value: execution.derivedRates.paidToCommittedRate },
     { key: 'paidLiquidated', label: 'Da despesa reconhecida, quanto já foi pago', value: execution.derivedRates.paidToLiquidatedRate },
   ].filter((rate) => hasNumber(rate.value?.value))
-  const outstanding = [
-    { key: 'processed', label: 'Obrigações já reconhecidas', value: execution.outstandingProcessed },
-    { key: 'nonProcessed', label: 'Compromissos ainda não reconhecidos', value: execution.outstandingNonProcessed },
-  ].filter((item) => isPublishableFinancialValue(item.value))
+  const history = (execution.history ?? []).filter((item) => (
+    isPublishableFinancialValue(item.committed)
+    && isPublishableFinancialValue(item.liquidated)
+    && isPublishableFinancialValue(item.paid)
+  ))
+  const latestHistory = history.at(-1)
+  const firstHistory = history[0]
+  const outstanding = latestHistory ? [
+    { key: 'nonProcessed', label: 'Empenhadas ainda não liquidadas', value: latestHistory.committedNotLiquidated },
+    { key: 'processed', label: 'Liquidadas ainda não pagas', value: latestHistory.liquidatedNotPaid },
+  ].filter((item) => isPublishableFinancialValue(item.value)) : []
+  const latestPaidRate = latestHistory?.derivedRates?.paidToCommittedRate?.value
+  const firstPaidRate = firstHistory?.derivedRates?.paidToCommittedRate?.value
+  const statePaidRate = latestHistory?.stateReference?.paidToCommittedRate?.value
+  const stateDifference = hasNumber(latestPaidRate) && hasNumber(statePaidRate)
+    ? Number(latestPaidRate) - Number(statePaidRate)
+    : null
 
   return (
     <section className="page-card siope-public-section siope-execution" aria-labelledby="siope-execution-title">
@@ -422,6 +464,67 @@ function ExecutionSection({ execution }) {
           </dl>
         </div>
       ) : null}
+      {history.length > 1 ? (
+        <div className="siope-history-block siope-execution-history">
+          <div className="siope-history-block__reading">
+            <h3>Histórico da execução</h3>
+            <p>
+              Em {latestHistory.referenceYear}, {formatSiopeValue(latestPaidRate, 'percentual')} do valor empenhado foi pago.
+              {hasNumber(firstPaidRate) ? ` A taxa variou ${formatPercentagePoints(Number(latestPaidRate) - Number(firstPaidRate), true)} desde ${firstHistory.referenceYear}.` : ''}
+            </p>
+            {hasNumber(stateDifference) ? (
+              <p>
+                {formatPercentagePoints(Math.abs(stateDifference))} {stateDifference >= 0 ? 'acima' : 'abaixo'} da referência RS,
+                calculada pela soma dos valores pagos dividida pela soma dos valores empenhados dos 497 municípios.
+              </p>
+            ) : null}
+          </div>
+          <div className="siope-execution-history__comparison" aria-label="Comparação da execução por exercício">
+            {history.map((item) => {
+              const comparisons = [
+                { key: 'committed', label: 'Empenhado', value: item.committed, rate: 100 },
+                { key: 'liquidated', label: 'Liquidado', value: item.liquidated, rate: item.derivedRates.liquidatedToCommittedRate.value },
+                { key: 'paid', label: 'Pago', value: item.paid, rate: item.derivedRates.paidToCommittedRate.value },
+              ].filter((comparison) => hasNumber(comparison.rate))
+              return (
+                <article key={item.referenceYear}>
+                  <header>
+                    <div><span>Exercício</span><strong>{item.referenceYear}</strong></div>
+                    {hasNumber(item.derivedRates.paidToCommittedRate.value) ? (
+                      <div className="siope-execution-history__paid-rate">
+                        <strong>{formatSiopeValue(item.derivedRates.paidToCommittedRate.value, 'percentual')}</strong>
+                        <span>pago sobre empenhado</span>
+                      </div>
+                    ) : null}
+                  </header>
+                  <ul>
+                    {comparisons.map((comparison) => (
+                      <li key={comparison.key}>
+                        <div><span>{comparison.label}</span><strong><FinancialAmount value={comparison.value} /></strong></div>
+                        <progress
+                          aria-label={`${comparison.label} em ${item.referenceYear}: ${formatSiopeValue(comparison.rate, 'percentual')}`}
+                          max="100"
+                          value={comparison.rate}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </article>
+              )
+            })}
+          </div>
+        </div>
+      ) : null}
+      <details className="platform-support-disclosure siope-method-disclosure siope-method-disclosure--execution">
+        <summary className="platform-support-disclosure__summary">
+          <div><h3>Conceitos e fórmulas da execução</h3><p>Como interpretar as etapas, pendências e percentuais.</p></div>
+        </summary>
+        <div className="platform-support-disclosure__body">
+          <p>Empenhado, liquidado e pago são etapas da mesma despesa e não devem ser somados.</p>
+          <p>Empenhado ainda não liquidado = empenhado − liquidado. Liquidado ainda não pago = liquidado − pago. As taxas dividem a etapa posterior pela etapa anterior; denominador zero não produz resultado.</p>
+          <p>Fonte: SICONFI/DCA, função 12 — Educação. Série histórica: {history[0]?.referenceYear}–{history.at(-1)?.referenceYear}.</p>
+        </div>
+      </details>
     </section>
   )
 }
@@ -461,7 +564,10 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
 
   useEffect(() => {
     if (!detailKey) return setIsDetailOpen(false)
-    if (model.groups.some((group) => group.items?.some((indicator) => indicator.slug === detailKey))) {
+    if (
+      !NO_DETAIL_KEYS.has(detailKey)
+      && model.groups.some((group) => group.items?.some((indicator) => indicator.slug === detailKey))
+    ) {
       setSelectedIndicatorKey(detailKey)
       setIsDetailOpen(true)
     } else if (!state.loading) {
@@ -494,12 +600,14 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
   }
 
   const indicatorModels = model.catalogIndicators
+    .filter((indicator) => !REMOVED_INDICATOR_KEYS.has(indicator.slug))
     .map((indicator) => {
       const group = model.groups.find((item) => item.items?.some((candidate) => candidate.slug === indicator.slug))
       return buildSiopeIndicatorModel(indicator, model.municipality, group)
     })
     .filter(isPublishableFinancialIndicator)
-  const selectedIndicatorModel = indicatorModels.find((indicator) => indicator.key === selectedIndicatorKey) ?? indicatorModels[0]
+  const detailIndicatorModels = indicatorModels.filter((indicator) => !NO_DETAIL_KEYS.has(indicator.key))
+  const selectedIndicatorModel = detailIndicatorModels.find((indicator) => indicator.key === selectedIndicatorKey) ?? detailIndicatorModels[0]
   const selectedMetadata = selectedIndicatorModel
     ? getFinancialIndicatorMetadata('siope', selectedIndicatorModel.key)
     : null
@@ -512,17 +620,20 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
   const publicModelByKey = new Map(indicatorModels.map((indicator) => [indicator.key, indicator]))
   const applicationPrimary = APPLICATION_PRIMARY_KEYS.map((key) => publicModelByKey.get(key)).filter(Boolean)
   const applicationSecondary = APPLICATION_SECONDARY_KEYS.map((key) => publicModelByKey.get(key)).filter(Boolean)
+  const functionShareModel = publicModelByKey.get('despesas_educacao_total_percentual')
   const catalogIndicators = indicatorModels.filter((indicator) => (
     !FUNDEB_KEYS.has(indicator.key)
     && !APPLICATION_PRIMARY_KEYS.includes(indicator.key)
     && !APPLICATION_SECONDARY_KEYS.includes(indicator.key)
+    && !METHOD_COMPLEMENTARY_KEYS.has(indicator.key)
+    && !SUMMARY_ONLY_KEYS.has(indicator.key)
   ))
-  const hasOnlyFinancialResult = catalogIndicators.length === 1
-    && catalogIndicators[0].key === 'resultado_financeiro_exercicio_reais'
   const execution = financeState.data?.execution?.dcaEducation ?? null
   const paidValue = execution && isPublishableFinancialValue(execution.paid) ? execution.paid : null
-  const municipalityMissing2025 = !hasMunicipalityDataForYear(model.municipality, 2025)
-  const { activeIndex: selectedIndex, previousItem: previousIndicator, nextItem: nextIndicator } = resolveDetailSequence(indicatorModels, selectedIndicatorModel?.key)
+  const hasMixedScopeValues = Boolean(publicModelByKey.get('valor_aplicado_mde_reais') && paidValue)
+  const mdeAnalysis = buildSiopeMdeAnalysis(model.municipality)
+  const exerciseReading = buildSiopeExerciseReading(mdeAnalysis, execution)
+  const { activeIndex: selectedIndex, previousItem: previousIndicator, nextItem: nextIndicator } = resolveDetailSequence(detailIndicatorModels, selectedIndicatorModel?.key)
 
   function handleIndicatorSelect(indicatorKey) {
     detailNavigation.prepareDetail(indicatorKey, {
@@ -553,71 +664,161 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
             <div className="siope-public-summary__grid">
               {publicModelByKey.get('aplicacao_mde_percentual') ? (
                 <SummaryMetric
+                  icon="application"
                   label={PUBLIC_LABELS.aplicacao_mde_percentual}
                   value={publicModelByKey.get('aplicacao_mde_percentual').currentDisplay}
                   year={publicModelByKey.get('aplicacao_mde_percentual').currentYear}
                 />
               ) : null}
+              {mdeAnalysis ? (
+                <SummaryMetric
+                  icon="trend"
+                  label="Margem sobre o mínimo constitucional"
+                  value={`${formatPercentagePoints(Math.abs(mdeAnalysis.latestMarginFromMinimum))} ${mdeAnalysis.latestMarginFromMinimum >= 0 ? 'acima' : 'abaixo'}`}
+                  year={mdeAnalysis.latestYear}
+                />
+              ) : null}
               {publicModelByKey.get('valor_aplicado_mde_reais') ? (
                 <SummaryMetric
+                  icon="education"
                   label={PUBLIC_LABELS.valor_aplicado_mde_reais}
                   value={publicModelByKey.get('valor_aplicado_mde_reais').currentDisplay}
                   year={publicModelByKey.get('valor_aplicado_mde_reais').currentYear}
                 />
               ) : null}
               {paidValue ? (
-                <SummaryMetric label="Valor pago em despesas de educação" value={<FinancialAmount value={paidValue} />} year={paidValue.referenceYear} />
+                <SummaryMetric icon="payment" label="Despesas da função Educação pagas — Siconfi/DCA" value={<FinancialAmount value={paidValue} />} year={paidValue.referenceYear} />
               ) : null}
               {publicModelByKey.get('investimento_aluno_basica_reais') ? (
                 <SummaryMetric
+                  icon="students"
                   label={PUBLIC_LABELS.investimento_aluno_basica_reais}
                   value={publicModelByKey.get('investimento_aluno_basica_reais').currentDisplay}
                   year={publicModelByKey.get('investimento_aluno_basica_reais').currentYear}
                 />
               ) : null}
             </div>
-            {municipalityMissing2025 ? <p className="siope-public-period-note">{MUNICIPALITY_2025_MISSING_NOTE}</p> : null}
+            {hasMixedScopeValues ? (
+              <div className="siope-public-summary__scope-note">
+                <span className="siope-info-icon" aria-hidden="true">i</span>
+                <p>Os valores do SIOPE e do Siconfi utilizam classificações contábeis diferentes e não representam etapas do mesmo total.</p>
+              </div>
+            ) : null}
           </section>
 
           <section className="page-card siope-public-section siope-application" aria-labelledby="siope-application-title">
             <div className="siope-public-section-heading">
-              <span className="eyebrow">Aplicação dos recursos</span>
-              <h2 id="siope-application-title">Quanto o município aplicou em educação?</h2>
+              <span className="eyebrow">Aplicação constitucional</span>
+              <h2 id="siope-application-title">Aplicação em manutenção e desenvolvimento do ensino</h2>
             </div>
             {applicationPrimary.length ? (
-              <div className="siope-application__layout">
-                {applicationPrimary[0] ? (
-                  <article className="siope-application__lead">
-                    <span>{PUBLIC_LABELS[applicationPrimary[0].key]}</span>
-                    <strong>{applicationPrimary[0].currentDisplay}</strong>
-                    <div>
-                      <small>{applicationPrimary[0].currentYear ? `Período: ${applicationPrimary[0].currentYear}` : 'Período não informado'}</small>
-                      {applicationPrimary[0].statusLabel ? <b>{applicationPrimary[0].statusLabel}</b> : null}
-                    </div>
-                    <button type="button" onClick={() => handleIndicatorSelect(applicationPrimary[0].key)}>Ver detalhe e evolução</button>
+              <div className="siope-application__status-strip">
+                <article>
+                  <span>Aplicação em MDE</span>
+                  <strong>{applicationPrimary[0].currentDisplay}</strong>
+                  <small>Período: {applicationPrimary[0].currentYear}</small>
+                </article>
+                {mdeAnalysis ? (
+                  <article>
+                    <span>Margem sobre o mínimo</span>
+                    <strong>{formatPercentagePoints(Math.abs(mdeAnalysis.latestMarginFromMinimum))} {mdeAnalysis.latestMarginFromMinimum >= 0 ? 'acima' : 'abaixo'}</strong>
+                    <small>Mínimo constitucional: 25%</small>
                   </article>
                 ) : null}
-                <div className="siope-application__primary-list">
-                  {applicationPrimary.slice(1).map((indicator) => (
-                    <PublicMetric
-                      key={indicator.key}
-                      label={PUBLIC_LABELS[indicator.key] ?? indicator.label}
-                      model={indicator}
-                      onSelect={handleIndicatorSelect}
-                    />
-                  ))}
-                </div>
+                {applicationPrimary[0].statusLabel ? (
+                  <article>
+                    <span>Situação em {applicationPrimary[0].currentYear}</span>
+                    <strong className={`siope-application__status siope-application__status--${applicationPrimary[0].statusTone}`}>
+                      {applicationPrimary[0].statusLabel}
+                    </strong>
+                    <button type="button" onClick={() => handleIndicatorSelect(applicationPrimary[0].key)}>Ver detalhe</button>
+                  </article>
+                ) : null}
               </div>
+            ) : null}
+            {mdeAnalysis?.series.length > 1 || exerciseReading ? (
+              <div className="siope-mde-analysis">
+                {mdeAnalysis?.series.length > 1 ? (
+                  <div className="siope-mde-history">
+                    <div className="siope-history-block__reading">
+                      <h3>Histórico da aplicação em MDE</h3>
+                      <p>
+                        Cumpriu o mínimo constitucional em {mdeAnalysis.compliantYears} dos últimos {mdeAnalysis.series.length} exercícios com dado.
+                        {' '}A aplicação variou entre {formatSiopeValue(mdeAnalysis.minimumRate, 'percentual')} e {formatSiopeValue(mdeAnalysis.maximumRate, 'percentual')} no período.
+                      </p>
+                      <p>
+                        Entre {mdeAnalysis.firstYear} e {mdeAnalysis.latestYear}, a variação foi de {formatPercentagePoints(mdeAnalysis.variationFromFirst, true)}.
+                      </p>
+                    </div>
+                    <div className="siope-mde-history__plot" aria-label={`Aplicação em MDE de ${mdeAnalysis.firstYear} a ${mdeAnalysis.latestYear}; referência constitucional de 25 por cento`}>
+                      <div className="siope-mde-history__reference"><span>Mínimo constitucional — 25%</span></div>
+                      {mdeAnalysis.series.map((point) => (
+                        <div className="siope-mde-history__item" key={point.year}>
+                          <div className="siope-mde-history__bar-track">
+                            <span style={{ height: `${Math.min(100, point.rate / 40 * 100)}%` }} />
+                          </div>
+                          <strong>{formatSiopeValue(point.rate, 'percentual')}</strong>
+                          <small>{point.year}</small>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                {exerciseReading ? (
+                  <aside className="siope-exercise-reading" aria-labelledby="siope-exercise-reading-title">
+                    <div className="siope-exercise-reading__title">
+                      <SiopeMetricIcon name="trend" />
+                      <h3 id="siope-exercise-reading-title">Leitura do exercício</h3>
+                    </div>
+                    <p>{exerciseReading}</p>
+                  </aside>
+                ) : null}
+              </div>
+            ) : null}
+            {mdeAnalysis?.series.length > 1 ? (
+              <details className="platform-support-disclosure siope-method-disclosure siope-method-disclosure--application">
+                <summary className="platform-support-disclosure__summary">
+                  <SiopeMetricIcon name="book" />
+                  <div><h3>Fonte e método da aplicação constitucional</h3><p>Período, referência e cálculo da margem.</p></div>
+                </summary>
+                <div className="platform-support-disclosure__body">
+                  <div className="siope-method-disclosure__columns">
+                    <section>
+                      <h4>Fonte e período</h4>
+                      <p>Fonte: SIOPE/FNDE, indicador 1.1. Série histórica: {mdeAnalysis.firstYear}–{mdeAnalysis.latestYear}.</p>
+                      <p>A linha de referência marca o mínimo constitucional de 25%.</p>
+                      {functionShareModel ? (
+                        <div className="siope-method-complement">
+                          <div className="siope-method-complement__value">
+                            <strong>{functionShareModel.currentDisplay}</strong>
+                            <small>Período: {functionShareModel.currentYear}</small>
+                          </div>
+                          <div>
+                            <span>{PUBLIC_LABELS.despesas_educacao_total_percentual}</span>
+                            <p>Indicador complementar com denominador próprio: compara a função Educação com as despesas municipais e não mede o cumprimento do mínimo constitucional em MDE.</p>
+                          </div>
+                        </div>
+                      ) : null}
+                    </section>
+                    <section>
+                      <h4>Cálculo da margem</h4>
+                      <p>Margem em pontos percentuais = percentual aplicado em MDE − 25.</p>
+                      <p>Não há projeção ou preenchimento de exercícios ausentes.</p>
+                      <p className="siope-method-disclosure__caveat">Os valores mínimo obrigatório e aplicado acima do mínimo em reais não são apresentados porque a base constitucional oficial separada, no mesmo exercício, não está integrada.</p>
+                    </section>
+                  </div>
+                </div>
+              </details>
             ) : null}
             {applicationSecondary.length ? (
               <div className="siope-application__secondary" aria-label="Outros indicadores de aplicação">
-                {applicationSecondary.map((indicator) => (
+                {applicationSecondary.map((indicator, index) => (
                   <PublicMetric
                     compact
+                    icon={index === 2 ? 'education' : 'students'}
                     key={indicator.key}
                     label={PUBLIC_LABELS[indicator.key] ?? indicator.label}
                     model={indicator}
-                    onSelect={handleIndicatorSelect}
                   />
                 ))}
               </div>
@@ -634,24 +835,7 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
             <a className="platform-navigation-button" href={`#${FINANCIAL_PAGE_KEYS.fundeb}`}>Abrir página do Fundeb</a>
           </aside>
 
-          {hasOnlyFinancialResult ? (
-            <details className="platform-support-disclosure siope-secondary-result-disclosure">
-              <summary className="platform-support-disclosure__summary">
-                <div>
-                  <h3>Resultado financeiro do exercício</h3>
-                  <p>Indicador complementar do período publicado.</p>
-                </div>
-              </summary>
-              <div className="platform-support-disclosure__body">
-                <PublicMetric
-                  compact
-                  label={PUBLIC_LABELS[catalogIndicators[0].key] ?? catalogIndicators[0].label}
-                  model={catalogIndicators[0]}
-                  onSelect={handleIndicatorSelect}
-                />
-              </div>
-            </details>
-          ) : catalogIndicators.length ? (
+          {catalogIndicators.length ? (
             <section className="page-card siope-public-section siope-secondary-catalog" aria-labelledby="siope-secondary-title">
               <div className="siope-public-section-heading">
                 <span className="eyebrow">Para aprofundar</span>
@@ -664,7 +848,6 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
                     key={indicator.key}
                     label={PUBLIC_LABELS[indicator.key] ?? indicator.label}
                     model={indicator}
-                    onSelect={handleIndicatorSelect}
                   />
                 ))}
               </div>
@@ -674,9 +857,7 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
           <FinancialSourcesFooter
             periods="Os períodos exibidos correspondem ao ano publicado em cada valor; execução das despesas usa o exercício informado."
             source="SIOPE/FNDE e SICONFI/DCA."
-          >
-            Valores declarados ao SIOPE/FNDE e valores de execução declarados no SICONFI/DCA são apresentados sem preenchimento de exercícios ausentes.
-          </FinancialSourcesFooter>
+          />
         </>
       ) : null}
 
@@ -691,7 +872,7 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
             previousIndicator={previousIndicator}
             statusLabel={selectedIndicatorModel.statusLabel}
             statusTone={selectedIndicatorModel.statusTone}
-            total={indicatorModels.length}
+            total={detailIndicatorModels.length}
           />
           <section className="detail-panel educacao-detail-panel financial-detail-panel siope-detail">
             <FinancialDetailHeader indicator={selectedIndicatorModel} />
@@ -709,7 +890,7 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
                     endYear={2025}
                     formatDataLabel={(value) => formatCompactDataLabel(value, selectedIndicator.unidade)}
                     formatYAxis={selectedIndicator.unidade === 'reais' ? formatCompactCurrency : undefined}
-                    item={{ label: selectedIndicator.nome_dashboard }}
+                    item={{ label: selectedIndicatorModel.label }}
                     labelMode="all"
                     missingLabel={EM}
                     result={null}
@@ -717,7 +898,7 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
                     showMetaLine={false}
                     showMissingPoints={false}
                     startYear={2021}
-                    title={selectedIndicator.nome_dashboard}
+                    title={selectedIndicatorModel.label}
                     unit={getIndicatorUnit(selectedIndicator)}
                     yTickCount={5}
                   />
@@ -737,6 +918,7 @@ export function SiopeIndicatorsPanel({ idMunicipio, selectedMunicipio, detailKey
               indicator={selectedIndicatorModel}
               metadata={selectedMetadata}
               series={chartSeries}
+              showDataDisclosure={false}
               source={SIOPE_SOURCE}
             />
           </section>

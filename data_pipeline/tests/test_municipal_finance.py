@@ -72,12 +72,13 @@ class MunicipalFinanceTest(unittest.TestCase):
         self.assertEqual(contract["reconciliation"]["status"], "reconciled")
         self.assertEqual(
             contract["constitutionalApplication"]["mdeAppliedAmount"]["canonical"]["value"],
-            19_159_995.28,
+            18_296_611.85,
         )
         self.assertEqual(
             contract["constitutionalApplication"]["mdeAppliedRate"]["canonical"]["value"],
-            28.51,
+            25.71,
         )
+        self.assertEqual(contract["constitutionalApplication"]["mdeAppliedRate"]["canonical"]["referenceYear"], 2025)
 
     def test_nova_santa_rita_vaar_is_forecast_included_in_total(self) -> None:
         contract = self.contracts["4313375"]
@@ -88,10 +89,11 @@ class MunicipalFinanceTest(unittest.TestCase):
         self.assertEqual(vaar["compositionStatus"], "included_in_total")
         self.assertFalse(vaar["summationAllowed"])
 
-    def test_andre_da_rocha_preserves_insufficient_coverage(self) -> None:
+    def test_andre_da_rocha_preserves_missing_optional_dca_field_without_zero_imputation(self) -> None:
         contract = self.contracts["4300661"]
         outstanding = contract["execution"]["dcaEducation"]["outstandingNonProcessed"]
-        self.assertEqual(contract["dataQuality"]["level"], "insufficient")
+        self.assertEqual(contract["dataQuality"]["level"], "medium")
+        self.assertEqual(contract["execution"]["dcaEducation"]["referenceYear"], 2025)
         self.assertIsNone(outstanding["value"])
         self.assertEqual(outstanding["nullReasonCode"], "not_published")
         self.assertNotEqual(outstanding["value"], 0)
