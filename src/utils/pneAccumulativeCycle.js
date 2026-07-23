@@ -2,10 +2,10 @@ const BASELINE_YEAR = 2025
 const PUBLIC_EXPANSION_KEY = 'medio_tecnico_participacao_publica'
 const SUBSEQUENT_EXPANSION_KEY = 'subsequente_expansao'
 
-export const EXPANSION_SHARE_PRESENTATION_MODE = 'expansion-share-baseline'
-export const ABSOLUTE_EXPANSION_PRESENTATION_MODE = 'absolute-expansion-target'
+const EXPANSION_SHARE_PRESENTATION_MODE = 'expansion-share-baseline'
+const ABSOLUTE_EXPANSION_PRESENTATION_MODE = 'absolute-expansion-target'
 
-export const PNE_2026_ACCUMULATIVE_INDICATOR_KEYS = new Set([
+const PNE_2026_ACCUMULATIVE_INDICATOR_KEYS = new Set([
   PUBLIC_EXPANSION_KEY,
   SUBSEQUENT_EXPANSION_KEY,
 ])
@@ -286,120 +286,6 @@ function formatVariationDetail(value) {
   if (!Number.isFinite(numeric)) return 'Variação percentual indisponível'
   if (numeric === 0) return 'Sem variação'
   return `${numeric < 0 ? 'Queda' : 'Crescimento'} de ${formatDecimal(Math.abs(numeric))}%`
-}
-
-export function buildPublicExpansionPresentation(details) {
-  const reading = buildRecentPublicExpansionReading(details)
-  const loading = reading.status === 'loading'
-  const hasValue = Number.isFinite(reading.currentValue)
-  const period = reading.startYear && reading.endYear
-    ? `${reading.startYear}–${reading.endYear}`
-    : null
-  const periodInSentence = reading.startYear && reading.endYear
-    ? `${reading.startYear} a ${reading.endYear}`
-    : 'últimos anos comparáveis'
-  const recentTotalSeries = reading.recentSeries.map((point) => ({
-    ano: point.ano,
-    valor: point.totalEnrollment,
-  }))
-  const useExpansionChart = reading.chartSeries.filter(hasFiniteSeriesValue).length >= 2
-  const referencePosition = hasValue
-    ? Math.abs(reading.currentValue - reading.targetValue) < 1e-9
-      ? 'no patamar'
-      : reading.currentValue > reading.targetValue
-        ? 'acima'
-        : 'abaixo'
-    : null
-  const currentDisplay = loading ? 'Carregando' : hasValue ? formatPercent(reading.currentValue) : '—'
-  const distanceDisplay = loading
-    ? 'Carregando'
-    : hasValue
-      ? formatSignedPp(reading.currentValue - reading.targetValue)
-      : '—'
-  const distanceNarrative = hasValue
-    ? formatReferenceDifference(reading.currentValue, reading.targetValue, 'percent')
-    : 'Não calculável'
-  const footerText = period
-    ? `Recorte ${period} · leitura histórica relacionada à meta`
-    : 'Leitura histórica relacionada à meta'
-  const readingText = hasValue
-    ? `No recorte recente de ${periodInSentence}, o segmento público respondeu por ${currentDisplay} da expansão das matrículas. Nesse período, o resultado estaria ${referencePosition} do patamar de 50% previsto para o ciclo 2026–2036.`
-    : loading
-      ? 'Carregando a leitura do recorte recente.'
-      : `No recorte recente de ${periodInSentence}, não houve expansão positiva das matrículas totais. Sem expansão suficiente para calcular a participação pública na expansão.`
-
-  const model = {
-    achieved: reading.achieved,
-    comparisonTitle: null,
-    currentDisplay,
-    currentLabel: 'Recorte recente',
-    currentValue: reading.currentValue,
-    currentYear: reading.endYear,
-    distanceDisplay,
-    distanceLabel: 'Distância',
-    distanceNarrative,
-    endYear: reading.endYear,
-    footerText,
-    indicatorKey: PUBLIC_EXPANSION_KEY,
-    kind: 'public-share',
-    loading,
-    progress: null,
-    referenceDisplay: '50%',
-    referenceLabel: 'Patamar PNE',
-    startYear: reading.startYear,
-    status: reading.status,
-    statusLabel: reading.statusLabel,
-    summaryState: hasValue ? (reading.achieved ? 'achieved' : 'attention') : null,
-    targetValue: reading.targetValue,
-    tone: reading.tone,
-  }
-
-  return {
-    ...model,
-    detail: {
-      chart: {
-        endYear: reading.endYear,
-        meta: useExpansionChart ? reading.targetValue : null,
-        note: useExpansionChart
-          ? 'Leitura histórica de apoio. Não corresponde ao resultado oficial do ciclo 2026–2036.'
-          : 'O gráfico mostra as matrículas totais usadas para verificar a existência de expansão. A participação no estoque não é usada como substituta do indicador.',
-        referenceLabel: useExpansionChart ? 'Patamar' : 'Referência',
-        series: useExpansionChart ? reading.chartSeries : recentTotalSeries,
-        showMetaLine: useExpansionChart,
-        showMissingPoints: useExpansionChart,
-        startYear: reading.startYear,
-        subtitle: useExpansionChart
-          ? `Participação calculada desde ${reading.startYear}, usando apenas a expansão das matrículas públicas e totais. Leitura não oficial do ciclo.`
-          : 'Matrículas totais nos cinco anos comparáveis mais recentes. O patamar de 50% só pode ser confrontado quando a expansão total é positiva.',
-        title: useExpansionChart
-          ? 'Participação pública na expansão — recorte recente'
-          : 'Matrículas totais no recorte recente',
-        unit: useExpansionChart ? 'percent' : 'count',
-      },
-      description: 'Pelo menos 50% das novas matrículas de EPT de nível médio criadas no ciclo 2026–2036 deverão ser públicas.',
-      loading,
-      methodology: [
-        'A linha de base oficial do ciclo 2026–2036 é 2025. O resultado oficial será calculado somente com a expansão observada após essa base.',
-        `A leitura de apoio usa o recorte recente de ${periodInSentence}: expansão pública = matrículas públicas do último ano − matrículas públicas do primeiro ano; expansão total = matrículas totais do último ano − matrículas totais do primeiro ano. O percentual só é calculado quando a expansão total é positiva.`,
-        'Essa leitura histórica não é o resultado oficial do ciclo e nunca usa a participação pública no estoque total como substituta da participação pública na expansão.',
-      ],
-      methodSummary: 'Base oficial 2025 e cálculo da expansão',
-      metrics: [
-        {
-          detail: period ? `Recorte ${period}` : 'Dados comparáveis insuficientes',
-          label: model.currentLabel,
-          size: 'large',
-          value: model.currentDisplay,
-        },
-        { detail: 'Referência do ciclo', label: 'Patamar PNE 2036', value: model.referenceDisplay },
-        { label: 'Distância do patamar', tone: model.tone, value: distanceNarrative },
-        { label: 'Situação atual', tone: model.tone, value: model.statusLabel },
-      ],
-      reading: readingText,
-      statusLabel: model.statusLabel,
-      tone: model.tone,
-    },
-  }
 }
 
 function buildSubsequentExpansionPresentation(details) {
@@ -761,10 +647,6 @@ function takeRecentSeries(series, maxPoints = 5) {
     .filter((point) => Number.isFinite(point.ano) && Number.isFinite(point.valor))
     .sort((a, b) => a.ano - b.ano)
     .slice(-maxPoints)
-}
-
-function hasFiniteSeriesValue(point) {
-  return point?.valor !== null && point?.valor !== undefined && Number.isFinite(Number(point.valor))
 }
 
 function formatReferenceDifference(currentValue, targetValue, unit) {

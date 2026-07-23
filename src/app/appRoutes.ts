@@ -28,9 +28,7 @@ const HASH_PAGE_MAP: Readonly<Record<string, AppPageKey>> = Object.freeze({
   escolassistemas: 'educacao',
 } satisfies Record<string, AppPageKey>)
 
-export const FINANCIAL_PAGES: ReadonlySet<FinancialPageKey> = new Set(Object.values(FINANCIAL_PAGE_KEYS))
-
-export { normalizeRouteValue, parseAppHash } from './appHash.js'
+const FINANCIAL_PAGES: ReadonlySet<FinancialPageKey> = new Set(Object.values(FINANCIAL_PAGE_KEYS))
 
 export function isFinancialPage(page: AppPageKey): page is FinancialPageKey {
   return FINANCIAL_PAGES.has(page as FinancialPageKey)

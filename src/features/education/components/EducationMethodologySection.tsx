@@ -278,7 +278,7 @@ function MethodologyDrawer({
     const selectedIndicators = selection?.kind === 'source' ? selection.source.indicators : catalog
     return selectedIndicators.map((indicator) => ({
       ...indicator,
-      availability: 'availability' in indicator
+      availability: 'availability' in indicator && isIndicatorAvailability(indicator.availability)
         ? indicator.availability
         : getIndicatorAvailability(itemByKey.get(indicator.key)),
     }))
@@ -442,6 +442,10 @@ function getIndicatorAvailability(item?: EducationIndicatorResult): IndicatorAva
   })
   const currentValue = item.currentValue
   return hasSeriesData || (currentValue !== null && currentValue !== undefined && currentValue !== '') ? 'available' : 'no-data'
+}
+
+function isIndicatorAvailability(value: unknown): value is IndicatorAvailability {
+  return value === 'available' || value === 'no-data' || value === 'unavailable'
 }
 
 function normalizeSearch(value: unknown) {

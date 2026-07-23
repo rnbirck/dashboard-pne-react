@@ -78,7 +78,7 @@ export function EducationCompactHeader({
   )
 }
 
-export function EducationContextChip({ item }: { item: EducationContextItem }) {
+function EducationContextChip({ item }: { item: EducationContextItem }) {
   return (
     <div className={`education-context-chip${item.label === 'Seção' ? ' education-context-chip--section' : ''}`}>
       <span className="education-context-chip__icon" aria-hidden="true">

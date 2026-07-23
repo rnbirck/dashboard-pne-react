@@ -1,182 +1,102 @@
-# Dashboard PNE React/Vite
+# Painel PNE
 
-Base navegavel do Dashboard PNE em React/Vite, usando dados JSON estaticos
-exportados pelo pipeline local em `data_pipeline`.
+Aplicação web estática para leitura municipal de indicadores educacionais, metas dos ciclos do PNE, diagnóstico e financiamento da educação. O frontend usa React, TypeScript e Vite; os JSONs servidos em produção ficam em `public/data` e são mantidos pelo pipeline Python do repositório.
 
-## Rodar localmente
+## Ambiente local
+
+Requisitos: Node.js compatível com Vite 8, npm e Python 3.11 ou superior.
 
 ```powershell
-cd C:\Users\rnbirck\PROJETOS\DASHBOARD-PNE-REACT
-npm install
+npm ci
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r data_pipeline\requirements.txt
 npm run dev
 ```
 
-O Vite abre a aplicacao em `http://127.0.0.1:5173/` ou na proxima porta livre.
+O servidor local usa `http://127.0.0.1:5173` por padrão. O frontend não precisa de credenciais para consumir os dados já versionados.
 
-## Comandos disponiveis
-
-Os comandos abaixo permanecem disponíveis sob demanda. Para trabalho local pelo
-Codex, a execução segue os modos do `AGENTS.md`: alterações comuns não disparam
-validações; validação rápida e validação completa exigem pedido explícito.
+## Comandos principais
 
 ```powershell
-npm run dev
-npm run build
+npm run typecheck
 npm run lint
-npm run check:units
-npm run list:indicators
-npm run update:data
-npm run update:data:skip-build
-npm run verify:indicator -- --cycle pne_2026_2036 --indicator <chave> --municipio "São Leopoldo"
+npm run build
+npm run test:unit
+npm run test:education
+npm run test:app-routing
+npm run test:data-sources
+npm run test:ui-architecture
+npm run test:python
 npm run validate:details
-npm run test:e2e
 ```
 
-- `npm run dev`: inicia o Vite para desenvolvimento local.
-- `npm run build`: gera o build estatico em `dist`.
-- `npm run lint`: valida o codigo com ESLint.
-- `npm run check:units`: verifica coerencia dos `value_mode` em `public/data/indicadores.json`.
-- `npm run list:indicators`: lista indicadores e modos de valor para revisao manual.
-- `npm run update:data`: roda export, partition, sync para `public/data`, validacao e build.
-- `npm run update:data:skip-build`: roda a atualizacao dos dados sem executar o build final.
-- `npm run verify:indicator -- --cycle <ciclo> --indicator <chave> --municipio <nome>`: exporta e valida somente o indicador solicitado em `data_pipeline/export/debug`; não altera `public/data`, não particiona, não sincroniza e não executa build. Repita `--indicator` para validar mais de uma chave.
-- `npm run validate:details`: valida o contrato basico dos JSONs em `public/data/municipios/*/details/*.json`.
-- `npm run test:e2e`: roda o teste Playwright contra uma instancia local ja ativa.
-
-Para o teste e2e, mantenha o Vite rodando em `localhost:5173`:
+Os testes E2E esperam uma aplicação ativa. Em um terminal:
 
 ```powershell
 npm run dev -- --host 127.0.0.1 --port 5173
+```
+
+Em outro:
+
+```powershell
 npm run test:e2e
 ```
 
-Se precisar testar outro endereco, defina `BASE_URL` antes de rodar `test:e2e`.
+Defina `BASE_URL` para testar outro endereço.
 
-## Atualizacao dos dados estaticos
+## Dados estáticos
 
-Os dados publicos do React ficam em `public/data`. Eles sao gerados a partir do
-pipeline local em `data_pipeline` e particionados por municipio.
-
-O comando principal e:
+`public/data` é parte do produto e deve continuar versionado. O fluxo principal de atualização é:
 
 ```powershell
 npm run update:data
 ```
 
-Esse comando orquestra:
-
-- `python data_pipeline/scripts/export_static_data.py --include-derived`;
-- `python data_pipeline/scripts/partition_static_data.py`;
-- sincronizacao de `data_pipeline/export/data_partitioned` para `public/data`;
-- `npm run validate:details`;
-- `npm run build`.
-
-Use `npm run update:data:skip-build` quando quiser atualizar e validar os dados
-sem gerar o build estatico no final. Use
-`python data_pipeline/scripts/update_static_data.py --validate-only` quando
-quiser rodar apenas a validacao dos detalhes, sem export, partition, sync ou
-build.
-
-## Desenvolvimento rápido de indicadores
-
-Antes do fluxo completo, valide uma alteração de cálculo com um município e a
-chave do indicador. O resultado parcial preserva o contrato do resultado do
-indicador e fica somente em `data_pipeline/export/debug`, que é ignorado pelo
-Git.
+Ele exporta os dados agregados, particiona por município, sincroniza os JSONs para `public/data`, atualiza o piloto de desigualdades, valida os detalhes e executa o build. Para omitir apenas o build final:
 
 ```powershell
-cd C:\Users\rnbirck\PROJETOS\DASHBOARD-PNE-REACT
-npm run verify:indicator -- --cycle pne_2026_2036 --indicator creche --municipio "São Leopoldo" --profile
+npm run update:data:skip-build
 ```
 
-Para uma amostra limitada, use `--limit` (em conjunto com ou sem `--municipio`):
+Para validar um indicador sem publicar dados:
 
 ```powershell
-npm run verify:indicator -- --cycle pne_2026_2036 --indicator creche --indicator pre_escola --limit 2
+npm run verify:indicator -- --cycle pne_2026_2036 --indicator creche --municipio "São Leopoldo"
 ```
 
-O comando falha com código diferente de zero para ciclo, indicador ou município
-inexistente. O carregamento da lista de municípios continua global para validar
-o nome informado. Indicadores que compartilham uma consulta por grupo podem
-carregar esse grupo, mas o cálculo e a saída são filtrados para as chaves pedidas.
-
-Quando a alteração estiver pronta, mantenha estes fluxos separados:
+O conjunto educacional complementar em `public/data/educacao` tem fluxo próprio. Defina `SENAI_DB_DIR` para o projeto que fornece `utils_educacao` e execute:
 
 ```powershell
-# Intermediário: exporta, particiona, sincroniza e valida; sem build.
-npm run update:data:skip-build -- --profile
-
-# Completo: execute uma vez ao final.
-npm run update:data -- --profile
+npm run update:education-data
 ```
 
-`--profile` mostra os tempos de carregamento, cálculos por ciclo, saídas
-complementares, serialização e, no fluxo completo, export, particionamento,
-sincronização, validação e build em ordem de duração.
+Credenciais do pipeline ficam em `data_pipeline/.env`, criado a partir de `data_pipeline/.env.example`. Nunca inclua segredos em `public/data`.
 
-O orquestrador para no primeiro erro, mostra `git status --short` no final e nao
-faz commit nem push. Antes de etapas que podem alterar dados, ele bloqueia a
-execucao se houver alteracoes fora de `public/data`.
+## Estrutura
 
-`public/data` continua versionado porque e a fonte servida pelo React.
-`data_pipeline/export` e intermediario do pipeline local e nao deve ser
-commitado.
+- `src`: aplicação React, rotas, componentes, features, modelos e estilos.
+- `public/data`: dados públicos servidos diretamente ao navegador.
+- `data_pipeline/src`: cálculo, acesso às fontes e contratos de dados.
+- `data_pipeline/scripts`: atualização, materialização e validação permanentes.
+- `data_pipeline/data`: snapshots e contratos-fonte necessários para regeneração.
+- `data_pipeline/tests`: testes de domínio e do pipeline.
+- `scripts/checks`: testes e verificações permanentes do frontend.
 
-Antes de atualizar os dados pela primeira vez, crie `data_pipeline/.env` a partir
-de `data_pipeline/.env.example` com as credenciais do banco local.
+Saídas de build, caches, relatórios de execução, screenshots e auditorias locais não são versionados.
 
-O fluxo legado `scripts/update_react_data.ps1` tambem recalcula indicadores de
-creche e pre-escola a partir das planilhas da Sinopse Estatistica do Censo
-Escolar. Para esse script, `SINOPSE_CENSO_DIR` deve apontar para a pasta com as
-planilhas e `PNE_PYTHON` continua opcional, caso queira usar um Python
-especifico.
+## Documentação canônica
 
-Exemplo no PowerShell para o fluxo legado:
+- [Produto](PRODUCT.md)
+- [Arquitetura](docs/ARQUITETURA.md)
+- [Design](docs/DESIGN.md)
+- [Pipeline e operação](docs/OPERACAO.md)
+- [Metodologia](docs/METODOLOGIA.md)
 
-```powershell
-$env:SINOPSE_CENSO_DIR = "C:\caminho\para\sinopse_estatistica_censo"
-$env:PNE_PYTHON = "C:\caminho\para\python.exe" # opcional
-```
-
-```powershell
-cd C:\Users\rnbirck\PROJETOS\DASHBOARD-PNE-REACT
-.\scripts\update_react_data.ps1
-```
-
-Esse script:
-
-- executa `data_pipeline/scripts/export_static_data.py --include-derived`;
-- executa `data_pipeline/scripts/partition_static_data.py`;
-- limpa e recopia `public/data` no projeto React;
-- recalcula os indicadores de creche e pre-escola com as planilhas da Sinopse
-  Estatistica do Censo Escolar;
-- roda `npm run build`.
-
-## Estrutura dos dados
-
-- `data_pipeline/queries`: queries SQL usadas para captar dados do banco.
-- `data_pipeline/src`: modulos Python usados para calcular indicadores, rankings
-  e diagnostico.
-- `public/data/municipios.json`: lista global de municipios.
-- `public/data/indicadores.json`: categorias e metadados dos indicadores.
-- `public/data/municipios_index.json`: mapa de municipio para slug e arquivo.
-- `public/data/municipios/{slug}/index.json`: indicadores, rankings e diagnostico
-  do municipio selecionado.
-
-Os arquivos grandes agregados por ciclo nao sao necessarios no React. A aplicacao
-carrega apenas os dados globais pequenos na abertura e, depois, o JSON do municipio
-selecionado sob demanda.
-
-## Build e hospedagem estatica
+## Publicação
 
 ```powershell
 npm run build
 ```
 
-O build gera a pasta `dist`, pronta para hospedagem estatica. A hospedagem precisa
-servir os arquivos de `dist` e os JSONs copiados de `public/data`.
-
-## Seguranca
-
-`public/data` e publico no navegador. Nao coloque `.env`, senhas, strings de
-conexao, tokens, dumps privados ou qualquer segredo nessa pasta.
+Publique o conteúdo de `dist` em hospedagem estática com fallback para `index.html`. A aplicação usa navegação por hash e carrega os JSONs por caminhos absolutos sob `/data`.

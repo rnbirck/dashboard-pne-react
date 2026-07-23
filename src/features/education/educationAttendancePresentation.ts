@@ -47,7 +47,7 @@ function referenceTrajectory(indicator: EducationProjectedIndicator): EducationA
   }))
 }
 
-export function getProjectionPoints(indicator: EducationProjectedIndicator): EducationAttendancePoint[] {
+function getProjectionPoints(indicator: EducationProjectedIndicator): EducationAttendancePoint[] {
   const configuredTrajectory = referenceTrajectory(indicator)
   return configuredTrajectory.length > 0 ? configuredTrajectory : indicator.scenario?.projected ?? []
 }

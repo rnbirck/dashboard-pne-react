@@ -143,7 +143,7 @@ export function AppPageRouter({
     navigationContext.rawRoute,
     requestedMunicipalityEntry,
     requestedMunicipalityValue,
-    selectedMunicipalityEntry?.slug,
+    selectedMunicipalityEntry,
   ])
 
   if (activePage === 'home') {

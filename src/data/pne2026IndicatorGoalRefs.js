@@ -34,13 +34,3 @@ export const PNE_2026_INDICATOR_GOAL_REFS = {
   salas_climatizadas: '8.b',
   salas_acessiveis: '19.c',
 }
-
-export const PNE_2026_PENDING_GOAL_REFS = [
-  'internet_comunidade',
-  'acesso_internet_computador',
-  'acesso_internet_disp_pessoais',
-  'proposta_pedagogica',
-  'desktop_aluno',
-  'comp_portatil_aluno',
-  'tablet_aluno',
-]

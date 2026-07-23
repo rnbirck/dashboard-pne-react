@@ -31,7 +31,7 @@ export interface EducationPageViewModel {
   isOverviewSection: boolean
 }
 
-export function formatEducationIndicatorCount(count: number): string {
+function formatEducationIndicatorCount(count: number): string {
   return `${count} indicador${count === 1 ? '' : 'es'}`
 }
 

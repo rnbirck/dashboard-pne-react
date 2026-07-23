@@ -14,6 +14,7 @@ Estrutura de saida:
 import argparse
 import json
 import math
+import os
 import re
 import sys
 import time
@@ -54,7 +55,7 @@ class Timer:
 # ── Caminhos ─────────────────────────────────────────────────────────────
 
 PROJETO = Path(__file__).resolve().parent.parent
-SENAI_DB = Path(r"C:\Users\rnbirck\PROJETOS\SENAI\DB")
+SENAI_DB = Path(os.environ.get("SENAI_DB_DIR", PROJETO.parent / "SENAI" / "DB"))
 SAIDA = PROJETO / "public" / "data" / "educacao"
 SAIDA_MUN = SAIDA / "municipios"
 SAIDA_REG = SAIDA / "regioes"

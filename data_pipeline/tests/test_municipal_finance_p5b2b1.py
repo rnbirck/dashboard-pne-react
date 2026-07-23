@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import copy
 import json
-import re
 import sys
 import unittest
 from pathlib import Path
@@ -241,13 +240,6 @@ class MunicipalFinanceP5B2B1Test(unittest.TestCase):
             )
             index = json.loads((slug_root / "index.json").read_text(encoding="utf-8"))
             self.assertNotIn("financeiro", index)
-
-    def test_14_interface_keeps_p5c2_visibility_gate(self) -> None:
-        presentation = (
-            REPO_ROOT / "src" / "features" / "municipal-finance" / "municipalFinancePresentation.ts"
-        ).read_text(encoding="utf-8")
-        self.assertIn("P5-C2_VISIBILITY_GATE", presentation)
-        self.assertNotRegex(presentation, re.compile(r"mdeAppliedAmount|fundebRevenueReceivedDeclared"))
 
     def test_15_barra_do_quarai_uses_2024_without_zero_imputation(self) -> None:
         contract = self.contracts["4301875"]

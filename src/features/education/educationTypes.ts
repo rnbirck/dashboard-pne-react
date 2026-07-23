@@ -1,6 +1,5 @@
 import type { IndicadoresPayload, MunicipioData, MunicipioName } from '../../types/data'
 import type { ParsedAppLocation } from '../../types/navigation'
-import type { PlanningScenarios } from '../../data/planningScenarios'
 import type { EducationAttendancePayload } from './educationAttendanceTypes'
 
 export type EducationSectionKey = string
@@ -49,7 +48,6 @@ export interface EducationNavigationState {
 }
 
 export interface EducationPneContext {
-  cenarios_planejamento?: PlanningScenarios
   indicadores?: Record<string, unknown>
   projecoes?: Record<string, unknown>
 }

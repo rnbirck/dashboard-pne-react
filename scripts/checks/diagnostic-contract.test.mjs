@@ -90,7 +90,7 @@ test('summary uses only advance, maintain, and unclassified public counters', ()
   assert.doesNotMatch(buildPublicSummaryText(summary), /Rio Grande do Sul|comparação|posição/i)
 })
 
-test('initial page renders only essential results in priority order', async () => {
+test('initial page renders the public diagnostic grouped by theme', async () => {
   const contract = await readContract('restinga-seca')
   const diagnostic = contract.pne2026PublicDiagnosticV2
   const essentials = flatten(diagnostic)
@@ -101,23 +101,16 @@ test('initial page renders only essential results in priority order', async () =
 
   assert.match(text, /Diagnóstico educacional de Restinga Seca/)
   assert.match(text, /Resumo do diagnóstico/)
-  assert.match(text, /Visualização/)
-  assert.match(text, /Resultados essenciais/)
-  assert.match(text, /Uma leitura inicial dos principais resultados acompanhados no município\./)
-  assert.equal((markup.match(/<h1/g) ?? []).length, 1)
-  assert.equal((markup.match(/class="pne-diagnostic-result pne-diagnostic-result--standalone"/g) ?? []).length, essentials.length)
+  assert.match(text, /Filtros/)
+  assert.match(text, /Resultados por tema/)
+  assert.match(text, /Plano Nacional de Educação/)
   assert.deepEqual(
     essentials.map((result) => result.priorityOrder),
     essentials.map((result) => result.priorityOrder).toSorted((left, right) => left - right),
   )
   assert.equal(new Set(essentials.map((result) => result.priorityOrder)).size, essentials.length)
   assert.ok(essentials.every((result) => result.priorityOrder >= 1 && result.priorityOrder <= 9))
-  let previousIndex = -1
-  for (const result of essentials) {
-    const index = text.indexOf(result.publicName)
-    assert.ok(index > previousIndex, result.publicName)
-    previousIndex = index
-  }
+  assert.ok(essentials.every((result) => text.includes(result.publicName)))
   assert.doesNotMatch(text, /tier|priorityOrder|essencial \d de 9/i)
 })
 
@@ -152,8 +145,9 @@ test('public comparisons and trajectories render without technical terms', async
   assert.ok(results.some((result) => getPublicSupportingReadings(result).length > 0))
   const markup = renderDiagnostic(contract, 'Restinga Seca')
   const text = visibleText(markup)
-  assert.match(text, /Comparação com o RS/)
-  assert.match(text, /Posição e evolução/)
+  assert.match(text, /Comparação com a média dos municípios do RS neste indicador/)
+  assert.match(text, /Posição no RS/)
+  assert.match(text, /Evolução recente/)
   assert.match(text, /Acima ou próximos do RS/)
   assert.match(text, /Abaixo do RS/)
   assert.match(

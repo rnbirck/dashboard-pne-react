@@ -9,13 +9,3 @@ export function DetailHeadingText({ description, eyebrow, level = 3, title }) {
     </div>
   )
 }
-
-export function PageHeadingText({ description, eyebrow, title }) {
-  return (
-    <>
-      <span className="eyebrow">{eyebrow}</span>
-      <h1>{title}</h1>
-      {description ? <p>{description}</p> : null}
-    </>
-  )
-}

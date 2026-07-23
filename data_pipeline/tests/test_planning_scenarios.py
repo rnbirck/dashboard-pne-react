@@ -33,7 +33,7 @@ class PlanningScenarioTests(unittest.TestCase):
         )
         municipalities = [item["nome"] for item in index["municipios"]]
         payload = planning.load_approved_planning_scenarios(
-            REPO_ROOT / "artifacts" / "projections-v2", municipalities
+            PIPELINE_ROOT / "data" / "planning_scenarios", municipalities
         )
         self.assertEqual(payload["publicationStatus"], "published")
         self.assertEqual(payload["scenarioType"], "maintenance")

@@ -996,7 +996,7 @@ def _export_planning_scenarios(*, municipios: list[str]) -> dict[str, Any]:
     from src.planning_scenarios import load_approved_planning_scenarios
 
     print("\nProcessando cenários de planejamento aprovados...")
-    artifact_root = BASE_DIR.parent / "artifacts" / "projections-v2"
+    artifact_root = BASE_DIR / "data" / "planning_scenarios"
     return load_approved_planning_scenarios(artifact_root, municipios)
 
 

@@ -4,7 +4,7 @@ import type { AsyncDataState } from '../types/async'
 import type { MunicipioData, MunicipioIndexEntry, MunicipioName } from '../types/data'
 import { useAsyncData } from '../utils/useAsyncData'
 
-export function findMunicipioEntry(
+function findMunicipioEntry(
   municipiosIndex: MunicipioIndexEntry[],
   selectedMunicipio: MunicipioName | null,
 ): MunicipioIndexEntry | null {

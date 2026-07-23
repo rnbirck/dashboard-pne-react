@@ -21,7 +21,7 @@ function uniqueKeys(keys) {
   return [...new Set(keys)]
 }
 
-export const BASIC_EDUCATION_FILTERS = [
+const BASIC_EDUCATION_FILTERS = [
   {
     key: 'todos',
     label: 'Todos',
@@ -48,7 +48,7 @@ export const BASIC_EDUCATION_FILTERS = [
   },
 ]
 
-export const THEMATIC_GROUPS = [
+const THEMATIC_GROUPS = [
   {
     key: 'educacao_basica',
     label: 'Educação Básica',

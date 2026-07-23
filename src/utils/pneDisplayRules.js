@@ -16,14 +16,14 @@ export const PNE_CONTEXT_PROXY_INDICATOR_KEYS = new Set([
   'tablet_aluno',
 ])
 
-export const PNE_GOAL_TRACKING_EXCEPTION_KEYS = new Set([
+const PNE_GOAL_TRACKING_EXCEPTION_KEYS = new Set([
   'salas_climatizadas',
   'salas_acessiveis',
 ])
 
-export const PNE_APPROXIMATE_REFERENCE_KEYS = new Set()
+const PNE_APPROXIMATE_REFERENCE_KEYS = new Set()
 
-export function isPneContextProxyIndicatorKey(indicatorKey) {
+function isPneContextProxyIndicatorKey(indicatorKey) {
   if (PNE_GOAL_TRACKING_EXCEPTION_KEYS.has(indicatorKey)) return false
   return PNE_CONTEXT_PROXY_INDICATOR_KEYS.has(indicatorKey)
 }
@@ -39,7 +39,7 @@ export function isPneContextProxyRelation(indicatorRelation, result) {
   return false
 }
 
-export function isPneApproximateReferenceIndicator({ indicatorKey, item, result }) {
+function isPneApproximateReferenceIndicator({ indicatorKey, item, result }) {
   return (
     item?.monitoring_mode === 'approximate_reference' ||
     result?.monitoring_mode === 'approximate_reference' ||
@@ -47,7 +47,7 @@ export function isPneApproximateReferenceIndicator({ indicatorKey, item, result 
   )
 }
 
-export function isPneVisibleIndicator({ indicatorKey, item, result }) {
+function isPneVisibleIndicator({ indicatorKey, item, result }) {
   if (
     item?.show_in_cycle === true &&
     isPneApproximateReferenceIndicator({ indicatorKey, item, result })

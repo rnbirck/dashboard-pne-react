@@ -22,7 +22,7 @@ export const EDUCATION_SECTION_LABELS = Object.freeze({
   [EDUCATION_SECTION_KEYS.methodology]: 'Metodologia e fontes',
 })
 
-export const EDUCATION_SECTION_DESCRIPTIONS = Object.freeze({
+const EDUCATION_SECTION_DESCRIPTIONS = Object.freeze({
   [EDUCATION_SECTION_KEYS.overview]: 'Síntese dos principais dados disponíveis para o município.',
   [EDUCATION_SECTION_KEYS.attendance]: 'Matrículas, escolas e atendimento por etapa e rede.',
   [EDUCATION_SECTION_KEYS.trajectory]: 'Fluxo escolar, aprendizagem e contexto educacional.',
@@ -40,7 +40,7 @@ const professionals = EDUCATION_SECTION_KEYS.professionals
 const infrastructure = EDUCATION_SECTION_KEYS.infrastructure
 const modalities = EDUCATION_SECTION_KEYS.modalities
 
-export const EDUCATION_DEMAND_INDICATOR_CATALOG = Object.freeze([
+const EDUCATION_DEMAND_INDICATOR_CATALOG = Object.freeze([
   {
     key: 'creche',
     title: 'Atendimento em creche',
@@ -68,21 +68,6 @@ export const EDUCATION_DEMAND_INDICATOR_CATALOG = Object.freeze([
     ageRange: '15 a 17 anos',
     populationLabel: 'População de 15 a 17 anos',
     source: 'Censo Escolar — INEP; Estimativas Populacionais — IBGE',
-  },
-])
-
-export const EDUCATION_DEMAND_GROUP_CATALOG = Object.freeze([
-  {
-    key: 'educacao-infantil',
-    label: 'Educação Infantil',
-    description: 'Cenários de atendimento para creche e pré-escola.',
-    indicatorKeys: Object.freeze(['creche', 'pre_escola']),
-  },
-  {
-    key: 'educacao-basica',
-    label: 'Educação Básica',
-    description: 'Cenários de atendimento para as faixas de 6 a 17 e de 15 a 17 anos.',
-    indicatorKeys: Object.freeze(['basico_6_17', 'basico_15_17']),
   },
 ])
 
@@ -691,7 +676,7 @@ const withDefaults = (indicator) => ({
   ...indicator,
 })
 
-export const EDUCATION_BASE_INDICATOR_CATALOG = Object.freeze(BASE_INDICATORS.map(withDefaults))
+const EDUCATION_BASE_INDICATOR_CATALOG = Object.freeze(BASE_INDICATORS.map(withDefaults))
 export const EDUCATION_COMPLEMENTARY_INDICATOR_CATALOG = Object.freeze(COMPLEMENTARY_INDICATORS)
 export const EDUCATION_INDICATOR_CATALOG = Object.freeze([
   ...EDUCATION_BASE_INDICATOR_CATALOG,
@@ -746,7 +731,7 @@ export const EDUCATION_SOURCE_CATALOG = Object.freeze([
   },
 ])
 
-export const EDUCATION_INDICATOR_CATALOG_BY_KEY = new Map(
+const EDUCATION_INDICATOR_CATALOG_BY_KEY = new Map(
   EDUCATION_INDICATOR_CATALOG.map((indicator) => [indicator.key, indicator]),
 )
 
@@ -763,15 +748,6 @@ export const EDUCATION_SECTION_GROUPS = Object.freeze(
     ]),
   ),
 )
-
-export const EDUCATION_INDICATOR_COMPARISON_GROUPS = Object.freeze({
-  'educacao-profissional': Object.freeze({
-    indicatorKeys: Object.freeze(['mat-profissional', 'oferta-total']),
-    compareBy: 'municipio-and-year',
-    policy: 'preserve-both-until-reviewed',
-    note: 'As duas séries representam matrículas na educação profissional, mas vêm de blocos de dados distintos e não devem ser deduplicadas automaticamente.',
-  }),
-})
 
 export const EDUCATION_SECTION_CATALOG = Object.freeze([
   {
@@ -807,7 +783,7 @@ export const EDUCATION_SECTION_CATALOG = Object.freeze([
   },
 ])
 
-export const EDUCATION_SECTION_THEME_KEYS = Object.freeze({
+const EDUCATION_SECTION_THEME_KEYS = Object.freeze({
   [overview]: 'matriculas',
   [attendance]: 'matriculas',
   [trajectory]: 'fluxo',
@@ -859,14 +835,14 @@ export function getEducationIndicatorCatalogItem(indicatorKey) {
   return EDUCATION_INDICATOR_CATALOG_BY_KEY.get(indicatorKey) ?? null
 }
 
-export function normalizeEducationSection(value) {
+function normalizeEducationSection(value) {
   const normalized = normalizeCatalogValue(value)
   if (SECTION_ALIASES.has(normalized)) return SECTION_ALIASES.get(normalized)
   if (THEME_SECTION_ALIASES.has(normalized)) return THEME_SECTION_ALIASES.get(normalized)
   return Object.values(EDUCATION_SECTION_KEYS).find((key) => normalizeCatalogValue(key) === normalized) ?? null
 }
 
-export function getEducationSectionForIndicator(indicatorKey) {
+function getEducationSectionForIndicator(indicatorKey) {
   return getEducationIndicatorCatalogItem(indicatorKey)?.section ?? null
 }
 

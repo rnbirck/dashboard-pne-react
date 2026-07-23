@@ -14,7 +14,7 @@ function toNumber(value) {
   return Number.isFinite(numeric) ? numeric : null
 }
 
-export function isPopulationPercentIndicator(item, result) {
+function isPopulationPercentIndicator(item, result) {
   if (resolveIndicatorUnit(item, result) !== 'percent') return false
 
   const text = normalizeText([
@@ -29,14 +29,14 @@ export function isPopulationPercentIndicator(item, result) {
   return text.includes('populacao')
 }
 
-export function capPopulationPercentValue(value, item, result) {
+function capPopulationPercentValue(value, item, result) {
   const numeric = Number(value)
   if (!Number.isFinite(numeric)) return value
   if (!isPopulationPercentIndicator(item, result)) return numeric
   return Math.min(numeric, POPULATION_VALUE_LIMIT)
 }
 
-export function normalizePopulationPercentResult(result, item) {
+function normalizePopulationPercentResult(result, item) {
   if (!result || !isPopulationPercentIndicator(item, result)) return result
 
   const startValue = capPopulationPercentValue(result.start_value, item, result)

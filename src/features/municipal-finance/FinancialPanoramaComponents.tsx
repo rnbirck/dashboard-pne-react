@@ -44,42 +44,6 @@ export function FinancialMetricCard({
   )
 }
 
-export function FinancialAnalysisLayout({ children, quickRead }: { children: ReactNode; quickRead: ReactNode }) {
-  return (
-    <div className="municipal-finance-analysis-layout">
-      <div className="municipal-finance-analysis-layout__main">{children}</div>
-      <aside className="municipal-finance-quick-read" aria-label="Leitura rápida">
-        <h3>Leitura rápida</h3>
-        {quickRead}
-      </aside>
-    </div>
-  )
-}
-
-export function FinancialStageBlock({
-  label,
-  progress,
-  value,
-}: {
-  label: string
-  progress: number | null
-  value: ReactNode
-}) {
-  return (
-    <li>
-      <span>{label}</span>
-      {value}
-      {progress !== null ? (
-        <progress
-          aria-label={`${label}: ${progress.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`}
-          max="100"
-          value={progress}
-        />
-      ) : null}
-    </li>
-  )
-}
-
 export function FinancialDisclosure({
   children,
   label,

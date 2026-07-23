@@ -27,7 +27,6 @@ import {
 import { QseAnnualPanel } from './QseAnnualPanel'
 import {
   FinancialCompactHeader,
-  FinancialDisclosure,
   FinancialMetricCard,
   type FinancialIconName,
 } from './FinancialPanoramaComponents'
@@ -147,7 +146,6 @@ export function MunicipalFinancePanoramaPage({
   const document = loadState.document
   const presentation = buildMunicipalFinancePresentation(
     document,
-    loadState.catalog,
     financingPrograms,
     indicatorCatalog,
     context,
@@ -215,7 +213,7 @@ export function MunicipalFinancePanoramaPage({
         nonBeneficiaryLabels={presentation.fundebNonBeneficiaryLabels}
       />
 
-      {presentation.qseGroups.length ? <QseAnnualPanel document={document} /> : null}
+      {presentation.hasQseData ? <QseAnnualPanel document={document} /> : null}
 
       <RelatedProgramsSection
         document={document}
@@ -625,21 +623,6 @@ function summaryIconFor(key: string): FinancialIconName {
     vaar: 'trend',
   }
   return icons[key] ?? 'budget'
-}
-
-function SectionHeading({ eyebrow, title, titleId, description }: {
-  eyebrow: string
-  title: string
-  titleId: string
-  description: string
-}) {
-  return (
-    <header className="municipal-finance-section__heading">
-      <span className="eyebrow">{eyebrow}</span>
-      <h2 id={titleId}>{title}</h2>
-      <p>{description}</p>
-    </header>
-  )
 }
 
 function FinanceValue({

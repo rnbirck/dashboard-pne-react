@@ -60,7 +60,7 @@ export function isDemographicCensusIndicator({ indicatorKey, item, details }) {
   )
 }
 
-export function buildCensusChartSeries({ result, details }) {
+function buildCensusChartSeries({ result, details }) {
   const componentSeries = toSeries(details?.series_components, 'percentual')
   if (componentSeries.length > 0) return componentSeries
 

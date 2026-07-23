@@ -6,6 +6,8 @@ venv/
 # build
 dist/
 build/
+artifacts/
+outputs/
 
 # env
 .env
@@ -33,18 +35,21 @@ tmp-vite-*.log
 Thumbs.db
 .vscode/
 .idea/
+.impeccable/
 
 # data pipeline output
 data_pipeline/export/
+data_pipeline/cache/
 __pycache__/
 *.pyc
 *.pyo
 
 # temp
+tmp/
+.codex-artifacts/
 *.tmp
 *.bak
 
-# visual-regression diagnostics
+# retired visual validation outputs
 scripts/checks/visual-diffs/
-tests/dev-ui-visual/results/
-tests/dev-ui-visual/diffs/
+tests/dev-ui-visual/

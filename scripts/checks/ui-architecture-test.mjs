@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict'
-import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -78,14 +77,4 @@ const unsafeTypeHits = typedCoreFiles.flatMap((file) => {
 })
 assert.deepEqual(unsafeTypeHits, [], `Tipos any explícitos na camada TypeScript central: ${unsafeTypeHits.join(', ')}`)
 
-const trackedFiles = execFileSync('git', ['ls-files'], { cwd: repositoryRoot, encoding: 'utf8' })
-  .split(/\r?\n/)
-  .filter(Boolean)
-const trackedTemporaryVisuals = trackedFiles.filter((file) => (
-  file.startsWith('tests/dev-ui-visual/results/')
-  || file.startsWith('tests/dev-ui-visual/diffs/')
-  || file.startsWith('scripts/checks/visual-diffs/')
-))
-assert.deepEqual(trackedTemporaryVisuals, [], `Artefatos visuais temporários versionados: ${trackedTemporaryVisuals.join(', ')}`)
-
-console.log('UI architecture validation passed: cascata, CSS canônico, teto legado, tipos centrais e artefatos temporários.')
+console.log('UI architecture validation passed: cascata, CSS canônico, teto legado e tipos centrais.')

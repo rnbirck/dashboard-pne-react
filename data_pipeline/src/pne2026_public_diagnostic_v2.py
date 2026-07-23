@@ -70,13 +70,13 @@ def _merge_usage(catalog: Mapping[str, Any], result: Mapping[str, Any]) -> dict[
 
 def _validate_catalog(catalog: Mapping[str, Any]) -> None:
     if catalog.get("catalogVersion") != CATALOG_VERSION:
-        raise ValueError("Versão inesperada do catálogo de apresentação DGP5-B1.")
+        raise ValueError("Versão inesperada do catálogo canônico de apresentação.")
     if catalog.get("schemaVersion") != PUBLIC_SCHEMA_VERSION:
-        raise ValueError("Schema público inesperado no catálogo de apresentação DGP5-B1.")
+        raise ValueError("Schema público inesperado no catálogo canônico de apresentação.")
 
     results = list(catalog.get("results") or [])
     if len(results) != 34:
-        raise ValueError("O catálogo DGP5-B1 deve autorizar exatamente 34 resultados.")
+        raise ValueError("O catálogo canônico deve autorizar exatamente 34 resultados.")
 
     pairs = [(item.get("goalId"), item.get("indicatorId")) for item in results]
     if len(set(pairs)) != 34 or len({indicator_id for _, indicator_id in pairs}) != 34:
@@ -156,7 +156,7 @@ def _cached_catalog() -> dict[str, Any]:
 
 
 def load_pne2026_diagnostic_presentation_catalog() -> dict[str, Any]:
-    """Return a defensive copy of the canonical DGP5-B1 presentation catalog."""
+    """Return a defensive copy of the canonical presentation catalog."""
 
     return deepcopy(_cached_catalog())
 

@@ -4,7 +4,7 @@ const SIOPE_BASE_PATH = '/data/educacao/siope'
 
 export const SIOPE_DASHBOARD_YEARS = [2021, 2022, 2023, 2024, 2025]
 export const SIOPE_SELECTED_INDICATORS_COUNT = 14
-export const SIOPE_OFFICIAL_GROUPS = [
+const SIOPE_OFFICIAL_GROUPS = [
   { key: '1', label: 'Cumprimento legal', order: 1, prefix: '1' },
   { key: '2', label: 'Distribuição das despesas', order: 2, prefix: '2' },
   { key: '3', label: 'Despesas com pessoal', order: 3, prefix: '3' },

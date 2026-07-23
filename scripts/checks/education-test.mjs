@@ -20,7 +20,6 @@ const moduleUrl = (relativePath) => pathToFileURL(path.join(output, relativePath
 const selectors = await import(moduleUrl('src/features/education/educationSelectors.js'))
 const viewModels = await import(moduleUrl('src/features/education/educationViewModels.js'))
 const formatters = await import(moduleUrl('src/features/education/educationFormatters.js'))
-const planningScenarios = await import(moduleUrl('src/data/planningScenarios.js'))
 const attendancePresentation = await import(moduleUrl('src/features/education/educationAttendancePresentation.js'))
 const attendanceFilters = await import(moduleUrl('src/features/education/educationAttendanceFilters.js'))
 const overviewPresentation = await import(moduleUrl('src/features/education/municipalEducationOverviewPresentation.js'))
@@ -268,71 +267,6 @@ test('busca considera caixa e acentuação declarada sem alterar a ordem de seç
     selectors.selectEducationSectionItems(indicators, { key: 'x', indicatorKeys: ['b', 'a'] }).map((item) => item.key),
     ['b', 'a'],
   )
-})
-
-test('cenários de planejamento publicam os quatro indicadores nos grupos aprovados', () => {
-  assert.deepEqual(
-    planningScenarios.PLANNING_SCENARIO_INDICATORS.map((indicator) => indicator.key),
-    ['basico_integral', 'escolas_integral', 'pos_graduacao', 'temporarios'],
-  )
-  assert.deepEqual(
-    planningScenarios.PLANNING_SCENARIO_GROUPS.map((group) => [...group.indicatorKeys]),
-    [
-      ['basico_integral', 'escolas_integral'],
-      ['pos_graduacao', 'temporarios'],
-    ],
-  )
-})
-
-test('adaptador público apenas transporta séries produzidas pelo pipeline', () => {
-  const contract = {
-    status: 'available_with_warning',
-    historical: [
-      { year: 2024, value: 32.5, numerator: 325, denominator: 1000 },
-    ],
-    projected: [
-      { year: 2036, displayValue: 32.5, status: 'available_with_warning' },
-    ],
-    referenceTrajectory: [
-      { year: 2024, value: 32.5 },
-      { year: 2036, value: 50 },
-    ],
-    qualityEvidence: { provisionalLevel: 'baixa' },
-    diagnostics: { warnings: ['fixture'] },
-  }
-
-  assert.deepEqual(planningScenarios.adaptPlanningScenarioContract(contract), {
-    available: true,
-    historical_percent: [32.5],
-    historical_years: [2024],
-    projected_2036: 32.5,
-    projected_percent: [32.5],
-    quality: 'baixa',
-    reference_trajectory_values: [32.5, 50],
-    reference_trajectory_years: [2024, 2036],
-    warnings: ['fixture'],
-    years: [2036],
-  })
-
-  const withoutPipelineTrajectory = planningScenarios.adaptPlanningScenarioContract({
-    ...contract,
-    referenceTrajectory: undefined,
-  })
-  assert.deepEqual(withoutPipelineTrajectory.reference_trajectory_years, [])
-  assert.deepEqual(withoutPipelineTrajectory.reference_trajectory_values, [])
-})
-
-test('adaptador público distingue contratos inválidos de cenários disponíveis', () => {
-  const adapted = planningScenarios.adaptPlanningScenarioContract({
-    status: 'invalid_components',
-    historical: [],
-    projected: [],
-    qualityEvidence: { provisionalLevel: 'insuficiente' },
-    diagnostics: { warnings: ['componentes inválidos'] },
-  })
-  assert.equal(adapted.available, false)
-  assert.equal(adapted.quality, 'insuficiente')
-  assert.deepEqual(adapted.warnings, ['componentes inválidos'])
 })
 
 test('regra de publicação usa valores brutos e exclui manutenção, constância e histórico isolado', () => {

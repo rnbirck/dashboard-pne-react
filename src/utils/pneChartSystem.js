@@ -170,11 +170,6 @@ export function resolvePneAuxiliaryYearTickLimit(chartWidth, maxTicks = 6) {
   return limit
 }
 
-export function formatPneAxisNumber(value) {
-  if (!Number.isFinite(Number(value))) return '—'
-  return Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 0 })
-}
-
 function buildEvenTicks(min, max, count) {
   if (count <= 1 || max <= min) return [min, max]
   return Array.from({ length: count }, (_, index) => (

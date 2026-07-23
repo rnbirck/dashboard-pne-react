@@ -48,7 +48,7 @@ const VAAR_COMMON = {
   methodNote: VAAR_METHOD,
 }
 
-export const FINANCIAL_INDICATOR_METADATA = Object.freeze({
+const FINANCIAL_INDICATOR_METADATA = Object.freeze({
   siope: Object.freeze({
     aplicacao_mde_percentual: indicatorMetadata({
       ...SIOPE_COMMON,
